@@ -1,0 +1,20 @@
+{
+  "name": "@krambuhl/agents",
+  "version": "0.1.0",
+  "description": "Marketplace for the draft/guild/griot/loom agent framework",
+  "private": true,
+  "license": "UNLICENSED",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/krambuhl/agents.git"
+  },
+  "keywords": [
+    "agent-skills",
+    "claude-code",
+    "draft",
+    "guild",
+    "griot",
+    "loom",
+    "skills-cli-marketplace"
+  ]
+}
