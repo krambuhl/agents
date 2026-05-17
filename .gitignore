@@ -1,0 +1,9 @@
+# Generated on every `./install.sh` run — kept out of the repo to keep
+# the marketplace canonical content free of derived shims.
+bin/
+
+# Per-machine Node deps (no deps today, precaution for future)
+cli/node_modules/
+
+# OS noise
+.DS_Store
