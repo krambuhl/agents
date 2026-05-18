@@ -1,0 +1,84 @@
+{
+  "schema_version": 1,
+  "number": "03",
+  "created": "2026-05-18T17:55:14.000Z",
+  "phase": {
+    "number": 4,
+    "name": "Rebuild plan + revise skills + outer RPI orchestration"
+  },
+  "branch": "phase-4-loom-plan-orchestration",
+  "unit": "/loom-revise-plan skill body + /draft-plan deprecation pointer",
+  "contract": {
+    "goal": "Author /loom-revise-plan as the symmetric cousin of /loom-plan: revise an existing PLAN.md via a flavor-routed first question (mechanical vs research-flavored). Mechanical → grill-me tightly scoped → evaluators → bin/loom revise-plan. Research-flavored → crystallize the revision question → spawn /loom-research as a fresh-context sub-agent → use the resulting research → evaluators on revised PLAN → commit. Auto-mode requires --flavor= (no silent default). Emits all 7 plan-revise-* events declared in D1. Recovery flow same shape as /loom-plan. Also add a deprecation pointer to /draft-plan's frontmatter description + intro paragraph aimed at /loom-plan (the skill body process otherwise unchanged; Phase 8 will delete /draft-plan as a set with bin/draft).",
+    "acceptance_criteria": [
+      "Frontmatter follows the marketplace skill convention; allowed-tools includes Agent for /loom-research spawn on the research-flavored branch.",
+      "Documents first-question flavor routing: AskUserQuestion in human-paired mode; --flavor= requirement in auto-mode with structured error if absent.",
+      "Documents the mechanical branch: grill-me scoped to the revision, synthesize candidate revised PLAN.md, route to evaluator pass.",
+      "Documents the research-flavored branch: crystallize revision question (human via grill-me, auto-mode requires it in topic), emit plan-revise-research-spawned, spawn /loom-research via Agent tool with --mode=auto, wait, on sub-agent success read the dossier and continue; on sub-agent failure write own RECOVERY-STATUS.json with sub_agent_recovery_path back-reference.",
+      "Documents the evaluator pass via bin/guild derive-panel + /guild-validate against the candidate revised PLAN.md. Rubric is plan-shape coherence PLUS revision-specific (changed sections name what/why; Revision log updated).",
+      "Documents human/auto duality with substrate 3 × 10 defaults; auto-mode REQUIRES --flavor= up front.",
+      "Documents recovery flow by citing AGENT-CONVENTIONS — no schema duplication.",
+      "Documents all 7 plan-revise-* event emissions at the corresponding decision points (plan-revise-started, plan-revise-flavor-selected, plan-revise-research-spawned, plan-revise-panel-spawned, plan-revise-panel-verdict, plan-revised, plan-revise-budget-exhausted).",
+      "Documents griot integration via § Capture finding for per-panel [portable] scans + hardcoded plan-revise-budget-exhausted write. Explicitly notes no equivalent hardcoded write for the research-flavored branch (research is the EXPECTED revision shape, not a gap signal worth capturing).",
+      "Cites bin/loom revise-plan for the deterministic file IO; rationale is mandatory.",
+      "skills/draft-plan/SKILL.md frontmatter description prefixed 'DEPRECATED:' AND intro paragraph carries a blockquote deprecation banner pointing at /loom-plan + naming Phase 8 deletion."
+    ],
+    "rules_applied": [
+      "CLAUDE.md: cite over restatement (AGENT-CONVENTIONS owns RECOVERY-STATUS.json shape + two-budget defaults).",
+      "CLAUDE.md: no silent defaults for load-bearing decisions (auto-mode flavor MUST be explicit).",
+      "PLAN.md Phase 4 lines 349-355 dictates the flavor-routed behavior verbatim.",
+      "Substrate composition: Agent tool for fresh-context sub-agent spawn (matches /loom-plan's pattern)."
+    ],
+    "disqualifiers": [
+      "Re-implementing RECOVERY-STATUS.json shape.",
+      "Deleting skills/draft-plan/ (Phase 8 territory).",
+      "Modifying production code outside the two skill bodies.",
+      "Adding event types beyond the 7 plan-revise-* names D1 declared.",
+      "Auto-mode default for flavor (silent default would hide the routing decision)."
+    ],
+    "inputs": [
+      "projects/2026-05-17-loom-absorb-draft/PLAN.md:349-355 (revise-plan spec), :356-363 (events list), :364-369 (griot integration)",
+      "docs/AGENT-CONVENTIONS.md (Recovery + Auto-mode; 3 × 10 default)",
+      "docs/SUBSTRATE-COMPOSITIONS.md (§ Derive panel + § Capture finding)",
+      "skills/loom-plan/SKILL.md (sibling structural model)",
+      "skills/loom-research/SKILL.md (sub-agent target for research-flavored branch)",
+      "skills/draft-plan/SKILL.md (to deprecate)",
+      "cli/lib/types.ts (D1 — 7 plan-revise-* event types)"
+    ]
+  },
+  "execution": {
+    "actions": [
+      "Authored skills/loom-revise-plan/SKILL.md (~265 lines). Structure: frontmatter → intro → Inputs → 7-step Process (Pre-flight + recovery; Flavor routing; Mechanical OR Research-flavored branch; Synthesize revised plan; Evaluator pass; Compose rationale + commit; Report) → Sub-agent orchestration is woven into step 3b → Human/auto duality → Recovery flow → Griot integration → Rules → Failure modes → Open questions.",
+      "Step 2 § Flavor routing — the first question: AskUserQuestion structured form for human-paired (2-option: mechanical vs research). Auto-mode reads --flavor= from argv; missing flag → structured error (no silent default). Emit plan-revise-flavor-selected with detail {slug, flavor: 'mechanical' | 'research'} matching D1's discriminator refactor.",
+      "Step 3b § Research-flavored branch: crystallize revision question BEFORE emitting plan-revise-research-spawned (the question is the load-bearing input for the sub-agent's brief; emitting the event with an empty question is meaningless). Spawn /loom-research via Agent tool with subagent_type=loom-research and a brief carrying the revision question + --mode=auto. On sub-agent failure, write own RECOVERY-STATUS.json with parent_skill=/loom-revise-plan, failed_step=research-spawn, context.sub_agent_recovery_path = sub-agent's recovery file path.",
+      "Cited AGENT-CONVENTIONS for the 3 × 10 two-budget and the RECOVERY-STATUS.json shape. Skill-specific field usage documented (parent_skill=/loom-revise-plan, failed_step values like research-spawn / interview-<id> / evaluator-iteration / cli-commit, context carries the flavor decision + revision question + partial revised PLAN.md path).",
+      "§ Griot integration: explicit § Capture finding invocation for per-panel [portable] scan. Hardcoded plan-revise-budget-exhausted write present. Explicit note that NO equivalent hardcoded write exists for the research-flavored branch — research is the expected revision shape when needed, not a substrate gap to flag.",
+      "§ Open questions section calls out the research-flavored-on-already-researched-project ambiguity honestly: PLAN.md doesn't fully specify whether the sub-agent appends to RESEARCH.md or writes RESEARCH-<revision>.md. /loom-research's current behavior would refuse on research-exists-committed. Operator judgment + future work (loom revise-research verb or --append flag). Not papered over.",
+      "Modified skills/draft-plan/SKILL.md: prefixed frontmatter description with 'DEPRECATED:' + pointer at /loom-plan. Added > blockquote deprecation banner immediately after the # /draft-plan heading naming Phase 8 deletion + the difference from /loom-plan (auto-spawns research). Skill body process otherwise unchanged.",
+      "Ran `npm test`: 485/485 passed (skill bodies are markdown — test surface untouched).",
+      "Derived evaluator panel: contract-fit (substrate-only). Invoked /guild-validate. Verdict: approved on first round."
+    ],
+    "files_touched": [
+      "skills/loom-revise-plan/SKILL.md",
+      "skills/draft-plan/SKILL.md"
+    ],
+    "corrections": []
+  },
+  "scope": [
+    "skills/loom-revise-plan/SKILL.md",
+    "skills/draft-plan/SKILL.md"
+  ],
+  "changes_since_previous": "Third unit on this branch. D1 declared the 14 plan-* / plan-revise-* event types. D2 authored /loom-plan (outer-RPI orchestrator emitting 7 plan-* events). D3 authors /loom-revise-plan (revise-side cousin emitting 7 plan-revise-* events) + retitles /draft-plan as deprecated. With this unit, both skills declared in PLAN.md Phase 4 ship.",
+  "verdict": {
+    "result": "approved",
+    "reasons": []
+  },
+  "notes_for_pr": [
+    "First-question flavor routing is load-bearing: mechanical and research-flavored branches diverge sharply and the resolution shapes everything downstream. Auto-mode REQUIRES --flavor= up front — no silent default. Same posture as /loom-plan's --mode=auto requirement: auto-mode can't resolve human-only questions without explicit input.",
+    "Research-flavored branch crystallizes the revision question BEFORE emitting plan-revise-research-spawned, so the event detail carries the actual question text. An emit-before-crystallize ordering would lose substrate signal.",
+    "Open question called out honestly: when a research-flavored revision lands on a project that ALREADY has a committed RESEARCH.md, what does the sub-agent do? PLAN.md surfaces this but doesn't resolve. /loom-research today would refuse with research-exists-committed. The skill body documents the gap, names the future work (Deferred `loom revise-research` verb OR an --append flag on `loom research`), and leaves it for operator judgment in the meantime.",
+    "/draft-plan deprecation is documentation-only — both the frontmatter description AND the intro paragraph carry the deprecation pointer. The skill body process (interview shape, slug derivation, CLI invocation) stays unchanged. The CLI it calls (bin/draft plan) also stays in place. Phase 8 deletes bin/draft + cli/draft.ts + skills/draft-plan/ as a set.",
+    "Skill body is 265 lines — smaller than /loom-plan (358) and /loom-research (405). The flavor-routing branch divergence is the only structural addition vs /loom-plan; everything else is shape-shared.",
+    "Tools authorized: Read, Write, Bash, Skill, Agent, AskUserQuestion. Agent is needed for the research-flavored branch's sub-agent spawn (same shape as /loom-plan)."
+  ]
+}

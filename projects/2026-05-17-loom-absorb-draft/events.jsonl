@@ -15,3 +15,10 @@
 {"at":"2026-05-18T16:42:49.979Z","event":"checkin-created","detail":{"number":"02","branch":"phase-3-loom-research"}}
 {"at":"2026-05-18T16:43:59.068Z","event":"pr-opened","detail":{"pr":3,"url":"https://github.com/krambuhl/agents/pull/3"}}
 {"at":"2026-05-18T16:44:02.894Z","event":"phase-completed","detail":{"phase":3}}
+{"at":"2026-05-18T17:41:06.158Z","event":"phase-completed","detail":{"phase":3}}
+{"at":"2026-05-18T17:46:03.754Z","event":"checkin-created","detail":{"number":"01","branch":"phase-4-loom-plan-orchestration"}}
+{"at":"2026-05-18T17:46:03.825Z","event":"phase-started","detail":{"phase":4,"name":"Rebuild plan + revise skills + outer RPI orchestration"}}
+{"at":"2026-05-18T17:51:40.389Z","event":"checkin-created","detail":{"number":"02","branch":"phase-4-loom-plan-orchestration"}}
+{"at":"2026-05-18T17:56:33.076Z","event":"checkin-created","detail":{"number":"03","branch":"phase-4-loom-plan-orchestration"}}
+{"at":"2026-05-18T17:57:31.505Z","event":"pr-opened","detail":{"pr":4,"url":"https://github.com/krambuhl/agents/pull/4"}}
+{"at":"2026-05-18T17:57:39.545Z","event":"phase-completed","detail":{"phase":4}}

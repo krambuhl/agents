@@ -38,13 +38,19 @@
       "pr": {
         "number": 3,
         "url": "https://github.com/krambuhl/agents/pull/3",
-        "state": "open"
+        "state": "merged"
       }
     },
     {
       "number": 4,
       "name": "Rebuild plan + revise skills + outer RPI orchestration",
-      "status": "not-started"
+      "status": "completed",
+      "branch": "phase-4-loom-plan-orchestration",
+      "pr": {
+        "number": 4,
+        "url": "https://github.com/krambuhl/agents/pull/4",
+        "state": "open"
+      }
     },
     {
       "number": 5,

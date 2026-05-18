@@ -166,6 +166,110 @@ export type ResearchBudgetExhaustedEvent = EventBase<
   }
 >;
 
+// ---------- Plan + revise events (Phase 4) ----------
+//
+// The `/loom-plan` skill emits the `plan-*` family; the
+// `/loom-revise-plan` skill emits the `plan-revise-*` family. The
+// `bin/loom plan` and `bin/loom revise-plan` CLI verbs themselves
+// stay event-emission-free (no CLI-side started/completed pair like
+// research has) — the orchestration lives in the skills, not in the
+// verbs. Detail shapes here are the minimum-viable set; D2/D3 of
+// Phase 4 may extend optional fields as the skill bodies emerge.
+
+export type PlanStartedEvent = EventBase<
+  'plan-started',
+  { slug: string; topic: string | null }
+>;
+
+export type PlanResearchAttachedEvent = EventBase<
+  'plan-research-attached',
+  { slug: string; research_path: string }
+>;
+
+export type PlanResearchAutoSpawnedEvent = EventBase<
+  'plan-research-auto-spawned',
+  { slug: string }
+>;
+
+export type PlanPanelSpawnedEvent = EventBase<
+  'plan-panel-spawned',
+  { evaluators: string[] }
+>;
+
+export type PlanPanelVerdictEvent = EventBase<
+  'plan-panel-verdict',
+  {
+    verdict: 'approved' | 'flagged' | 'flagged-conflict';
+    blocking_count?: number;
+    advisory_count?: number;
+  }
+>;
+
+export type PlanCompletedEvent = EventBase<
+  'plan-completed',
+  { slug: string; plan_path: string; interview_path: string }
+>;
+
+export type PlanBudgetExhaustedEvent = EventBase<
+  'plan-budget-exhausted',
+  {
+    decisions_completed: number;
+    rounds_completed: number;
+    reason: 'decision-budget' | 'round-budget';
+  }
+>;
+
+export type PlanReviseStartedEvent = EventBase<
+  'plan-revise-started',
+  { slug: string }
+>;
+
+// PLAN.md's `plan-revise-flavor-{mechanical,research}` brace-expansion
+// shorthand could read as either two events or one event with a
+// discriminator. We pick the discriminator pattern (one event,
+// `flavor` field) to match the family's existing precedent —
+// PlanPanelVerdictEvent / ResearchPanelVerdictEvent / etc. all carry
+// the variant in `detail` rather than splitting into per-variant
+// events. Grep-on-events.jsonl is still cheap: `grep
+// '"event":"plan-revise-flavor-selected"' + jq on .detail.flavor`.
+export type PlanReviseFlavorSelectedEvent = EventBase<
+  'plan-revise-flavor-selected',
+  { slug: string; flavor: 'mechanical' | 'research' }
+>;
+
+export type PlanReviseResearchSpawnedEvent = EventBase<
+  'plan-revise-research-spawned',
+  { slug: string; revision_question: string }
+>;
+
+export type PlanRevisePanelSpawnedEvent = EventBase<
+  'plan-revise-panel-spawned',
+  { evaluators: string[] }
+>;
+
+export type PlanRevisePanelVerdictEvent = EventBase<
+  'plan-revise-panel-verdict',
+  {
+    verdict: 'approved' | 'flagged' | 'flagged-conflict';
+    blocking_count?: number;
+    advisory_count?: number;
+  }
+>;
+
+export type PlanRevisedEvent = EventBase<
+  'plan-revised',
+  { slug: string; plan_path: string; rationale: string }
+>;
+
+export type PlanReviseBudgetExhaustedEvent = EventBase<
+  'plan-revise-budget-exhausted',
+  {
+    decisions_completed: number;
+    rounds_completed: number;
+    reason: 'decision-budget' | 'round-budget';
+  }
+>;
+
 export type Event =
   | ProjectInitializedEvent
   | PhaseStartedEvent
@@ -187,7 +291,21 @@ export type Event =
   | ResearchPanelVerdictEvent
   | ResearchFactCheckSpawnedEvent
   | ResearchFactCheckVerdictEvent
-  | ResearchBudgetExhaustedEvent;
+  | ResearchBudgetExhaustedEvent
+  | PlanStartedEvent
+  | PlanResearchAttachedEvent
+  | PlanResearchAutoSpawnedEvent
+  | PlanPanelSpawnedEvent
+  | PlanPanelVerdictEvent
+  | PlanCompletedEvent
+  | PlanBudgetExhaustedEvent
+  | PlanReviseStartedEvent
+  | PlanReviseFlavorSelectedEvent
+  | PlanReviseResearchSpawnedEvent
+  | PlanRevisePanelSpawnedEvent
+  | PlanRevisePanelVerdictEvent
+  | PlanRevisedEvent
+  | PlanReviseBudgetExhaustedEvent;
 
 export type EventName = Event['event'];
 

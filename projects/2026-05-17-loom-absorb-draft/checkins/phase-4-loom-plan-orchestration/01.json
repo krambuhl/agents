@@ -1,0 +1,67 @@
+{
+  "schema_version": 1,
+  "number": "01",
+  "created": "2026-05-18T17:45:17.000Z",
+  "phase": {
+    "number": 4,
+    "name": "Rebuild plan + revise skills + outer RPI orchestration"
+  },
+  "branch": "phase-4-loom-plan-orchestration",
+  "unit": "14 plan-* / plan-revise-* event types in cli/lib/types.ts",
+  "contract": {
+    "goal": "Add 14 new plan-* and plan-revise-* event types to cli/lib/types.ts and wire them into the discriminated Event union. Pure type declarations, no behavior — mirrors D1 of Phase 3 exactly. D2 (skill /loom-plan) will emit the 7 plan-* events; D3 (skill /loom-revise-plan) will emit the 7 plan-revise-* events. Landing the types up front means D2 and D3 don't need to re-extend the type system.",
+    "acceptance_criteria": [
+      "cli/lib/types.ts adds 14 new EventBase<...> type aliases under a 'Plan + revise events (Phase 4)' section header.",
+      "Names follow the existing kebab-case <subject>-<verb-past>/<noun> sibling pattern (PhaseStartedEvent ↔ 'phase-started', ResearchPanelSpawnedEvent ↔ 'research-panel-spawned', etc.).",
+      "All 14 are wired into the Event discriminated union at the bottom.",
+      "Detail shapes are minimum-viable: {slug, ...} for lifecycle events, {evaluators} for panel-spawned, {verdict, blocking_count?, advisory_count?} for panel-verdict, {decisions_completed, rounds_completed, reason} for budget-exhausted. Family-consistent: PlanReviseFlavorSelectedEvent uses a {flavor: 'mechanical' | 'research'} discriminator rather than splitting into two events, matching the family precedent (PlanPanelVerdictEvent, ResearchPanelVerdictEvent, ResearchFactCheckVerdictEvent all carry the variant in detail).",
+      "`npm test` green at 485 — types-only change, no test surface affected."
+    ],
+    "rules_applied": [
+      "CLAUDE.md: don't add features beyond the task — D1 lands types only, no skill bodies or CLI changes.",
+      "PLAN.md Phase 4 Events list (lines 356-363) dictates the 14 event names.",
+      "Sibling consistency: discriminator pattern for variant-shaped events (PlanReviseFlavorSelectedEvent), matching PlanPanelVerdictEvent / ResearchPanelVerdictEvent / ResearchFactCheckVerdictEvent.",
+      "Three-phase pattern: D1 grounds the type vocabulary D2 and D3 will use."
+    ],
+    "disqualifiers": [
+      "Adding behavior (CLI verbs, skill bodies).",
+      "Modifying production code outside cli/lib/types.ts.",
+      "Adding events not on the PLAN.md Phase 4 list."
+    ],
+    "inputs": [
+      "projects/2026-05-17-loom-absorb-draft/PLAN.md:356-363 (Phase 4 Events list)",
+      "cli/lib/types.ts Phase 3 research event types (the structural model)"
+    ]
+  },
+  "execution": {
+    "actions": [
+      "Cut branch phase-4-loom-plan-orchestration from main (clean tree after Phase 3's [Phase 3 close] commit pushed before the merge).",
+      "Reconciled Phase 3's PR-merged state: `bin/loom phase update 3 --status=completed --pr=3 --url=... --pr-state=merged`. PR #3's manifest entry now shows state `merged`.",
+      "Extended cli/lib/types.ts with 15 new EventBase<...> aliases under 'Plan + revise events (Phase 4)' section header (one per Phase 4 event name) and wired all 15 into the Event discriminated union.",
+      "Round-1 panel verdict (evaluator-contract-fit, evaluator-react-api, evaluator-naming): approved. Naming evaluator surfaced one advisory observation: PlanReviseFlavorMechanicalEvent + PlanReviseFlavorResearchEvent split introduced a new <subject>-<noun>-<value> event-name shape distinct from siblings that use payload discrimination (PlanPanelVerdictEvent carries {verdict: ...} in detail, ResearchPanelVerdictEvent carries {verdict: ...} in detail).",
+      "Applied the advisory refactor proactively (D2 and D3 hadn't been written yet — cheaper to fix now than later): collapsed the two flavor events into a single PlanReviseFlavorSelectedEvent ↔ 'plan-revise-flavor-selected' with detail {slug, flavor: 'mechanical' | 'research'}. Added an inline comment explaining the discriminator choice and naming the family precedent. Event union shrunk by one entry to 14 total, matching the PLAN.md bulleted list exactly.",
+      "Re-ran `npm test`: 485/485 passed (types-only change continues to leave the test surface untouched)."
+    ],
+    "files_touched": [
+      "cli/lib/types.ts",
+      "projects/2026-05-17-loom-absorb-draft/manifest.json",
+      "projects/2026-05-17-loom-absorb-draft/events.jsonl"
+    ],
+    "corrections": [
+      "Round-1 naming evaluator advisory: PlanReviseFlavor{Mechanical,Research}Event split was inconsistent with the family's discriminator-in-detail pattern. Applied the refactor in-flight rather than carrying forward into D2's commit-by-commit dependency graph. Final shape: one PlanReviseFlavorSelectedEvent with {flavor: 'mechanical' | 'research'} discriminator, matching PlanPanelVerdictEvent / ResearchPanelVerdictEvent / ResearchFactCheckVerdictEvent."
+    ]
+  },
+  "scope": [
+    "cli/lib/types.ts"
+  ],
+  "changes_since_previous": "First unit on this branch. Phase 3 closed on the prior branch (merged via PR #3). The post-merge phase-3 PR-state-merged reconciliation is in this commit (alongside the type declarations).",
+  "verdict": {
+    "result": "approved",
+    "reasons": []
+  },
+  "notes_for_pr": [
+    "14 new event types in cli/lib/types.ts — 7 for /loom-plan (D2) and 7 for /loom-revise-plan (D3). Landing them up front means the skills can emit events via the existing appendEvent helper without re-extending the type union.",
+    "Naming evaluator's round-1 advisory observation drove a proactive refactor: the original PlanReviseFlavor{Mechanical,Research}Event split (15 types) collapsed into a single PlanReviseFlavorSelectedEvent (14 types) with a discriminator field. Matches the family precedent (PlanPanelVerdictEvent, ResearchPanelVerdictEvent, ResearchFactCheckVerdictEvent — all carry the variant in detail rather than splitting into per-variant events). Better naming consistency; grep-on-events.jsonl is still trivially cheap (`grep '\"event\":\"plan-revise-flavor-selected\"' + jq on .detail.flavor`).",
+    "Phase 3 PR #3's post-merge manifest update was reconciled at branch-cut time (`bin/loom phase update 3 --pr-state=merged`). The Phase 3 close commit had already pushed before PR #3 merged, so origin/main already had the close commit — no stash dance was needed this time."
+  ]
+}
