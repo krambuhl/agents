@@ -270,6 +270,48 @@ export type PlanReviseBudgetExhaustedEvent = EventBase<
   }
 >;
 
+// ---------- Inner-RPI events (Phase 5) ----------
+//
+// RPI = Research → Plan → Implement. The "inner" qualifier
+// distinguishes the sub-sequence triggered mid-execution (here)
+// from the "outer" RPI orchestrated by `/loom-plan` at project
+// birth. See `projects/2026-05-17-loom-absorb-draft/PLAN.md` for
+// the full RPI rationale and the loop's scope-shift detection
+// rule.
+//
+// `/ev-loop-interactive`'s scope-shift detection step emits these
+// events when the two-signal-concurrence rule fires. The
+// scope-shift-detected event fires on EVERY detected shift
+// regardless of accept/decline (substrate signal worth capturing
+// either way); the rpi-inner-* family records the accept/decline
+// branch and the inner-RPI sub-sequence's lifecycle.
+
+export type ScopeShiftDetectedEvent = EventBase<
+  'scope-shift-detected',
+  {
+    slug: string;
+    phase: number;
+    unit: string;
+    signal_count: number;
+    signals: string[];
+  }
+>;
+
+export type RpiInnerTriggeredEvent = EventBase<
+  'rpi-inner-triggered',
+  { slug: string; phase: number; trigger: string }
+>;
+
+export type RpiInnerCompletedEvent = EventBase<
+  'rpi-inner-completed',
+  { slug: string; phase: number }
+>;
+
+export type RpiInnerDeclinedEvent = EventBase<
+  'rpi-inner-declined',
+  { slug: string; phase: number; signal_count: number }
+>;
+
 export type Event =
   | ProjectInitializedEvent
   | PhaseStartedEvent
@@ -305,7 +347,11 @@ export type Event =
   | PlanRevisePanelSpawnedEvent
   | PlanRevisePanelVerdictEvent
   | PlanRevisedEvent
-  | PlanReviseBudgetExhaustedEvent;
+  | PlanReviseBudgetExhaustedEvent
+  | ScopeShiftDetectedEvent
+  | RpiInnerTriggeredEvent
+  | RpiInnerCompletedEvent
+  | RpiInnerDeclinedEvent;
 
 export type EventName = Event['event'];
 

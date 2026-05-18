@@ -21,9 +21,11 @@ order when ordering is free; the loop keeps the substrate honest.
 **Composes**: `bin/loom` and `bin/draft` CLIs (via Bash) for substrate
 operations; `/guild-validate` (via the Skill tool) for the antagonist
 panel.
-**Does not compose**: other loops. No ambient `/loom-*` or
-`/draft-revise` skills — substrate plumbing dispatches directly to the
-CLIs (see § Substrate compositions).
+**Spawns** (Agent tool, fresh-context): `/loom-research` +
+`/loom-revise-plan` on the inner-RPI accept path of § Scope-shift
+detection (see step 5 of the unit loop).
+**Does not compose**: other loops. Substrate plumbing dispatches
+directly to the CLIs (see § Substrate compositions).
 
 **Format reference**: `docs/LOOM-CONVENTIONS.md` (marketplace-rooted;
 resolved on consumer machines via the `~/.agents/docs` symlink).
@@ -268,8 +270,8 @@ For each deliverable (picked per the ordering rule):
      about real artifacts, not contract-shape issues.
 5. **Scope-shift detection (restrictive default).** Runs only on
    approved units (flagged-and-iterating units skip this step). Look
-   for signals that PLAN.md is stale; offer a plan revision (per
-   § Revise PLAN.md) ONLY on two-signal concurrence.
+   for signals that PLAN.md is stale; offer a plan revision via the
+   inner-RPI sub-sequence ONLY on two-signal concurrence.
 
    **Signal sources**:
    - **Evaluator finding** mentioning a missing or changed phase,
@@ -284,25 +286,89 @@ For each deliverable (picked per the ordering rule):
    - **Phase boundary** (this unit is the last in its phase OR
      the next phase is about to start).
 
-   **Two-signal-concurrence rule**: offer a plan revision only when 2+
-   signal sources fire for the same shift. Single signals get a note
-   (see below); the loop does NOT interrupt.
+   **Two-signal-concurrence rule**: offer the inner-RPI sub-sequence
+   only when 2+ signal sources fire for the same shift. Single
+   signals get a note (see below); the loop does NOT interrupt.
+
+   **Emit `scope-shift-detected` on every detected shift** (every
+   time 2+ signals concur), regardless of whether the user
+   subsequently accepts or declines. The event records the
+   detection itself as substrate signal — useful for forensics on
+   which signal combinations recur. Detail: `{slug, phase, unit,
+   signal_count, signals: ['evaluator-finding' | 'user-comment' |
+   'whiteboard-contradiction' | 'phase-boundary', ...]}`.
 
    **Offer flow**: surface a short paragraph naming the two signals
-   and a proposed one-line rationale. Use `AskUserQuestion` (or
-   natural-language confirm) for accept/decline/defer. Default: decline
-   (no interrupt unless the user explicitly accepts).
+   and a proposed one-line rationale (the "trigger" for the inner
+   RPI). Use `AskUserQuestion` (or natural-language confirm) for
+   accept/decline/defer. Default: decline (no interrupt unless the
+   user explicitly accepts). In auto-mode, the default flips to
+   accept — auto-mode treats two-signal concurrence as enough
+   evidence to trigger the sub-sequence without further input.
 
-   **On accept**: integrate the change per § Revise PLAN.md. After the
-   revision lands, proceed to step 6 (Phase update). Do not re-execute
-   the unit.
+   **On accept (inner-RPI sub-sequence)**:
+
+   1. Emit `rpi-inner-triggered` with detail `{slug, phase,
+      trigger: <the one-line rationale>}`.
+   2. Spawn `/loom-research` via the `Agent` tool with
+      `subagent_type=loom-research` and a brief carrying the
+      trigger as the research topic + `--mode=auto`. The sub-agent
+      runs fresh-context; its startup brief includes
+      `bin/griot use --as=llm` per the substrate convention. Wait.
+   3. On sub-agent success: a fresh `RESEARCH.md` lands at project
+      root (either net-new or appended — see the open question
+      flagged in `/loom-revise-plan` § Open questions about the
+      research-on-already-researched-project ambiguity). Proceed
+      to step 4 below.
+   4. Spawn `/loom-revise-plan` via the `Agent` tool with
+      `subagent_type=loom-revise-plan` and a brief carrying the
+      slug + `--flavor=research` + `--mode=auto`. The skill reads
+      the just-committed RESEARCH.md, runs its grill-me on the
+      revision, gates through the evaluator pass, and commits via
+      `bin/loom revise-plan`. Wait.
+   5. Re-read the manifest via `bin/loom project read <slug>
+      --pretty`. The revision may have changed the phase structure;
+      if the **current phase no longer exists** in the manifest,
+      stop and surface the situation to the operator (the loop
+      cannot continue a deleted phase). If the **current phase's
+      deliverables changed**, surface a one-line note to the
+      operator + continue (the unit just completed is still valid;
+      subsequent units will pick up the new shape).
+   6. Emit `rpi-inner-completed` with detail `{slug, phase}`.
+      Proceed to step 6 (Phase update). Do not re-execute the
+      current unit.
+
+   **Sub-agent failure flow**: if either `/loom-research` or
+   `/loom-revise-plan` exits non-zero OR writes
+   `RECOVERY-STATUS.json`, the inner-RPI sequence:
+   - Does NOT write its own RECOVERY-STATUS.json (the sub-agent
+     already did, and the loop body's pre-flight at the next
+     `/ev-run` invocation will detect it and offer to resume).
+   - Surfaces the failure to the operator with the sub-agent's
+     recovery file path and the failed step.
+   - Exits the unit with a clean error rather than partially
+     proceeding. The operator (or next `/ev-run`) decides whether
+     to retry the sub-agent or skip the revision.
+   - Does NOT emit `rpi-inner-completed`. The trail in
+     `events.jsonl` will show `rpi-inner-triggered` without a
+     matching completion — the correct partial-failure signal,
+     same shape as the research verb's started-without-completed
+     pattern.
+
+   **On decline**: emit `rpi-inner-declined` with detail `{slug,
+   phase, signal_count}`. Append the signals to the unit's
+   `notes_for_pr` array in the checkin JSON so the substrate
+   captures what was detected even when the operator chose not to
+   act on it. Loop continues normally.
 
    **On single signal** (no concurrence): append the signal to the
    unit's `notes_for_pr` array in the checkin JSON:
    ```
    signal: <signal type>: <one-line description> (single signal; no revise offered)
    ```
-   Loop continues normally.
+   Loop continues normally. The `scope-shift-detected` event does
+   NOT fire — the two-signal-concurrence rule gates the event
+   alongside the offer.
 
    **On zero signals**: no action. Loop continues.
 

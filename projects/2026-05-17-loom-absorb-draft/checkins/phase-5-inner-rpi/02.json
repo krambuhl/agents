@@ -1,0 +1,73 @@
+{
+  "schema_version": 1,
+  "number": "02",
+  "created": "2026-05-18T19:11:14.000Z",
+  "phase": {
+    "number": 5,
+    "name": "Inner RPI in /ev-loop-interactive"
+  },
+  "branch": "phase-5-inner-rpi",
+  "unit": "ev-loop-interactive § Scope-shift detection — inner-RPI accept path",
+  "contract": {
+    "goal": "Modify skills/ev-loop-interactive/SKILL.md step 5 (Scope-shift detection) so the accept path runs the inner-RPI sub-sequence instead of today's single Revise PLAN.md call. The existing two-signal-concurrence rule is preserved verbatim; what changes is what happens AFTER concurrence fires + accept: emit rpi-inner-triggered → spawn /loom-research via Agent tool (--mode=auto, brief = the trigger rationale) → on success spawn /loom-revise-plan via Agent tool (--flavor=research, --mode=auto) → re-read manifest → emit rpi-inner-completed → continue to phase update. Also adds scope-shift-detected on every detected shift (regardless of accept/decline), rpi-inner-declined on decline, and a clean sub-agent failure flow that exits the unit without writing a parent RECOVERY-STATUS.json (the sub-agent already did).",
+    "acceptance_criteria": [
+      "Step 5 signal-source list (4 sources) and two-signal-concurrence rule preserved verbatim.",
+      "scope-shift-detected emitted on EVERY detected shift (when 2+ signals concur) with detail {slug, phase, unit, signal_count, signals: string[]}.",
+      "6-step inner-RPI sub-sequence documented in order with explicit Agent-tool spawns + --mode=auto / --flavor=research args + manifest re-read + deleted-phase handling + explicit 'Do not re-execute the current unit'.",
+      "rpi-inner-declined emitted on decline with detail {slug, phase, signal_count}; signals appended to notes_for_pr.",
+      "Sub-agent failure flow: parent does NOT write own RECOVERY-STATUS.json; surfaces failure path + step; exits unit cleanly; does NOT emit rpi-inner-completed (so events.jsonl shows triggered-without-completed as the partial-failure signal).",
+      "Auto-mode default for the accept/decline question flips to ACCEPT (auto-mode treats two-signal concurrence as enough evidence).",
+      "Skill preamble updated with a 'Spawns' line naming /loom-research + /loom-revise-plan on the inner-RPI accept path.",
+      "npm test green at 485 (skill body is markdown — no test surface change)."
+    ],
+    "rules_applied": [
+      "PLAN.md Phase 5 lines 379-416 dictates the inner-RPI flow verbatim — including the 'Do not re-execute the unit' constraint.",
+      "Substrate composition: Agent tool for fresh-context sub-agent spawns; Skill tool for inherited-context composition.",
+      "Sub-agent failure recovery is the SUB-agent's responsibility (it writes RECOVERY-STATUS.json); the parent surfaces and exits — different shape from /loom-plan where the parent owns recovery for its spawn of /loom-research.",
+      "CLAUDE.md: keep the load-bearing existing behavior unchanged (two-signal rule); only modify the accept path."
+    ],
+    "disqualifiers": [
+      "Changing the two-signal-concurrence rule.",
+      "Modifying production code outside skills/ev-loop-interactive/SKILL.md.",
+      "Writing the parent's own RECOVERY-STATUS.json on sub-agent failure.",
+      "Re-executing the current unit after the inner-RPI sequence."
+    ],
+    "inputs": [
+      "projects/2026-05-17-loom-absorb-draft/PLAN.md:379-416 (Phase 5 spec)",
+      "skills/ev-loop-interactive/SKILL.md (pre-change at lines 269-307: the existing scope-shift step)",
+      "skills/loom-research/SKILL.md + skills/loom-revise-plan/SKILL.md (sub-agent targets)",
+      "cli/lib/types.ts (D1 of this phase — the 4 event types this step emits)"
+    ]
+  },
+  "execution": {
+    "actions": [
+      "Updated the preamble: added a new 'Spawns' line listing /loom-research + /loom-revise-plan as Agent-tool fresh-context spawns on the inner-RPI accept path. Kept the existing 'Composes' line + 'Does not compose: other loops' framing intact (Skill-tool composition vs Agent-tool spawning are still distinct surfaces).",
+      "Rewrote step 5 of the unit loop: preserved the 4 signal sources + two-signal-concurrence rule verbatim. Added a scope-shift-detected emission paragraph after the rule (fires on EVERY detected shift, gated by two-signal-concurrence). Rewrote 'On accept' as a 6-step numbered sub-sequence: emit rpi-inner-triggered → spawn /loom-research via Agent tool → spawn /loom-revise-plan via Agent tool → re-read manifest with deleted-phase handling → emit rpi-inner-completed → continue to phase update. Added 'Do not re-execute the current unit' verbatim per PLAN.md.",
+      "Authored the sub-agent failure flow: parent does NOT write its own RECOVERY-STATUS.json (the sub-agent already did); surfaces the failure path + step to the operator; exits unit cleanly; does NOT emit rpi-inner-completed. Documented the events.jsonl partial-failure signal shape (rpi-inner-triggered without matching rpi-inner-completed).",
+      "Added auto-mode accept-default flip in the offer-flow paragraph: human-paired default is decline (no interrupt unless user accepts); auto-mode flips to accept (two-signal concurrence is sufficient evidence).",
+      "Added rpi-inner-declined emission on decline + an explicit append of signals to notes_for_pr so the substrate captures detection even when not acted on.",
+      "Noted that scope-shift-detected does NOT fire on single-signal path (gated by two-signal-concurrence alongside the offer).",
+      "Ran `npm test`: 485/485 passed (markdown-only change to skill body).",
+      "Derived evaluator panel: contract-fit (substrate-only file). Invoked /guild-validate. Verdict: approved on first round. All 5 spot-check items verified."
+    ],
+    "files_touched": [
+      "skills/ev-loop-interactive/SKILL.md"
+    ],
+    "corrections": []
+  },
+  "scope": [
+    "skills/ev-loop-interactive/SKILL.md"
+  ],
+  "changes_since_previous": "Second unit on this branch. D1 declared the 4 inner-RPI event types. D2 wires the loop body to emit them via the new accept-path behavior.",
+  "verdict": {
+    "result": "approved",
+    "reasons": []
+  },
+  "notes_for_pr": [
+    "The accept path is now the inner-RPI sub-sequence: previously a single § Revise PLAN.md call, now a 6-step orchestration spawning /loom-research → /loom-revise-plan. The change is bounded to the accept path; everything else in step 5 (signal sources, two-signal rule, single-signal note, zero-signal no-op) is preserved verbatim.",
+    "Sub-agent failure flow is DIFFERENT from /loom-plan's failure handling: /loom-plan owns recovery for its spawn of /loom-research (writes parent's RECOVERY-STATUS.json with sub_agent_recovery_path back-reference). Here, the loop body just surfaces and exits; the next /ev-run invocation will detect the sub-agent's RECOVERY-STATUS.json and offer to resume. The asymmetry is intentional — /loom-plan IS the outer orchestrator (recovery is its job); the ev-loop is mid-execution and the next /ev-run can handle the sub-agent's recovery natively.",
+    "Auto-mode default flip: human-paired defaults to decline (no interruption unless user explicitly accepts); auto-mode defaults to accept (two-signal concurrence IS the evidence threshold). Consistent with the substrate's broader auto-mode posture — auto-mode accepts panel resolutions unless budgets exhaust.",
+    "The scope-shift-detected event fires only on two-signal concurrence (not on single-signal). This is a substrate-trace decision: single-signal notes already land in notes_for_pr; an event-stream record of every single-signal observation would flood events.jsonl with low-signal entries. Documented in the 'On single signal' branch so a future reader doesn't expect the event there.",
+    "I'm running under this very loop body during this session. The edit doesn't affect my current execution (the loop body is loaded once at session start per L-004); the new accept-path behavior takes effect for future /ev-run / /ev-loop-interactive invocations. No risk of mid-session breakage from the change."
+  ]
+}
