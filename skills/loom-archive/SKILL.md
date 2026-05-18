@@ -24,9 +24,10 @@ findings, not a markdown prose RETROSPECTIVE.md. Categories are
 (from `RetroFindingCategory`). Robots filter; humans expand via
 `bin/loom retro read --type=project --pretty`.
 
-**Format reference**: `docs/LOOM-CONVENTIONS.md` (§ Retro
-storage; marketplace-rooted, resolved on consumer machines via
-the `~/.agents/docs` symlink). Pairs with `bin/loom retro write` and
+**Format reference**: `docs/LOOM-CONVENTIONS.md`
+(§ `retros/<filename>.json` — the retro artifact shape;
+marketplace-rooted, resolved on consumer machines via the
+`~/.agents/docs` symlink). Pairs with `bin/loom retro write` and
 `bin/loom project archive`, both of which append their respective
 events (`retro-written`, `archived`).
 
