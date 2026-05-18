@@ -3,7 +3,7 @@
   "title": "Absorb draft into loom + add research verb",
   "slug": "2026-05-17-loom-absorb-draft",
   "started": "2026-05-17",
-  "status": "active",
+  "status": "archived",
   "current_branch": null,
   "latest_checkin": null,
   "strategy": "interactive",
@@ -16,7 +16,7 @@
       "pr": {
         "number": 1,
         "url": "https://github.com/krambuhl/agents/pull/1",
-        "state": "open"
+        "state": "merged"
       }
     },
     {
@@ -93,7 +93,7 @@
       "pr": {
         "number": 8,
         "url": "https://github.com/krambuhl/agents/pull/8",
-        "state": "open"
+        "state": "merged"
       }
     }
   ]

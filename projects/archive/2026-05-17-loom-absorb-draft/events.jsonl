@@ -46,3 +46,7 @@
 {"at":"2026-05-18T21:48:24.634Z","event":"phase-started","detail":{"phase":8,"name":"Cleanup + delete bin/draft"}}
 {"at":"2026-05-18T21:49:19.765Z","event":"pr-opened","detail":{"pr":8,"url":"https://github.com/krambuhl/agents/pull/8"}}
 {"at":"2026-05-18T21:49:29.086Z","event":"phase-completed","detail":{"phase":8}}
+{"at":"2026-05-18T21:51:41.580Z","event":"phase-completed","detail":{"phase":8}}
+{"at":"2026-05-18T21:51:53.981Z","event":"phase-completed","detail":{"phase":1}}
+{"at":"2026-05-18T22:04:42.395Z","event":"retro-written","detail":{"type":"project"}}
+{"at":"2026-05-18T22:04:46.594Z","event":"archived","detail":{"destination":"/Users/krambuhl/Sites/agents/projects/archive/2026-05-17-loom-absorb-draft"}}

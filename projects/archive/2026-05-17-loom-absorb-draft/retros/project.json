@@ -1,0 +1,72 @@
+{
+  "schema_version": 1,
+  "type": "project",
+  "created": "2026-05-18T22:03:55Z",
+  "findings": [
+    {
+      "category": "kept-well",
+      "description": "Evaluator-driven iteration on every unit caught real bugs before merge. Phase 8 round 1 specifically caught `[draft plan]` and `[draft revise]` commit-message prefix BEHAVIOR bugs in cli/verbs/plan.ts that would have tagged every future bin/loom plan / revise-plan commit with the wrong substrate name. Pattern held across phases 3, 4, and 8.",
+      "evidence": "PR #8 round-1 contract-fit verdict (flagged on AC9) + round-2 fix at cli/verbs/plan.ts lines 198 and 335. Also phase-3-loom-research/02.json corrections (RECOVERY-STATUS.json inline-shape duplication) and phase-4-loom-plan-orchestration/01.json (PlanReviseFlavor split refactor)."
+    },
+    {
+      "category": "kept-well",
+      "description": "Three-phase decomposition (setup → bulk → cleanup) scaled cleanly to 8 PRs. Each PR was one conceptual change, reviewable in one sitting; PR sizes ranged ~150-640 LOC; small per-unit surfaces let evaluator panels stay focused with high panel signal.",
+      "evidence": "PRs #1-8. Phase 1 = setup (marketplace bootstrap); Phases 2-7 = bulk migration + skill authoring; Phase 8 = cleanup (delete bin/draft). Each phase had 1-4 deliverables and shipped as a discrete PR."
+    },
+    {
+      "category": "improvement",
+      "description": "Cleanup-grep contracts need both bounded-token AND substring patterns. The Phase 8 strict pattern `bin/draft\\b|/draft-plan\\b|cli/draft\\b` returned 'clean' but missed 7 real references — 'draft revise' / 'draft plan' in error messages, `[draft plan]` commit-message prefix string literals, and `family: 'draft'` union members. In-string references don't carry word boundaries that `\\b` anchors catch.",
+      "evidence": "PR #8 round-1 evaluator finding caught cli/verbs/plan.ts (5 misses) + cli/parallel-work-invariant.test.ts (2 misses)."
+    },
+    {
+      "category": "improvement",
+      "description": "Manifest-vs-git PR-state reconciliation required manual `bin/loom phase update --pr-state=merged` after every phase merged, because the phase-close commit pushed locally before the PR landed. Every phase from 2 onward carried a stash dance or branch-cut reconcile step. The `phase-completed` event also re-fires when an already-completed phase is touched — events.jsonl ends up with double-emissions of phase-completed.",
+      "evidence": "events.jsonl in projects/2026-05-17-loom-absorb-draft/ shows duplicate `phase-completed` events for phases 2-8 (one per phase-close commit, one per next-branch reconciliation). Phase 2 carried a stash dance specifically because the close commit didn't push in time."
+    },
+    {
+      "category": "improvement",
+      "description": "Skill body sizes grew large (400+ lines on /loom-research, ~360 on /loom-plan, ~270 on /loom-revise-plan) because every substantive skill documents grill-me + recovery + auto-mode + event emissions + griot integration in one cohesive narrative. Citation reduced drift but didn't reduce size meaningfully. Future: shared partial-templates / cite-in stanzas so skills don't each re-document the substrate's recovery + auto-mode shape.",
+      "evidence": "wc -l on skills/loom-research/SKILL.md (~405), skills/loom-plan/SKILL.md (~358), skills/loom-revise-plan/SKILL.md (~265). All three share substantive recovery + two-budget + griot-integration boilerplate."
+    },
+    {
+      "category": "process-change",
+      "description": "Ship a `bin/loom pr reconcile` verb to automate PR-merged manifest reconciliation. The verb reads `gh pr view <N>` and updates the manifest's `pr.state` field without re-firing `phase-completed` events. Closes the gap that every phase from 2-8 worked around manually.",
+      "evidence": "8 manual `bin/loom phase update --pr-state=merged` invocations across this project (one per merged phase). Each re-fired the phase-completed event redundantly. Router rules already note the gap (skills/ev-run/SKILL.md § PR-merged reconciliation)."
+    },
+    {
+      "category": "process-change",
+      "description": "Cleanup-verifies clauses should require BOTH bounded-token AND substring grep patterns by default. The PLAN.md template for cleanup-shaped phases should include the dual-pattern check in its 'Verifies:' trailer so future cleanup projects don't repeat Phase 8's miss.",
+      "evidence": "Phase 8 round-1 finding documented in checkins/phase-8-cleanup/01.json corrections."
+    },
+    {
+      "category": "follow-up",
+      "description": "Rename cli/lib/draft-*.ts files (draft-git.ts, draft-project.ts, draft-project.test.ts). Actively imported by cli/verbs/plan.ts + cli/verbs/research.ts; misnamed post-bin/draft retirement. Renaming touches ~6 import sites.",
+      "evidence": "PR #8 known-follow-ups section; flagged in checkins/phase-8-cleanup/01.json scope notes."
+    },
+    {
+      "category": "follow-up",
+      "description": "Extend `bin/griot capture` classification surface to support the precise capture types this project wired into 5+ skill bodies. Today the verb's classifications are `recurring` + reserved-not-implemented `catalog-gap` / `generator-antipattern` / `evaluator-conflict` / `sanctioned-exception`. The skills want: `whiteboard-portable`, `budget-exhausted`, `drift-detection`, `revision-trigger`. Until the verb extension lands, all 5 capture sites fall back to the event itself as the substrate trace.",
+      "evidence": "Documented in phases 3, 4, 5, 6, 7 PR bodies. checkins/phase-3-loom-research/02.json corrections specifically called this out for /loom-research's budget-exhausted capture."
+    },
+    {
+      "category": "follow-up",
+      "description": "Ship a `bin/loom events append <slug> --event=<name> --detail=<json>` CLI verb. Today the skill-side event emissions (research-shift, plan-panel-spawned, plan-revise-flavor-selected, scope-shift-detected, rpi-inner-*, auto-mode-*) fall back to direct file append via the appendEvent helper. A dedicated CLI verb would tighten the substrate seam.",
+      "evidence": "Documented in phases 3-7 PR bodies. cli/lib/events.ts has the appendEvent helper but no CLI surface."
+    },
+    {
+      "category": "follow-up",
+      "description": "Run manual end-to-end smoke runs for the full RPI substrate. PLAN.md Phase 3-7 verifies clauses asked for live smokes (research sub-agent fires, inner-RPI fires, [portable] markers produce session-notes, sub-agent failure produces recovery file). All deferred to an integration-test workstream. Skill bodies are correct by construction; live invocation requires install.sh symlink update + a synthetic project.",
+      "evidence": "Verifies clauses across PRs #3-7. None completed; all marked 'deferred to integration-test workstream'."
+    },
+    {
+      "category": "follow-up",
+      "description": "Address the marketplace-self-development gap: `bin/guild derive-panel` runs in fallback mode from the marketplace cwd because `.claude/agents/PANEL-COMPOSITION.md` isn't symlinked from the marketplace itself (the spec lives at `agents/PANEL-COMPOSITION.md`). Every PR in this project ran with fallback panel rules. Either a marketplace-local `.claude/agents/` symlink in install.sh or env-var-pointed alternative spec path.",
+      "evidence": "Every PR in this project carried 'panel-spec-unreadable (using fallback)' stderr warnings. First flagged in PR #2 known-follow-ups."
+    },
+    {
+      "category": "follow-up",
+      "description": "Widen `bin/loom --help` padEnd column to fit `revise-plan` (11 chars). Currently the column is 8, so `revise-plan` overruns and the description column doesn't align with sibling namespaces.",
+      "evidence": "PR #2 known-follow-ups + visible in `bin/loom --help` output at cli/loom.ts:73 (formatHelp padEnd(8))."
+    }
+  ]
+}
