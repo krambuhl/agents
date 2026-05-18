@@ -152,6 +152,20 @@ test('dispatch: verbless namespace (revise-plan) routes to reviseVerb (missing-a
   rmSync(ctx.projectsRoot, { recursive: true, force: true });
 });
 
+test('dispatch: verbless namespace (research) routes to researchVerb (missing-args surfaces)', () => {
+  const ctx = makeCtx();
+  // Same shape as the plan / revise-plan tests above, for the
+  // `loom research` verb (Phase 3 wiring).
+  const result = dispatch(
+    { kind: 'verb', namespace: 'research', rest: [] },
+    ctx,
+  );
+  expect(result.exitCode).toBe(1);
+  const parsed = JSON.parse(result.stderr as string);
+  expect(parsed.error).toBe('missing-args');
+  rmSync(ctx.projectsRoot, { recursive: true, force: true });
+});
+
 test('dispatch: pr namespace wired (no unwired namespaces remain)', () => {
   const ctx = makeCtx();
   // pr is wired now (Phase 4 unit 01). Missing verb returns missing-verb,

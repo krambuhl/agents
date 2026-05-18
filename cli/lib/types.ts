@@ -109,6 +109,63 @@ export type ArchivedEvent = EventBase<'archived', { destination: string }>;
 
 export type NoteEvent = EventBase<'note', { text: string }>;
 
+// ---------- Research events (Phase 3) ----------
+//
+// The `loom research` verb emits ResearchStartedEvent + ResearchCompletedEvent
+// directly. The `/loom-research` skill emits the rest (shift / panel-spawned /
+// panel-verdict / fact-check-spawned / fact-check-verdict / budget-exhausted)
+// at the corresponding decision points in its grill-me loop. Detail shapes
+// here are the minimum-viable set; D2 of Phase 3 may extend optional fields
+// as the skill emerges.
+
+export type ResearchStartedEvent = EventBase<
+  'research-started',
+  { slug: string; topic: string | null }
+>;
+
+export type ResearchCompletedEvent = EventBase<
+  'research-completed',
+  { slug: string; research_path: string; notes_path: string }
+>;
+
+export type ResearchShiftEvent = EventBase<
+  'research-shift',
+  { shift_number: number; topic: string }
+>;
+
+export type ResearchPanelSpawnedEvent = EventBase<
+  'research-panel-spawned',
+  { shift_number: number; engineers: string[] }
+>;
+
+export type ResearchPanelVerdictEvent = EventBase<
+  'research-panel-verdict',
+  {
+    shift_number: number;
+    verdict: 'silent' | 'questions-raised';
+    question_count?: number;
+  }
+>;
+
+export type ResearchFactCheckSpawnedEvent = EventBase<
+  'research-fact-check-spawned',
+  { research_path: string }
+>;
+
+export type ResearchFactCheckVerdictEvent = EventBase<
+  'research-fact-check-verdict',
+  { verdict: 'approved' | 'flagged'; flag_count?: number }
+>;
+
+export type ResearchBudgetExhaustedEvent = EventBase<
+  'research-budget-exhausted',
+  {
+    shifts_completed: number;
+    rounds_completed: number;
+    reason: 'shift-budget' | 'round-budget';
+  }
+>;
+
 export type Event =
   | ProjectInitializedEvent
   | PhaseStartedEvent
@@ -122,7 +179,15 @@ export type Event =
   | SessionSavedEvent
   | RetroWrittenEvent
   | ArchivedEvent
-  | NoteEvent;
+  | NoteEvent
+  | ResearchStartedEvent
+  | ResearchCompletedEvent
+  | ResearchShiftEvent
+  | ResearchPanelSpawnedEvent
+  | ResearchPanelVerdictEvent
+  | ResearchFactCheckSpawnedEvent
+  | ResearchFactCheckVerdictEvent
+  | ResearchBudgetExhaustedEvent;
 
 export type EventName = Event['event'];
 
