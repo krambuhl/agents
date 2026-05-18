@@ -7,3 +7,8 @@
 {"at":"2026-05-18T15:40:47.190Z","event":"checkin-created","detail":{"number":"01","branch":"phase-2-move-plan-verbs-to-loom"}}
 {"at":"2026-05-18T15:40:53.492Z","event":"phase-started","detail":{"phase":2,"name":"Move draft plan + revise verbs into loom"}}
 {"at":"2026-05-18T15:46:57.359Z","event":"checkin-created","detail":{"number":"02","branch":"phase-2-move-plan-verbs-to-loom"}}
+{"at":"2026-05-18T15:48:27.172Z","event":"pr-opened","detail":{"pr":2,"url":"https://github.com/krambuhl/agents/pull/2"}}
+{"at":"2026-05-18T15:48:32.618Z","event":"phase-completed","detail":{"phase":2}}
+{"at":"2026-05-18T16:21:03.707Z","event":"phase-completed","detail":{"phase":2}}
+{"at":"2026-05-18T16:31:26.764Z","event":"checkin-created","detail":{"number":"01","branch":"phase-3-loom-research"}}
+{"at":"2026-05-18T16:31:26.834Z","event":"phase-started","detail":{"phase":3,"name":"Add loom research (verb + whiteboard-composed skill + recovery)"}}
