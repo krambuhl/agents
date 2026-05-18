@@ -84,7 +84,7 @@ export function formatHelp(): string {
     '',
     'Output is JSON by default. Pass --pretty on read verbs for human view.',
     'Errors emit a structured JSON object on stderr and exit non-zero.',
-    'See projects/LOOM-CONVENTIONS.md for full conventions.',
+    'See docs/LOOM-CONVENTIONS.md for full conventions.',
   ].join('\n');
 }
 

@@ -1,5 +1,5 @@
 // Loom project-substrate types.
-// Authored against the design contract in projects/LOOM-CONVENTIONS.md.
+// Authored against the design contract in docs/LOOM-CONVENTIONS.md.
 // Erasable TypeScript only — no enums, no namespaces, no parameter
 // properties, no const enums (substrate convention: scripts run via
 // `node` directly, relying on Node 24+ type-stripping).
