@@ -1,0 +1,81 @@
+{
+  "schema_version": 1,
+  "number": "01",
+  "created": "2026-05-18T21:28:58.000Z",
+  "phase": {
+    "number": 7,
+    "name": "Cross-cutting griot writes for new events"
+  },
+  "branch": "phase-7-griot-writes",
+  "unit": "Wire § Capture finding for Phase 5-6 event-emission points",
+  "contract": {
+    "goal": "Wire § Capture finding session-note writes into the 3 skill bodies at the new event-emission points introduced by Phases 5-6. /ev-loop-interactive § Scope-shift step: scope-shift-detected, rpi-inner-triggered, auto-mode-budget-exhausted. /loom-archive § 3 Auto-mode: auto-mode-budget-exhausted + NEW retro-close [portable] scan. /ev-run: drift-detection + auto-mode-budget-exhausted. Also tighten /ev-loop-interactive's /loom-revise-plan sub-agent spawn brief to explicitly mention bin/griot use --as=llm (matches existing /loom-research spawn convention).",
+    "acceptance_criteria": [
+      "/ev-loop-interactive § Scope-shift: scope-shift-detected gets a § Capture finding paragraph wiring the noticing as substrate signal.",
+      "/ev-loop-interactive § Scope-shift: rpi-inner-triggered gets a § Capture finding paragraph wiring the trigger rationale as highest-signal data.",
+      "/ev-loop-interactive § unit-contract auto-mode block: auto-mode-budget-exhausted gets a § Capture finding paragraph with exhaustion context.",
+      "/ev-loop-interactive § inner-RPI sub-step 4 (/loom-revise-plan spawn): brief explicitly mentions bin/griot use --as=llm in startup brief.",
+      "/loom-archive § Auto-mode: auto-mode-budget-exhausted gets a § Capture finding paragraph.",
+      "/loom-archive: NEW retro-close [portable] scan paragraph wires writes to learnings/session-notes/<date>-<slug>-archive-retro.md. Scan runs in both human-paired AND auto-mode.",
+      "/ev-run § State refresh: drift-detection gains a § Capture finding paragraph documenting drift shape.",
+      "/ev-run § Grill-me + auto-mode: auto-mode-budget-exhausted gains a § Capture finding paragraph.",
+      "Every wired capture documents the classification-gap caveat (consistent with Phases 3-6 posture: intent recorded; verb extension downstream).",
+      "Phase 6 PR-merged reconciliation lands in the commit.",
+      "npm test green at 485 (markdown-only edits)."
+    ],
+    "rules_applied": [
+      "PLAN.md Phase 7 lines 455-493 dictates the wires verbatim.",
+      "SUBSTRATE-COMPOSITIONS § Capture finding is the canonical pathway — no parallel implementation.",
+      "AGENT-CONVENTIONS § Startup-brief convention dictates the cross-skill rollup-load mention."
+    ],
+    "disqualifiers": [
+      "Modifying anything outside the 3 skill files.",
+      "Adding event types (Phases 5-6 already declared them).",
+      "Implementing the verb-side classification extension (out of scope; Phase 7 is skill-side wiring only)."
+    ],
+    "inputs": [
+      "projects/2026-05-17-loom-absorb-draft/PLAN.md:455-493 (Phase 7 spec)",
+      "docs/SUBSTRATE-COMPOSITIONS.md § Capture finding",
+      "docs/AGENT-CONVENTIONS.md § Startup-brief + [portable] marker conventions",
+      "skills/ev-loop-interactive/SKILL.md pre-change (Phase 5/6 emission points to wire)",
+      "skills/loom-archive/SKILL.md pre-change (Phase 6 auto-mode + retro-close)",
+      "skills/ev-run/SKILL.md pre-change (Phase 6 drift + auto-mode)"
+    ]
+  },
+  "execution": {
+    "actions": [
+      "Cut branch phase-7-griot-writes from main after PR #6 merge.",
+      "Reconciled Phase 6 PR-merged state.",
+      "/ev-loop-interactive § Scope-shift detection: added § Capture finding paragraphs to scope-shift-detected emission and rpi-inner-triggered emission. Both paragraphs document the classification-gap caveat.",
+      "/ev-loop-interactive § unit-contract Step 2.1 auto-mode block: extended the auto-mode-budget-exhausted emission line with a § Capture finding paragraph documenting exhaustion context.",
+      "/ev-loop-interactive § inner-RPI sub-step 4 (/loom-revise-plan spawn): tightened the brief paragraph to explicitly state 'The sub-agent's startup brief includes bin/griot use --as=llm per the substrate convention (the /loom-revise-plan skill body handles this in its own step 1; no additional caller-side instruction needed — matches the /loom-research spawn at sub-step 2).' Matches the existing /loom-research spawn at sub-step 2.",
+      "/loom-archive § Step 3 Auto-mode: extended auto-mode-budget-exhausted with a § Capture finding paragraph. Added NEW retro-close [portable] scan paragraph naming the exact session-note path from PLAN.md (learnings/session-notes/<date>-<slug>-archive-retro.md). Explicit note that the scan runs in both human-paired AND auto-mode.",
+      "/ev-run § 0.5 State refresh: extended the PR-merged-reconciliation paragraph with a § Capture finding write documenting drift shape.",
+      "/ev-run § Grill-me + auto-mode: extended the on-budget-exhaust paragraph with a § Capture finding write naming which ambiguity class exhausted.",
+      "Ran npm test: 485/485 passed.",
+      "Derived evaluator panel (contract-fit — substrate-only). Invoked /guild-validate. Verdict: approved on round 1. Spot-check verified /loom-archive's auto-mode-budget-exhausted both emits and captures, [portable] scan path exact match, dual-mode coverage."
+    ],
+    "files_touched": [
+      "skills/ev-loop-interactive/SKILL.md",
+      "skills/loom-archive/SKILL.md",
+      "skills/ev-run/SKILL.md"
+    ],
+    "corrections": []
+  },
+  "scope": [
+    "skills/ev-loop-interactive/SKILL.md",
+    "skills/loom-archive/SKILL.md",
+    "skills/ev-run/SKILL.md"
+  ],
+  "changes_since_previous": "First unit on this branch. Phase 6 closed on prior branch (merged via PR #6). The post-merge phase-6 reconciliation rides in this commit. Phase 7 is conceptually one unit (wire griot writes for events introduced in Phases 5-6); single deliverable.",
+  "verdict": {
+    "result": "approved",
+    "reasons": []
+  },
+  "notes_for_pr": [
+    "Every Phase-5-and-6 event that PLAN.md flagged as 'hardcoded griot write' now has a § Capture finding paragraph wired at the emission point. The wiring is documentation-shaped — the verb extension (bin/griot capture's classification surface adding precise classifications for these capture types) is still pending. The skill bodies document this gap consistently across all 5 capture sites; intent recorded; verb extension is the natural downstream work alongside the broader griot classification expansion.",
+    "Cross-skill rollup-load brief audit: /ev-loop-interactive's two sub-agent spawns (inner-RPI: /loom-research and /loom-revise-plan) now both explicitly mention 'bin/griot use --as=llm' in their spawn brief paragraphs. /loom-plan and /loom-revise-plan's /loom-research spawns already had the mention from prior phases.",
+    "/loom-archive's NEW [portable] scan paragraph at retro close is the substrate's first retro-tier griot integration. Project-tier retros are project-scoped; the [portable] scan extracts cross-project signal into the substrate-wide learnings pool. Scan runs in both modes — operators can flag findings as [portable] in their AskUserQuestion responses just as easily as the panels can in auto-mode.",
+    "/ev-run's drift-detection capture is the substrate-wide signal that complements the per-skill budget-exhausted captures (research-, plan-, plan-revise-, auto-mode-). Drift is the router-level concern; budget-exhausted is the in-flight-skill concern. Together they answer: 'when does the substrate's auto-mode posture fail to converge, and where in the substrate does the failure tend to surface.'"
+  ]
+}

@@ -98,6 +98,16 @@ today — see the open question in projects/2026-05-15-trout-sunset/PLAN.md
 about whether `bin/loom pr reconcile` should ship.) For now, surface
 suspected drift as a one-line warning and let the user decide.
 
+**Griot write on drift detection**: alongside the drift warning,
+write a session-note via § Capture finding documenting the drift
+shape (manifest-says-X vs git-says-Y). Substrate-wide signal
+worth keeping: "what kinds of drift happen in practice." The
+classification gap is the same as other Phase-7-wired captures
+(no precise classification today for "manifest-vs-git drift
+shape"); intent recorded; the event-stream + the warning surface
+are the substrate trace until the verb supports a finer
+classification.
+
 ### 1.5. Load learnings
 
 Run `Bash("bin/griot use --as=llm")`. The verb reads
@@ -233,12 +243,19 @@ with a single high-confidence resolution) OR 3 × 3 budget exhaust.
 
 **On budget exhaust**: emit `auto-mode-budget-exhausted` with
 `{surface: 'ev-run', slug, decisions_completed, rounds_completed,
-reason}`. The router falls back to declining to dispatch — it
-surfaces the unresolved ambiguity to the operator (or upstream
-caller) with a structured error and stops. The substrate posture
-matches `/ev-loop-interactive`'s contract negotiation: ambiguity
-the auto-mode panel can't resolve is too risky to dispatch
-through.
+reason}`. Alongside the emission, write a session-note via
+§ Capture finding documenting which ambiguity class exhausted +
+the candidate options the panel considered. Substrate-wide signal
+for "which router-level ambiguities resist auto-mode resolution"
+— useful cross-skill input alongside the per-skill
+budget-exhausted captures from /ev-loop-interactive and
+/loom-archive.
+
+The router falls back to declining to dispatch — it surfaces the
+unresolved ambiguity to the operator (or upstream caller) with a
+structured error and stops. The substrate posture matches
+`/ev-loop-interactive`'s contract negotiation: ambiguity the
+auto-mode panel can't resolve is too risky to dispatch through.
 
 **Event emissions** (auto-mode only):
 - On auto-mode entry: emit `auto-mode-entered` with `{surface:
