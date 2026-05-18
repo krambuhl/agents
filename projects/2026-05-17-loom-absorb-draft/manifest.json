@@ -33,8 +33,13 @@
     {
       "number": 3,
       "name": "Add loom research (verb + whiteboard-composed skill + recovery)",
-      "status": "in-progress",
-      "branch": "phase-3-loom-research"
+      "status": "completed",
+      "branch": "phase-3-loom-research",
+      "pr": {
+        "number": 3,
+        "url": "https://github.com/krambuhl/agents/pull/3",
+        "state": "open"
+      }
     },
     {
       "number": 4,
