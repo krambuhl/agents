@@ -1,8 +1,8 @@
 // guild verb registry — flat verb namespace.
 // Each verb is a standalone operation in the antagonist-panel
 // substrate (findings JSONL, panel derivation, verdict
-// parse-and-aggregate, whiteboard composition). Modeled on bin/draft
-// and bin/griot's flat-verb shape.
+// parse-and-aggregate, whiteboard composition). Matches bin/griot's
+// flat-verb shape.
 
 import { derivePanelVerb } from './derive-panel.ts';
 import { findingsVerb } from './findings.ts';

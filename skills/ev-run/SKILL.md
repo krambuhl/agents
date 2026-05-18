@@ -26,7 +26,7 @@ the right loop. Owns no work of its own.
   (e.g. "address feedback on #14", "pause and save session", "start
   phase 3 even though phase 2 isn't merged yet").
 
-Invocations of `/ev-loop-*` and `/loom-archive` and `/draft-plan` skills
+Invocations of `/ev-loop-*` and `/loom-archive` and `/loom-plan` skills
 below mean `Skill(skill: <name>, args: "…")` — the Skill tool is how
 the router dispatches. CLI invocations like `bin/loom project read`
 mean `Bash("bin/loom project read <args>")`.
@@ -279,7 +279,7 @@ exchange is the audit trail.
 
 ## Failure modes
 
-- Project not found → forward the loom error; suggest `/draft-plan`
+- Project not found → forward the loom error; suggest `/loom-plan`
   to scaffold a new one.
 - Manifest inconsistent with git state → stop, report the drift, let
   the user resolve.

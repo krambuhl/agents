@@ -1,6 +1,6 @@
 # agents
 
-Marketplace for the **draft / guild / griot / loom** agent framework.
+Marketplace for the **guild / griot / loom** agent framework.
 Private. Source-of-truth for skills, subagents, CLIs, and accumulated
 learnings used across Evan's projects (originally evolved in
 [aart.camp](https://github.com/krambuhl/aart.camp), now lifted here
@@ -25,7 +25,7 @@ It wires three things:
 - `~/.claude/{skills,agents}/<name>` — symlink farm using relative
   `../../.agents/...` targets (matches the existing skills-CLI
   convention; portable across Mac/Linux).
-- `bin/{draft,guild,griot,loom}` — chicken-and-egg shims regenerated
+- `bin/{guild,griot,loom}` — chicken-and-egg shims regenerated
   inside this clone, so `bin/loom adopt` is invokable from the
   marketplace itself before any consumer project has its own bin
   shims.
@@ -44,7 +44,7 @@ cd <some-project>
 ~/Sites/agents/bin/loom adopt
 ```
 
-`bin/loom adopt` creates that project's own `bin/{draft,guild,griot,loom}`
+`bin/loom adopt` creates that project's own `bin/{guild,griot,loom}`
 shims pointing at `~/.agents/cli/` (which resolves back into this
 marketplace). After adoption, the framework's skills and loops
 resolve `bin/<cli>` cwd-relative as designed.
@@ -53,9 +53,9 @@ resolve `bin/<cli>` cwd-relative as designed.
 
 | Dir | What | Count |
 |---|---|---|
-| `skills/` | Slash-commandable skills — `/draft-plan`, `/guild-whiteboard`, `/loom-archive`, etc. | 12 |
+| `skills/` | Slash-commandable skills — `/loom-plan`, `/loom-research`, `/loom-revise-plan`, `/guild-whiteboard`, `/loom-archive`, etc. | 14 |
 | `agents/` | Subagent definitions for the Claude Code Agent tool — `whiteboard-*`, `griot-*`, `evaluator-*`, `generator-*`. Plus `PANEL-COMPOSITION.md` design doc. | 28 |
-| `cli/` | The TypeScript implementation of `draft`, `guild`, `griot`, `loom` (substrate plumbing for plans, panels, learnings, archival). | — |
+| `cli/` | The TypeScript implementation of `guild`, `griot`, `loom` (substrate plumbing for plans, research, panels, learnings, archival). | — |
 | `learnings/` | Accumulated craft knowledge — short markdown notes that show up in `bin/griot use --as=llm` output for any framework-enabled session. | 4 |
 
 ## Skills-CLI compatibility

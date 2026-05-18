@@ -7,7 +7,7 @@ import type { Config, Manifest, ManifestPhase } from './types.ts';
 
 // Inputs the loom CLI's `project adopt` verb collects from --manifest-
 // init-file. Also produced by `synthesizeManifestInit` for the auto-
-// adopt path in `bin/draft plan`.
+// adopt path in `bin/loom plan`.
 export type ManifestInit = {
   title: string;
   started: string;
@@ -51,7 +51,7 @@ export function writeLoomSubstrate(opts: {
 }
 
 // Default ManifestInit synthesized from a slug + today. Used by the
-// `bin/draft plan` auto-adopt path when the caller doesn't supply a
+// `bin/loom plan` auto-adopt path when the caller doesn't supply a
 // manifest-init-file. Title is derived from the slug suffix; phases is
 // a single placeholder the user fills in by editing the manifest (or by
 // re-running with an explicit init file).

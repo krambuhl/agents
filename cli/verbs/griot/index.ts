@@ -1,7 +1,6 @@
 // griot verb registry — flat verb namespace.
 // Each verb is a standalone operation on the learnings substrate
-// (rollup, session-notes, judge panels). Modeled on bin/draft's
-// flat-verb shape.
+// (rollup, session-notes, judge panels).
 
 import { captureVerb } from './capture.ts';
 import { mediatePanelVerb } from './mediate-panel.ts';

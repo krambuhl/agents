@@ -7,7 +7,7 @@
 #      whole-dir for cli + learnings since they own the namespace)
 #   2. ~/.claude/{skills,agents}/<name> symlink farm back into ~/.agents/
 #      (relative `../../.agents/...` paths — matches the skills CLI convention)
-#   3. bin/{draft,guild,griot,loom} shims inside this clone (the chicken-and-egg
+#   3. bin/{guild,griot,loom} shims inside this clone (the chicken-and-egg
 #      bootstrap, so `bin/loom adopt` is invokable from the marketplace itself
 #      on first use, before any consumer project has its own bin/ shims)
 #
@@ -115,7 +115,7 @@ farm_into_claude agents '*.md' "../../.agents/agents"
 #
 # Without this, the very first `bin/loom adopt` (run inside a consumer project
 # that hasn't been framework-enabled yet) has nowhere to resolve. By creating
-# bin/{draft,guild,griot,loom} inside the marketplace clone, the user can
+# bin/{guild,griot,loom} inside the marketplace clone, the user can
 # always invoke the framework via $MARKETPLACE/bin/<cli> before any project
 # is adopted. After `bin/loom adopt`, each project gets its own bin/<cli>
 # shims pointing into ~/.agents/cli/ (i.e. back into this marketplace clone).
@@ -125,7 +125,7 @@ farm_into_claude agents '*.md' "../../.agents/agents"
 
 mkdir -p "$MARKETPLACE/bin"
 
-for cli in draft guild griot loom; do
+for cli in guild griot loom; do
   shim="$MARKETPLACE/bin/$cli"
   cat > "$shim" <<EOF
 #!/usr/bin/env bash

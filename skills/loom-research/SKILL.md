@@ -63,7 +63,7 @@ sentences are flagged at the fact-check gate, not at commit time.
   per the substrate startup-brief convention (rollup may be empty;
   status line in stdout reports the load result).
 - Resolve the slug from the topic (kebab-case derivation, same as
-  `/draft-plan`'s slug-proposal step). If the user passed a full
+  `/loom-plan`'s slug-proposal step). If the user passed a full
   `<YYYY-MM-DD>-<slug>` form, use it verbatim.
 - Check for `projects/<slug>/RECOVERY-STATUS.json`:
   - If present AND `parent_skill === '/loom-research'`, surface the
@@ -356,7 +356,7 @@ classification gap is a Phase 7 follow-up.
   enforces this at the gate; the grill-me posture trains the user
   (and the panel) to anticipate it during the interview.
 - **One question at a time during the interview.** Resolve before
-  moving on (same shape as `/draft-plan`).
+  moving on (same shape as `/loom-plan`).
 - **Whiteboard composition is per-shift, full-roster.** Engineers
   self-recuse off-topic; the skill does NOT filter by domain at the
   spawn layer.

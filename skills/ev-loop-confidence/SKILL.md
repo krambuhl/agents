@@ -4,8 +4,8 @@ description: >-
   Execution loop for tiered-transform work. Runs a phase as a
   sequence of tiers, each tier processing a batch of files under a tier
   contract, gated by evaluator verdicts and pre-flight checks. Writes
-  tactical retros between tiers. Dispatches to bin/loom and bin/draft
-  CLIs directly; composes /guild-validate; composes no other loop. Use
+  tactical retros between tiers. Dispatches to the bin/loom CLI
+  directly; composes /guild-validate; composes no other loop. Use
   when a phase is a bulk transform, audit, or find-replace-style
   operation across many files.
 argument-hint: "<project-slug-or-path> <phase-number>"
@@ -19,7 +19,7 @@ Execute one phase of a project as a confidence loop: tiered transforms,
 ratcheting from small/safe to large/risky, with an evaluator verdict per
 unit and a tactical retro per tier.
 
-**Composes**: `bin/loom` and `bin/draft` CLIs (via Bash) for substrate
+**Composes**: `bin/loom` CLI (via Bash) for substrate
 operations; `/guild-validate` (via the Skill tool) for the antagonist
 panel.
 **Does not compose**: other loops. Peer loops are invoked by the router,
@@ -40,7 +40,7 @@ calls the `Agent` tool directly.
 ## Substrate compositions
 
 Every substrate operation this loop performs dispatches directly to
-`bin/loom`, `bin/draft`, `bin/griot`, or `bin/guild` — no ambient
+`bin/loom`, `bin/griot`, or `bin/guild` — no ambient
 skills, no trout scripts. The unit/tier loop steps below cite recipes
 by name (e.g. "checkpoint per § Compose PR"). All `§ <Recipe>`
 references in this body resolve in `docs/SUBSTRATE-COMPOSITIONS.md`.

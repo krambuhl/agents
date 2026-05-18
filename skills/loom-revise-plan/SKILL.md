@@ -95,7 +95,7 @@ If flavor is `mechanical`:
   scoped to the revision (e.g. "which phase needs the scope
   change?", "what's the new verification command?"). One question
   at a time, opinionated recommendation each turn, mirrors
-  `/draft-plan`'s posture.
+  `/loom-plan`'s posture.
 - Synthesize the candidate revised PLAN.md.
 - Skip to step 5 (evaluator pass).
 

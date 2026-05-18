@@ -251,7 +251,7 @@ test('projectScaffold: missing --plan-file returns missing-args', () => {
 // ---------- Adopt tests ----------
 
 // Adopt expects a directory that already has PLAN.md (e.g. from
-// `bin/draft plan`). It writes the loom files alongside without
+// `bin/loom plan`). It writes the loom files alongside without
 // touching PLAN.md or INTERVIEW.md.
 function writeAdoptInputs(dir: string): {
   configFile: string;

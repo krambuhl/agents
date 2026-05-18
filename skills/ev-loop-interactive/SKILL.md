@@ -4,7 +4,7 @@ description: >-
   Execution loop for human-paired work. Runs a phase as a sequence
   of deliverables, each with its own unit contract and evaluator
   checkpoint. Supports sequential (ordered) and free (user picks next)
-  deliverable ordering. Dispatches to bin/loom and bin/draft CLIs
+  deliverable ordering. Dispatches to the bin/loom CLI
   directly; composes /guild-validate; composes no other loop. Use when
   a phase is exploratory, creative, or otherwise not a bulk transform.
 argument-hint: "<project-slug-or-path> <phase-number>"
@@ -18,7 +18,7 @@ Execute one phase of a project as a human-paired loop: discrete
 deliverables, per-deliverable contract and checkpoint. The human drives
 order when ordering is free; the loop keeps the substrate honest.
 
-**Composes**: `bin/loom` and `bin/draft` CLIs (via Bash) for substrate
+**Composes**: `bin/loom` CLI (via Bash) for substrate
 operations; `/guild-validate` (via the Skill tool) for the antagonist
 panel.
 **Spawns** (Agent tool, fresh-context): `/loom-research` +
@@ -40,7 +40,7 @@ calls the `Agent` tool directly.
 ## Substrate compositions
 
 Every substrate operation this loop performs dispatches directly to
-`bin/loom`, `bin/draft`, `bin/griot`, or `bin/guild` — no ambient
+`bin/loom`, `bin/griot`, or `bin/guild` — no ambient
 skills, no trout scripts. The unit loop steps below cite recipes by
 name (e.g. "checkpoint per § Compose PR"). All `§ <Recipe>` references
 in this body resolve in `docs/SUBSTRATE-COMPOSITIONS.md`. For loom

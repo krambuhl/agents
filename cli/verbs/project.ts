@@ -281,7 +281,7 @@ export function projectAdopt(rest: string[], ctx: CliContext): DispatchResult {
     return errToResult(
       new LoomError(
         'plan-not-found',
-        `cannot adopt ${slug}: ${planMdPath} is missing (project must already have a PLAN.md, e.g. from 'bin/draft plan')`,
+        `cannot adopt ${slug}: ${planMdPath} is missing (project must already have a PLAN.md, e.g. from 'bin/loom plan')`,
       ),
     );
   }

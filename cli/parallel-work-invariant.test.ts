@@ -27,7 +27,7 @@ type Exception = 'PLAN.md' | 'manifest.json' | 'whiteboard';
 
 interface VerbEntry {
   verb: string;
-  family: 'loom' | 'draft' | 'griot' | 'guild';
+  family: 'loom' | 'griot' | 'guild';
   category: Category;
   target: string;
   exception?: Exception;
@@ -88,8 +88,8 @@ const REGISTRY: readonly VerbEntry[] = [
 
   // Category 3 — single-writer-serialized (must declare exception)
   {
-    verb: 'draft revise',
-    family: 'draft',
+    verb: 'loom revise-plan',
+    family: 'loom',
     category: 'single-writer-serialized',
     target: 'projects/<slug>/PLAN.md',
     exception: 'PLAN.md',

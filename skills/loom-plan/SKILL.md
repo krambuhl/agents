@@ -8,8 +8,9 @@ description: >-
   before commit. Supports human-paired and `--mode=auto` flows with
   the substrate two-budget(3 rounds × 10 decisions). Use when the
   user wants a plan grounded in research; for lighter "I know what I
-  want" scaffolding, use /draft-plan (deprecated path; deletion in
-  Phase 8). Dispatches deterministic file IO through `bin/loom plan`.
+  want" scaffolding, just answer the interview questions tersely
+  and the loop closes fast. Dispatches deterministic file IO
+  through `bin/loom plan`.
 argument-hint: "<topic or short description> [--mode=auto]"
 user-invocable: true
 disable-model-invocation: true
@@ -26,10 +27,9 @@ for the research dossier to commit, and then proceeds with the plan
 interview. If present, the research is attached as input to the
 strawman draft.
 
-This is the canonical project-birth path going forward. The legacy
-`/draft-plan` skill is preserved for backward compat through Phase 8
-(when `bin/draft` and `/draft-plan` are deleted as a set); new project
-births should land here.
+This is the canonical project-birth path. There's no lighter
+alternative skill — when you "know what you want," just answer the
+interview's questions tersely and the loop closes fast.
 
 **Format references**:
 - `docs/AGENT-CONVENTIONS.md` § Auto-mode and the two-budget shape
@@ -62,7 +62,7 @@ births should land here.
 - Run `Bash("bin/griot use --as=llm")` to load the learnings rollup
   per the substrate startup-brief convention.
 - Resolve the slug from the topic (same kebab-case derivation as
-  `/draft-plan` / `/loom-research`).
+  `/loom-research`).
 - After pre-flight completes (slug resolved, learnings loaded,
   recovery check below cleared), emit `plan-started` with detail
   `{slug, topic: <positional-arg if not a full slug, else null>}`.
@@ -120,14 +120,14 @@ directly to step 4.
 
 ### 4. Grill-me interview (relentless, one decision at a time)
 
-Walk the decision tree branch by branch. Mirrors `/draft-plan`'s
-posture (one question at a time, recommendation first, structured
-form via `AskUserQuestion` when 2-4 discrete options apply). The
-substrate-decision categories (Scope, Phases, Dependencies,
-Verification, PR cadence, Loop strategy, Risks, Decisions) are the
-same as `/draft-plan`'s; the difference is the grounding — every
-question's recommendation is justified against a citable claim
-from `RESEARCH.md` where applicable.
+Walk the decision tree branch by branch. The grill-me posture is
+one question at a time, opinionated recommendation first,
+structured form via `AskUserQuestion` when 2-4 discrete options
+apply. The substrate-decision categories — Scope, Phases,
+Dependencies, Verification, PR cadence, Loop strategy, Risks,
+Decisions — are the canonical interview shape; every question's
+recommendation is justified against a citable claim from
+`RESEARCH.md` where applicable.
 
 In auto-mode, the "user" is the evaluator panel + (when needed) the
 whiteboard panel for divergent questions. A round with zero new
@@ -141,10 +141,12 @@ interview question or one accepted recommendation = one decision.
 
 ### 5. Propose the slug + synthesize PLAN.md + INTERVIEW.md
 
-Same shape as `/draft-plan` steps 3-5: confirm the kebab-case slug,
-synthesize `PLAN.md` from the resolved tree (Context / Scope /
-Phases / Dependencies / Verification / Risks / Open questions /
-Decisions), synthesize `INTERVIEW.md` as the walked decision tree.
+Confirm the kebab-case slug with the user before proceeding, then
+synthesize `PLAN.md` from the resolved interview tree (Context /
+Scope / Phases / Dependencies / Verification / Risks / Open
+questions / Decisions) and synthesize `INTERVIEW.md` as the walked
+decision tree (one heading per resolved question, with the
+recommendation, the user's answer, and the rationale).
 
 The `## Context` section of `PLAN.md` SHOULD cite `RESEARCH.md` as
 the research input (one-line backlink) so a future reader of the
@@ -207,7 +209,7 @@ Bash("bin/loom plan <slug-or-topic> \
 ```
 
 `bin/loom plan` auto-adopts the loom substrate by default (same
-behavior as `bin/draft plan`, just under the loom CLI surface). The
+behavior under the loom CLI surface). The
 CLI emits no events directly — the orchestration events (started /
 completed) are skill-side.
 

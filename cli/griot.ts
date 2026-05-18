@@ -13,10 +13,10 @@ export type { DispatchResult, GriotCliContext };
 // ---------- Verb registry ----------
 
 // griot has a flat verb namespace — each verb is a standalone operation
-// on the learnings substrate (rollup, session-notes, judge panels).
-// Modeled on bin/draft's flat-verb shape (see .claude/cli/draft.ts);
-// the rationale lives in projects/2026-05-15-draft-cli/PLAN.md and is
-// reaffirmed for griot in projects/2026-05-16-substrate-cli/PLAN.md.
+// on the learnings substrate (rollup, session-notes, judge panels). The
+// flat-verb rationale lives in projects/2026-05-15-draft-cli/PLAN.md
+// (a historical project, archived) and is reaffirmed for griot in
+// projects/2026-05-16-substrate-cli/PLAN.md.
 export const VERBS: Record<string, string> = {
   use: 'Render learnings/rollup.json as LLM prose with citation contract for session injection (--as=llm, the default)',
   capture:

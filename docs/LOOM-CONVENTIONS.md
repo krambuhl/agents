@@ -137,10 +137,9 @@ afterward.
 
 ### `PLAN.md`
 
-Human-authored project plan. **Write surface**: `bin/draft plan`
-(creates initial) and `bin/draft revise` (mutates). Phase 2 of the
-loom-absorb-draft project migrates these to `bin/loom plan` and
-`bin/loom revise-plan`. Single-writer-serialized.
+Human-authored project plan. **Write surface**: `bin/loom plan`
+(creates initial) and `bin/loom revise-plan` (mutates).
+Single-writer-serialized.
 
 Document shape (loose, conventional):
 
@@ -166,7 +165,7 @@ manifest's `phases[].number` and `phases[].name`.
 ### `INTERVIEW.md`
 
 Grill-me transcript from project birth, kept as audit trail of why
-the plan looks the way it does. **Write surface**: `bin/draft plan`
+the plan looks the way it does. **Write surface**: `bin/loom plan`
 writes this once at project creation. Not subsequently mutated
 (future: `bin/loom plan-amend` may extend it).
 

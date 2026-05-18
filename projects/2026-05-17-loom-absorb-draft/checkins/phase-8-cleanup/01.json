@@ -1,0 +1,131 @@
+{
+  "schema_version": 1,
+  "number": "01",
+  "created": "2026-05-18T21:46:57.000Z",
+  "phase": {
+    "number": 8,
+    "name": "Cleanup + delete bin/draft"
+  },
+  "branch": "phase-8-cleanup",
+  "unit": "Retire bin/draft + /draft-plan — final cleanup sweep",
+  "contract": {
+    "goal": "Phase 8 final cleanup per PLAN.md lines 495-515. Retire the deprecated bin/draft surface + /draft-plan skill now that /loom-plan + bin/loom plan + bin/loom revise-plan are fully wired through Phases 2-7. Delete the bin/draft shim, cli/draft.ts, cli/draft.test.ts, and skills/draft-plan/. Sweep all bin/draft / /draft-plan references across install.sh, README.md, docs, skill bodies, and CLI source files. Migrate the § Revise PLAN.md recipe in SUBSTRATE-COMPOSITIONS.md to wrap bin/loom revise-plan with the actual flag shape (--revision-file + --rationale).",
+    "acceptance_criteria": [
+      "bin/draft shim + cli/draft.ts + cli/draft.test.ts + skills/draft-plan/ all deleted.",
+      "install.sh: `for cli in` loop drops draft; 2 inline bin/{...} references updated to {guild,griot,loom}.",
+      "README.md: title now reads 'guild / griot / loom'; install + adopt sections updated; skills table count updated to 14 (was 12); cli/ row drops draft.",
+      "docs/SUBSTRATE-COMPOSITIONS.md § Revise PLAN.md recipe migrated to bin/loom revise-plan with --revision-file + --rationale flag shape (matches the actual CLI). Opening sentence about which CLIs the doc wraps updated.",
+      "docs/LOOM-CONVENTIONS.md PLAN.md + INTERVIEW.md write-surface references migrated from bin/draft plan to bin/loom plan.",
+      "Skill body sweep complete across /ev-loop-interactive, /ev-loop-confidence, /ev-run, /loom-plan, /loom-research, /loom-revise-plan, /loom-archive: bin/draft mentions removed from frontmatter description + Composes/Substrate sections; /draft-plan style references updated to /loom-plan (the canonical grill-me reference going forward); ev-run failure-mode now points at /loom-plan; loom-plan's deprecated-/draft-plan pointer removed from frontmatter and intro paragraph.",
+      "CLI source sweep: cli/guild.ts + cli/griot.ts + cli/verbs/guild/index.ts + cli/verbs/griot/index.ts header comments updated (no more 'Modeled on bin/draft'); cli/lib/adopt.ts + cli/verbs/project.ts + cli/verbs/project.test.ts + cli/verbs/plan.ts in-file comments + error messages + commit-message prefixes updated; cli/parallel-work-invariant.test.ts family-union type drops 'draft' and 'draft revise' test entry replaced with 'loom revise-plan'.",
+      "cli/verbs/plan.ts commit-message prefixes BEHAVIOR fixed: [draft plan] → [loom plan]; [draft revise] → [loom revise-plan]. cli/verbs/plan.test.ts assertions updated to match.",
+      "npm test green at 469 (was 485 pre-cleanup; −16 from cli/draft.test.ts deletion — the bin/draft entry-point test file).",
+      "Strict-pattern grep `bin/draft\\b|/draft-plan\\b|cli/draft\\b` across skills/ docs/ install.sh README.md cli/ (minus the cli/lib/draft-* still-active filenames) returns ONLY cli/fixtures/retro-project.json:26 (historical retro data, intentionally preserved)."
+    ],
+    "rules_applied": [
+      "PLAN.md Phase 8 lines 495-515 dictates the delete-list verbatim.",
+      "CLAUDE.md: don't preserve dead code — delete bin/draft + /draft-plan cleanly now that the new home is fully wired.",
+      "CLAUDE.md: don't introduce features beyond the task — fix what PLAN.md names; leave cli/lib/draft-*.ts (actively imported, misnamed-not-dead) for a separate refactor."
+    ],
+    "disqualifiers": [
+      "Renaming cli/lib/draft-*.ts files (separate refactor outside Phase 8 scope; PLAN.md doesn't name them).",
+      "Removing actively-imported code (cli/lib/draft-*.ts modules).",
+      "Changing behavior of remaining CLI verbs (the cleanup is documentation/reference + dead-code removal, not behavioral). NOTE: this rule explicitly DOES NOT apply to fixing the [draft plan] / [draft revise] commit-message prefix BUG, which was a stale reference that produced wrong behavior at every loom plan / revise-plan commit — fixing it is a behavior CORRECTION, not a feature change."
+    ],
+    "inputs": [
+      "projects/2026-05-17-loom-absorb-draft/PLAN.md:495-515 (Phase 8 spec)",
+      "All 29 files in the changed set"
+    ]
+  },
+  "execution": {
+    "actions": [
+      "Cut branch phase-8-cleanup from main after PR #7 merge.",
+      "Reconciled Phase 7 PR-merged state.",
+      "Deletions: bin/draft, cli/draft.ts, cli/draft.test.ts, skills/draft-plan/.",
+      "install.sh swept: dropped 'draft' from the for-cli loop and 2 inline bin/{...} references.",
+      "README.md swept: title, install/adopt sections, skills table (skill count 14), cli/ row.",
+      "docs/SUBSTRATE-COMPOSITIONS.md § Revise PLAN.md recipe rewritten: wraps bin/loom revise-plan with --revision-file + --rationale flag shape (matches the actual CLI verb that Phase 2 shipped). Opening sentence updated to drop draft from the CLI list.",
+      "docs/LOOM-CONVENTIONS.md PLAN.md + INTERVIEW.md write-surface references migrated.",
+      "Skill body sweep (7 skills): bin/draft mentions removed from frontmatter description + Composes/Substrate sections; /draft-plan style references updated to /loom-plan; ev-run failure-mode pointer updated; loom-plan deprecated-pointer removed from frontmatter + intro.",
+      "CLI source sweep: cli/guild.ts + cli/griot.ts + cli/verbs/guild/index.ts + cli/verbs/griot/index.ts header comments; cli/lib/adopt.ts + cli/verbs/project.ts + cli/verbs/project.test.ts comments; cli/verbs/plan.ts comment block.",
+      "Round-1 evaluator panel: contract-fit FLAGGED on AC9 with criterion-unmet (missed sweeps). React-api + naming approved.",
+      "Round-1 audit caught real misses in cli/verbs/plan.ts: error messages still said 'draft revise' / 'draft plan'; commit-message prefixes were `[draft plan]` and `[draft revise]` — BEHAVIOR bug that would have tagged every bin/loom plan + bin/loom revise-plan commit with the wrong substrate name post-Phase-8. Also cli/parallel-work-invariant.test.ts had a 'draft' family-union member and a 'draft revise' test entry.",
+      "Round-2 fixes: updated 5 plan.ts sites (2 error messages, 1 comment, 2 commit-message prefixes), 2 parallel-work-invariant.test.ts sites (type union + test entry), 4 plan.test.ts sites (2 assertions + 2 comments).",
+      "Ran npm test post-round-2: 469/469 passed (was 485 pre-cleanup; −16 from cli/draft.test.ts deletion which had the bin/draft entry tests).",
+      "Round-2 evaluator panel: contract-fit APPROVED. Both commit-message prefix fixes verified at line ~198 + line ~335 of plan.ts.",
+      "Final strict-pattern grep confirms cleanup is at the documented exclusion list: only cli/fixtures/retro-project.json:26 (historical retro data)."
+    ],
+    "files_touched": [
+      "bin/draft (DELETED)",
+      "cli/draft.ts (DELETED)",
+      "cli/draft.test.ts (DELETED)",
+      "skills/draft-plan/SKILL.md (DELETED)",
+      "install.sh",
+      "README.md",
+      "docs/SUBSTRATE-COMPOSITIONS.md",
+      "docs/LOOM-CONVENTIONS.md",
+      "skills/ev-loop-interactive/SKILL.md",
+      "skills/ev-loop-confidence/SKILL.md",
+      "skills/ev-run/SKILL.md",
+      "skills/loom-plan/SKILL.md",
+      "skills/loom-research/SKILL.md",
+      "skills/loom-revise-plan/SKILL.md",
+      "skills/loom-archive/SKILL.md",
+      "cli/guild.ts",
+      "cli/griot.ts",
+      "cli/verbs/guild/index.ts",
+      "cli/verbs/griot/index.ts",
+      "cli/lib/adopt.ts",
+      "cli/verbs/project.ts",
+      "cli/verbs/project.test.ts",
+      "cli/verbs/plan.ts",
+      "cli/verbs/plan.test.ts",
+      "cli/parallel-work-invariant.test.ts",
+      "projects/2026-05-17-loom-absorb-draft/manifest.json",
+      "projects/2026-05-17-loom-absorb-draft/events.jsonl"
+    ],
+    "corrections": [
+      "Round-1 contract-fit finding (criterion-unmet on AC9): missed sweeps in cli/verbs/plan.ts (2 error messages + 1 comment + 2 BEHAVIOR commit-message prefixes) and cli/parallel-work-invariant.test.ts (family-union type + test entry). The commit-message-prefix misses were the most consequential — would have tagged every future bin/loom plan / bin/loom revise-plan commit with `[draft plan]` / `[draft revise]` substring. Caught on the evaluator's flagged-verdict round and fixed in round 2 before merge. Lesson worth flagging: a token-bounded grep alone is insufficient for cleanup verification; the strict pattern bin/draft|/draft-plan|cli/draft missed in-string references like 'draft revise' (without the bin/ prefix) and the [draft plan] commit-message string. Future cleanup contracts should grep both the bounded-token pattern AND substring patterns of the obsolete tokens to catch the looser-context references."
+    ]
+  },
+  "scope": [
+    "bin/draft",
+    "cli/draft.ts",
+    "cli/draft.test.ts",
+    "skills/draft-plan/SKILL.md",
+    "install.sh",
+    "README.md",
+    "docs/SUBSTRATE-COMPOSITIONS.md",
+    "docs/LOOM-CONVENTIONS.md",
+    "skills/ev-loop-interactive/SKILL.md",
+    "skills/ev-loop-confidence/SKILL.md",
+    "skills/ev-run/SKILL.md",
+    "skills/loom-plan/SKILL.md",
+    "skills/loom-research/SKILL.md",
+    "skills/loom-revise-plan/SKILL.md",
+    "skills/loom-archive/SKILL.md",
+    "cli/guild.ts",
+    "cli/griot.ts",
+    "cli/verbs/guild/index.ts",
+    "cli/verbs/griot/index.ts",
+    "cli/lib/adopt.ts",
+    "cli/verbs/project.ts",
+    "cli/verbs/project.test.ts",
+    "cli/verbs/plan.ts",
+    "cli/verbs/plan.test.ts",
+    "cli/parallel-work-invariant.test.ts"
+  ],
+  "changes_since_previous": "Only unit on this branch. Phase 7 closed on prior branch (merged via PR #7). The phase-7 PR-merged reconciliation rides in this commit alongside the cleanup sweep. With this PR, the loom-absorb-draft project completes — all 8 phases shipped, the substrate is fully consolidated under bin/loom + bin/guild + bin/griot, and the deprecated draft surface is retired.",
+  "verdict": {
+    "result": "approved",
+    "reasons": []
+  },
+  "notes_for_pr": [
+    "Most consequential round-1 finding (caught + fixed before merge): cli/verbs/plan.ts had `[draft plan]` and `[draft revise]` commit-message prefixes — BEHAVIOR bugs that would have tagged every future bin/loom plan / bin/loom revise-plan commit with the wrong substrate name. Round-2 fix updated to `[loom plan]` and `[loom revise-plan]`. Test assertions updated to match.",
+    "Cleanup-grep lesson: a token-bounded grep (bin/draft\\b) alone misses in-string references like 'draft revise' (no bin/ prefix) and commit-message string literals. Future cleanup contracts should also grep substring patterns of obsolete tokens — caught here because the contract-fit evaluator surfaced the over-narrow strict grep as a contract-inadequate finding alongside the criterion-unmet.",
+    "cli/lib/draft-*.ts files are intentionally NOT renamed in Phase 8. They're actively imported by cli/verbs/plan.ts + cli/verbs/research.ts. PLAN.md Phase 8 explicitly names which files to delete (the bin/cli + skill set), and these libs aren't on the list. They're misnamed-not-dead — renaming is a separate refactor outside Phase 8's documented scope, flagged here as a follow-up.",
+    "cli/fixtures/retro-project.json:26 contains one historical retro description with `/draft-plan`. This is fixture *data* (a retro from a sample project), not skill-body prose; the historical detail is appropriate to preserve.",
+    "Test count change: 485 → 469 (−16). The 16 deleted tests came from cli/draft.test.ts (the bin/draft entry-point test file with subprocess smoke + dispatch routing). No test surface lost vs the new home — bin/loom plan + bin/loom revise-plan have full coverage in cli/verbs/plan.test.ts (~25 tests) and the dispatch routing test in cli/loom.test.ts.",
+    "The project is conceptually complete at PR #8 merge. Eight phases (PRs #1-8) absorbed bin/draft into bin/loom and built out the full RPI substrate (Research → Plan → Implement loop) with grill-me + auto-mode duality across 6 skill surfaces, sub-agent orchestration, recovery flow, evaluator panels, and griot integration. The /loom-archive retro can wrap up this project whenever the operator is ready."
+  ]
+}
