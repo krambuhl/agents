@@ -1,0 +1,65 @@
+{
+  "schema_version": 1,
+  "number": "03",
+  "created": "2026-05-18T21:04:05.000Z",
+  "phase": {
+    "number": 6,
+    "name": "Grill-me + auto-mode embeddings across ev-loop / archive / ev-run"
+  },
+  "branch": "phase-6-grill-me-auto-mode",
+  "unit": "/loom-archive auto-mode pathway — two-panel retro",
+  "contract": {
+    "goal": "Add --mode=auto pathway to skills/loom-archive/SKILL.md per PLAN.md Phase 6. Two-panel composition: whiteboards drive reflective retro questions, evaluators drive plan-vs-actual audit. Silent-OR-budget(3 × 8). Budget exhaust does NOT block the retro write — best-effort posture (opposite of ev-loop's contract negotiation).",
+    "acceptance_criteria": [
+      "Frontmatter argument-hint adds [--mode=auto]; allowed-tools includes Skill.",
+      "Arguments section names --mode=auto with two-panel framing.",
+      "Step 3 (Grill-me interview) gets an Auto-mode sub-section explaining whiteboards reflective + evaluators plan-vs-actual.",
+      "Substrate 3 × 8 default cited.",
+      "Budget exhaust does NOT block the retro write (explicit line, contrasted with ev-loop's posture).",
+      "3 D1 events emitted with surface='loom-archive'.",
+      "Human-paired mode emits no auto-mode events.",
+      "npm test green at 485."
+    ],
+    "rules_applied": [
+      "PLAN.md Phase 6 lines 432-436",
+      "AGENT-CONVENTIONS § Auto-mode (3 × 8 default)"
+    ],
+    "disqualifiers": [
+      "edits outside the file",
+      "blocking retro write on budget exhaust",
+      "new event types"
+    ],
+    "inputs": [
+      "PLAN.md:432-436",
+      "AGENT-CONVENTIONS.md",
+      "loom-archive/SKILL.md pre-change",
+      "cli/lib/types.ts D1"
+    ]
+  },
+  "execution": {
+    "actions": [
+      "Updated frontmatter: argument-hint to '<project-slug-or-path> [--mode=auto]'; allowed-tools widened to Read, Write, Bash, Skill, AskUserQuestion (was Bash(bin/loom *) — kept Skill access for /guild-whiteboard + /guild-validate composition; removed the Bash glob restriction since auto-mode might invoke other CLIs).",
+      "Extended Arguments section with --mode=auto description naming the two-panel composition.",
+      "Added Auto-mode sub-section to Step 3 (~40 lines): two-panel composition explained (whiteboard panel for reflective via /guild-whiteboard; evaluator panel for plan-vs-actual via bin/guild derive-panel + /guild-validate), convergence rule (silent panel = neither raised new finding), 3 × 8 budget cited per AGENT-CONVENTIONS (8 = 2 findings × 4 dimensions matching at-least-2 floor), explicit no-block-on-exhaust posture (contrasted with ev-loop's blocking posture), and 3 D1 event emissions with surface='loom-archive'.",
+      "Ran npm test: 485/485 passed (markdown-only change).",
+      "Derived evaluator panel (contract-fit). Invoked /guild-validate. Verdict: approved on round 1. All 4 spot-check items verified."
+    ],
+    "files_touched": [
+      "skills/loom-archive/SKILL.md"
+    ],
+    "corrections": []
+  },
+  "scope": [
+    "skills/loom-archive/SKILL.md"
+  ],
+  "changes_since_previous": "Third unit on this branch. D1 declared 3 auto-mode types; D2 added grill-me + auto-mode to ev-loop's unit-contract step (blocking posture); D3 adds auto-mode to /loom-archive (best-effort, non-blocking posture). D4 next: /ev-run.",
+  "verdict": {
+    "result": "approved",
+    "reasons": []
+  },
+  "notes_for_pr": [
+    "The best-effort vs blocking posture asymmetry is intentional: ev-loop's unit-contract negotiation gates execution; an ambiguous contract is unsafe to execute against. Retros are inherently partial — a project's lessons can always be deeper — and gating retro write on convergence would mean projects can fail to archive cleanly. Different gate posture; same auto-mode primitive.",
+    "Two-panel composition: whiteboards drive divergent (reflective 'what did we learn'); evaluators drive convergent (auditing 'what shipped vs what was planned'). Each panel's findings round-trip into the dimension's findings[] independently — neither panel sees the other's questions. This matches the broader substrate split: whiteboards open the space, evaluators audit against a spec.",
+    "Allowed-tools changed from narrow Bash(bin/loom *) to broad Bash. The narrow form was restrictive enough to block auto-mode's evaluator panel invocations of bin/guild. Skill tool also added for /guild-whiteboard + /guild-validate composition."
+  ]
+}
