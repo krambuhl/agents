@@ -49,13 +49,14 @@
       "pr": {
         "number": 4,
         "url": "https://github.com/krambuhl/agents/pull/4",
-        "state": "open"
+        "state": "merged"
       }
     },
     {
       "number": 5,
       "name": "Inner RPI in /ev-loop-interactive",
-      "status": "not-started"
+      "status": "in-progress",
+      "branch": "phase-5-inner-rpi"
     },
     {
       "number": 6,

@@ -22,3 +22,6 @@
 {"at":"2026-05-18T17:56:33.076Z","event":"checkin-created","detail":{"number":"03","branch":"phase-4-loom-plan-orchestration"}}
 {"at":"2026-05-18T17:57:31.505Z","event":"pr-opened","detail":{"pr":4,"url":"https://github.com/krambuhl/agents/pull/4"}}
 {"at":"2026-05-18T17:57:39.545Z","event":"phase-completed","detail":{"phase":4}}
+{"at":"2026-05-18T19:04:46.849Z","event":"phase-completed","detail":{"phase":4}}
+{"at":"2026-05-18T19:08:33.796Z","event":"checkin-created","detail":{"number":"01","branch":"phase-5-inner-rpi"}}
+{"at":"2026-05-18T19:08:33.865Z","event":"phase-started","detail":{"phase":5,"name":"Inner RPI in /ev-loop-interactive"}}
