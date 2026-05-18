@@ -44,8 +44,13 @@
     {
       "number": 4,
       "name": "Rebuild plan + revise skills + outer RPI orchestration",
-      "status": "in-progress",
-      "branch": "phase-4-loom-plan-orchestration"
+      "status": "completed",
+      "branch": "phase-4-loom-plan-orchestration",
+      "pr": {
+        "number": 4,
+        "url": "https://github.com/krambuhl/agents/pull/4",
+        "state": "open"
+      }
     },
     {
       "number": 5,
