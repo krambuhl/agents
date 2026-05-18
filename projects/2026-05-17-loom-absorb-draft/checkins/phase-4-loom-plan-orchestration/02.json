@@ -1,0 +1,82 @@
+{
+  "schema_version": 1,
+  "number": "02",
+  "created": "2026-05-18T17:50:23.000Z",
+  "phase": {
+    "number": 4,
+    "name": "Rebuild plan + revise skills + outer RPI orchestration"
+  },
+  "branch": "phase-4-loom-plan-orchestration",
+  "unit": "/loom-plan skill body — outer-RPI orchestrator with sub-agent spawn + evaluator panel + recovery",
+  "contract": {
+    "goal": "Author the `/loom-plan` skill at skills/loom-plan/SKILL.md as the canonical outer-RPI orchestrator going forward. The skill detects whether a project has a RESEARCH.md foundation; if missing, it auto-spawns `/loom-research` via the Agent tool (fresh-context sub-agent, --mode=auto) and waits for the dossier before proceeding. After interview synthesis, it gates the candidate PLAN.md through an evaluator panel (bin/guild derive-panel + /guild-validate) and commits via `bin/loom plan`. Supports human-paired and --mode=auto with the substrate 3 × 10 two-budget. The legacy /draft-plan stays in place through Phase 8.",
+    "acceptance_criteria": [
+      "Frontmatter follows the marketplace skill convention; allowed-tools includes Agent (for /loom-research spawn).",
+      "Documents RESEARCH.md detection + outer-RPI dispatch (present → plan-research-attached; missing → spawn /loom-research via Agent tool with --mode=auto, wait, re-check, plan-research-auto-spawned OR write own RECOVERY-STATUS.json on sub-agent failure).",
+      "Documents evaluator pass via bin/guild derive-panel + /guild-validate against candidate PLAN.md before commit, with iteration on flagged findings (3 rounds/flag).",
+      "Documents human/auto duality with substrate 3 × 10 defaults; budget-exhaust writes the standard three artifacts.",
+      "Documents recovery flow by citing AGENT-CONVENTIONS § Recovery from sub-agent failures — no schema duplication, only skill-specific field usage.",
+      "Documents all 7 plan-* event emissions at the corresponding decision points (plan-started in step 1; plan-research-attached / plan-research-auto-spawned in step 2; plan-panel-spawned / plan-panel-verdict in step 6; plan-completed in step 8; plan-budget-exhausted in § Human/auto duality + § Griot integration).",
+      "Documents griot integration via § Capture finding for both per-panel [portable] scans AND hardcoded plan-budget-exhausted + plan-research-auto-spawned writes; verb-shape gap noted as Phase 7 follow-up.",
+      "Cites bin/loom plan for deterministic file IO; explicitly forbids writing into projects/<slug>/ directly.",
+      "Documents the sub-agent orchestration pattern (Agent tool for fresh-context spawn; parent writes own RECOVERY-STATUS.json on sub-agent failure; parent's recovery file references sub-agent's by path)."
+    ],
+    "rules_applied": [
+      "CLAUDE.md: prefer citation over restatement (RECOVERY-STATUS.json, two-budget defaults live in AGENT-CONVENTIONS).",
+      "CLAUDE.md: don't add features beyond the task (no --mode=auto on bin/loom plan; auto-mode is skill-runtime concern).",
+      "PLAN.md Phase 4 lines 323-377 dictates the outer-RPI behavior verbatim.",
+      "Substrate composition: Agent tool for fresh-context sub-agent spawns; Skill tool for inherited-context composition (e.g. /guild-validate)."
+    ],
+    "disqualifiers": [
+      "Re-implementing the RECOVERY-STATUS.json shape (cited only).",
+      "Modifying production code outside skills/loom-plan/SKILL.md.",
+      "Adding event types beyond the 7 plan-* names D1 declared.",
+      "Deleting skills/draft-plan/ (Phase 8 territory)."
+    ],
+    "inputs": [
+      "projects/2026-05-17-loom-absorb-draft/PLAN.md:323-377 (Phase 4 spec)",
+      "docs/AGENT-CONVENTIONS.md (Recovery + Auto-mode conventions; 3×10 default for /loom-plan)",
+      "docs/SUBSTRATE-COMPOSITIONS.md (§ Derive panel + § Capture finding)",
+      "skills/loom-research/SKILL.md (sibling skill structure; this skill spawns it)",
+      "skills/draft-plan/SKILL.md (structural model for the grill-me interview half)",
+      "cli/lib/types.ts (D1 — the 14 event types, this skill emits 7)"
+    ]
+  },
+  "execution": {
+    "actions": [
+      "Authored skills/loom-plan/SKILL.md (353 lines initially, then +5 after the evaluator-driven plan-started clarification → 358 lines). Structure: frontmatter → intro → Inputs → 9-step Process (Pre-flight + recovery; RESEARCH.md detection + dispatch; Frame; Grill-me interview; Synthesize PLAN+INTERVIEW; Evaluator pass; Show + approve; Write + commit via CLI; Report) → Sub-agent orchestration → Human/auto duality → Recovery flow → Griot integration → Rules → Failure modes.",
+      "Documented RESEARCH.md detection + outer-RPI dispatch: present → plan-research-attached event; missing → spawn /loom-research via Agent tool with subagent_type=loom-research + brief carrying --mode=auto; wait; re-check; on sub-agent failure write own RECOVERY-STATUS.json with parent_skill=/loom-plan + failed_step=research-auto-spawn + context.sub_agent_recovery_path pointing at the child's recovery file.",
+      "Documented the evaluator pass: write candidate PLAN.md to /tmp/loom-plan-<slug>.md, run bin/guild derive-panel against it, emit plan-panel-spawned with the agent list, invoke /guild-validate, emit plan-panel-verdict with the verdict + counts. Iteration handles flagged findings (3 rounds/flag); persistent flags go to UNRESOLVED.md.",
+      "Cited AGENT-CONVENTIONS for the 3 × 10 two-budget defaults and for the RECOVERY-STATUS.json shape; did NOT inline the schema (round-1 D2-phase-3 lesson applied proactively).",
+      "Authored § Sub-agent orchestration section: Agent tool (not Skill) for fresh-context spawns; sub-agent's startup brief includes bin/griot use --as=llm; parent owns recovery writes on sub-agent failure with sub_agent_recovery_path back-reference.",
+      "Authored § Griot integration: per-panel [portable] scan via § Capture finding + hardcoded writes on plan-budget-exhausted (substrate signal — same as research-budget-exhausted) + plan-research-auto-spawned (a plan needing research is itself substrate signal worth capturing as a catalog-gap once the verb supports it).",
+      "Derived evaluator panel via `bin/guild derive-panel --files=skills/loom-plan/SKILL.md` → evaluator-contract-fit (substrate-only file).",
+      "Invoked /guild-validate. Round 1 verdict: approved. One soft observation: plan-started event documentation was implicit at step 1 (the other 6 plan-* events had explicit emit-line callouts). Evaluator chose not to flag it but noted the inconsistency.",
+      "Applied the soft observation in-flight: added an explicit emit-line in step 1 with detail shape `{slug, topic: <positional-arg-or-null>}` so all 7 plan-* events have consistent documentation at their emit points.",
+      "Re-ran `npm test`: 485/485 passed (skill body is markdown — test surface untouched)."
+    ],
+    "files_touched": [
+      "skills/loom-plan/SKILL.md"
+    ],
+    "corrections": [
+      "Round-1 evaluator soft observation: plan-started emission was implicit at step 1 of the Process while the other 6 plan-* events had explicit emit-line documentation at their steps. Not flagged but worth tightening for consistency. Round-2-shape fix applied in-flight (no second panel run needed): added an explicit `plan-started` emission line to step 1 with detail shape `{slug, topic: ...}` after the recovery check. All 7 plan-* events now have consistent at-the-emit-point documentation."
+    ]
+  },
+  "scope": [
+    "skills/loom-plan/SKILL.md"
+  ],
+  "changes_since_previous": "Second unit on this branch. D1 (checkin 01) added the 14 plan-* / plan-revise-* event types to cli/lib/types.ts. D2 authors the first of two skill bodies that use those types — /loom-plan emits the 7 plan-* events. D3 (next) authors /loom-revise-plan which emits the 7 plan-revise-* events.",
+  "verdict": {
+    "result": "approved",
+    "reasons": []
+  },
+  "notes_for_pr": [
+    "/loom-plan is the outer-RPI orchestrator: detects RESEARCH.md → if missing, spawns /loom-research via the Agent tool (fresh-context, --mode=auto) → waits → reads the committed dossier → proceeds with the plan interview. Sub-agent failure writes the parent's own RECOVERY-STATUS.json with a back-reference to the sub-agent's recovery file (sub_agent_recovery_path in context), so a resumer can choose to retry the sub-agent or escalate.",
+    "Evaluator pass before commit uses bin/guild derive-panel + /guild-validate against the candidate PLAN.md. For markdown plans, the fallback rules yield evaluator-contract-fit alone today; when PANEL-COMPOSITION.md is symlinked into the marketplace cwd, the panel may expand. Iteration cap is 3 rounds per flagged finding; persistent flags go to UNRESOLVED.md.",
+    "Citation-heavy by design (round-1 lesson from /loom-research applied proactively here): RECOVERY-STATUS.json shape and the two-budget defaults live in AGENT-CONVENTIONS; this skill cites + describes skill-specific field usage rather than restating.",
+    "Round-1 evaluator soft observation drove a small in-flight refinement: explicit plan-started emit-line added to step 1 so all 7 plan-* events have consistent at-the-emit-point documentation rather than 6 explicit + 1 implicit. Improves readability for a future reader auditing the events-emission story.",
+    "The skill body is 358 lines. Within the same envelope as /loom-research (405 lines) — large skill bodies are the norm for orchestrator-style skills with sub-agent spawn + recovery + evaluator pass + griot integration. Skill bodies aren't naturally splittable along process boundaries without fracturing the narrative.",
+    "Tools authorized in frontmatter: Read, Write, Bash, Skill, Agent, AskUserQuestion. Agent is new vs /loom-research — this skill IS the parent that spawns research as a sub-agent.",
+    "/draft-plan stays as-is (Phase 8 deletion territory). Users currently invoking /draft-plan still get the legacy behavior. New project births should land here (/loom-plan)."
+  ]
+}
