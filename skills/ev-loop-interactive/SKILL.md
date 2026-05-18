@@ -195,7 +195,12 @@ For each deliverable (picked per the ordering rule):
      `{surface, slug, decisions_completed, rounds_completed}`.
    - On budget exhaust: emit `auto-mode-budget-exhausted` with
      `{surface, slug, decisions_completed, rounds_completed,
-     reason: 'decision-budget' | 'round-budget'}`.
+     reason: 'decision-budget' | 'round-budget'}`. Alongside the
+     emission, write a session-note via § Capture finding with the
+     exhaustion context (which contract fields didn't converge,
+     how many rounds spent on each). Substrate-wide question this
+     answers: "which auto-mode situations fail to converge."
+     Same classification-gap as the other Phase-7-wired captures.
 
    Human-paired mode emits no auto-mode events — the conversation
    itself is the audit trail.
@@ -357,6 +362,20 @@ For each deliverable (picked per the ordering rule):
    signal_count, signals: ['evaluator-finding' | 'user-comment' |
    'whiteboard-contradiction' | 'phase-boundary', ...]}`.
 
+   **Griot write**: alongside the event emission, write a
+   session-note via § Capture finding (the
+   `bin/griot capture --evaluator-finding=<classification> ...`
+   pathway). The noticing itself is high-signal substrate data:
+   "we saw this kind of drift pattern in this kind of unit at
+   this kind of phase boundary." Classification gap: today
+   `bin/griot capture` doesn't have a precise classification for
+   "scope-shift detection in a unit context"; the closest match
+   once the verb supports it is `catalog-gap` (the plan didn't
+   anticipate the shift). Until the verb extension lands, this
+   capture intent is recorded here; the actual write falls back
+   to the event itself as the only substrate trace. Phase 7
+   follow-up.
+
    **Offer flow**: surface a short paragraph naming the two signals
    and a proposed one-line rationale (the "trigger" for the inner
    RPI). Use `AskUserQuestion` (or natural-language confirm) for
@@ -368,7 +387,14 @@ For each deliverable (picked per the ordering rule):
    **On accept (inner-RPI sub-sequence)**:
 
    1. Emit `rpi-inner-triggered` with detail `{slug, phase,
-      trigger: <the one-line rationale>}`.
+      trigger: <the one-line rationale>}`. Alongside the emission,
+      write a session-note via § Capture finding with the trigger
+      rationale as the evidence — this is the highest-signal
+      substrate trace the loop emits ("what kind of learning
+      forced revisions"). Same classification-gap caveat as the
+      scope-shift-detected write above: Phase 7 follow-up wires the
+      capture once the verb supports a `revision-trigger` (or
+      similar) classification.
    2. Spawn `/loom-research` via the `Agent` tool with
       `subagent_type=loom-research` and a brief carrying the
       trigger as the research topic + `--mode=auto`. The sub-agent
@@ -381,10 +407,15 @@ For each deliverable (picked per the ordering rule):
       to step 4 below.
    4. Spawn `/loom-revise-plan` via the `Agent` tool with
       `subagent_type=loom-revise-plan` and a brief carrying the
-      slug + `--flavor=research` + `--mode=auto`. The skill reads
-      the just-committed RESEARCH.md, runs its grill-me on the
-      revision, gates through the evaluator pass, and commits via
-      `bin/loom revise-plan`. Wait.
+      slug + `--flavor=research` + `--mode=auto`. The sub-agent's
+      startup brief includes `bin/griot use --as=llm` per the
+      substrate convention (the `/loom-revise-plan` skill body
+      handles this in its own step 1; no additional caller-side
+      instruction needed — matches the /loom-research spawn at
+      sub-step 2). The skill reads the just-committed RESEARCH.md,
+      runs its grill-me on the revision, gates through the
+      evaluator pass, and commits via `bin/loom revise-plan`.
+      Wait.
    5. Re-read the manifest via `bin/loom project read <slug>
       --pretty`. The revision may have changed the phase structure;
       if the **current phase no longer exists** in the manifest,

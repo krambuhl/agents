@@ -71,13 +71,19 @@
       "pr": {
         "number": 6,
         "url": "https://github.com/krambuhl/agents/pull/6",
-        "state": "open"
+        "state": "merged"
       }
     },
     {
       "number": 7,
       "name": "Cross-cutting griot writes for new events",
-      "status": "not-started"
+      "status": "completed",
+      "branch": "phase-7-griot-writes",
+      "pr": {
+        "number": 7,
+        "url": "https://github.com/krambuhl/agents/pull/7",
+        "state": "open"
+      }
     },
     {
       "number": 8,

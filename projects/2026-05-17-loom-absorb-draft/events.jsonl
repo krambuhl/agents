@@ -36,3 +36,8 @@
 {"at":"2026-05-18T21:08:02.575Z","event":"checkin-created","detail":{"number":"04","branch":"phase-6-grill-me-auto-mode"}}
 {"at":"2026-05-18T21:08:50.505Z","event":"pr-opened","detail":{"pr":6,"url":"https://github.com/krambuhl/agents/pull/6"}}
 {"at":"2026-05-18T21:09:00.024Z","event":"phase-completed","detail":{"phase":6}}
+{"at":"2026-05-18T21:24:55.162Z","event":"phase-completed","detail":{"phase":6}}
+{"at":"2026-05-18T21:29:59.757Z","event":"checkin-created","detail":{"number":"01","branch":"phase-7-griot-writes"}}
+{"at":"2026-05-18T21:29:59.832Z","event":"phase-started","detail":{"phase":7,"name":"Cross-cutting griot writes for new events"}}
+{"at":"2026-05-18T21:30:45.018Z","event":"pr-opened","detail":{"pr":7,"url":"https://github.com/krambuhl/agents/pull/7"}}
+{"at":"2026-05-18T21:30:53.717Z","event":"phase-completed","detail":{"phase":7}}

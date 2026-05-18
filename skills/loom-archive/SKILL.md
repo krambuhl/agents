@@ -147,9 +147,29 @@ on half-ambiguous contracts) — retros are best-effort by design.
   `{surface, slug, decisions_completed, rounds_completed}`.
 - On budget exhaust: emit `auto-mode-budget-exhausted` with
   `{surface, slug, decisions_completed, rounds_completed, reason}`.
+  Alongside the emission, write a session-note via § Capture
+  finding with the exhaustion context (which dimension didn't
+  converge; how many rounds the panel spent there). Substrate-
+  wide signal for cross-skill auto-mode failure patterns. Same
+  classification-gap caveat as other Phase-7-wired captures.
+
+**Griot `[portable]` scan at retro close**: after the panels
+converge (or budget-exhaust), scan both whiteboard and evaluator
+panel outputs for `[portable]` markers (the convention is
+documented in `docs/AGENT-CONVENTIONS.md`). For each marker, write
+a session-note via § Capture finding to
+`learnings/session-notes/<date>-<slug>-archive-retro.md`. This is
+the canonical griot integration for retros — the retrospective
+itself is project-scoped (project-tier retro JSON), and the
+`[portable]` scan extracts cross-project signal for the
+substrate-wide learnings pool.
 
 Human-paired mode emits no auto-mode events — the
-`AskUserQuestion`-driven conversation is the audit trail.
+`AskUserQuestion`-driven conversation is the audit trail. The
+`[portable]` scan still runs in human-paired mode (operators can
+flag whiteboard or evaluator findings as `[portable]` in their
+response to grill-me questions; the scan picks them up
+regardless of mode).
 
 ### 4. Compose the project retro JSON
 
