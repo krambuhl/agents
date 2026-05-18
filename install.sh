@@ -32,9 +32,12 @@ echo "==> installing krambuhl/agents marketplace from $MARKETPLACE"
 
 mkdir -p "$HOME/.agents/skills" "$HOME/.agents/agents"
 
-# cli + learnings: single whole-dir symlink each. They own the namespace
-# at ~/.agents/<top>/, so a directory-level symlink is the clean shape.
-for top in cli learnings; do
+# cli + learnings + docs: single whole-dir symlink each. They own the
+# namespace at ~/.agents/<top>/, so a directory-level symlink is the
+# clean shape. (docs is whole-dir today; switch to per-item if a
+# consumer ever needs to drop in their own docs alongside the
+# marketplace ones.)
+for top in cli learnings docs; do
   link="$HOME/.agents/$top"
   target="$MARKETPLACE/$top"
   if [[ -L "$link" ]]; then

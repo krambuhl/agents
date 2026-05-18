@@ -61,7 +61,7 @@ export function formatHelp(): string {
     'Verbs:',
     ...verbLines,
     '',
-    'See projects/LOOM-CONVENTIONS.md for full substrate conventions.',
+    'See docs/LOOM-CONVENTIONS.md for full substrate conventions.',
   ].join('\n');
 }
 

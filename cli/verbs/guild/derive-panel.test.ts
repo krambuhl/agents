@@ -266,7 +266,7 @@ describe('loadSpec fallback', () => {
     try {
       const { spec, warning } = loadSpec(tmp);
       expect(spec.rules.length).toBeGreaterThan(0);
-      expect(spec.precedence.length).toBe(8);
+      expect(spec.precedence.length).toBe(9);
       expect(spec.precedence[0]).toBe('evaluator-contract-fit');
       expect(warning).toMatch(/panel-spec-unreadable/);
       expect(derivePanel(['components/Foo.tsx'], spec)).toEqual([

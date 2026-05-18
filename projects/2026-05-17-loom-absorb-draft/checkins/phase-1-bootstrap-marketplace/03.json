@@ -1,0 +1,70 @@
+{
+  "schema_version": 1,
+  "number": "03",
+  "created": "2026-05-18T09:05:00.000Z",
+  "phase": {
+    "number": 1,
+    "name": "Bootstrap marketplace for self-development"
+  },
+  "branch": "phase-1-bootstrap-marketplace",
+  "unit": "Recipe grep cross-check",
+  "contract": {
+    "goal": "Verify every `§ <Recipe>` citation in skill bodies resolves to an authored recipe in `docs/SUBSTRATE-COMPOSITIONS.md`, a skill-local section heading, or another conventions doc. Per PLAN.md Phase 1.3: 'Any miss is a blocker — author the body before merging.'",
+    "acceptance_criteria": [
+      "Every unique recipe ref (`§ <Recipe>` without `below` qualifier) resolves to a heading in `docs/SUBSTRATE-COMPOSITIONS.md`.",
+      "Every skill-local ref (`§ <Section> below` or `see § <Section>`) resolves to a heading in the same skill body.",
+      "Every cross-doc ref (`§ <Section>` qualified by a file name) resolves to a heading in the named file.",
+      "No dangling recipe citations."
+    ],
+    "rules_applied": [
+      "AGENT-CONVENTIONS.md § Citation conventions — established in Unit 1.2; this unit verifies the convention is consistent across skill bodies and docs.",
+      "PLAN.md Phase 1.3: 'Any miss is a blocker — author the body before merging.'",
+      "CLAUDE.md: keep it basic — no scope creep; verification unit only."
+    ],
+    "disqualifiers": [
+      "Authoring new recipes not in Unit 1.2's set (recipe set is closed after 1.2).",
+      "Graduating the grep cross-check to a CI test (testing-strategy whiteboard recommendation; deferred to a follow-up — outside PLAN scope for 1.3).",
+      "Touching any file outside skill bodies' citation strings (cross-check is verification, not authoring)."
+    ],
+    "inputs": [
+      "projects/2026-05-17-loom-absorb-draft/PLAN.md (lines 227-237: Phase 1.3 spec + verifies clause)",
+      "docs/SUBSTRATE-COMPOSITIONS.md (Unit 1.2 artifact — 11 recipes)",
+      "docs/LOOM-CONVENTIONS.md (Unit 1.2 artifact — cross-doc ref target)",
+      "docs/AGENT-CONVENTIONS.md (Unit 1.2 artifact — citation convention)",
+      "Skill bodies: skills/{ev-loop-confidence,ev-loop-interactive,ev-run,loom-archive,guild-whiteboard,griot-compact}/SKILL.md"
+    ]
+  },
+  "execution": {
+    "actions": [
+      "Ran repo-wide grep for `§` markers across skill bodies. Six files matched: ev-loop-confidence, ev-loop-interactive, ev-run, loom-archive, guild-whiteboard, griot-compact.",
+      "Enumerated all citations and classified each as recipe ref / skill-local ref / cross-doc ref / section number.",
+      "Built 11-recipe citation inventory: § Append finding, § Capture finding, § Checkin write, § Compose PR, § Derive panel, § Phase update, § Retro write, § Revise PLAN.md, § Save session, § State refresh, § Triage PR comments.",
+      "Cross-checked against docs/SUBSTRATE-COMPOSITIONS.md headings: 11 ↔ 11 EXACT MATCH. No dangling citations, no orphan recipes.",
+      "Verified skill-local refs: § Substrate compositions, § Panel auto-derivation, § \"Contradiction detection (v1: future-work)\" — all resolve within their citing skill bodies.",
+      "Found one dangling cross-doc ref: skills/loom-archive/SKILL.md:27 cited `§ Retro storage` but docs/LOOM-CONVENTIONS.md has `### retros/<filename>.json` (artifact-path-as-heading pattern). Fixed: updated the cite to `§ retros/<filename>.json` matching the literal heading.",
+      "Confirmed section numbers (§ 1 … § 5) in griot-compact are skill-local internal section numbering, not recipe refs — correctly scoped out of the cross-check.",
+      "Derived panel via bin/guild derive-panel for the single-file change: evaluator-contract-fit.",
+      "Invoked /guild-validate. Verdict: approved with 0 findings. Evaluator made one soft observation (suggested documenting the '§ followed by digit = section number, not recipe' rule somewhere) but did not flag it."
+    ],
+    "files_touched": [
+      "skills/loom-archive/SKILL.md"
+    ],
+    "corrections": []
+  },
+  "scope": [
+    "skills/loom-archive/SKILL.md"
+  ],
+  "changes_since_previous": "Unit 1.2 authored the three docs and updated most references. This unit verifies the cross-reference graph is consistent and patches the one cross-doc cite that didn't match its target heading exactly.",
+  "verdict": {
+    "result": "approved",
+    "reasons": []
+  },
+  "notes_for_pr": [
+    "Cross-check log (PLAN.md Phase 1.3 verification clause): 11 unique recipe citations across skill bodies, 11 authored recipes in docs/SUBSTRATE-COMPOSITIONS.md, 1:1 EXACT MATCH. Zero dangling citations.",
+    "Skill-local refs resolved: § Substrate compositions, § Panel auto-derivation, § \"Contradiction detection (v1: future-work)\" — all resolve within their own skill body.",
+    "One cross-doc cite fix: skills/loom-archive/SKILL.md updated `§ Retro storage` → `§ \\`retros/<filename>.json\\`` to match the literal heading in docs/LOOM-CONVENTIONS.md.",
+    "Considered and deferred: testing-strategy's whiteboard recommendation to graduate the grep cross-check into a CI-enforced test. Out of PLAN scope for 1.3; tracked as a follow-up for a later phase (could land alongside Phase 7's cross-cutting griot writes or as a standalone follow-up).",
+    "Soft observation from contract-fit evaluator: future cross-checks might benefit from a documented rule that '§ followed by digit = section number, not recipe' (preventing re-litigation of griot-compact's § 1 … § 5 internal section numbers). Not actioned in this unit; trivial enough to add inline if it surfaces again.",
+    "Latent stale cli/lib/project.ts:151 comment reference (`// LOOM-CONVENTIONS.md § Pairing with draft.`) remains; Phase 1.3's grep cross-check operates over skill-body recipe citations, not .ts comments, so the reference is intentionally out of scope here. Phase 2 (which moves draft→loom semantics) is the natural place to address."
+  ]
+}

@@ -2,8 +2,9 @@
 # the marketplace canonical content free of derived shims.
 bin/
 
-# Per-machine Node deps (no deps today, precaution for future)
-cli/node_modules/
+# Per-machine Node deps — install with `npm install` for the test harness.
+# Covers both root and any nested node_modules in cli/ or elsewhere.
+node_modules
 
 # OS noise
 .DS_Store

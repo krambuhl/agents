@@ -1,0 +1,98 @@
+{
+  "schema_version": 1,
+  "number": "01",
+  "created": "2026-05-18T08:30:00.000Z",
+  "phase": {
+    "number": 1,
+    "name": "Bootstrap marketplace for self-development"
+  },
+  "branch": "phase-1-bootstrap-marketplace",
+  "unit": "Test harness",
+  "contract": {
+    "goal": "Wire vitest as the marketplace's test runner so the ~20 existing cli/**/*.test.ts files run via `npm test`, locking the contributor dev-loop interface. This is recognition, not choice — every test already imports from 'vitest'.",
+    "acceptance_criteria": [
+      "Root package.json declares `vitest` as a devDependency, pinned to a current major (`^4.1.0`).",
+      "Root package.json defines `\"test\": \"vitest run\"` and `\"test:watch\": \"vitest\"` scripts.",
+      "Root package.json declares `\"engines\": { \"node\": \">=22.6\" }` — the shims already assume type-stripping; this prevents confusing errors on older Node.",
+      "Root .gitignore covers `node_modules` (single line, no leading slash) — replaces the existing `cli/node_modules/` entry per testing-strategy's collapse recommendation.",
+      "`npm install` from a clean clone resolves vitest into root `node_modules/`.",
+      "`npm test` runs all existing cli/**/*.test.ts files and exits 0 (regression baseline = 472 tests passing).",
+      "package-lock.json is committed (locks the resolved dep graph for reproducibility).",
+      "Pre-existing test bugs in three named categories MAY be fixed in this unit (mid-flight redirect; see corrections)."
+    ],
+    "rules_applied": [
+      "CLAUDE.md: keep it basic — no extra abstractions, no boilerplate beyond what `npm test` requires.",
+      "CLAUDE.md: don't introduce features beyond the task — no vitest.config.ts unless required (it wasn't).",
+      "Whiteboard round 1: vitest is forced by existing imports (testing-strategy + performance + skeptic); pin to current major + engines.node>=22.6 (performance); collapse the gitignore (testing-strategy)."
+    ],
+    "disqualifiers": [
+      "Rewriting tests beyond the three pre-existing failure categories named in the mid-flight redirect.",
+      "Touching cli/package.json (subpackage is unrelated to root-level harness).",
+      "Adding a vitest.config.ts file unless the default config can't run the existing tests (it could).",
+      "Touching any .ts source file beyond the FALLBACK_PRECEDENCE sync in derive-panel.ts."
+    ],
+    "inputs": [
+      "projects/2026-05-17-loom-absorb-draft/PLAN.md (lines 192-197: Phase 1.1 spec)",
+      "projects/2026-05-17-loom-absorb-draft/whiteboards/1-bootstrap-marketplace-for-self-development.md (round 1 panel)",
+      "package.json (initial: marketplace metadata only, no scripts, no devDependencies)",
+      ".gitignore (initial: bin/, cli/node_modules/, .DS_Store)",
+      "cli/**/*.test.ts (20 existing test files using `import { test, expect } from 'vitest'`)"
+    ]
+  },
+  "execution": {
+    "actions": [
+      "Edited package.json: appended `engines`, `scripts`, `devDependencies` after the `keywords` block.",
+      "Edited .gitignore: replaced `cli/node_modules/` with single root `node_modules` line; updated the comment.",
+      "Ran `npm install` (vitest 4.1.6 + transitive deps, 44 packages, 0 vulnerabilities). Created package-lock.json.",
+      "Ran first `npm test`: 11 of 465 tests failed across 6 files — all pre-existing bugs the harness surfaced for the first time.",
+      "Triage of failures: (a) shim path bug in 4 files; (b) missing projects/CONVENTIONS.md; (c) FALLBACK_PRECEDENCE spec drift.",
+      "Surfaced the failures to the operator with 4 options; received redirect: 'Fix all three in Unit 1.1.'",
+      "Edited cli/{loom,guild,griot,draft}.test.ts: BIN_<X> path `'..', '..', 'bin'` → `'..', 'bin'` (one-token correction each).",
+      "Edited cli/verbs/guild/derive-panel.ts: inserted `'evaluator-css-architecture'` at FALLBACK_PRECEDENCE index 3 to sync with the live PANEL-COMPOSITION.md spec.",
+      "Edited cli/verbs/guild/derive-panel.test.ts: line 269 `toBe(8)` → `toBe(9)` to track the fallback-array length change.",
+      "Authored projects/CONVENTIONS.md (real content, not placeholder): parallel-work invariant categories (append-only / partitioned / single-writer-serialized) + Declared exceptions section (PLAN.md / manifest.json / whiteboard).",
+      "Re-ran `npm test`: 33 test files passed, 472 tests passed, 0 failures, 638ms.",
+      "Derived panel via `bin/guild derive-panel`: evaluator-contract-fit, evaluator-react-api, evaluator-test-unit, evaluator-naming.",
+      "Invoked /guild-validate: all 4 evaluators returned `approved`; aggregated verdict `approved`, 0 findings."
+    ],
+    "files_touched": [
+      "package.json",
+      "package-lock.json",
+      ".gitignore",
+      "cli/loom.test.ts",
+      "cli/guild.test.ts",
+      "cli/griot.test.ts",
+      "cli/draft.test.ts",
+      "cli/verbs/guild/derive-panel.ts",
+      "cli/verbs/guild/derive-panel.test.ts",
+      "projects/CONVENTIONS.md"
+    ],
+    "corrections": [
+      "Mid-flight redirect from operator: the original contract's disqualifier 'no test rewrites' collided with reality — 11 pre-existing tests failed against the freshly wired harness, and the regression-baseline AC could not be met without touching them. Operator picked 'Fix all three in Unit 1.1' (recommended option) from a 4-way AskUserQuestion. Disqualifier was explicitly relaxed for the three named failure categories; AC list extended with item 8. Three categories addressed: (a) shim test path arithmetic — one extra `..` walked past repo root; (b) missing-file dependency the test grep was expecting at `projects/CONVENTIONS.md`; (c) FALLBACK_PRECEDENCE in derive-panel.ts had drifted vs the live PANEL-COMPOSITION.md (missing evaluator-css-architecture entry). No test logic was rewritten — only path strings, the new prose doc, the fallback array entry, and the companion length assertion."
+    ]
+  },
+  "scope": [
+    "package.json",
+    "package-lock.json",
+    ".gitignore",
+    "cli/loom.test.ts",
+    "cli/guild.test.ts",
+    "cli/griot.test.ts",
+    "cli/draft.test.ts",
+    "cli/verbs/guild/derive-panel.ts",
+    "cli/verbs/guild/derive-panel.test.ts",
+    "projects/CONVENTIONS.md"
+  ],
+  "changes_since_previous": "First unit on this branch.",
+  "verdict": {
+    "result": "approved",
+    "reasons": []
+  },
+  "notes_for_pr": [
+    "vitest pinned `^4.1.0` (latest major as of 2026-05-18; resolved version 4.1.6).",
+    "`engines.node >= 22.6` aligned with the existing bin/ shims that rely on Node's TypeScript type-stripping (introduced in 22.6).",
+    "Mid-flight redirect fixed three pre-existing test bug categories: shim-path arithmetic (4 files), missing projects/CONVENTIONS.md, FALLBACK_PRECEDENCE drift in derive-panel.ts. Each is documented in execution.corrections — these were latent bugs uncovered by running the suite for the first time, not introduced by this unit.",
+    "projects/CONVENTIONS.md location: known follow-up. The contract-fit evaluator flagged that the file sits under projects/ while Phase 1.2 will lift docs to docs/. Phase 1.2 owns relocation (move to docs/ or fold into docs/LOOM-CONVENTIONS.md) and updating cli/parallel-work-invariant.test.ts's readFileSync path to match.",
+    "Whiteboard round 1 inputs that shaped this contract: vitest is recognition not choice (testing-strategy + performance); engines pin (performance); gitignore collapse (testing-strategy); leaving the recipe-shape and naming questions to Unit 1.2."
+  ]
+}

@@ -1,0 +1,335 @@
+# Agent conventions
+
+Cross-skill rituals and file shapes that every agent (skills,
+whiteboard engineers, evaluators, generators) in the marketplace
+substrate honors. These conventions are the contract between
+sub-agents and the skills that spawn them; between parent skills
+and the recovery flow when sub-agents fail; between auto-mode
+skills and the budget shape that limits runaway resolution.
+
+The companion docs are
+[`SUBSTRATE-COMPOSITIONS.md`](./SUBSTRATE-COMPOSITIONS.md) (the
+named recipes loops call) and
+[`LOOM-CONVENTIONS.md`](./LOOM-CONVENTIONS.md) (project artifact
+shapes and event vocabulary).
+
+## Reading order
+
+The three docs in this directory are designed to be read in this
+order:
+
+1. **`AGENT-CONVENTIONS.md`** (this file) — rituals every agent
+   honors.
+2. **`LOOM-CONVENTIONS.md`** — project artifact shapes (`PLAN.md`,
+   `manifest.json`, `events.jsonl`, etc).
+3. **`SUBSTRATE-COMPOSITIONS.md`** — named recipes the loops call,
+   each documenting its CLI wrap + idempotency + failure modes +
+   callers.
+
+Loop bodies cite recipes from `SUBSTRATE-COMPOSITIONS.md` by name
+(`§ <Recipe>`). Conventions in this doc are referenced by section
+heading rather than by recipe name.
+
+### Why the asymmetric name
+
+`AGENT-CONVENTIONS.md` and `LOOM-CONVENTIONS.md` use the
+`-CONVENTIONS` suffix; `SUBSTRATE-COMPOSITIONS.md` uses
+`-COMPOSITIONS`. The asymmetry is deliberate. The first two docs
+describe **conventions** — shared rituals, file shapes, vocabulary
+the substrate honors. `SUBSTRATE-COMPOSITIONS.md` describes
+**compositions** — small named recipes that compose CLI verbs into
+loop-callable orchestrations. The word "compositions" is
+load-bearing in the substrate's own vocabulary (skill bodies cite
+`§ <Recipe>` references that compose the CLI surface); renaming to
+`SUBSTRATE-CONVENTIONS.md` would understate the doc's role and
+fight against established usage in skill bodies, retros, and prior
+project artifacts. A uniform-suffix family would be cleaner on
+the file listing; the calcified vocabulary of the surrounding
+system wins. Documented here so the next reader doesn't try to
+rename it.
+
+## Citation conventions
+
+### Recipe citations resolve in `SUBSTRATE-COMPOSITIONS.md`
+
+When a skill body writes `§ <Recipe>`, the convention is:
+
+- A bare `§ <Recipe>` resolves in
+  `docs/SUBSTRATE-COMPOSITIONS.md`. Skill bodies do not need to
+  qualify the path; the reader looks up the recipe in the single
+  authoritative file.
+- A `§ <Section> below` (or any explicit `below` / `above` /
+  same-file qualifier) is **skill-local**: it refers to a section
+  in the same skill body. Example: `/ev-loop-interactive` uses
+  `§ Panel auto-derivation` for a section defined further down in
+  its own SKILL.md, not a centralized recipe.
+- A `§ <Section>` followed by an explicit file qualifier (e.g.
+  `§ Retro format` in `LOOM-CONVENTIONS.md`) resolves in the named
+  file. This pattern is used when a section in one of the
+  conventions docs is referenced by another doc or by a skill.
+
+The recipe-citation cross-check (Phase 1.3 of the loom-absorb-draft
+project, expected to graduate to a CI-enforced test) walks every
+`§ <X>` in skill bodies and resolves it against either
+`SUBSTRATE-COMPOSITIONS.md` (for bare recipes) or the skill body
+itself (for `below`-qualified citations). Citations that resolve to
+nothing are blockers.
+
+### Marketplace-rooted doc paths
+
+Skill bodies cite docs as `docs/<file>.md`. The resolution rule:
+
+- On a contributor machine working inside the marketplace clone,
+  `docs/<file>.md` is the literal relative path from the
+  marketplace root.
+- On a consumer machine that ran `install.sh`,
+  `~/.agents/docs/<file>.md` is the symlink that resolves to the
+  same file in the cloned marketplace. The `~/.agents/docs/`
+  symlink is created by `install.sh` (whole-dir target mirroring
+  `cli` and `learnings`).
+
+Either path works — they resolve to the same file via the symlink.
+The convention in skill bodies is to use the unqualified
+`docs/<file>.md` form for brevity. The symlink does the work.
+
+### `[portable]` marker
+
+Whiteboard engineers and evaluators surface findings that should be
+captured to the griot learnings system by suffixing the finding
+with `[portable]`:
+
+```
+Finding: <description>. [portable]
+```
+
+The marker says: this finding generalizes beyond the current
+project. When a skill body scans agent output for findings, it
+treats `[portable]`-marked entries as triggers to call the
+`§ Capture finding` recipe, which writes a session-note under
+`learnings/session-notes/`.
+
+The convention name `[portable]` describes *meaning* (this
+generalizes), not appearance (no `[GLOBAL]`, no `[!]`, no
+`[learning]`). Semantic naming applies even to inline markers.
+
+## Sub-agent startup brief
+
+Every skill that spawns a sub-agent via the `Agent` tool MUST
+include the rollup-load step in the sub-agent's startup brief:
+
+> Run `bin/griot use --as=llm` first. This loads the substrate-
+> wide learnings rollup into your context. After it succeeds, read
+> your task brief below.
+
+This ensures every sub-agent starts with the substrate's
+accumulated learnings as context, not just the spawning skill's
+brief. The verb is no-op when the rollup is empty or missing, and
+logs which case it hit, so the convention is safe to apply
+universally.
+
+The startup-brief convention applies to sub-agents invoked via the
+`Agent` tool — i.e. fresh-context spawns where the sub-agent does
+not inherit the parent's conversation. Sub-skills invoked via the
+`Skill` tool (which run in the parent's context) do not need the
+rollup-load step because they inherit it from the parent.
+
+## Recovery from sub-agent failures
+
+When a sub-agent invocation fails (timeout, partial commit, hard
+error, budget-exhausted), the parent skill writes a
+`RECOVERY-STATUS.json` file at the project root capturing what
+failed and how to resume.
+
+### File shape
+
+`RECOVERY-STATUS.json` is a single JSON object with the following
+fields:
+
+```json
+{
+  "schema_version": 1,
+  "parent_skill": "/loom-research",
+  "slug": "<project-slug>",
+  "failed_step": "<step name>",
+  "resume_from": "<step name>",
+  "context": { /* skill-specific blob */ },
+  "written_at": "<ISO 8601 timestamp>"
+}
+```
+
+- **`schema_version`** — `1`. Additive evolution only; new fields
+  may appear in later schema versions, but the existing fields'
+  shapes are stable.
+- **`parent_skill`** — the skill that spawned the sub-agent (and
+  that owns recovery). Same skill on re-invocation reads this file
+  to know it's the responsible recoverer.
+- **`slug`** — the project slug the sub-agent was working on.
+  Recovery is per-slug.
+- **`failed_step`** — a skill-defined step name that identifies
+  where the failure happened.
+- **`resume_from`** — a skill-defined step name identifying where
+  the resumed work picks up. Often equal to `failed_step` (retry
+  from the same point), but may be a step earlier if rollback is
+  needed.
+- **`context`** — a skill-specific blob. Skills are free to put
+  whatever they need here (partial artifacts, last user response,
+  remaining work items). The substrate does not interpret
+  `context`; only the writing/reading skill does.
+- **`written_at`** — ISO 8601 timestamp of the write.
+
+### Path
+
+`RECOVERY-STATUS.json` lives at the project root, alongside
+`manifest.json`:
+
+```
+projects/<slug>/RECOVERY-STATUS.json
+```
+
+### Lifecycle and concurrency
+
+The file is **single-instance**: there is at most one
+`RECOVERY-STATUS.json` per project at a time. A second failure on
+the same slug overwrites the first failure's record. This is by
+design — only the latest failure context is needed to resume, and
+keeping the history would require a partitioning scheme the
+substrate does not provide.
+
+The substrate **assumes single-writer-per-slug**: only one
+parent-skill session is active against a given slug at a time.
+Concurrent sessions against the same slug are undefined; the
+recovery file would race. This matches the broader parallel-work
+invariant in `projects/CONVENTIONS.md` § Category 3 (single-
+writer-serialized).
+
+### Resume semantics
+
+Each parent skill defines its own resume semantics; the substrate
+does not. Common patterns:
+
+- **Research** (`/loom-research`): resume from the last completed
+  domain shift. The `context` blob carries the shift number and
+  partial `RESEARCH.md` content.
+- **Plan** (`/loom-plan`): re-read partial `PLAN.md`, continue
+  grill-me from the next unresolved question. The `context` blob
+  carries the question queue and partial answers.
+- **Revise plan** (`/loom-revise-plan`): resume from the
+  flavor-routing point. The `context` blob carries the flavor
+  decision and any pending revise steps.
+
+A parent skill on re-invocation against a slug that has a
+`RECOVERY-STATUS.json` MUST detect the file and offer to resume.
+The offer flow is skill-specific (interactive prompt; auto-mode
+acceptance; etc).
+
+### Removing the file
+
+After a successful resume (work completes; sub-agent finishes its
+mission), the parent skill deletes `RECOVERY-STATUS.json`. The
+substrate does not auto-clean stale files; cleanup is each skill's
+responsibility.
+
+## Auto-mode and the two-budget shape
+
+Many skills support an optional `--mode=auto` flag (or equivalent
+caller-supplied signal) that runs the skill without human input.
+Auto-mode uses panels (whiteboards for divergent / generative
+questions; evaluators for convergent / auditing questions) to
+drive resolution instead of asking the operator.
+
+### Convergence rule
+
+Auto-mode runs until one of two stop conditions:
+
+1. **Silent panel** — no engineer / evaluator raised a new
+   question this round.
+2. **Two-budget exhaustion** — per-decision rounds × per-session
+   decisions cap hit.
+
+Silent panel means "consensus, or no further pressure" — the work
+is done. Budget exhaustion means "ran too long, partial work
+remains" — the skill writes a partial artifact + `UNRESOLVED.md`
+sidecar + `RECOVERY-STATUS.json` + exits non-zero.
+
+### Default budget shape
+
+The "two-budget" is **per-decision rounds × per-session
+decisions**:
+
+- **Per-decision rounds** — how many panel rounds the skill runs
+  for a single decision (e.g. a single domain shift in research;
+  a single contract field in unit negotiation). Default: **3**
+  everywhere unless explicitly overridden.
+- **Per-session decisions** — how many decisions the skill
+  processes total in one session. Default varies by skill:
+
+  | Skill | Per-session decisions | Domain |
+  |-------|----------------------|--------|
+  | `/loom-research` | 5 shifts | research session |
+  | `/loom-plan` | 10 questions | plan grill-me |
+  | `/loom-revise-plan` | 10 questions | revise grill-me |
+  | `/loom-archive` | 8 questions | retro grill-me |
+  | `/ev-loop-interactive` unit-contract | 5 ambiguities per unit | contract negotiation |
+  | `/ev-run` dispatch | 3 ambiguities | router clarification |
+
+The numbers above are the substrate defaults documented in this
+file. Individual skill bodies may override; if a skill does
+override, it MUST document the override in its own SKILL.md so the
+divergence is visible.
+
+### Budget-exhausted recovery
+
+A budget-exhausted auto-mode run produces three artifacts at the
+project root:
+
+1. The partial primary artifact (`PLAN.md`, `RESEARCH.md`, etc.) —
+   whatever the skill had constructed up to the exhaustion point.
+2. `UNRESOLVED.md` — a markdown sidecar listing the questions /
+   decisions that did not converge. Human-readable, intended for
+   a follow-up session.
+3. `RECOVERY-STATUS.json` — the machine-readable resume file (see
+   § Recovery from sub-agent failures above).
+
+The skill then exits non-zero. The substrate treats this as a
+documented failure mode, not a crash: the operator (or a parent
+skill) can re-invoke with a fresh session, the skill detects
+`RECOVERY-STATUS.json`, and resumes.
+
+## Engineer / evaluator self-recusal
+
+Whiteboard engineers and evaluators are expected to **self-recuse
+cleanly** when their lens does not apply to the current
+artifact / question.
+
+A clean recusal:
+
+- Names the recusal explicitly (e.g. "**Recusing.**" as the first
+  line, or `VERDICT: approved` with a non-applicability note for
+  evaluators).
+- Explains in one paragraph why the lens does not bite.
+- Optionally suggests which other panel members are the right ones
+  to lead.
+
+A clean recusal is **not a failure** — the orchestrator expects
+some engineers / evaluators to recuse on any given panel. A panel
+of 8 engineers where 4 recuse and 4 contribute is healthy, not
+broken.
+
+The opposite anti-pattern is **stretched contribution**: an
+engineer / evaluator inventing relevance to stay at the table
+when their lens doesn't actually apply. This produces noise and
+should be avoided. If you can't find a load-bearing observation
+in your lens, recuse.
+
+## Self-reference shape
+
+When a finding inside a panel response references another agent's
+contribution (e.g. design-systems engineer noting "defer to
+substrate-engineer on this point"), the convention is to name the
+other agent explicitly. This makes cross-perspective hand-offs
+legible to both human readers and orchestrating skills.
+
+Bad: "Someone else can speak to this better."
+
+Good: "Deferring to `whiteboard-substrate-engineer` on the schema
+shape — that's their lens."

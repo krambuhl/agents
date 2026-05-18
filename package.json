@@ -16,5 +16,15 @@
     "griot",
     "loom",
     "skills-cli-marketplace"
-  ]
+  ],
+  "engines": {
+    "node": ">=22.6"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "devDependencies": {
+    "vitest": "^4.1.0"
+  }
 }

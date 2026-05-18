@@ -25,7 +25,8 @@ panel.
 `/draft-revise` skills — substrate plumbing dispatches directly to the
 CLIs (see § Substrate compositions).
 
-**Format reference**: `projects/LOOM-CONVENTIONS.md` (repo-relative).
+**Format reference**: `docs/LOOM-CONVENTIONS.md` (marketplace-rooted;
+resolved on consumer machines via the `~/.agents/docs` symlink).
 
 Skill invocations like `/guild-validate` below mean
 `Skill(skill: <name>, args: "…")`. CLI invocations like
@@ -40,8 +41,8 @@ Every substrate operation this loop performs dispatches directly to
 `bin/loom`, `bin/draft`, `bin/griot`, or `bin/guild` — no ambient
 skills, no trout scripts. The unit loop steps below cite recipes by
 name (e.g. "checkpoint per § Compose PR"). All `§ <Recipe>` references
-in this body resolve in `projects/SUBSTRATE-COMPOSITIONS.md`. For loom
-verb shapes and event vocabulary, see `projects/LOOM-CONVENTIONS.md`.
+in this body resolve in `docs/SUBSTRATE-COMPOSITIONS.md`. For loom
+verb shapes and event vocabulary, see `docs/LOOM-CONVENTIONS.md`.
 
 ## Arguments
 

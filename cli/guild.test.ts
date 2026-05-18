@@ -15,7 +15,7 @@ import type { GuildCliContext } from './guild.ts';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const GUILD_ENTRY = join(__dirname, 'guild.ts');
-const BIN_GUILD = join(__dirname, '..', '..', 'bin', 'guild');
+const BIN_GUILD = join(__dirname, '..', 'bin', 'guild');
 
 function makeCtx(): GuildCliContext {
   return { cwd: mkdtempSync(join(tmpdir(), 'guild-dispatch-test-')) };

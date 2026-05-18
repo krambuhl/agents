@@ -15,7 +15,7 @@ import type { GriotCliContext } from './griot.ts';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const GRIOT_ENTRY = join(__dirname, 'griot.ts');
-const BIN_GRIOT = join(__dirname, '..', '..', 'bin', 'griot');
+const BIN_GRIOT = join(__dirname, '..', 'bin', 'griot');
 
 function makeCtx(): GriotCliContext {
   return { cwd: mkdtempSync(join(tmpdir(), 'griot-dispatch-test-')) };
