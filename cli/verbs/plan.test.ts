@@ -113,7 +113,7 @@ test('planVerb: happy path writes both draft files + auto-adopts loom + commits'
   expect(addCalls.length).toBe(1);
   const [, paths, message] = addCalls[0]?.args ?? [];
   expect((paths as string[]).length).toBe(5);
-  expect(message).toContain('draft plan');
+  expect(message).toContain('loom plan');
   expect(message).toContain('2026-05-15-adopt-biome');
 });
 
@@ -150,7 +150,7 @@ test('planVerb: --no-loom skips auto-adopt', () => {
 test('planVerb: skips loom adopt when manifest.json already exists (recovery case)', () => {
   // Pre-create the project with PLAN.md uncommitted + manifest.json
   // already in place (simulating a prior successful loom adopt that
-  // the user is rerunning draft plan over).
+  // the user is rerunning loom plan over).
   const slug = '2026-05-15-existing';
   const dir = join(projectsRoot, slug);
   mkdirSync(dir, { recursive: true });
@@ -233,7 +233,7 @@ test('planVerb: derives slug from a topic via createSlug(topic, today)', () => {
 
 test('planVerb: dir-exists-no-PLAN succeeds and writes files', () => {
   // Directory exists but has no PLAN.md (so it doesn't qualify as
-  // a draft-readable project yet — draft plan creates the PLAN.md
+  // a plan-readable project yet — loom plan creates the PLAN.md
   // here)
   const targetDir = join(projectsRoot, '2026-05-15-adopt-biome');
   mkdirSync(targetDir, { recursive: true });
@@ -366,7 +366,7 @@ test('reviseVerb: happy path replaces PLAN.md, appends Revision log, commits', (
   const addCalls = gitCalls.filter((c) => c.method === 'addAndCommit');
   expect(addCalls.length).toBe(1);
   const [, paths, message] = addCalls[0]?.args ?? [];
-  expect(message).toContain('draft revise');
+  expect(message).toContain('loom revise-plan');
   expect(message).toContain('narrowed scope to lint-only');
   expect((paths as string[]).length).toBe(1);
   expect((paths as string[])[0]).toContain('PLAN.md');

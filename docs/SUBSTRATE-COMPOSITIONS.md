@@ -2,7 +2,7 @@
 
 Named recipes the loop bodies (`/ev-loop-interactive`,
 `/ev-loop-confidence`, `/ev-run`, `/loom-archive`) cite when
-calling the loom / draft / guild / griot CLIs. Each recipe wraps
+calling the loom / guild / griot CLIs. Each recipe wraps
 one or two CLI invocations in a small composition with a stable
 idempotency story and named failure modes. Loops cite recipes by
 section heading (`§ <Recipe>`); this file is the authoritative
@@ -230,28 +230,26 @@ idempotent across same-body invocations.
 **Purpose**: Update the project's `PLAN.md` after the work shape
 has changed — typically because a unit surfaced a scope shift
 that the two-signal rule accepted (`/ev-loop-interactive` step 5
-on accept). Today this wraps `bin/draft revise`; Phase 8 of the
-loom-absorb-draft project migrates it to `bin/loom revise-plan`.
+on the inner-RPI accept path, which composes this recipe via
+`/loom-revise-plan` as a sub-agent).
 
-**Wraps** (current):
+**Wraps**:
 
 ```bash
-bin/draft revise --slug=<slug> --intent=<one-line summary>
+bin/loom revise-plan <slug> \
+  --revision-file=<path-to-revised-PLAN.md> \
+  --rationale=<one-line summary>
 ```
 
-The verb starts a grill-me interview against the existing PLAN.md
-to capture the revision, then writes the updated PLAN.md and
-appends a dated entry to its `## Revision log` section. This is
-**single-writer-serialized** per `projects/CONVENTIONS.md`
+The verb writes the supplied revision content to
+`projects/<slug>/PLAN.md`, appends a dated entry to the
+`## Revision log` section with the rationale, and commits via
+the existing git seam. The grill-me interview that produces the
+revision content lives in the `/loom-revise-plan` skill, not in
+this CLI verb — the verb is the deterministic file IO seam. This
+is **single-writer-serialized** per `projects/CONVENTIONS.md`
 § Category 3 (target: `projects/<slug>/PLAN.md`, exception:
 `PLAN.md`).
-
-> Phase 8 cutover: this recipe will migrate to
-> `bin/loom revise-plan --slug=<slug> --intent=<text>`. The verb
-> name + flag shape will be preserved; only the CLI namespace
-> changes. Loops citing `§ Revise PLAN.md` need not be updated
-> for that cutover — the recipe body changes, the citation stays
-> the same.
 
 **Idempotency**: `not-idempotent`. Each invocation appends a new
 revision-log entry and prompts the operator for a fresh

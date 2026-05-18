@@ -141,7 +141,7 @@ export function planVerb(
       return errToResult(
         new LoomError(
           'plan-exists-committed',
-          `PLAN.md at ${planMdPath} is already committed — use 'draft revise' to update it`,
+          `PLAN.md at ${planMdPath} is already committed — use 'loom revise-plan' to update it`,
         ),
       );
     }
@@ -162,8 +162,8 @@ export function planVerb(
 
   // Auto-adopt loom substrate (manifest.json, config.json, events.jsonl,
   // checkins/, sessions/) by default. Skipped when --no-loom is passed
-  // or when manifest.json already exists (recovery case where draft plan
-  // is re-run and loom is already set up).
+  // or when manifest.json already exists (recovery case where the plan
+  // verb is re-run and loom is already set up).
   const filesToCommit = [planMdPath, interviewMdPath];
   const manifestPath = join(targetDir, 'manifest.json');
   const adoptLoom = !noLoom && !existsSync(manifestPath);
@@ -195,7 +195,7 @@ export function planVerb(
       gitRunnerOf(ctx).addAndCommit(
         repoRootOf(ctx),
         filesToCommit,
-        `[draft plan] ${slug}`,
+        `[loom plan] ${slug}`,
       );
     } catch (err) {
       return errToResult(err);
@@ -296,7 +296,7 @@ export function reviseVerb(
     return errToResult(
       new LoomError(
         'plan-not-found',
-        `no PLAN.md at ${planMdPath} — use 'draft plan' to create one`,
+        `no PLAN.md at ${planMdPath} — use 'loom plan' to create one`,
       ),
     );
   }
@@ -332,7 +332,7 @@ export function reviseVerb(
       gitRunnerOf(ctx).addAndCommit(
         repoRootOf(ctx),
         [planMdPath],
-        `[draft revise] ${slug}: ${rationale}`,
+        `[loom revise-plan] ${slug}: ${rationale}`,
       );
     } catch (err) {
       return errToResult(err);
@@ -359,9 +359,7 @@ export function reviseVerb(
 
 // Verbless-namespace registries for cli/loom.ts. Each loom top-level
 // verb (`loom plan`, `loom revise-plan`) is wired as its own
-// single-handler namespace — same pattern doctor uses. bin/draft has
-// its own DRAFT_VERBS registry (in cli/draft.ts) sharing the same
-// underlying handlers.
+// single-handler namespace — same pattern doctor uses.
 export const PLAN_VERBS = {
   plan: planVerb,
 };

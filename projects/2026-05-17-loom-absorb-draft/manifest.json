@@ -82,13 +82,14 @@
       "pr": {
         "number": 7,
         "url": "https://github.com/krambuhl/agents/pull/7",
-        "state": "open"
+        "state": "merged"
       }
     },
     {
       "number": 8,
       "name": "Cleanup + delete bin/draft",
-      "status": "not-started"
+      "status": "in-progress",
+      "branch": "phase-8-cleanup"
     }
   ]
 }

@@ -68,7 +68,7 @@ asking grill-me questions. Read everything before § 3.
 The corpus gives the model an opinionated draft on each retro
 dimension. The user's job is to confirm, extend, replace, or skip.
 Use `AskUserQuestion` for each dimension; one question at a time.
-Match `/draft-plan`'s grill-me pace: recommended answer first,
+Match `/loom-plan`'s grill-me pace: recommended answer first,
 discrete options, structured turn.
 
 For each of the four retro dimensions, follow this shape:
@@ -105,7 +105,7 @@ The four dimensions, asked in order:
 Open-ended follow-up exchanges within a single dimension (the user
 elaborates, the model asks a clarifying natural-language question)
 stay outside `AskUserQuestion` — that's the standard grill-me
-posture from `/draft-plan` § 2.
+posture from `/loom-plan` § 4 (Grill-me interview).
 
 **Auto-mode** (`--mode=auto` flag, or upstream caller-supplied
 auto-mode signal): the user is replaced by **two panels running in
