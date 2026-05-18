@@ -160,6 +160,7 @@ const FALLBACK_PRECEDENCE = [
   'evaluator-contract-fit',
   'evaluator-a11y',
   'evaluator-nextjs',
+  'evaluator-css-architecture',
   'evaluator-react-api',
   'evaluator-test-integration',
   'evaluator-test-unit',

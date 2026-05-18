@@ -19,7 +19,7 @@ function makeCtx(): CliContext {
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const LOOM_ENTRY = join(__dirname, 'loom.ts');
-const BIN_LOOM = join(__dirname, '..', '..', 'bin', 'loom');
+const BIN_LOOM = join(__dirname, '..', 'bin', 'loom');
 
 // ---------- Pure helper tests ----------
 

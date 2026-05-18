@@ -15,7 +15,7 @@ import type { DraftCliContext } from './draft.ts';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const DRAFT_ENTRY = join(__dirname, 'draft.ts');
-const BIN_DRAFT = join(__dirname, '..', '..', 'bin', 'draft');
+const BIN_DRAFT = join(__dirname, '..', 'bin', 'draft');
 
 function makeCtx(): DraftCliContext {
   const root = mkdtempSync(join(tmpdir(), 'draft-dispatch-test-'));
