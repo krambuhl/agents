@@ -1,13 +1,17 @@
 ---
 name: draft-plan
 description: >-
-  Interview the user relentlessly about a plan or design — one decision
-  at a time, recommendation each time, walking down every branch of the
-  tree — then synthesize PLAN.md and INTERVIEW.md and commit them via
+  DEPRECATED: prefer `/loom-plan` for new project births. This skill
+  remains functional for backward compat through Phase 8 of the
+  loom-absorb-draft project; the difference is that `/loom-plan` is
+  the outer-RPI orchestrator (auto-spawns `/loom-research` when a
+  project lacks a RESEARCH.md), while this skill commits via
+  `bin/draft plan` without a research foundation. Interview the user
+  relentlessly about a plan or design — one decision at a time,
+  recommendation each time, walking down every branch of the tree —
+  then synthesize PLAN.md and INTERVIEW.md and commit them via
   `bin/draft plan` (which also auto-adopts the loom substrate so the
-  project is loom + draft from minute zero). Use when the user wants to
-  grill-me into a plan; for lighter "I know what I want" scaffolding,
-  just answer the questions tersely.
+  project is loom + draft from minute zero).
 argument-hint: "<topic or short description>"
 user-invocable: true
 disable-model-invocation: true
@@ -16,6 +20,15 @@ allowed-tools: Read, Write, Bash(bin/draft *), Bash(date *), AskUserQuestion
 
 # /draft-plan
 
+> **DEPRECATED**: new project births should prefer `/loom-plan` (the
+> outer-RPI orchestrator). This skill stays in place for backward
+> compat through Phase 8 of the `loom-absorb-draft` project (after
+> which `bin/draft`, `cli/draft.ts`, `cli/verbs/plan.ts`'s draft
+> entries, and this file are deleted as a set). The difference vs
+> `/loom-plan`: this skill commits via `bin/draft plan` without
+> auto-spawning research; `/loom-plan` detects `RESEARCH.md` at
+> project root and spawns `/loom-research` if it's missing.
+
 Birth a draft plan via relentless interview. The skill carries the
 grill-me conversation; `bin/draft plan` carries the deterministic file
 IO. Two artifacts land per invocation: a polished `PLAN.md` (the canonical
@@ -23,11 +36,10 @@ shape — Context / Scope / Phases / Dependencies / Verification / Risks /
 Open questions, optionally Decisions) and an `INTERVIEW.md` next door
 (the walked decision tree as transcript).
 
-This is the canonical project-birth path. There's no lighter alternative
-skill — when you "know what you want," just answer the interview's
-questions tersely and the loop closes fast. `bin/draft plan` auto-adopts
-the loom substrate by default; pass `--no-loom` if you genuinely want
-planning artifacts only (rare).
+When to use this skill anyway (rare): a project where you explicitly
+DO NOT want research grounding (a pure "I know what I want"
+scaffolding case), and you don't mind the path being retired in
+Phase 8. The user-facing default going forward is `/loom-plan`.
 
 **Format reference**: `projects/LOOM-CONVENTIONS.md` for PLAN.md
 structure and the loom + draft pairing.
