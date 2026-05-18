@@ -11,8 +11,13 @@
     {
       "number": 1,
       "name": "Bootstrap marketplace for self-development",
-      "status": "in-progress",
-      "branch": "phase-1-bootstrap-marketplace"
+      "status": "completed",
+      "branch": "phase-1-bootstrap-marketplace",
+      "pr": {
+        "number": 1,
+        "url": "https://github.com/krambuhl/agents/pull/1",
+        "state": "open"
+      }
     },
     {
       "number": 2,
