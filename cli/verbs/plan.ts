@@ -356,3 +356,16 @@ export function reviseVerb(
     exitCode: 0,
   };
 }
+
+// Verbless-namespace registries for cli/loom.ts. Each loom top-level
+// verb (`loom plan`, `loom revise-plan`) is wired as its own
+// single-handler namespace — same pattern doctor uses. bin/draft has
+// its own DRAFT_VERBS registry (in cli/draft.ts) sharing the same
+// underlying handlers.
+export const PLAN_VERBS = {
+  plan: planVerb,
+};
+
+export const REVISE_PLAN_VERBS = {
+  'revise-plan': reviseVerb,
+};
