@@ -312,6 +312,52 @@ export type RpiInnerDeclinedEvent = EventBase<
   { slug: string; phase: number; signal_count: number }
 >;
 
+// ---------- Auto-mode events (Phase 6) ----------
+//
+// Auto-mode is the substrate-wide pattern where a skill runs without
+// human input by delegating decisions to panels (evaluators for
+// convergent / auditing questions; whiteboards for divergent /
+// generative questions). The events here mark the auto-mode session
+// boundary: entered when a skill begins an auto-mode run; converged
+// when the silent-panel condition fires; budget-exhausted when the
+// two-budget cap hits. Per-skill `*-budget-exhausted` events
+// (research-budget-exhausted, plan-budget-exhausted, etc.) remain
+// the canonical record of *which* skill exhausted; auto-mode-
+// budget-exhausted is the substrate-wide counterpart, useful for
+// griot ingestion of cross-skill auto-mode patterns.
+//
+// `surface` names which skill's auto-mode is running:
+// `ev-loop-interactive` | `loom-archive` | `ev-run` | `loom-plan`
+// | `loom-revise-plan` | `loom-research`. The substrate doesn't
+// enforce the enumeration; new auto-mode-capable skills extend
+// the set without re-extending the type.
+
+export type AutoModeEnteredEvent = EventBase<
+  'auto-mode-entered',
+  { surface: string; slug: string | null; decision_budget: number; round_budget: number }
+>;
+
+export type AutoModeConvergedEvent = EventBase<
+  'auto-mode-converged',
+  {
+    surface: string;
+    slug: string | null;
+    decisions_completed: number;
+    rounds_completed: number;
+  }
+>;
+
+export type AutoModeBudgetExhaustedEvent = EventBase<
+  'auto-mode-budget-exhausted',
+  {
+    surface: string;
+    slug: string | null;
+    decisions_completed: number;
+    rounds_completed: number;
+    reason: 'decision-budget' | 'round-budget';
+  }
+>;
+
 export type Event =
   | ProjectInitializedEvent
   | PhaseStartedEvent
@@ -351,7 +397,10 @@ export type Event =
   | ScopeShiftDetectedEvent
   | RpiInnerTriggeredEvent
   | RpiInnerCompletedEvent
-  | RpiInnerDeclinedEvent;
+  | RpiInnerDeclinedEvent
+  | AutoModeEnteredEvent
+  | AutoModeConvergedEvent
+  | AutoModeBudgetExhaustedEvent;
 
 export type EventName = Event['event'];
 

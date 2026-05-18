@@ -141,9 +141,68 @@ started) pulled from existing checkins on this branch.
 For each deliverable (picked per the ordering rule):
 
 1. **Negotiate.** Draft the unit contract for this deliverable and
-   write it into a new numbered checkin (Contract section only). Show
-   the contract to the user for approval before execution. The human is
-   in the loop — they should see what you agreed to.
+   write it into a new numbered checkin (Contract section only).
+   The negotiation has two shapes, selected by where ambiguity sits
+   in the drafted contract:
+
+   - **Default (clean draft):** show the full contract to the user
+     and ask for a single approve/redirect on the whole thing. The
+     human reads what you agreed to and either approves or redirects
+     in one round. This is the path when the contract has no
+     ambiguous fields — every acceptance criterion is concrete,
+     every input is named, every disqualifier is sharp.
+
+   - **Grill-me on ambiguous fields:** if any contract field reads
+     as ambiguous, walk the user through ONLY those fields as
+     separate one-at-a-time questions before showing the full
+     contract for the final approve/redirect. "Ambiguous" here is
+     concrete:
+     - **Empty `inputs[]`** — the contract names no files/lines/
+       documents the unit reads from.
+     - **Hedge-worded acceptance criteria** — phrases like "should
+       probably," "might want to," "ideally," "consider whether,"
+       or any AC that doesn't tell a reviewer how to falsify it.
+     - **Undefined disqualifiers** — `disqualifiers[]` empty
+       AND the unit touches more than two files (small surfaces
+       can survive with no disqualifiers; larger ones need them).
+
+     Per-field walks use `AskUserQuestion` (or natural-language
+     follow-ups when the field needs free-form input) one question
+     at a time. After each answer, update the candidate contract.
+     When the ambiguity queue empties, show the full contract for
+     final approve/redirect — same shape as the default path.
+
+   **Auto-mode** (the loop's `--mode=auto` flag, or upstream
+   caller-supplied auto-mode signal): the user is replaced by
+   `evaluator-contract-fit` auditing the contract against the
+   unit's inputs. The evaluator returns `approved` (treated as
+   the user's "approve"), `flagged` (treated as a redirect — each
+   flagged finding becomes one round of ambiguity-walk addressing
+   the underlying field). Convergence rule: silent panel
+   (`approved` with zero findings) OR two-budget exhaust. Per
+   `docs/AGENT-CONVENTIONS.md`, defaults are **per-decision rounds
+   = 3** and **per-session ambiguities = 5** for this surface. On
+   budget exhaust, the unit fails to negotiate cleanly — the loop
+   surfaces the unresolved ambiguities to the operator with a
+   structured error and stops. Auto-mode does NOT auto-commit a
+   half-ambiguous contract.
+
+   **Event emissions** (auto-mode only):
+   - On auto-mode entry: emit `auto-mode-entered` with detail
+     `{surface: 'ev-loop-interactive', slug, decision_budget: 5,
+     round_budget: 3}`.
+   - On silent-panel convergence: emit `auto-mode-converged` with
+     `{surface, slug, decisions_completed, rounds_completed}`.
+   - On budget exhaust: emit `auto-mode-budget-exhausted` with
+     `{surface, slug, decisions_completed, rounds_completed,
+     reason: 'decision-budget' | 'round-budget'}`.
+
+   Human-paired mode emits no auto-mode events — the conversation
+   itself is the audit trail.
+
+   **The human is in the loop** (still, even in the default path)
+   — they should see what you agreed to before execution starts.
+   Auto-mode is the explicit operator opt-out.
 2. **Execute.** Do the work. For creative or exploratory deliverables,
    pair with the user — ask when you hit a fork, report when you hit a
    dead end, don't charge ahead.

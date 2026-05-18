@@ -28,3 +28,11 @@
 {"at":"2026-05-18T19:12:30.538Z","event":"checkin-created","detail":{"number":"02","branch":"phase-5-inner-rpi"}}
 {"at":"2026-05-18T19:13:21.331Z","event":"pr-opened","detail":{"pr":5,"url":"https://github.com/krambuhl/agents/pull/5"}}
 {"at":"2026-05-18T19:13:31.464Z","event":"phase-completed","detail":{"phase":5}}
+{"at":"2026-05-18T20:56:38.379Z","event":"phase-completed","detail":{"phase":5}}
+{"at":"2026-05-18T20:59:36.422Z","event":"checkin-created","detail":{"number":"01","branch":"phase-6-grill-me-auto-mode"}}
+{"at":"2026-05-18T20:59:36.492Z","event":"phase-started","detail":{"phase":6,"name":"Grill-me + auto-mode embeddings across ev-loop / archive / ev-run"}}
+{"at":"2026-05-18T21:02:14.408Z","event":"checkin-created","detail":{"number":"02","branch":"phase-6-grill-me-auto-mode"}}
+{"at":"2026-05-18T21:04:52.215Z","event":"checkin-created","detail":{"number":"03","branch":"phase-6-grill-me-auto-mode"}}
+{"at":"2026-05-18T21:08:02.575Z","event":"checkin-created","detail":{"number":"04","branch":"phase-6-grill-me-auto-mode"}}
+{"at":"2026-05-18T21:08:50.505Z","event":"pr-opened","detail":{"pr":6,"url":"https://github.com/krambuhl/agents/pull/6"}}
+{"at":"2026-05-18T21:09:00.024Z","event":"phase-completed","detail":{"phase":6}}

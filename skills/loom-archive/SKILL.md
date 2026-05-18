@@ -6,9 +6,9 @@ description: >-
   retro via `bin/loom retro write --type=project`, then relocate the
   project to `archive/` via `bin/loom project archive`. Stops there —
   composing the archive PR is a separate concern.
-argument-hint: "<project-slug-or-path>"
+argument-hint: "<project-slug-or-path> [--mode=auto]"
 user-invocable: true
-allowed-tools: Read, Write, Bash(bin/loom *), AskUserQuestion
+allowed-tools: Read, Write, Bash, Skill, AskUserQuestion
 ---
 
 # /loom-archive
@@ -35,6 +35,11 @@ events (`retro-written`, `archived`).
 
 - `<project-slug-or-path>` — resolved by loom's standard slug
   resolution.
+- `--mode=auto` (optional) — run without human input. Auto-mode
+  composes both panels: whiteboards drive reflective retro
+  questions ("what did we learn"); evaluators drive plan-vs-actual
+  audit ("what shipped vs what was planned"). See § Human / auto
+  duality.
 
 ## Process
 
@@ -101,6 +106,50 @@ Open-ended follow-up exchanges within a single dimension (the user
 elaborates, the model asks a clarifying natural-language question)
 stay outside `AskUserQuestion` — that's the standard grill-me
 posture from `/draft-plan` § 2.
+
+**Auto-mode** (`--mode=auto` flag, or upstream caller-supplied
+auto-mode signal): the user is replaced by **two panels running in
+parallel** for each dimension:
+
+- **Whiteboard panel** (composed via `/guild-whiteboard` with the
+  full registered roster). Engineers reflect on the corpus through
+  their domain lens and surface questions per dimension. Self-
+  recuse off-topic. Drives the divergent / generative side of the
+  retro: "what did we learn?"
+- **Evaluator panel** (composed via `bin/guild derive-panel` against
+  the project's PLAN.md + manifest + checkin trail, then
+  `/guild-validate`). Drives the convergent / auditing side of the
+  retro: "what shipped vs what was planned?" — flagging
+  scope-vs-actual mismatches, missing verifies, declared-out
+  scope items that crept in.
+
+Per dimension, the two panels produce candidate findings. The
+skill aggregates: each panel's findings round-trips into the
+dimension's `findings[]`. Convergence: silent panel = neither
+panel raised a new finding this round (both effectively saying
+"the retro captures everything important"). Per
+`docs/AGENT-CONVENTIONS.md`, defaults are **per-decision rounds =
+3** and **per-session decisions = 8** for this surface
+(8 = 2 findings × 4 dimensions, matching the at-least-2 floor for
+kept-well + improvement).
+
+Budget exhaust does NOT block the retro write — the retro is
+inherently partial (a project's lessons can always be deeper);
+the skill writes what it has, emits `auto-mode-budget-exhausted`,
+and continues to step 4. This is the opposite posture from
+`/ev-loop-interactive`'s unit-contract negotiation (which blocks
+on half-ambiguous contracts) — retros are best-effort by design.
+
+**Event emissions** (auto-mode only):
+- On auto-mode entry: emit `auto-mode-entered` with `{surface:
+  'loom-archive', slug, decision_budget: 8, round_budget: 3}`.
+- On silent-panel convergence: emit `auto-mode-converged` with
+  `{surface, slug, decisions_completed, rounds_completed}`.
+- On budget exhaust: emit `auto-mode-budget-exhausted` with
+  `{surface, slug, decisions_completed, rounds_completed, reason}`.
+
+Human-paired mode emits no auto-mode events — the
+`AskUserQuestion`-driven conversation is the audit trail.
 
 ### 4. Compose the project retro JSON
 
