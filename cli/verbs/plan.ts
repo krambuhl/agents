@@ -6,7 +6,7 @@ import {
   readFileSync,
   writeFileSync,
 } from 'node:fs';
-import { join, relative } from 'node:path';
+import { join } from 'node:path';
 import { LoomError } from '../lib/errors.ts';
 import { createSlug } from '../lib/project.ts';
 import { resolveProject } from '../lib/draft-project.ts';
@@ -17,11 +17,13 @@ import {
   synthesizeConfig,
 } from '../lib/adopt.ts';
 
-// Shared context for every draft verb. Tests inject `projectsRoot`
-// (a temp dir), `today` (deterministic slug derivation), and
-// `gitRunner` (stubbed git calls). Production uses the real
-// filesystem, real date, and `defaultGitRunner`.
-export type DraftCliContext = {
+// Shared context for the plan/revise verbs. Tests inject
+// `projectsRoot` (a temp dir), `today` (deterministic slug
+// derivation), and `gitRunner` (stubbed git calls). Production uses
+// the real filesystem, real date, and `defaultGitRunner`. The shape
+// is a subset of loom's full `CliContext` (cli/verbs/project.ts),
+// which extends this with namespace-wide fields.
+export type PlanCliContext = {
   projectsRoot: string;
   today?: string;
   gitRunner?: GitRunner;
@@ -36,7 +38,7 @@ export type DispatchResult = {
 
 export type VerbHandler = (
   rest: string[],
-  ctx: DraftCliContext,
+  ctx: PlanCliContext,
 ) => DispatchResult;
 
 function emit(value: unknown, pretty: boolean): string {
@@ -50,15 +52,15 @@ function errToResult(err: unknown): DispatchResult {
   throw err;
 }
 
-function todayString(ctx: DraftCliContext): string {
+function todayString(ctx: PlanCliContext): string {
   return ctx.today ?? new Date().toISOString().slice(0, 10);
 }
 
-function gitRunnerOf(ctx: DraftCliContext): GitRunner {
+function gitRunnerOf(ctx: PlanCliContext): GitRunner {
   return ctx.gitRunner ?? defaultGitRunner;
 }
 
-function repoRootOf(ctx: DraftCliContext): string {
+function repoRootOf(ctx: PlanCliContext): string {
   return ctx.repoRoot ?? process.cwd();
 }
 
@@ -74,7 +76,7 @@ const PLAN_OPTIONS = {
 
 export function planVerb(
   rest: string[],
-  ctx: DraftCliContext,
+  ctx: PlanCliContext,
 ): DispatchResult {
   const { values, positionals } = parseArgs({
     args: rest,
@@ -249,7 +251,7 @@ export function appendRevisionLogEntry(
 
 export function reviseVerb(
   rest: string[],
-  ctx: DraftCliContext,
+  ctx: PlanCliContext,
 ): DispatchResult {
   const { values, positionals } = parseArgs({
     args: rest,
@@ -354,92 +356,3 @@ export function reviseVerb(
     exitCode: 0,
   };
 }
-
-// ---------- read verb ----------
-
-const READ_OPTIONS = {
-  pretty: { type: 'boolean' as const },
-};
-
-export function readVerb(
-  rest: string[],
-  ctx: DraftCliContext,
-): DispatchResult {
-  const { values, positionals } = parseArgs({
-    args: rest,
-    options: READ_OPTIONS,
-    allowPositionals: true,
-    strict: false,
-  });
-  const slug = positionals[0];
-  const pretty = values.pretty === true;
-
-  if (slug === undefined) {
-    return errToResult(
-      new LoomError('missing-args', 'read requires a <slug> positional'),
-    );
-  }
-
-  let targetDir: string;
-  try {
-    targetDir = resolveProject(slug, ctx.projectsRoot);
-  } catch (err) {
-    return errToResult(err);
-  }
-
-  const planMdPath = join(targetDir, 'PLAN.md');
-  if (!existsSync(planMdPath)) {
-    return errToResult(
-      new LoomError(
-        'plan-not-found',
-        `no PLAN.md at ${planMdPath}`,
-      ),
-    );
-  }
-
-  let content: string;
-  try {
-    content = readFileSync(planMdPath, 'utf8');
-  } catch (err: unknown) {
-    return errToResult(
-      new LoomError(
-        'plan-read-failed',
-        `cannot read PLAN.md at ${planMdPath}: ${(err as Error).message}`,
-      ),
-    );
-  }
-
-  // --pretty short-circuits the envelope: emit raw PLAN.md content.
-  // The envelope is the JSON contract for downstream introspection;
-  // humans get the markdown directly.
-  if (pretty) {
-    return { stdout: content, exitCode: 0 };
-  }
-
-  const resolvedSlug = targetDir.split('/').pop() ?? slug;
-  const interviewMdPath = join(targetDir, 'INTERVIEW.md');
-  // Express paths relative to projectsRoot for stable, short
-  // envelope output (e.g. `projects/2026-05-15-foo/PLAN.md` rather
-  // than an absolute path). Falls back to absolute if the path
-  // doesn't sit under projectsRoot.
-  const relPath = relative(ctx.projectsRoot, planMdPath) || planMdPath;
-  const relInterview = relative(ctx.projectsRoot, interviewMdPath) || interviewMdPath;
-
-  return {
-    stdout: JSON.stringify({
-      path: relPath,
-      content,
-      plan: {
-        slug: resolvedSlug,
-        interview_path: relInterview,
-      },
-    }),
-    exitCode: 0,
-  };
-}
-
-export const DRAFT_VERBS: Record<string, VerbHandler> = {
-  plan: planVerb,
-  revise: reviseVerb,
-  read: readVerb,
-};
