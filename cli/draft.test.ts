@@ -109,13 +109,6 @@ test('dispatch: revise verb routes to reviseVerb (missing-args surfaces)', () =>
   expect(parsed.error).toBe('missing-args');
 });
 
-test('dispatch: read verb routes to readVerb (missing-args surfaces)', () => {
-  const result = dispatch({ kind: 'verb', verb: 'read', rest: [] }, makeCtx());
-  expect(result.exitCode).toBe(1);
-  const parsed = JSON.parse(result.stderr as string);
-  expect(parsed.error).toBe('missing-args');
-});
-
 // ---------- Smoke tests via subprocess (entry-point integration) ----------
 
 test('node entry: --help prints help and exits 0', () => {

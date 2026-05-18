@@ -9,7 +9,7 @@ import {
 } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { planVerb, reviseVerb, readVerb, DRAFT_VERBS } from './draft.ts';
+import { planVerb, reviseVerb } from './plan.ts';
 import type { GitRunner } from '../lib/draft-git.ts';
 
 let projectsRoot: string;
@@ -20,9 +20,9 @@ let committedPaths: Set<string>;
 let gitRunner: GitRunner;
 
 beforeEach(() => {
-  projectsRoot = mkdtempSync(join(tmpdir(), 'draft-plan-test-'));
+  projectsRoot = mkdtempSync(join(tmpdir(), 'plan-test-'));
   // Source files to copy from
-  const srcDir = mkdtempSync(join(tmpdir(), 'draft-plan-src-'));
+  const srcDir = mkdtempSync(join(tmpdir(), 'plan-test-src-'));
   planFile = join(srcDir, 'plan.md');
   interviewFile = join(srcDir, 'interview.md');
   writeFileSync(planFile, '# PLAN\n\nSome plan content.\n');
@@ -48,8 +48,8 @@ afterEach(() => {
   rmSync(projectsRoot, { recursive: true, force: true });
 });
 
-function makeDraftReadableProject(slug: string): string {
-  // Marker for draft-readable projects: PLAN.md present. Draft-only
+function makePlanReadableProject(slug: string): string {
+  // Marker for plan-readable projects: PLAN.md present. Draft-only
   // projects have just PLAN.md + INTERVIEW.md; loom + draft projects
   // carry PLAN.md alongside manifest.json. Both qualify under the
   // resolver's PLAN-bearing filter.
@@ -63,14 +63,6 @@ const baseCtx = () => ({
   projectsRoot,
   today: '2026-05-15',
   gitRunner,
-});
-
-// ---------- DRAFT_VERBS registry ----------
-
-test('DRAFT_VERBS registers all three verbs', () => {
-  expect(typeof DRAFT_VERBS.plan).toBe('function');
-  expect(typeof DRAFT_VERBS.revise).toBe('function');
-  expect(typeof DRAFT_VERBS.read).toBe('function');
 });
 
 // ---------- Happy paths ----------
@@ -332,13 +324,13 @@ test('planVerb: missing --interview-file throws missing-args', () => {
 // ---------- reviseVerb ----------
 
 function seedTroutProjectWithPlan(slug: string, planContent: string): string {
-  const path = makeDraftReadableProject(slug);
+  const path = makePlanReadableProject(slug);
   writeFileSync(join(path, 'PLAN.md'), planContent);
   return path;
 }
 
 const revisionFile = () => {
-  const dir = mkdtempSync(join(tmpdir(), 'draft-revise-src-'));
+  const dir = mkdtempSync(join(tmpdir(), 'plan-revise-src-'));
   const path = join(dir, 'revision.md');
   writeFileSync(path, '# PLAN (revised)\n\nNew content.\n');
   return path;
@@ -447,7 +439,7 @@ test('reviseVerb: existing ## Revision log gets new entry inserted into it', () 
     '# PLAN\n\nOriginal.\n',
   );
   // Revision file already has its own log section with prior entries
-  const dir = mkdtempSync(join(tmpdir(), 'draft-revise-with-log-'));
+  const dir = mkdtempSync(join(tmpdir(), 'plan-revise-with-log-'));
   const revFile = join(dir, 'revision.md');
   writeFileSync(
     revFile,
@@ -507,57 +499,6 @@ test('reviseVerb: missing --rationale throws missing-args', () => {
     ['2026-05-15-adopt-biome', `--revision-file=${revisionFile()}`],
     baseCtx(),
   );
-  expect(result.exitCode).toBe(1);
-  expect(JSON.parse(result.stderr as string).error).toBe('missing-args');
-});
-
-// ---------- readVerb ----------
-
-test('readVerb: happy path returns JSON envelope', () => {
-  seedTroutProjectWithPlan(
-    '2026-05-15-adopt-biome',
-    '# PLAN\n\nSome content.\n',
-  );
-  const result = readVerb(['2026-05-15-adopt-biome'], baseCtx());
-
-  expect(result.exitCode).toBe(0);
-  const payload = JSON.parse(result.stdout as string);
-  expect(payload.path).toContain('PLAN.md');
-  expect(payload.content).toContain('# PLAN');
-  expect(payload.content).toContain('Some content');
-  expect(payload.plan.slug).toBe('2026-05-15-adopt-biome');
-  expect(payload.plan.interview_path).toContain('INTERVIEW.md');
-});
-
-test('readVerb: --pretty renders PLAN.md content directly', () => {
-  seedTroutProjectWithPlan(
-    '2026-05-15-adopt-biome',
-    '# PLAN\n\nDirect render content.\n',
-  );
-  const result = readVerb(
-    ['2026-05-15-adopt-biome', '--pretty'],
-    baseCtx(),
-  );
-  expect(result.exitCode).toBe(0);
-  expect(result.stdout).toContain('# PLAN');
-  expect(result.stdout).toContain('Direct render content');
-  // Not a JSON envelope
-  expect(result.stdout).not.toContain('"path"');
-});
-
-test('readVerb: project-not-found for nonexistent slug', () => {
-  const result = readVerb(['2026-05-15-nope'], baseCtx());
-  expect(result.exitCode).toBe(1);
-  expect(JSON.parse(result.stderr as string).error).toBe('project-not-found');
-});
-
-// (See note above on reviseVerb plan-not-found: same reasoning
-// applies to readVerb. The defensive branch is retained; the
-// scenario isn't reachable through the public test surface under
-// the broadened resolver filter.)
-
-test('readVerb: missing positional throws missing-args', () => {
-  const result = readVerb([], baseCtx());
   expect(result.exitCode).toBe(1);
   expect(JSON.parse(result.stderr as string).error).toBe('missing-args');
 });

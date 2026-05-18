@@ -1,0 +1,93 @@
+{
+  "schema_version": 1,
+  "number": "01",
+  "created": "2026-05-18T15:39:47.000Z",
+  "phase": {
+    "number": 2,
+    "name": "Move draft plan + revise verbs into loom"
+  },
+  "branch": "phase-2-move-plan-verbs-to-loom",
+  "unit": "cli/verbs/plan.ts + draft.ts re-import + drop draft read",
+  "contract": {
+    "goal": "Pure relocation of planVerb and reviseVerb handlers from cli/verbs/draft.ts into a new cli/verbs/plan.ts so the loom CLI can host them later (D2 wires the actual `loom plan` / `loom revise-plan` verbs). bin/draft continues working by sourcing handlers from the new path. readVerb is dropped entirely (no consumers per PLAN.md scope line 78). No behavior changes — same args, same outputs, same error codes.",
+    "acceptance_criteria": [
+      "cli/verbs/plan.ts exports planVerb, reviseVerb, appendRevisionLogEntry, PlanCliContext, DispatchResult, VerbHandler.",
+      "Loom's CliContext in cli/verbs/project.ts gains `today?: string; gitRunner?: GitRunner; repoRoot?: string` so the same handlers run cleanly under bin/loom in D2 without a second context type.",
+      "cli/verbs/draft.ts deleted; cli/draft.ts imports handlers from ./verbs/plan.ts; defines DRAFT_VERBS = { plan, revise } inline; type alias `DraftCliContext = PlanCliContext` preserved so the old type export remains stable for bin/draft consumers.",
+      "`read` removed from cli/draft.ts's VERBS; help no longer lists `read`.",
+      "cli/verbs/plan.test.ts carries the moved tests; no readVerb tests; the `DRAFT_VERBS registers all three verbs` test is dropped (the registry no longer lives in this file).",
+      "cli/draft.test.ts: the `dispatch: read verb routes...` test is removed.",
+      "`npm test` green at 466 tests (baseline 472 minus 4 readVerb tests, 1 registry-counts test, 1 read-dispatch test).",
+      "Smoke: `bin/draft plan <slug> --plan-file=… --interview-file=…` and `bin/draft revise <slug> --revision-file=… --rationale=…` succeed end-to-end on a scratch project root."
+    ],
+    "rules_applied": [
+      "CLAUDE.md: pure relocation, no behavior changes — handler bodies are byte-identical to their pre-move state.",
+      "CLAUDE.md: drop readVerb cleanly rather than adding a deprecation shim — `bin/draft read` has no consumers per PLAN.md line 78.",
+      "PLAN.md Phase 2 prose (lines 239-253): one PR, pure relocation, bin/draft keeps working.",
+      "Three-phase pattern (CLAUDE.md): D1 is the setup/gate that makes the handlers reachable from loom's verb home without yet wiring the loom-side dispatch — D2 lays the dispatch on top. Phase 8 owns the final cleanup (delete bin/draft and the DraftCliContext alias)."
+    ],
+    "disqualifiers": [
+      "Wiring loom plan / loom revise-plan — that is D2.",
+      "Behavioral changes to plan/revise (arg parsing, error codes, output shape).",
+      "Editing cli/lib/{draft-project,draft-git,adopt}.ts (shared libs, Phase 8 cleanup).",
+      "Adding deprecation shims for `draft read`."
+    ],
+    "inputs": [
+      "projects/2026-05-17-loom-absorb-draft/PLAN.md lines 239-253 (Phase 2 spec) and 74-78 (scope wording for `draft read` drop)",
+      "cli/verbs/draft.ts (pre-deletion source of planVerb, reviseVerb, readVerb)",
+      "cli/verbs/draft.test.ts (pre-deletion test file)",
+      "cli/draft.ts (bin/draft entry point)",
+      "cli/draft.test.ts (entry-point tests)",
+      "cli/verbs/project.ts (loom CliContext type to extend)",
+      "cli/verbs/guild/derive-panel.ts FALLBACK_RULES (informed which evaluators the panel would derive in marketplace-fallback mode)"
+    ]
+  },
+  "execution": {
+    "actions": [
+      "Cut branch `phase-2-move-plan-verbs-to-loom` from main (clean tree, 472 tests passing baseline).",
+      "Authored cli/verbs/plan.ts: copied planVerb + reviseVerb + appendRevisionLogEntry + types verbatim from cli/verbs/draft.ts; dropped readVerb block and the unused `relative` import (only readVerb used it); renamed the context type DraftCliContext → PlanCliContext with a sharper comment noting it's a subset of loom's umbrella CliContext.",
+      "Extended loom CliContext in cli/verbs/project.ts: added optional `today?: string; gitRunner?: GitRunner; repoRoot?: string` fields matching DraftCliContext's shape verbatim; imported GitRunner from ../lib/draft-git.ts.",
+      "Deleted cli/verbs/draft.ts and cli/verbs/draft.test.ts.",
+      "Rewrote cli/draft.ts: import { planVerb, reviseVerb } + types from ./verbs/plan.ts; inlined DRAFT_VERBS = { plan: planVerb, revise: reviseVerb } registry (was previously exported from cli/verbs/draft.ts); dropped `read` from VERBS; aliased DraftCliContext = PlanCliContext to keep the existing public type export stable; trimmed the help-text trailing line to drop the now-misleading `--pretty on read verbs for human view` clause (`--pretty` on plan/revise still produces indented JSON; removed the special-case reference to read).",
+      "Authored cli/verbs/plan.test.ts: copied cli/verbs/draft.test.ts, retargeted import to ./plan.ts, removed readVerb from the named import list, dropped the `DRAFT_VERBS registers all three verbs` test (the registry no longer lives in this file — cli/draft.test.ts already exercises the dispatch routing), removed the four readVerb tests at the bottom, renamed two internal tmpdir prefixes from `draft-*` to `plan-*` and one helper from makeDraftReadableProject → makePlanReadableProject (internal-only renames; no public surface change).",
+      "Edited cli/draft.test.ts: removed the `dispatch: read verb routes to readVerb` test (5 lines).",
+      "Ran `npm test`: 33 test files passed, 466 tests passed, 0 failures, ~630ms.",
+      "Smoke-tested `bin/draft --help`: lists only `plan` and `revise`, no `read`.",
+      "Smoke-tested `bin/draft plan smoke-topic --plan-file=… --interview-file=… --no-commit --pretty` against a scratch projects-root: exit 0, writes PLAN.md + INTERVIEW.md, auto-adopts loom substrate (manifest.json + config.json + events.jsonl + checkins/ + sessions/), emits the expected `{slug, path, committed: false, loom_adopted: true}` envelope.",
+      "Smoke-tested `bin/draft revise <slug> --revision-file=… --rationale=… --no-commit --pretty`: exit 0, writes revised PLAN.md with the `## Revision log` section and the 2026-05-18 entry, emits the expected `{slug, path, committed: false, rationale}` envelope.",
+      "Derived evaluator panel: `bin/guild derive-panel --files=cli/verbs/plan.ts,cli/verbs/plan.test.ts,cli/verbs/project.ts,cli/draft.ts,cli/draft.test.ts` → evaluator-contract-fit, evaluator-react-api, evaluator-test-unit, evaluator-naming (fallback rules; PANEL-COMPOSITION.md still unreadable from marketplace cwd — same shape Phase 1 ran under).",
+      "Invoked /guild-validate with the four evaluators. All four returned `approved`. Aggregated verdict: approved, 0 blocking findings, 0 advisory findings, 0 conflicts."
+    ],
+    "files_touched": [
+      "cli/verbs/plan.ts",
+      "cli/verbs/plan.test.ts",
+      "cli/verbs/project.ts",
+      "cli/draft.ts",
+      "cli/draft.test.ts",
+      "cli/verbs/draft.ts",
+      "cli/verbs/draft.test.ts"
+    ],
+    "corrections": []
+  },
+  "scope": [
+    "cli/verbs/plan.ts",
+    "cli/verbs/plan.test.ts",
+    "cli/verbs/project.ts",
+    "cli/draft.ts",
+    "cli/draft.test.ts"
+  ],
+  "changes_since_previous": "First unit on this branch. Phase 1 closed on the prior branch (merged via PR #1).",
+  "verdict": {
+    "result": "approved",
+    "reasons": []
+  },
+  "notes_for_pr": [
+    "Pure relocation: planVerb, reviseVerb, and appendRevisionLogEntry handler bodies are byte-identical to their pre-move state in cli/verbs/draft.ts. The only deltas are (a) the readVerb block removed wholesale, (b) the context type renamed DraftCliContext → PlanCliContext, (c) an unused `relative` import dropped (was only used by readVerb).",
+    "Loom's CliContext (cli/verbs/project.ts) gained three optional fields — `today?`, `gitRunner?`, `repoRoot?` — matching DraftCliContext's pre-existing shape verbatim. Structural subtyping means a loom-side `CliContext` is assignable wherever a `PlanCliContext` parameter is expected, which is what makes D2's wiring trivial (no second context type needed on the loom side).",
+    "`DraftCliContext` is preserved as a `type DraftCliContext = PlanCliContext` alias in cli/draft.ts so the public type export from `bin/draft` consumers (cli/draft.test.ts and any future ad-hoc test) remains stable through the Phase 8 deletion window.",
+    "`bin/draft read` is dropped here rather than in Phase 8 because PLAN.md scope line 78 calls it out explicitly (`Drop draft read entirely (no consumers).`) and the cross-repo grep confirms zero consumers outside the test file itself.",
+    "Naming evaluator surfaced one advisory observation (not a flag): the `VERBS` (help strings) vs `DRAFT_VERBS` (handler registry) pair in cli/draft.ts has a slightly inverted readability gradient — the shorter name carries the less obvious payload. Made moot by Phase 8's scheduled deletion of bin/draft.ts. Documented here so a future reader doesn't re-discover it.",
+    "Panel composition ran in fallback mode (PANEL-COMPOSITION.md not readable from marketplace cwd — `bin/guild derive-panel` looks at `.claude/agents/PANEL-COMPOSITION.md` but the marketplace stores the spec at `agents/PANEL-COMPOSITION.md`). Same fallback behavior as Phase 1. Out of scope for Phase 2; flagged here for future substrate awareness (likely Phase 7 or a dedicated cross-cutting workstream).",
+    "Manifest drift noted at phase start: phase-1 PR #1 still shows `state: \"open\"` in the manifest despite being merged on main. Not fixed in this unit (out of scope); surfaced for a future `bin/loom pr reconcile` verb or manual sync."
+  ]
+}

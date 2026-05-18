@@ -3,20 +3,33 @@ import { parseArgs } from 'node:util';
 import { fileURLToPath } from 'node:url';
 import { realpathSync } from 'node:fs';
 import { join } from 'node:path';
-import { DRAFT_VERBS } from './verbs/draft.ts';
-import type { DraftCliContext, DispatchResult } from './verbs/draft.ts';
+import { planVerb, reviseVerb } from './verbs/plan.ts';
+import type {
+  PlanCliContext,
+  DispatchResult,
+  VerbHandler,
+} from './verbs/plan.ts';
 
-export type { DraftCliContext, DispatchResult };
+// `bin/draft`'s context shape is the plan/revise verbs' context.
+// Phase 8 retires `bin/draft` entirely; until then the alias keeps
+// the existing public type surface intact.
+export type DraftCliContext = PlanCliContext;
+export type { DispatchResult };
 
 // ---------- Verb registry ----------
 
-// draft has a flat verb namespace (three verbs, all acting on PLAN.md).
-// See projects/2026-05-15-draft-cli/PLAN.md § Decisions for the
-// flat-vs-namespaced rationale.
+// draft has a flat verb namespace. Two verbs after Phase 2 (`read`
+// was dropped — no consumers). The Phase 8 cleanup deletes
+// `bin/draft` and `cli/draft.ts` entirely; until then the entry
+// stays as a thin shim over the relocated handlers.
 export const VERBS: Record<string, string> = {
   plan: 'Create a new plan (writes PLAN.md and INTERVIEW.md)',
   revise: 'Replace PLAN.md with a revision and append to ## Revision log',
-  read: "Read a project's PLAN.md as JSON (or --pretty for human view)",
+};
+
+export const DRAFT_VERBS: Record<string, VerbHandler> = {
+  plan: planVerb,
+  revise: reviseVerb,
 };
 
 // ---------- Pure helpers (exported for direct unit tests) ----------
@@ -54,7 +67,7 @@ export function formatHelp(): string {
     'Verbs:',
     ...verbLines,
     '',
-    'Output is JSON by default. Pass --pretty on read verbs for human view.',
+    'Output is JSON by default. Pass --pretty for indented JSON.',
     'Errors emit a structured JSON object on stderr and exit non-zero.',
     'See docs/LOOM-CONVENTIONS.md for full substrate conventions.',
   ].join('\n');

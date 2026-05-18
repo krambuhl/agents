@@ -22,7 +22,8 @@
     {
       "number": 2,
       "name": "Move draft plan + revise verbs into loom",
-      "status": "not-started"
+      "status": "in-progress",
+      "branch": "phase-2-move-plan-verbs-to-loom"
     },
     {
       "number": 3,

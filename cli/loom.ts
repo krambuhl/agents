@@ -11,6 +11,7 @@ import { SESSION_VERBS } from './verbs/session.ts';
 import { RETRO_VERBS } from './verbs/retro.ts';
 import { DOCTOR_VERBS } from './verbs/doctor.ts';
 import { PR_VERBS } from './verbs/pr.ts';
+import { PLAN_VERBS, REVISE_PLAN_VERBS } from './verbs/plan.ts';
 import type { CliContext, DispatchResult } from './verbs/project.ts';
 
 export type { CliContext, DispatchResult };
@@ -26,11 +27,13 @@ export const NAMESPACES: Record<string, string> = {
   pr: 'Open, update, and respond to GitHub PRs',
   retro: 'Write and read retrospectives',
   doctor: 'Project health check',
+  plan: 'Create a new plan (writes PLAN.md and INTERVIEW.md)',
+  'revise-plan':
+    'Replace PLAN.md with a revision and append to ## Revision log',
 };
 
 // Namespaces with wired-up verb handlers as of this unit. Recognized
-// namespaces NOT in this map return the `not-implemented` placeholder
-// (`pr` is the only one as of Phase 2 close).
+// namespaces NOT in this map return the `not-implemented` placeholder.
 type VerbHandler = (rest: string[], ctx: CliContext) => DispatchResult;
 const VERBS_BY_NAMESPACE: Record<string, Record<string, VerbHandler>> = {
   project: PROJECT_VERBS,
@@ -41,12 +44,19 @@ const VERBS_BY_NAMESPACE: Record<string, Record<string, VerbHandler>> = {
   retro: RETRO_VERBS,
   pr: PR_VERBS,
   doctor: DOCTOR_VERBS,
+  plan: PLAN_VERBS,
+  'revise-plan': REVISE_PLAN_VERBS,
 };
 
 // Verbless namespaces are single-handler namespaces (per
-// LOOM-CONVENTIONS.md: `loom doctor [<slug>]`). The first
-// verb-position argument is treated as the first handler arg.
-const VERBLESS_NAMESPACES: ReadonlySet<string> = new Set(['doctor']);
+// LOOM-CONVENTIONS.md: `loom doctor [<slug>]`, `loom plan <slug-or-topic>
+// ...`, `loom revise-plan <slug> ...`). The first verb-position
+// argument is treated as the first handler arg.
+const VERBLESS_NAMESPACES: ReadonlySet<string> = new Set([
+  'doctor',
+  'plan',
+  'revise-plan',
+]);
 
 // ---------- Pure helpers (exported for direct unit tests) ----------
 

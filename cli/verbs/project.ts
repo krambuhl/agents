@@ -21,12 +21,19 @@ import type { Manifest } from '../lib/types.ts';
 
 // Shared CLI context. Tests inject `projectsRoot` directly and may
 // override `cwdOverride` to simulate `process.cwd()` for `status`,
-// or `ghRunner` to stub the `gh` CLI in pr verbs.
+// or `ghRunner` to stub the `gh` CLI in pr verbs. The `today`,
+// `gitRunner`, and `repoRoot` fields are read by the plan/revise
+// verbs (cli/verbs/plan.ts); they have the same `??` defaults the
+// handlers expected when they lived under the draft surface.
 import type { GhRunner } from '../lib/gh.ts';
+import type { GitRunner } from '../lib/draft-git.ts';
 export type CliContext = {
   projectsRoot: string;
   cwdOverride?: string;
   ghRunner?: GhRunner;
+  today?: string;
+  gitRunner?: GitRunner;
+  repoRoot?: string;
 };
 
 export type DispatchResult = {

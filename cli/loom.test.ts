@@ -123,6 +123,35 @@ test('dispatch: verbless namespace (doctor) routes rest as handler args', () => 
   rmSync(ctx.projectsRoot, { recursive: true, force: true });
 });
 
+test('dispatch: verbless namespace (plan) routes to planVerb (missing-args surfaces)', () => {
+  const ctx = makeCtx();
+  // `loom plan` with no rest args should reach planVerb (which returns
+  // a structured missing-args error), NOT get rejected as unknown-verb
+  // or missing-verb. Proves the verbless-namespace dispatch wires
+  // `plan` to PLAN_VERBS.plan.
+  const result = dispatch(
+    { kind: 'verb', namespace: 'plan', rest: [] },
+    ctx,
+  );
+  expect(result.exitCode).toBe(1);
+  const parsed = JSON.parse(result.stderr as string);
+  expect(parsed.error).toBe('missing-args');
+  rmSync(ctx.projectsRoot, { recursive: true, force: true });
+});
+
+test('dispatch: verbless namespace (revise-plan) routes to reviseVerb (missing-args surfaces)', () => {
+  const ctx = makeCtx();
+  // Same shape as the plan test above, for the `loom revise-plan` verb.
+  const result = dispatch(
+    { kind: 'verb', namespace: 'revise-plan', rest: [] },
+    ctx,
+  );
+  expect(result.exitCode).toBe(1);
+  const parsed = JSON.parse(result.stderr as string);
+  expect(parsed.error).toBe('missing-args');
+  rmSync(ctx.projectsRoot, { recursive: true, force: true });
+});
+
 test('dispatch: pr namespace wired (no unwired namespaces remain)', () => {
   const ctx = makeCtx();
   // pr is wired now (Phase 4 unit 01). Missing verb returns missing-verb,
