@@ -7,10 +7,10 @@ description: >-
   the loops own execution and the substrate owns state. Use when the
   user wants to make progress on a project without picking the phase
   by hand.
-argument-hint: "<project-slug-or-path> [<free-form message>]"
+argument-hint: "<project-slug-or-path> [<free-form message>] [--mode=auto]"
 user-invocable: true
 disable-model-invocation: true
-allowed-tools: Read, Skill
+allowed-tools: Read, Skill, Bash, AskUserQuestion
 ---
 
 # /ev-run
@@ -139,7 +139,7 @@ If the user provided a message, parse its intent:
 | "archive" / "close out" | Verify all phases are complete (every `phases[].status == "completed"`). Invoke `/loom-archive <slug>`. |
 | "skip to phase N" | Warn if dependencies aren't satisfied. Confirm with the user. If confirmed, dispatch to the loop for phase N. |
 | "pause" | Stop and report. Do not dispatch. |
-| ambiguous | Ask the user one clarifying question; do not guess. |
+| ambiguous | Walk the user through a grill-me question (one at a time, recommendation first); in `--mode=auto`, defer to `evaluator-contract-fit` reading the redirect against open PRs. See § Grill-me + auto-mode below. |
 
 ### 3. Pick the next actionable phase
 
@@ -188,6 +188,67 @@ warrants it. Example dispatch:
 Skill: ev-loop-confidence
 args: "<slug> <phase-number> [<redirect-message>]"
 ```
+
+## Grill-me + auto-mode
+
+The router has three classes of ambiguity that historically fell to
+ad-hoc clarifying prompts. They now follow the substrate's standard
+grill-me + auto-mode pattern. Per `docs/AGENT-CONVENTIONS.md`,
+defaults are **per-decision rounds = 3** and **per-session
+ambiguities = 3** for this surface.
+
+The three ambiguity classes:
+
+1. **Ambiguous redirect** (step 2). The free-form message doesn't
+   map cleanly to one of the documented intents. Example: the user
+   types "look at #14" — that's likely an "address feedback on #14"
+   but could also be "skip to the phase that produced #14." The
+   skill grill-mes: surface 2-4 interpretations via
+   `AskUserQuestion`, recommend the most likely one. In auto-mode,
+   `evaluator-contract-fit` reads the redirect text against the
+   project's open PRs (from the events.jsonl trail) and picks the
+   highest-confidence match.
+
+2. **Manifest-vs-git drift** (step 0.5 / step 1). The manifest's
+   phase status doesn't match git state (e.g. phase shows
+   `in-progress` but the branch is already merged). The skill
+   grill-mes: surface the discrepancy + 2-3 reconciliation options
+   (mark merged / pull and rebuild / treat as out-of-band). In
+   auto-mode, `evaluator-contract-fit` reads the drift against the
+   expected manifest shape (per `docs/LOOM-CONVENTIONS.md` § phase
+   lifecycle) and picks the reconciliation matching the actual git
+   state.
+
+3. **Ambiguous next-phase** (step 3). Multiple `not-started` phases
+   could be picked (rare: e.g. two phases have the same dependency
+   set and both are unblocked). The skill grill-mes: surface the
+   candidates with one-line PLAN.md descriptions, recommend the
+   earlier-numbered one. In auto-mode, `evaluator-contract-fit`
+   reads each candidate against its PLAN.md description + the
+   project's last-decided direction (from the latest checkin's
+   notes_for_pr) and picks the most coherent next step.
+
+**Convergence**: silent panel (the evaluator returns `approved`
+with a single high-confidence resolution) OR 3 × 3 budget exhaust.
+
+**On budget exhaust**: emit `auto-mode-budget-exhausted` with
+`{surface: 'ev-run', slug, decisions_completed, rounds_completed,
+reason}`. The router falls back to declining to dispatch — it
+surfaces the unresolved ambiguity to the operator (or upstream
+caller) with a structured error and stops. The substrate posture
+matches `/ev-loop-interactive`'s contract negotiation: ambiguity
+the auto-mode panel can't resolve is too risky to dispatch
+through.
+
+**Event emissions** (auto-mode only):
+- On auto-mode entry: emit `auto-mode-entered` with `{surface:
+  'ev-run', slug, decision_budget: 3, round_budget: 3}`.
+- On silent-panel convergence: emit `auto-mode-converged` with
+  `{surface, slug, decisions_completed, rounds_completed}`.
+- On budget exhaust: emit `auto-mode-budget-exhausted` per above.
+
+Human-paired mode emits no auto-mode events — the `AskUserQuestion`
+exchange is the audit trail.
 
 ## Rules
 
