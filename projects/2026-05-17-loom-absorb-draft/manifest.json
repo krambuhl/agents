@@ -88,8 +88,13 @@
     {
       "number": 8,
       "name": "Cleanup + delete bin/draft",
-      "status": "in-progress",
-      "branch": "phase-8-cleanup"
+      "status": "completed",
+      "branch": "phase-8-cleanup",
+      "pr": {
+        "number": 8,
+        "url": "https://github.com/krambuhl/agents/pull/8",
+        "state": "open"
+      }
     }
   ]
 }

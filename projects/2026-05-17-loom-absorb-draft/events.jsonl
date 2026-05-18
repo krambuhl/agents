@@ -44,3 +44,5 @@
 {"at":"2026-05-18T21:33:28.413Z","event":"phase-completed","detail":{"phase":7}}
 {"at":"2026-05-18T21:48:24.567Z","event":"checkin-created","detail":{"number":"01","branch":"phase-8-cleanup"}}
 {"at":"2026-05-18T21:48:24.634Z","event":"phase-started","detail":{"phase":8,"name":"Cleanup + delete bin/draft"}}
+{"at":"2026-05-18T21:49:19.765Z","event":"pr-opened","detail":{"pr":8,"url":"https://github.com/krambuhl/agents/pull/8"}}
+{"at":"2026-05-18T21:49:29.086Z","event":"phase-completed","detail":{"phase":8}}
