@@ -55,8 +55,13 @@
     {
       "number": 5,
       "name": "Inner RPI in /ev-loop-interactive",
-      "status": "in-progress",
-      "branch": "phase-5-inner-rpi"
+      "status": "completed",
+      "branch": "phase-5-inner-rpi",
+      "pr": {
+        "number": 5,
+        "url": "https://github.com/krambuhl/agents/pull/5",
+        "state": "open"
+      }
     },
     {
       "number": 6,
