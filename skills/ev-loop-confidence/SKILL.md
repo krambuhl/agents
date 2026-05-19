@@ -128,8 +128,15 @@ Before any work:
 - Refresh state per § State refresh.
 - Confirm working tree is clean (`git status --porcelain`). If not,
   stop and ask the user to commit or stash.
-- Confirm current branch matches the phase's branch in the manifest. If
-  not, stop and ask whether to switch.
+- **Branch state**. If the manifest's phase has no `branch` yet (first
+  tier in this phase), cut a fresh branch from updated `main` —
+  `git checkout main && git pull --ff-only origin main && git checkout
+  -b <branch-name>` — using the naming convention from
+  `docs/LOOM-CONVENTIONS.md` § Branch naming:
+  `<project-name>.<phase-lazy-name>` (e.g.
+  `loom-absorb-draft.phase-7-griot-writes`). Otherwise confirm the
+  current branch matches the phase's recorded branch in the manifest;
+  if not, stop and ask whether to switch.
 - Run the verification commands from `config.json` as a baseline.
   Record exit status. A red baseline before any work means the loop
   stops — you are not making a red build redder.

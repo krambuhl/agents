@@ -125,8 +125,16 @@ Claude Code process start; `/clear` is NOT a session boundary.
 ### Step 0. Pre-flight
 
 - Refresh state per § State refresh.
-- Working tree clean, branch matches the manifest's current branch,
-  verification baseline.
+- Working tree clean, verification baseline.
+- **Branch state**. If the manifest's phase has no `branch` yet (first
+  unit in this phase), cut a fresh branch from updated `main` —
+  `git checkout main && git pull --ff-only origin main && git checkout
+  -b <branch-name>` — using the naming convention from
+  `docs/LOOM-CONVENTIONS.md` § Branch naming:
+  `<project-name>.<phase-lazy-name>` (e.g.
+  `marketplace-portable-install.migration`). Otherwise confirm the
+  current branch matches the manifest's recorded phase branch; if not,
+  stop and ask whether to switch.
 
 ### Step 1. Enumerate deliverables
 

@@ -42,6 +42,54 @@ projects/<slug>/
 After a project is archived, the entire directory is moved to
 `projects/archive/<slug>/`. See § Archive below.
 
+## Branch naming
+
+Phase execution branches (cut by `/ev-loop-interactive` and
+`/ev-loop-confidence` at phase start) follow:
+
+```
+<project-name>.<phase-lazy-name>
+```
+
+- **`<project-name>`** — the project slug with the leading
+  `YYYY-MM-DD-` date prefix stripped. The substrate-canonical project
+  handle. Example: `2026-05-19-marketplace-portable-install` →
+  `marketplace-portable-install`.
+- **`<phase-lazy-name>`** — a short human handle for the phase,
+  drawn from the phase's prose name in PLAN.md when one exists, or
+  a one-word lazy descriptor when it doesn't (`migration`,
+  `cleanup`, `bootstrap`, etc). Lowercase, hyphen-separated, no
+  numeric prefix needed — the dot in the pattern is the boundary,
+  not a number. If PLAN.md gives the phase no descriptive name, fall
+  back to `phase-N` (e.g. `phase-2`) as a mechanical default.
+
+Examples:
+
+```
+marketplace-portable-install.migration
+loom-absorb-draft.phase-7-griot-writes
+trout-sunset.bootstrap
+my-project.cleanup
+```
+
+The dot separator (`.`) is intentional: it distinguishes phase
+execution branches from loom-managed branches (which use prefix
+verbs like `plan-`, `archive-`, `retro-`) and from arbitrary
+non-loom branches. A reader seeing a dot in a branch name knows
+the slug structure before the dot and the phase scope after.
+
+**Loom-managed branches** keep their existing prefix conventions
+and do NOT use this pattern:
+
+- `plan-<project-name>` — branch holding the initial plan commit,
+  cut by `/loom-plan`.
+- `archive-<project-name>` — branch holding the archive commit,
+  cut by `/loom-archive`.
+
+This convention is enforced by the loops (where they cut
+branches), not by the verbs. `bin/loom phase update --branch=...`
+accepts any string the loop supplies.
+
 ## Schema versioning
 
 All JSON artifacts declare a top-level `schema_version: 1`.
