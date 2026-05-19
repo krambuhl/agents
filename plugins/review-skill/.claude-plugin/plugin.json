@@ -1,0 +1,5 @@
+{
+  "name": "review-skill",
+  "version": "0.1.0",
+  "description": "Standalone code-review skill for editing other skill bodies and agent files."
+}

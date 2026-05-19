@@ -271,17 +271,36 @@ remaining unresolved gates.
 
 ## Verification
 
-### V1 — `.claude/settings.local.json` enrollment safety (from RESEARCH)
+### V1 — `.claude/settings.local.json` enrollment safety — RESOLVED (documented-behavior; V7 ground-truth pending)
 
-Empirical smoke test: commit a `.claude/settings.local.json`
-containing the `enabledPlugins` entry into a sandbox repo. Clone
-from a different user account / machine. Open in Claude Code.
-Record behavior. **Pass criteria**: Claude Code does NOT silently
-auto-install the plugin without user confirmation. **Failure
-criteria**: silent auto-install — the dossier's "invisible to
-colleagues" goal is unenforceable and we need a different scope.
-**Gating**: runs in W0 before the meta-plugin scope decision; the
-README's install instructions depend on its outcome.
+**Method**: documented-behavior reasoning from Claude Code docs
+([plugin-marketplaces](https://code.claude.com/docs/en/plugin-marketplaces),
+[plugins-reference § Plugin installation scopes](https://code.claude.com/docs/en/plugins-reference)).
+W0 (commit `4a798ad`) captures the full reasoning in `notes_for_pr`.
+
+**Finding**: a checked-in `.claude/settings.local.json` IS honored on
+a colleague's clone at local-settings precedence. The file is
+gitignored by Claude Code *convention, not enforcement*. The
+`--scope project` doc language ("makes the plugin available to
+everyone who clones the project repository") establishes the
+hierarchical-settings semantics for the `enabledPlugins` key; the
+same key at local scope follows the same semantics on whoever loads
+the repo. Without marketplace registration on the colleague's
+machine the entry is dead, but at Patreon where colleagues may share
+marketplace registrations over time the failure mode is real.
+
+**Implication**: shifts the install-scope recommendation from
+`--scope local` (PLAN revision 1) to `--scope user` (this revision).
+`--scope user` writes `~/.claude/settings.json` which never lands in
+any repo — invisible-to-colleagues by construction. `--scope local`
+is still documented as a per-project variant, conditioned on adding
+`.claude/settings.local.json` to the consumer repo's `.gitignore` as
+a load-bearing mitigation.
+
+**Ground truth**: V7 (Patreon-machine smoke test) verifies the
+colleague-session-invisibility claim empirically post-merge. If V7
+contradicts the documented-behavior inference, W8's install-scope
+guidance gets a follow-up revision.
 
 ### V2 — Node 24 on Patreon Bash tool (from RESEARCH)
 
@@ -458,18 +477,23 @@ disruptive.
 downgrades or pins older Nodes, revisit RESEARCH skeptic Finding 2
 remedies (volta fallback, or the compile-to-JS escape).
 
-### R4 — `.claude/settings.local.json` accidentally committed (medium / high)
+### R4 — `.claude/settings.local.json` accidentally committed (low / high) — collapsed by V1 + scope shift
 
 Per RESEARCH skeptic Finding 4: if the gitignore isn't in place
 and the user `git add .`s carelessly, colleagues get silently
-enrolled.
+enrolled. V1's documented-behavior finding established the failure
+shape is real.
 
-**Mitigation**: V1 (in W0) establishes the actual failure mode.
-The plugin's install instructions explicitly require adding
-`.claude/settings.local.json` to the consumer's `.gitignore`. The
-user's global gitignore should also include it (defense in depth).
-Optionally a monitor hook in the plugin warns on `git diff --cached`
-showing the file.
+**Mitigation collapses to scope-default**: the primary install
+command now writes to `--scope user` (`~/.claude/settings.json`,
+never in any repo) per V1's implication. The risk only fires for
+users who explicitly pick the per-project `--scope local` variant
+AND forget the load-bearing `.gitignore` step that W8's README
+makes mandatory for that variant. Likelihood drops from medium to
+low because the default path no longer touches a repo-local file.
+Defense in depth retained: user's global gitignore should include
+`.claude/settings.local.json`. Optional monitor-hook warning is
+still on the table for future work.
 
 ### R5 — Meta-plugin shape (low / low) — collapsed by V4 + V5
 
@@ -561,9 +585,13 @@ See `INTERVIEW.md` for the full walked decision tree. Summary:
 | **`~/.agents/docs` resolution** | **Option (c): inline pointer or `bin/<cli> docs` verb** | **Whiteboard substrate-engineer: option (a) breaks the cleanup goal; option (b) requires post-install hooks of uncertain availability; option (c) is the substrate-fit answer.** |
 | **`agent-loop-full` shape** | **Zero-content + `dependencies` cascade (V4-verified)** | **V4 smoke test confirmed cascade auto-install. No post-install scripts needed. Original V5 branches all collapsed to this one shape.** |
 | **`dependencies` is the verified field name** | **Use `dependencies` throughout** | **V4 smoke test. Revision 1 used `requires` as placeholder; revision 2 corrected.** |
+| **Primary install scope** | **`--scope user`** | **W0 V1 (revision 3): a checked-in settings.local.json IS honored on colleague clones at local-settings precedence; `--scope user` writes `~/.claude/settings.json` and never lands in any repo, satisfying the invisible-to-colleagues constraint by construction. `--scope local` documented as a per-project variant requiring `.gitignore` amendment.** |
 
 ## Revision log
 
+
+
+- 2026-05-19 — W0 V1 finding adopted: shift primary install-scope recommendation from --scope local to --scope user. settings.local.json is gitignored by convention not enforcement; a committed enabledPlugins entry IS honored on colleague clones. --scope user writes ~/.claude/settings.json and never lands in any repo. Updates §V1 (documented-behavior method + finding + implication), §R4 (collapsed by scope shift), §Scope-in (README primary install command), §Decisions (new row). V7 remains the ground-truth empirical check.
 
 - 2026-05-19 — V4 empirically validated: dependencies field works as documented (smoke-tested against sandbox marketplace). Mark V4/V5/OQ1 RESOLVED with empirical evidence; collapse R2/R5 failure-case branches; rename 'requires' to verified 'dependencies' throughout; add local-marketplace dev workflow tip.
 

@@ -132,7 +132,7 @@ on-disk stub files.
 
 Each active generator pairs with a specialist evaluator that
 participates in the panel with **elevated precedence** per
-`.claude/agents/PANEL-COMPOSITION.md`. The pairing is documented
+`docs/PANEL-COMPOSITION.md`. The pairing is documented
 in the generator's body — name the evaluator the panel should
 weight more heavily when this generator authored the artifact.
 

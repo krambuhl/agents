@@ -1,0 +1,5 @@
+{
+  "name": "ev",
+  "version": "0.1.0",
+  "description": "Execution loops: ev-loop-confidence (tiered transforms), ev-loop-interactive (paired units), ev-run (router)."
+}

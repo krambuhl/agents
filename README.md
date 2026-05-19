@@ -54,7 +54,7 @@ resolve `bin/<cli>` cwd-relative as designed.
 | Dir | What | Count |
 |---|---|---|
 | `skills/` | Slash-commandable skills — `/loom-plan`, `/loom-research`, `/loom-revise-plan`, `/guild-whiteboard`, `/loom-archive`, etc. | 14 |
-| `agents/` | Subagent definitions for the Claude Code Agent tool — `whiteboard-*`, `griot-*`, `evaluator-*`, `generator-*`. Plus `PANEL-COMPOSITION.md` design doc. | 28 |
+| `agents/` | Subagent definitions for the Claude Code Agent tool — `whiteboard-*`, `griot-*`, `evaluator-*`, `generator-*`. (Panel-composition spec moved to `docs/PANEL-COMPOSITION.md`.) | 28 |
 | `cli/` | The TypeScript implementation of `guild`, `griot`, `loom` (substrate plumbing for plans, research, panels, learnings, archival). | — |
 | `learnings/` | Accumulated craft knowledge — short markdown notes that show up in `bin/griot use --as=llm` output for any framework-enabled session. | 4 |
 

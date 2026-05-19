@@ -106,7 +106,7 @@ depend on the shape:
    uses a quoted heredoc so JSON content passes through verbatim:
 
    ```bash
-   bin/guild parse-and-aggregate <<'GUILD_INPUT'
+   guild parse-and-aggregate <<'GUILD_INPUT'
    [
      {"agent": "evaluator-contract-fit", "output": "...full evaluator output..."}
    ]

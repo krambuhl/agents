@@ -1,0 +1,195 @@
+import { existsSync, readFileSync, statSync } from 'node:fs';
+import { dirname, join, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { describe, expect, test } from 'vitest';
+
+/**
+ * Marketplace-manifest tripwire (V9 from the
+ * marketplace-portable-install plan).
+ *
+ * Reads `.claude-plugin/marketplace.json` at the repo root and the
+ * per-plugin `plugins/<name>/.claude-plugin/plugin.json` files, then
+ * asserts the registry-vs-reality contract. Catches the "manifest is
+ * malformed and `claude plugin install` rejects it silently" failure
+ * class before it ships.
+ *
+ * Same flavor as `parallel-work-invariant.test.ts`: a static set of
+ * structural assertions on a hand-authored substrate file.
+ */
+
+const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+
+const MARKETPLACE_PATH = join(REPO_ROOT, '.claude-plugin/marketplace.json');
+
+interface MarketplaceEntry {
+  readonly name: string;
+  readonly source: string;
+  readonly description?: string;
+  readonly dependencies?: ReadonlyArray<string | { name: string; marketplace?: string }>;
+}
+
+interface MarketplaceManifest {
+  readonly name: string;
+  readonly owner: { readonly name: string; readonly email?: string };
+  readonly description?: string;
+  readonly plugins: ReadonlyArray<MarketplaceEntry>;
+}
+
+interface PluginManifest {
+  readonly name: string;
+  readonly version: string;
+  readonly description?: string;
+}
+
+const EXPECTED_PLUGIN_NAMES = [
+  'griot',
+  'guild',
+  'loom',
+  'ev',
+  'review-skill',
+  'agent-loop-full',
+] as const;
+
+function readMarketplace(): MarketplaceManifest {
+  const raw = readFileSync(MARKETPLACE_PATH, 'utf8');
+  return JSON.parse(raw) as MarketplaceManifest;
+}
+
+function readPluginManifest(source: string): PluginManifest {
+  const path = join(REPO_ROOT, source, '.claude-plugin/plugin.json');
+  const raw = readFileSync(path, 'utf8');
+  return JSON.parse(raw) as PluginManifest;
+}
+
+describe('marketplace manifest: file existence', () => {
+  test('.claude-plugin/marketplace.json exists at repo root', () => {
+    expect(existsSync(MARKETPLACE_PATH)).toBe(true);
+  });
+});
+
+describe('marketplace manifest: top-level shape', () => {
+  const m = readMarketplace();
+
+  test('declares marketplace name "krambuhl"', () => {
+    expect(m.name).toBe('krambuhl');
+  });
+
+  test('declares owner.name as a non-empty string', () => {
+    expect(m.owner?.name).toMatch(/.+/);
+  });
+
+  test('plugins[] is an array', () => {
+    expect(Array.isArray(m.plugins)).toBe(true);
+  });
+});
+
+describe('marketplace manifest: plugin entries', () => {
+  const m = readMarketplace();
+
+  test('declares exactly the six expected plugins', () => {
+    const declared = m.plugins.map((p) => p.name).sort();
+    const expected = [...EXPECTED_PLUGIN_NAMES].sort();
+    expect(declared).toEqual(expected);
+  });
+
+  for (const expectedName of EXPECTED_PLUGIN_NAMES) {
+    describe(`entry: ${expectedName}`, () => {
+      const entry = m.plugins.find((p) => p.name === expectedName);
+
+      test('has a name field', () => {
+        expect(entry?.name).toBe(expectedName);
+      });
+
+      test('has a source field', () => {
+        expect(typeof entry?.source).toBe('string');
+        expect(entry?.source).toMatch(/^\.\//);
+      });
+
+      test('source path resolves to an existing directory on disk', () => {
+        const sourceDir = join(REPO_ROOT, entry!.source);
+        expect(existsSync(sourceDir)).toBe(true);
+        expect(statSync(sourceDir).isDirectory()).toBe(true);
+      });
+
+      test('per-plugin .claude-plugin/plugin.json exists', () => {
+        const pluginManifestPath = join(REPO_ROOT, entry!.source, '.claude-plugin/plugin.json');
+        expect(existsSync(pluginManifestPath)).toBe(true);
+      });
+
+      test('plugin.json name matches marketplace entry name', () => {
+        const pluginManifest = readPluginManifest(entry!.source);
+        expect(pluginManifest.name).toBe(expectedName);
+      });
+
+      test('plugin.json declares a non-empty version string', () => {
+        const pluginManifest = readPluginManifest(entry!.source);
+        expect(pluginManifest.version).toMatch(/.+/);
+      });
+    });
+  }
+});
+
+describe('marketplace manifest: intra-marketplace dependencies resolve', () => {
+  const m = readMarketplace();
+  const declaredNames = new Set(m.plugins.map((p) => p.name));
+
+  for (const entry of m.plugins) {
+    if (!entry.dependencies || entry.dependencies.length === 0) {
+      continue;
+    }
+
+    for (const dep of entry.dependencies) {
+      // Cross-marketplace deps are out of scope for this tripwire; if a
+      // future entry adds one, add an explicit describe block for it.
+      if (typeof dep !== 'string' && dep.marketplace) {
+        continue;
+      }
+      const depName = typeof dep === 'string' ? dep : dep.name;
+
+      test(`${entry.name} depends on ${depName} — resolves within marketplace`, () => {
+        expect(declaredNames.has(depName)).toBe(true);
+      });
+    }
+  }
+});
+
+describe('marketplace manifest: declared dependency edges (per PLAN)', () => {
+  const m = readMarketplace();
+  const byName = new Map(m.plugins.map((p) => [p.name, p] as const));
+
+  function depsOf(name: string): ReadonlyArray<string> {
+    const entry = byName.get(name);
+    if (!entry?.dependencies) return [];
+    return entry.dependencies.map((d) => (typeof d === 'string' ? d : d.name));
+  }
+
+  test('griot has no dependencies', () => {
+    expect(depsOf('griot')).toEqual([]);
+  });
+
+  test('guild has no dependencies', () => {
+    expect(depsOf('guild')).toEqual([]);
+  });
+
+  test('review-skill has no dependencies', () => {
+    expect(depsOf('review-skill')).toEqual([]);
+  });
+
+  test('loom depends on guild and griot', () => {
+    expect([...depsOf('loom')].sort()).toEqual(['griot', 'guild']);
+  });
+
+  test('ev depends on loom, guild, griot', () => {
+    expect([...depsOf('ev')].sort()).toEqual(['griot', 'guild', 'loom']);
+  });
+
+  test('agent-loop-full depends on all five family plugins', () => {
+    expect([...depsOf('agent-loop-full')].sort()).toEqual([
+      'ev',
+      'griot',
+      'guild',
+      'loom',
+      'review-skill',
+    ]);
+  });
+});

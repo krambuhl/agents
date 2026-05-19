@@ -6,14 +6,14 @@ import type { DispatchResult, GuildCliContext } from './index.ts';
 // agent list a /guild-validate panel should spawn for them.
 //
 // Source of truth for both the file-type → evaluator mapping and the
-// precedence ordering is `.claude/agents/PANEL-COMPOSITION.md`. The
+// precedence ordering is `docs/PANEL-COMPOSITION.md`. The
 // verb parses it at runtime (per L-006: no parallel TS const, no
 // drift-test). If the spec file is missing or unreadable, the
 // hardcoded fallback below kicks in. The fallback is a defensive
 // backup, NOT a second source of truth — when the two disagree,
 // PANEL-COMPOSITION.md wins by design.
 
-const SPEC_PATH = '.claude/agents/PANEL-COMPOSITION.md';
+const SPEC_PATH = 'docs/PANEL-COMPOSITION.md';
 const BASELINE = 'evaluator-contract-fit';
 
 type Rule = {

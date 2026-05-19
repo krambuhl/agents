@@ -96,21 +96,21 @@ work)" below.
 2. **Resolve round number.**
    - If `round` arg supplied, use it verbatim.
    - Otherwise call
-     `Bash("bin/guild whiteboard detect-round <whiteboard-path>")`.
+     `Bash("guild whiteboard detect-round <whiteboard-path>")`.
      The verb returns a single integer on stdout (`1` if the file
      does not exist or has no `## Round N` headers, else
      `max(existing) + 1`).
 
 3. **Initialize the whiteboard if needed.**
    - If the file does not exist (round = 1), call
-     `Bash("bin/guild whiteboard init <whiteboard-path>
+     `Bash("guild whiteboard init <whiteboard-path>
      --topic='<first line of brief>'")`. The verb writes the file
      with a `# Whiteboard: <topic>` header. Idempotent — no-op if
      the file already exists.
 
 4. **For round > 1: read prior state.**
    - Call
-     `Bash("bin/guild whiteboard read-state <whiteboard-path>")`.
+     `Bash("guild whiteboard read-state <whiteboard-path>")`.
      The verb returns JSON
      `{rounds: [{number, sections: [{engineer, section}]}]}`.
    - Construct `per_agent_context` for `/guild-spawn` as a JSON

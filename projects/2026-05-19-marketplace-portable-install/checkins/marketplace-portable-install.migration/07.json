@@ -1,0 +1,75 @@
+{
+  "schema_version": 1,
+  "number": "07",
+  "created": "2026-05-19T19:17:00.000Z",
+  "phase": {
+    "number": 1,
+    "name": "Phase 1"
+  },
+  "branch": "marketplace-portable-install.migration",
+  "unit": "W6 — Per-plugin bin shims + Node version check + integration tests",
+  "contract": {
+    "goal": "Each plugin that ships a CLI (griot, guild, loom) gets a self-contained bin/<name> shim that resolves cli/<name>.ts relative to itself (symlink-safe), enforces Node >= 24, and execs the entry. Integration tests via child_process.spawnSync cover symlink resolution, Node-version reject/accept, missing-Node, and entry-missing fallthrough.",
+    "acceptance_criteria": [
+      "3 plugin-bin shims (plugins/{griot,guild,loom}/bin/<name>): bash shebang + set -euo pipefail; symlink-safe BASH_SOURCE resolution (portable while-loop, no readlink -f); Node >= 24 check; loud failure on missing-node OR too-old-node; exec node \"$ENTRY\" \"$@\" on success; file mode 0755.",
+      "Error messages name plugin + failure + remediation hint inline.",
+      "cli/plugin-bin-shims.test.ts integration tests via spawnSync: 5 tests per plugin (real-node + dummy entry, stubbed v18, missing node via skipIf, symlink, entry-missing fallthrough).",
+      "npm test green."
+    ],
+    "rules_applied": [
+      "Three near-identical shims (intentional duplication; mirrors cli/lib/ per-plugin duplication W7 introduces).",
+      "Portable bash (no readlink -f; works on macOS + Linux).",
+      "Tests use mkdtempSync + per-test stub PATH for parallelism (no process.chdir; no shared global PATH mutation outside spawned processes).",
+      "Loud-fail idiom matches existing shim convention."
+    ],
+    "disqualifiers": [
+      "No changes to existing top-level bin/{loom,griot,guild} shims (install.sh artifacts; W9 deletes install.sh).",
+      "No changes to cli/<name>.ts entry points.",
+      "No shims for ev/review-skill/agent-loop-full (no CLI in those plugins).",
+      "No real sync of cli/ trees into plugins/<name>/cli/ (W7's job; W6 tests fake-populate per-plugin trees in tmpdir)."
+    ],
+    "inputs": [
+      "projects/2026-05-19-marketplace-portable-install/PLAN.md (§ Phases W6 + § External dependencies)",
+      "Existing top-level bin/{loom,griot,guild} (shim shape reference)",
+      "Claude Code docs: plugins-reference § Plugin components (bin/ → PATH on install)"
+    ]
+  },
+  "execution": {
+    "actions": [
+      "Created plugins/{griot,guild,loom}/bin/ directories.",
+      "Wrote 3 bin shims (plugins/<name>/bin/<name>). Each: bash shebang + set -euo pipefail; symlink-safe BASH_SOURCE resolution via portable while-loop (handles absolute + relative symlink targets); 3-branch Node check (command -v fails → exit 1 with 'node is not on PATH'; node --version unparseable → exit 1 with 'could not parse'; major < 24 → exit 1 with 'too old'); entry-not-found pre-check → exit 2; exec node \"$ENTRY\" \"$@\" on success. Mode 0755 via chmod +x.",
+      "Wrote cli/plugin-bin-shims.test.ts (~170 lines). Helper factories: makeFakePluginTree (mkdtempSync + copy real shim + dummy cli/<name>.ts entry that prints a known string); makeStubNode (mkdtempSync + bash script echoing version on --version, sentinel-exits on any further invocation).",
+      "Test parameterization: top-level for-of loop over PLUGINS tuple generates 5 tests per plugin (15 tests total). Each test owns its tmpdir fixtures via beforeEach + try/finally for nested stubs/symlinks.",
+      "Host node check: v24.10.0 (>= 24) — real-node-success branch exercised on this machine.",
+      "npx vitest run cli/plugin-bin-shims.test.ts → 15/15 passed (~2.5s wall-clock for the integration spawns).",
+      "npm test (full suite) → 596/596 passed (was 581; +15 from W6).",
+      "Derived panel via bin/guild derive-panel --files=... → evaluator-contract-fit + evaluator-test-unit (substrate-path fix in eb618d4 made auto-derivation work correctly for these file types).",
+      "Invoked /guild-validate. Both evaluators approved. evaluator-test-unit surfaced one advisory observation: the missing-node test's soft-pass branch (early return when host has /usr/bin/node) silently passes with zero assertions on that branch. The sibling stub-old-version test provides independent coverage of the version-check logic, but the silent-skip shape is suboptimal.",
+      "Applied the advisory polish inline: replaced the silent early-return with test.skipIf(HAS_SYSTEM_NODE) where HAS_SYSTEM_NODE = existsSync('/usr/bin/node') resolved at module load. The skip is now explicit in test output (vitest reports skipped tests) rather than silent. On this host (no /usr/bin/node) all 15 tests run; on a host with system node, the 3 missing-node tests skip visibly."
+    ],
+    "files_touched": [
+      "plugins/griot/bin/griot",
+      "plugins/guild/bin/guild",
+      "plugins/loom/bin/loom",
+      "cli/plugin-bin-shims.test.ts"
+    ],
+    "corrections": []
+  },
+  "scope": [
+    "plugins/<plugin>/bin/<plugin> for griot/guild/loom (3 new bash shims)",
+    "cli/plugin-bin-shims.test.ts (new integration test file)"
+  ],
+  "changes_since_previous": "W5 (503b45e) added ev/* preflight checks. W6 lands the plugin-side counterpart: each CLI-shipping plugin gets a self-contained bin/<name> shim that does the Node version check + symlink resolution + execs the cli/<name>.ts entry. The entry path (plugins/<name>/cli/<name>.ts) doesn't exist yet — W7 (sync-shared.ts) populates it. W6 tests fake-populate per-plugin trees in tmpdir to exercise the shim independently.",
+  "verdict": {
+    "result": "approved",
+    "reasons": []
+  },
+  "notes_for_pr": [
+    "Shim design: three near-identical files rather than a template-with-substitution. Intentional duplication that mirrors the cli/lib/ per-plugin duplication W7's sync-shared.ts will introduce — each plugin is self-contained, no cross-plugin file references. The trade-off (12 lines of duplication × 3 plugins ≈ 36 duplicated lines) is consistent with PLAN's commit-generated-trees decision.",
+    "Portable bash: the symlink-resolution loop uses bare readlink + a relative/absolute target branch — works on macOS (no `readlink -f`) and Linux. The version-parse logic strips a leading v, takes the major via parameter expansion (%%.*), and validates with a regex before numeric compare. Defensive against weird node --version outputs (e.g. nvm-shell-wrapper anomalies).",
+    "Node version check fails on: missing node, unparseable --version, and major < 24. All three branches emit '<plugin>-shim-error: ...' with a remediation hint. Exit 2 reserved for the entry-not-found case (matches the existing top-level shim convention).",
+    "Integration tests fake-populate plugin trees in tmpdir so they don't depend on W7's sync output. Each test owns its tmpdir lifecycle. Stub-node script handles only `--version` and sentinel-exits on any further invocation — defensive against the shim accidentally exec'ing the stub past the version check.",
+    "Advisory polish from evaluator-test-unit applied inline: the missing-node test originally had a silent early-return when the host had /usr/bin/node (since MINIMAL_SYSTEM_PATH includes /usr/bin). Replaced with test.skipIf(HAS_SYSTEM_NODE) so the skip is explicit in test output. On hosts without /usr/bin/node (like this machine) all 15 tests run; on hosts with system node, the 3 missing-node tests visibly skip.",
+    "After-W7 dependency: once sync-shared.ts populates plugins/<name>/cli/, these shims will resolve to real entries. V6/V7 (full install smoke tests post-merge) are the eventual end-to-end check."
+  ]
+}

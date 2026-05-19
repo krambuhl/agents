@@ -27,15 +27,31 @@ not by each other. No ambient `/loom-*` or `/draft-revise` skills —
 substrate plumbing dispatches directly to the CLIs (see § Substrate
 compositions).
 
-**Format reference**: `docs/LOOM-CONVENTIONS.md` (marketplace-rooted;
-resolved on consumer machines via the `~/.agents/docs` symlink).
+**Format reference**: `docs/LOOM-CONVENTIONS.md` (plugin-relative
+path; present in every install of the `loom` plugin).
 
 Skill invocations like `/guild-validate` below mean
 `Skill(skill: <name>, args: "…")`. CLI invocations like
-`bin/loom phase update` mean `Bash("bin/loom phase update <args>")`.
+`loom phase update` mean `Bash("loom phase update <args>")`.
 Antagonist evaluation runs through `/guild-validate`, which spawns
 evaluator agents in parallel via `/guild-spawn`; the loop itself never
 calls the `Agent` tool directly.
+
+## Preflight
+
+Before doing anything else, verify the substrate CLIs are on PATH.
+The marketplace `dependencies` cascade handles install-time + enable-
+time correctness; this skill-body check catches the runtime case
+where a user disabled a dep plugin mid-session.
+
+Run:
+
+```
+Bash("command -v loom guild griot >/dev/null 2>&1 || { echo 'ev-loop-confidence requires loom + guild + griot plugins on PATH. Enable them with: claude plugin enable loom@krambuhl guild@krambuhl griot@krambuhl' >&2; exit 1; }")
+```
+
+If exit code is non-zero, stop and surface the message to the
+operator verbatim — do not proceed with any other step.
 
 ## Substrate compositions
 
@@ -128,8 +144,15 @@ Before any work:
 - Refresh state per § State refresh.
 - Confirm working tree is clean (`git status --porcelain`). If not,
   stop and ask the user to commit or stash.
-- Confirm current branch matches the phase's branch in the manifest. If
-  not, stop and ask whether to switch.
+- **Branch state**. If the manifest's phase has no `branch` yet (first
+  tier in this phase), cut a fresh branch from updated `main` —
+  `git checkout main && git pull --ff-only origin main && git checkout
+  -b <branch-name>` — using the naming convention from
+  `docs/LOOM-CONVENTIONS.md` § Branch naming:
+  `<project-name>.<phase-lazy-name>` (e.g.
+  `loom-absorb-draft.phase-7-griot-writes`). Otherwise confirm the
+  current branch matches the phase's recorded branch in the manifest;
+  if not, stop and ask whether to switch.
 - Run the verification commands from `config.json` as a baseline.
   Record exit status. A red baseline before any work means the loop
   stops — you are not making a red build redder.
@@ -253,7 +276,7 @@ For each unit inside a tier:
    rather than a fixed list. `evaluator-contract-fit` is always
    included as the baseline. The spec (file-type → evaluator mapping,
    precedence list, tokens-vs-naming boundary) lives in
-   `.claude/agents/PANEL-COMPOSITION.md`; the derivation logic is
+   `docs/PANEL-COMPOSITION.md`; the derivation logic is
    § Derive panel.
    - `agents`: comma-separated output of § Derive panel (paths
      composed per § Panel auto-derivation below).
@@ -380,7 +403,7 @@ For each unit inside a tier:
 The `agents` list passed to `/guild-validate` is computed from the
 unit's file list at evaluation time, not hardcoded. The composition
 rules (file-type → evaluator mapping, precedence ordering, conflict
-policy) live in `.claude/agents/PANEL-COMPOSITION.md` and are the
+policy) live in `docs/PANEL-COMPOSITION.md` and are the
 source of truth.
 
 1. **Collect file paths.** Take the unit's changed and created files

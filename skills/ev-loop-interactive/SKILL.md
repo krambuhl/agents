@@ -27,15 +27,31 @@ detection (see step 5 of the unit loop).
 **Does not compose**: other loops. Substrate plumbing dispatches
 directly to the CLIs (see § Substrate compositions).
 
-**Format reference**: `docs/LOOM-CONVENTIONS.md` (marketplace-rooted;
-resolved on consumer machines via the `~/.agents/docs` symlink).
+**Format reference**: `docs/LOOM-CONVENTIONS.md` (plugin-relative
+path; present in every install of the `loom` plugin).
 
 Skill invocations like `/guild-validate` below mean
 `Skill(skill: <name>, args: "…")`. CLI invocations like
-`bin/loom phase update` mean `Bash("bin/loom phase update <args>")`.
+`loom phase update` mean `Bash("loom phase update <args>")`.
 Antagonist evaluation runs through `/guild-validate`, which spawns
 evaluator agents in parallel via `/guild-spawn`; the loop itself never
 calls the `Agent` tool directly.
+
+## Preflight
+
+Before doing anything else, verify the substrate CLIs are on PATH.
+The marketplace `dependencies` cascade handles install-time + enable-
+time correctness; this skill-body check catches the runtime case
+where a user disabled a dep plugin mid-session.
+
+Run:
+
+```
+Bash("command -v loom guild griot >/dev/null 2>&1 || { echo 'ev-loop-interactive requires loom + guild + griot plugins on PATH. Enable them with: claude plugin enable loom@krambuhl guild@krambuhl griot@krambuhl' >&2; exit 1; }")
+```
+
+If exit code is non-zero, stop and surface the message to the
+operator verbatim — do not proceed with any other step.
 
 ## Substrate compositions
 
@@ -125,8 +141,16 @@ Claude Code process start; `/clear` is NOT a session boundary.
 ### Step 0. Pre-flight
 
 - Refresh state per § State refresh.
-- Working tree clean, branch matches the manifest's current branch,
-  verification baseline.
+- Working tree clean, verification baseline.
+- **Branch state**. If the manifest's phase has no `branch` yet (first
+  unit in this phase), cut a fresh branch from updated `main` —
+  `git checkout main && git pull --ff-only origin main && git checkout
+  -b <branch-name>` — using the naming convention from
+  `docs/LOOM-CONVENTIONS.md` § Branch naming:
+  `<project-name>.<phase-lazy-name>` (e.g.
+  `marketplace-portable-install.migration`). Otherwise confirm the
+  current branch matches the manifest's recorded phase branch; if not,
+  stop and ask whether to switch.
 
 ### Step 1. Enumerate deliverables
 
@@ -218,7 +242,7 @@ For each deliverable (picked per the ordering rule):
    rather than a fixed list. `evaluator-contract-fit` is always
    included as the baseline. The spec (file-type → evaluator mapping,
    precedence list, tokens-vs-naming boundary) lives in
-   `.claude/agents/PANEL-COMPOSITION.md`; the derivation logic is
+   `docs/PANEL-COMPOSITION.md`; the derivation logic is
    `bin/guild derive-panel`.
    - `agents`: comma-separated output of § Derive panel (paths
      composed per § Panel auto-derivation below).
@@ -475,7 +499,7 @@ For each deliverable (picked per the ordering rule):
 The `agents` list passed to `/guild-validate` is computed from the
 unit's file list at evaluation time, not hardcoded. The composition
 rules (file-type → evaluator mapping, precedence ordering, conflict
-policy) live in `.claude/agents/PANEL-COMPOSITION.md` and are the
+policy) live in `docs/PANEL-COMPOSITION.md` and are the
 source of truth.
 
 1. **Collect file paths.** Take the unit's changed and created files.
@@ -519,7 +543,7 @@ When a unit's panel includes a **specialist evaluator** paired with
 a `generator-*` agent (e.g. `evaluator-css-architecture` paired with
 `generator-css-codemod`), the specialist runs as part of the
 parallel panel — its verdict participates with **elevated
-precedence** per `.claude/agents/PANEL-COMPOSITION.md`. **No
+precedence** per `docs/PANEL-COMPOSITION.md`. **No
 control-flow change** to the loop is needed: the existing
 parallel-spawn + precedence-resolution mechanism carries it.
 

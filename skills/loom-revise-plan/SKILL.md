@@ -56,7 +56,7 @@ branches accordingly.
 
 ### 1. Pre-flight + recovery check
 
-- Run `Bash("bin/griot use --as=llm")` to load the learnings rollup.
+- Run `Bash("griot use --as=llm")` to load the learnings rollup.
 - Resolve the slug via loom's standard resolution. If the project
   doesn't exist, stop with `project-not-found` (surface verbatim
   from `bin/loom`'s shape).
@@ -164,7 +164,7 @@ Write the candidate to a temp path:
 Invoke:
 
 ```
-Bash("bin/loom revise-plan <slug> \
+Bash("loom revise-plan <slug> \
   --revision-file=/tmp/loom-revise-plan-<slug>.md \
   --rationale=<the synthesized rationale>")
 ```

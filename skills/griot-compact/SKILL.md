@@ -217,7 +217,7 @@ On attempt > 1, invoke `operator-checks.ts verify-rubric` via Bash
 with stdin JSON:
 
 ```bash
-bin/griot operator-checks verify-rubric <<'INPUT'
+griot operator-checks verify-rubric <<'INPUT'
 {"rubric_path": "learnings/session-notes/<note>/rubric.md",
  "expected": "<full text of expected_rubric, JSON-escaped>"}
 INPUT
@@ -316,7 +316,7 @@ Pipe the four raw outputs through
 JSON:
 
 ```bash
-bin/griot mediate-panel <<'INPUT'
+griot mediate-panel <<'INPUT'
 {
   "round_num": 1,
   "verdicts": [
@@ -615,7 +615,7 @@ grow large). For each entry:
        `operator-checks.ts log-intervention`:
 
        ```bash
-       bin/griot operator-checks log-intervention <<'INPUT'
+       griot operator-checks log-intervention <<'INPUT'
        {"log_path": "learnings/regressions.jsonl",
         "record": {
           "ts": "<ISO 8601 timestamp>",
@@ -696,7 +696,7 @@ Append the run record to `learnings/bench-history.jsonl` via
 `operator-checks.ts log-intervention`:
 
 ```bash
-bin/griot operator-checks log-intervention <<'INPUT'
+griot operator-checks log-intervention <<'INPUT'
 {"log_path": "learnings/bench-history.jsonl",
  "record": {
    "ts": "<ISO 8601 timestamp>",

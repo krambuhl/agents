@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+# guild — plugin entry shim. Resolves the plugin's cli/guild.ts entry
+# relative to this script (symlink-safe), enforces Node >= 24, and
+# execs the entry. After plugin install, this script's dir is added
+# to the Bash tool's PATH automatically.
+set -euo pipefail
+
+# Symlink-safe resolution: follow links until we reach the real
+# script, then take its dirname. Portable across macOS + Linux
+# (no `readlink -f`, which macOS lacks by default).
+SOURCE="${BASH_SOURCE[0]}"
+while [[ -L "$SOURCE" ]]; do
+  TARGET="$(readlink "$SOURCE")"
+  if [[ "$TARGET" = /* ]]; then
+    SOURCE="$TARGET"
+  else
+    SOURCE="$(dirname "$SOURCE")/$TARGET"
+  fi
+done
+SHIM_DIR="$(cd "$(dirname "$SOURCE")" && pwd)"
+ENTRY="$SHIM_DIR/../cli/guild.ts"
+
+# Node availability + version (>= 24). Fails loud + actionable.
+if ! command -v node >/dev/null 2>&1; then
+  echo "guild-shim-error: node is not on PATH. The guild plugin requires Node >= 24. Install via your preferred node manager (nvm/asdf/volta) and re-run." >&2
+  exit 1
+fi
+
+NODE_VERSION="$(node --version 2>/dev/null || true)"
+NODE_VERSION="${NODE_VERSION#v}"
+NODE_MAJOR="${NODE_VERSION%%.*}"
+
+if [[ -z "$NODE_MAJOR" || ! "$NODE_MAJOR" =~ ^[0-9]+$ ]]; then
+  echo "guild-shim-error: could not parse 'node --version' output ('$NODE_VERSION'). The guild plugin requires Node >= 24." >&2
+  exit 1
+fi
+
+if (( NODE_MAJOR < 24 )); then
+  echo "guild-shim-error: node $NODE_VERSION is too old. The guild plugin requires Node >= 24." >&2
+  exit 1
+fi
+
+if [[ ! -f "$ENTRY" ]]; then
+  echo "guild-shim-error: entry not found at $ENTRY" >&2
+  exit 2
+fi
+
+exec node "$ENTRY" "$@"

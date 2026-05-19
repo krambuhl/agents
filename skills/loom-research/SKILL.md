@@ -59,7 +59,7 @@ sentences are flagged at the fact-check gate, not at commit time.
 
 ### 1. Pre-flight + recovery check
 
-- Run `Bash("bin/griot use --as=llm")` to load the learnings rollup
+- Run `Bash("griot use --as=llm")` to load the learnings rollup
   per the substrate startup-brief convention (rollup may be empty;
   status line in stdout reports the load result).
 - Resolve the slug from the topic (kebab-case derivation, same as
@@ -252,7 +252,7 @@ Write the two candidate files to temp paths:
 Invoke:
 
 ```
-Bash("bin/loom research <slug-or-topic> \
+Bash("loom research <slug-or-topic> \
   --research-file=/tmp/loom-research-<slug>.md \
   --notes-file=/tmp/loom-research-notes-<slug>.md")
 ```

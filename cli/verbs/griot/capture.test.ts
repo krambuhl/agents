@@ -9,9 +9,10 @@ import {
 } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { test, expect, beforeEach, afterEach } from 'vitest';
+import { test, expect, beforeEach, afterEach, describe } from 'vitest';
 import { captureVerb } from './capture.ts';
 import type { GriotCliContext } from './index.ts';
+import { makeProjectRoot } from './_test-factory.ts';
 
 let root: string;
 let ctx: GriotCliContext;
@@ -520,6 +521,49 @@ test('--evaluator-finding=recurring with --file-line populates state.json and le
   expect(state['file-line']).toBe('components/Sketch.module.css:17');
   const learning = readFileSync(join(folder, 'learning.md'), 'utf-8');
   expect(learning).toMatch(/Source: `components\/Sketch.module.css:17`/);
+});
+
+describe('griot capture: nested-cwd project-root resolution', () => {
+  let gitRoot: string;
+  let gitCleanup: () => void;
+
+  beforeEach(() => {
+    ({ root: gitRoot, cleanup: gitCleanup } = makeProjectRoot({
+      prefix: 'capture-verb-nested-test-',
+      gitInit: true,
+    }));
+    mkdirSync(join(gitRoot, 'learnings', 'session-notes'), { recursive: true });
+  });
+
+  afterEach(() => {
+    gitCleanup();
+  });
+
+  test('captures land at the .git/-rooted project root, not the nested cwd', () => {
+    const nested = join(gitRoot, 'sketches', 'one');
+    mkdirSync(nested, { recursive: true });
+
+    const result = captureVerb(
+      [
+        '--evaluator-finding=generator-antipattern',
+        '--evaluator-name=evaluator-test',
+        '--code=test-code',
+        '--evidence=nested cwd capture lands at project root',
+        '--slug=nested-cwd-test',
+      ],
+      { cwd: nested },
+    );
+
+    expect(result.exitCode).toBe(0);
+    // The capture folder lives at project-root/learnings/session-notes/, not
+    // the nested cwd. Verify by reading the directory and asserting the
+    // captured folder appears there.
+    const rootFolders = readdirSync(join(gitRoot, 'learnings', 'session-notes'));
+    expect(rootFolders.length).toBe(1);
+    expect(rootFolders[0]).toMatch(/-nested-cwd-test$/);
+    // And the nested cwd has no stray learnings/.
+    expect(existsSync(join(nested, 'learnings'))).toBe(false);
+  });
 });
 
 test('folder collision fails rather than overwriting', () => {

@@ -32,7 +32,7 @@ in the CLI, the skill is a name-stable handle.
 Run the CLI and return its stdout verbatim:
 
 ```bash
-bin/griot use --as=llm
+griot use --as=llm
 ```
 
 The CLI handles all three load outcomes:

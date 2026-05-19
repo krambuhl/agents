@@ -21,9 +21,14 @@ import { describe, expect, test } from 'vitest';
 type Category =
   | 'append-only'
   | 'partitioned'
-  | 'single-writer-serialized';
+  | 'single-writer-serialized'
+  | 'generated-from-upstream';
 
-type Exception = 'PLAN.md' | 'manifest.json' | 'whiteboard';
+type Exception =
+  | 'PLAN.md'
+  | 'manifest.json'
+  | 'whiteboard'
+  | 'gitignore-amendment';
 
 interface VerbEntry {
   verb: string;
@@ -122,18 +127,27 @@ const REGISTRY: readonly VerbEntry[] = [
     target: 'projects/<slug>/whiteboards/{name}.md',
     exception: 'whiteboard',
   },
+  {
+    verb: 'griot init',
+    family: 'griot',
+    category: 'single-writer-serialized',
+    target: '<project-root>/.gitignore',
+    exception: 'gitignore-amendment',
+  },
 ];
 
 const VALID_CATEGORIES: ReadonlySet<Category> = new Set([
   'append-only',
   'partitioned',
   'single-writer-serialized',
+  'generated-from-upstream',
 ]);
 
 const DECLARED_EXCEPTIONS: ReadonlySet<Exception> = new Set([
   'PLAN.md',
   'manifest.json',
   'whiteboard',
+  'gitignore-amendment',
 ]);
 
 describe('parallel-work invariant: registry well-formedness', () => {

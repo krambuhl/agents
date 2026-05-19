@@ -3,9 +3,10 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'nod
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { afterEach, beforeEach, expect, test } from 'vitest';
+import { afterEach, beforeEach, describe, expect, test } from 'vitest';
 import type { GriotCliContext } from './index.ts';
 import { useVerb } from './use.ts';
+import { makeProjectRoot } from './_test-factory.ts';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const USE_SOURCE = join(__dirname, 'use.ts');
@@ -254,6 +255,50 @@ test('rubric: learnings without rubric do not emit a Rubric section', () => {
   const result = useVerb([], ctx);
   expect(result.exitCode).toBe(0);
   expect(result.stdout).not.toContain('### Rubric');
+});
+
+describe('griot use: nested-cwd project-root resolution', () => {
+  let gitRoot: string;
+  let gitCleanup: () => void;
+
+  beforeEach(() => {
+    ({ root: gitRoot, cleanup: gitCleanup } = makeProjectRoot({
+      prefix: 'use-verb-nested-test-',
+      gitInit: true,
+    }));
+    // Write a rollup at the project root.
+    mkdirSync(join(gitRoot, 'learnings'), { recursive: true });
+    writeFileSync(
+      join(gitRoot, 'learnings', 'rollup.json'),
+      JSON.stringify([
+        {
+          id: 'L-001',
+          title: 'nested cwd resolves to project root',
+          classification: 'L',
+          promoted: '',
+          origin: '',
+          body: 'body',
+          rubric: null,
+        },
+      ]),
+      'utf8',
+    );
+  });
+
+  afterEach(() => {
+    gitCleanup();
+  });
+
+  test('reads the rollup at the .git/-rooted project root from a nested cwd', () => {
+    const nested = join(gitRoot, 'sketches', 'one');
+    mkdirSync(nested, { recursive: true });
+
+    const result = useVerb([], { cwd: nested });
+
+    expect(result.exitCode).toBe(0);
+    expect(result.stdout).toContain('L-001');
+    expect(result.stdout).toContain('nested cwd resolves to project root');
+  });
 });
 
 test('tier-separation invariant: verb source contains only the canonical learnings/ path and zero session-notes/nightly references', () => {
