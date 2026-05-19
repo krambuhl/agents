@@ -96,3 +96,33 @@ entry in this section AND a corresponding line in the registry.
   `guild whiteboard {init,append}` write here; concurrent rounds
   against the same whiteboard file are unsupported and would
   corrupt the round-numbering invariant.
+- **`gitignore-amendment`** — a consumer-repo `.gitignore` file at
+  the project root. `griot init` writes here to add a `learnings/`
+  entry if one isn't already present. The write is idempotent
+  (second-run-is-noop) and the line is appended at the end of the
+  file preserving trailing newline behavior. Concurrent `griot
+  init` runs against the same consumer repo are an unsupported
+  shape; the verb assumes a serialized human invoking it during
+  plugin onboarding.
+
+## Category 4 — generated-from-upstream
+
+The verb's output is deterministically derived from upstream source
+files (typically a shared tree the verb walks). Concurrent runs
+against unchanged upstream input converge to the same final state;
+concurrent runs against an upstream that is being edited mid-run
+have undefined behavior — the substrate's contract is that callers
+serialize their upstream-mutation with their generator runs.
+
+Conceptually different from Category 3 in two ways: the target is
+typically multiple files (a whole generated tree, not a single
+fixed path), and idempotency holds across re-runs by construction
+rather than by the verb being a no-op when state matches.
+
+Examples:
+- `sync-shared` — script lands in workstream W7 of the
+  marketplace-portable-install migration. Reads top-level
+  `cli/lib/` + `cli/verbs/<family>/` and writes per-plugin subsets
+  under `plugins/<name>/cli/`. The CI drift-detection check
+  (V10 case (c)) catches forgotten re-runs by mutating a per-plugin
+  file post-sync and asserting non-zero exit.

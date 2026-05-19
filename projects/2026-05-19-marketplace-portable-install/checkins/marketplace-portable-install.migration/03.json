@@ -1,0 +1,86 @@
+{
+  "schema_version": 1,
+  "number": "03",
+  "created": "2026-05-19T17:35:30.000Z",
+  "phase": {
+    "number": 1,
+    "name": "Phase 1"
+  },
+  "branch": "marketplace-portable-install.migration",
+  "unit": "W2 — bin/griot init verb (CONVENTIONS + registry + body + dispatch)",
+  "contract": {
+    "goal": "Land bin/griot init as a new substrate verb that scaffolds learnings/ subdirs + amends consumer-repo .gitignore. Contract-first sub-step ordering per PLAN W2: amendments (2a + 2b) and registry row (2c) land in the same commit before the verb body (2d) and dispatch (2e), so the parallel-work-invariant tripwire fires against the new entry from the moment the body lands. Resolves OQ5.",
+    "acceptance_criteria": [
+      "CONVENTIONS.md amendments: § Declared exceptions gains gitignore-amendment bullet; new § Category 4 generated-from-upstream section added with sync-shared as the example.",
+      "cli/parallel-work-invariant.test.ts: Category union extended (+generated-from-upstream), Exception union extended (+gitignore-amendment), VALID_CATEGORIES + DECLARED_EXCEPTIONS sets updated, new griot init REGISTRY row (category=single-writer-serialized, target=<project-root>/.gitignore, exception=gitignore-amendment).",
+      "cli/verbs/griot/init.ts: verb body — idempotent, creates learnings/{session-notes,nightly}/, appends learnings/ to .gitignore if absent. Edge cases handled: file-missing → create; file-without-trailing-newline → separator inserted; trimmed-line match for trailing whitespace; deeper learnings/foo NOT matched as present.",
+      "cli/verbs/griot/init.test.ts: 13 tests across 4 describe blocks (fresh root, idempotency, existing .gitignore edge cases, pre-existing learnings tree). makeProjectRoot factory used; parallel-safe.",
+      "cli/verbs/griot/_test-factory.ts: makeProjectRoot helper — mkdtempSync + rmSync cleanup. No process.chdir.",
+      "cli/verbs/griot/index.ts: imports initVerb; dispatches init.",
+      "npm test green."
+    ],
+    "rules_applied": [
+      "Contract-first ordering per PLAN W2: amendments + registry row + body + dispatch land in one commit (the conceptual unit) but the registry row's tripwire-vs-conventions invariants would fire if the amendments were missing — so the order within the commit is amendments-first.",
+      "Idempotency invariant per Category 3: second run is no-op (verb returns 'unchanged' for .gitignore; mkdirSync recursive is naturally idempotent for the tree).",
+      "Parallel-safe tests: factory uses mkdtempSync per call; no process.chdir; ctx.cwd is passed explicitly to the verb.",
+      "Verb signature mirrors existing griot verbs: (rest, ctx) => DispatchResult."
+    ],
+    "disqualifiers": [
+      "No refactor of existing griot ctx.cwd resolution (W3).",
+      "No skill-body changes (W4/W5).",
+      "No sync-shared implementation (W7 — the Category 4 row is reserved for it).",
+      "No bin shim for griot (W6).",
+      "No top-level learnings/ changes in THIS repo (verb operates on ctx.cwd; tests use tmpdir)."
+    ],
+    "inputs": [
+      "projects/2026-05-19-marketplace-portable-install/PLAN.md (§ Phases W2 sub-steps, § OQ5 init behavior, § Decisions)",
+      "projects/CONVENTIONS.md (existing categories + exceptions)",
+      "cli/parallel-work-invariant.test.ts (registry pattern; Category / Exception types)",
+      "cli/verbs/griot/index.ts (GriotCliContext shape; DispatchResult shape)",
+      "cli/verbs/griot/capture.ts (existing verb body style reference)",
+      "cli/verbs/griot/capture.test.ts (existing mkdtempSync inline pattern — lifted into makeProjectRoot factory)"
+    ]
+  },
+  "execution": {
+    "actions": [
+      "Amended projects/CONVENTIONS.md: added gitignore-amendment to § Declared exceptions (idempotent .gitignore writes to <project-root>/.gitignore); added new § Category 4 generated-from-upstream (sync-shared example; deterministically-derived multi-file output).",
+      "Extended cli/parallel-work-invariant.test.ts: Category union += 'generated-from-upstream'; Exception union += 'gitignore-amendment'; VALID_CATEGORIES + DECLARED_EXCEPTIONS sets updated; new griot init row inserted after the existing guild whiteboard append row.",
+      "Created cli/verbs/griot/_test-factory.ts: makeProjectRoot helper returning {root, cleanup}; uses mkdtempSync + rmSync; no chdir.",
+      "Created cli/verbs/griot/init.ts: ensureLearningsTree creates learnings/{session-notes,nightly}/; amendGitignore handles create / append / unchanged paths with trimmed-line matching and trailing-newline preservation; renderStdout produces a structured one-line summary; initVerb signature mirrors existing griot verbs.",
+      "Created cli/verbs/griot/init.test.ts: 13 tests covering fresh-root scaffolding, idempotency (file content unchanged on second run), 5 .gitignore edge cases (append-when-missing-line, insert-separator-when-no-trailing-newline, no-op-when-present, deeper-path-not-matched, trailing-whitespace-tolerated), and 3 pre-existing-tree cases (preserve captured content, skip already-present subdirs, report the subset created).",
+      "Wired dispatch in cli/verbs/griot/index.ts: import initVerb + 'init: initVerb' entry in GRIOT_VERBS.",
+      "Iteration: first run had 1 test failure (assertion regex mismatch on .gitignore-unchanged stdout — actual output 'no changes (unchanged)' didn't match `/\\.gitignore unchanged/`). Fixed by dropping the redundant stdout-format assertion from the no-op idempotency test (the next test explicitly covers the format). Also dropped an unused LEARNINGS_LINE constant the lint diagnostic flagged. Re-ran: 13/13 green.",
+      "npx vitest run cli/verbs/griot/init.test.ts cli/parallel-work-invariant.test.ts → 20/20 passed (13 init + 7 invariant).",
+      "npm test (full suite) → 539/539 passed (was 526; +13 from W2).",
+      "Invoked /guild-validate with manual panel (evaluator-contract-fit + evaluator-test-unit + evaluator-naming per agents/PANEL-COMPOSITION.md mapping) — derive-panel still fallback per W1 substrate-path bug. All three returned approved. One advisory from evaluator-naming: InitAction → InitResult (the type describes the verb's return shape, not a redux-style event).",
+      "Applied the naming advisory as free polish: renamed InitAction → InitResult throughout cli/verbs/griot/init.ts. Re-ran tests: 539/539 still green."
+    ],
+    "files_touched": [
+      "projects/CONVENTIONS.md",
+      "cli/parallel-work-invariant.test.ts",
+      "cli/verbs/griot/_test-factory.ts",
+      "cli/verbs/griot/init.ts",
+      "cli/verbs/griot/init.test.ts",
+      "cli/verbs/griot/index.ts"
+    ],
+    "corrections": []
+  },
+  "scope": [
+    "projects/CONVENTIONS.md (§ Declared exceptions, § Category 4)",
+    "cli/parallel-work-invariant.test.ts (Category union, Exception union, REGISTRY, sets)",
+    "cli/verbs/griot/ (init.ts + init.test.ts + _test-factory.ts + index.ts wire-up)"
+  ],
+  "changes_since_previous": "W1 (ab4e9dd) landed marketplace skeleton + V9 test. W2 adds the first new CLI verb — griot init — plus the contract-first substrate amendments (new Category 4 reserved for W7's sync-shared; new gitignore-amendment exception for this verb). The makeProjectRoot test factory is shared substrate for griot verb tests going forward; W3 likely lifts more onto it.",
+  "verdict": {
+    "result": "approved",
+    "reasons": []
+  },
+  "notes_for_pr": [
+    "OQ5 resolved: griot init creates both learnings/session-notes/ and learnings/nightly/ subdirs. session-notes is the active write target for griot capture; nightly is named in use.ts's tier-separation prose as a path the LLM must NOT read at session time. Creating both at init makes the on-disk shape self-documenting and means downstream verbs (capture) never have to mkdir on the active path.",
+    "New Category 4 (generated-from-upstream) introduced in CONVENTIONS.md and the parallel-work-invariant Category type to reserve the category for W7's sync-shared. The registry doesn't have a Category 4 row yet — that lands when W7 ships sync-shared.",
+    "gitignore-amendment declared exception added. The .gitignore matching logic is intentionally lenient: trimmed-line equality so `learnings/` and `learnings/   ` are treated as equivalent; deeper paths like `learnings/foo` correctly NOT matched as present.",
+    "makeProjectRoot test factory landed at cli/verbs/griot/_test-factory.ts. Lifts the inline mkdtempSync pattern from capture.test.ts. Parallel-safe — each test gets a unique tmpdir; no process.chdir. W3 likely refactors the rest of cli/verbs/griot/*.test.ts onto this factory once the project-root resolver lands.",
+    "Substrate-path bug (W1 surfacing) still active: bin/guild derive-panel reads from .claude/agents/PANEL-COMPOSITION.md but file lives at agents/PANEL-COMPOSITION.md. Manual panel composition continues. Fix likely lands alongside W4 skill-body work or substrate cleanup.",
+    "InitAction → InitResult: applied evaluator-naming's advisory as inline polish. Module-internal type rename only; no public surface affected."
+  ]
+}

@@ -3,6 +3,7 @@
 // (rollup, session-notes, judge panels).
 
 import { captureVerb } from './capture.ts';
+import { initVerb } from './init.ts';
 import { mediatePanelVerb } from './mediate-panel.ts';
 import { operatorChecksVerb } from './operator-checks.ts';
 import { useVerb } from './use.ts';
@@ -33,6 +34,7 @@ export type GriotVerbHandler = (
 export const GRIOT_VERBS: Record<string, GriotVerbHandler> = {
   use: useVerb,
   capture: captureVerb,
+  init: initVerb,
   'operator-checks': operatorChecksVerb,
   'mediate-panel': mediatePanelVerb,
 };
