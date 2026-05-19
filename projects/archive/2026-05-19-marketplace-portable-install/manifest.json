@@ -3,7 +3,7 @@
   "title": "Marketplace Portable Install",
   "slug": "2026-05-19-marketplace-portable-install",
   "started": "2026-05-19",
-  "status": "active",
+  "status": "archived",
   "current_branch": null,
   "latest_checkin": null,
   "strategy": "interactive",
@@ -11,12 +11,12 @@
     {
       "number": 1,
       "name": "Phase 1",
-      "status": "in-progress",
+      "status": "completed",
       "branch": "marketplace-portable-install.followup",
       "pr": {
         "number": 12,
         "url": "https://github.com/krambuhl/agents/pull/12",
-        "state": "open"
+        "state": "merged"
       }
     }
   ]

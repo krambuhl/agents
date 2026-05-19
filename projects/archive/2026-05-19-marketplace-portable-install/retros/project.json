@@ -1,0 +1,62 @@
+{
+  "schema_version": 1,
+  "type": "project",
+  "created": "2026-05-19T20:50:00.000Z",
+  "findings": [
+    {
+      "category": "kept-well",
+      "description": "Substrate-path bug fix mid-execution unblocked all future panel runs. Found during W1's panel run that bin/guild derive-panel looked at .claude/agents/PANEL-COMPOSITION.md while the spec lived at agents/PANEL-COMPOSITION.md. Fixed standalone (moved to docs/PANEL-COMPOSITION.md), and from W2 onward the auto-derived panels just worked.",
+      "evidence": "Commit eb618d4 on PR #11"
+    },
+    {
+      "category": "kept-well",
+      "description": "Free-polish-from-evaluator pattern: every approved checkin applied at least one advisory finding inline as polish. The evaluator panel was net-positive contribution per unit, not just a gate.",
+      "evidence": "InitAction→InitResult in W2 (b7ea2de); parallel-safety test rename + scaffolding drop in W3 (5d5c1d4); missing-node test.skipIf in W6 (9a6e4df); V11 walker fence-state bug in W4 (af360e7)"
+    },
+    {
+      "category": "kept-well",
+      "description": "Contract-first sub-step ordering in W2: amendments → registry → body → dispatch all in one commit, but ordered so the registry tripwire would catch a missing amendment. Tripwire-as-design forced correct shape without splitting into 4 sub-commits.",
+      "evidence": "W2 commit b7ea2de"
+    },
+    {
+      "category": "improvement",
+      "description": "PR #11 grew to 13 commits before the split-into-N option was surfaced. Should have proposed the split around commit 8-9 when the diff first started feeling overwhelming. The W3 unit was a natural fork point that wasn't recognized at the time.",
+      "evidence": "PR #11 was split into PR #11 (W0-W6) + PR #12 (W7-W9) mid-execution"
+    },
+    {
+      "category": "improvement",
+      "description": "Relative-path arithmetic recurred after git mv-ing files between dirs. Two corrections in this project shared the same shape: 'moves between dirs trip relative paths AND in-file references to the thing-just-moved/deleted.' Smoke tests caught both; a pre-move audit would have caught them earlier.",
+      "evidence": "W7 correction: ../lib/ → ../../lib/ inside moved loom verbs + fixture paths in moved tests (e00c808). W9 correction: .gitignore comment still naming install.sh after the file was deleted (c6b58e0)."
+    },
+    {
+      "category": "improvement",
+      "description": "W0's generator-tree size estimate was ~2× the actual. Estimated ~908 KB / ~125 files; W7's real sync produced ~452 KB / 69 files. W0 counted all .ts files; the sync rule excludes test files. PLAN's R6 (review cognitive load) was sized against the wrong number. Future migrations should size against the actual sync rule, not raw file counts.",
+      "evidence": "W0 checkin 01 vs W7 commit e00c808 actual sync output"
+    },
+    {
+      "category": "process-change",
+      "description": "PR-splitting mid-migration is a legitimate move when the unified PR grows unreviewable. PLAN's PQ1 ('one bundled PR') is a design-time call; if the diff grows too large, the agent should surface the split-into-N option without unilateral action. Re-ask PQ1 around the 8-10 commit mark on any 'one bundled PR' decision.",
+      "evidence": "Captured as feedback_pq1_bundled_pr_revisitable.md in user-memory; the deviation rationale lives in PR #11's body as 'Part 1 of 2 ... PQ1 is the original framing; the actual split into two PRs is named as the lived deviation'"
+    },
+    {
+      "category": "process-change",
+      "description": "After-merge phase-completed bookkeeping doesn't have a clean home in the current substrate. Running `loom phase update --status=completed --pr-state=merged` post-merge leaves manifest+events dirty in the working tree with no obvious commit destination. Options worth exploring: a `loom project archive --include-bookkeeping` flag (which is the de-facto path right now); a formal 'post-merge cleanup' commit type.",
+      "evidence": "This retro's archive run is the de-facto home — manifest+events updates from `loom phase update --status=completed` ride along with `loom project archive`"
+    },
+    {
+      "category": "follow-up",
+      "description": "V6 + V7 smoke tests post-merge: verify `claude plugin install agent-loop-full@krambuhl --scope user` works end-to-end on personal Mac (V6) and Patreon machine (V7). V7 includes the load-bearing colleague-invisibility check that W0 V1's --scope user recommendation rests on.",
+      "evidence": "PR #12 test-plan unchecked rows"
+    },
+    {
+      "category": "follow-up",
+      "description": "CI hookup of `scripts/sync-shared.ts --check`. PLAN named this as W7 scope but the wiring (GitHub Action or pre-commit hook) was deferred. Worth doing before the next significant cli/ edit, otherwise drift could land silently.",
+      "evidence": "W7 checkin 08 notes_for_pr explicitly defers"
+    },
+    {
+      "category": "follow-up",
+      "description": "V8 public-publish gating decision: whether V6/V7 run before or after the repo goes public is an open question in PLAN. Operationally important — testing in private gives a safety buffer; testing post-public gives the real install path. Decide before announcing.",
+      "evidence": "PLAN § Verification V8 (open question)"
+    }
+  ]
+}

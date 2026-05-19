@@ -136,7 +136,7 @@ only invocation suitable for CI.
   (2026-05-17), so it's no longer coupled to any single project.
 - Migrated from monolithic symlink-farm setup script into Claude
   Code plugins in
-  [marketplace-portable-install](projects/2026-05-19-marketplace-portable-install/PLAN.md)
+  [marketplace-portable-install](projects/archive/2026-05-19-marketplace-portable-install/PLAN.md)
   (2026-05-19), so consumers install via `claude plugin install`
   rather than cloning + running an idempotent setup script.
 
