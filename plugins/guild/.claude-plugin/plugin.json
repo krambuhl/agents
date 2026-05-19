@@ -1,0 +1,5 @@
+{
+  "name": "guild",
+  "version": "0.1.0",
+  "description": "Panel substrate: guild-validate / guild-whiteboard / guild-spawn skills + guild CLI + whiteboard-* / evaluator-* / generator-* agents."
+}

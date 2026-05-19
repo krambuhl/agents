@@ -1,0 +1,43 @@
+{
+  "name": "krambuhl",
+  "owner": {
+    "name": "Evan Krambuhl",
+    "email": "evan.krambuhl@gmail.com"
+  },
+  "description": "Agent-loop substrate: loom (projects), griot (learnings), guild (panels), ev (loops), review-skill, and the agent-loop-full meta-bundle.",
+  "plugins": [
+    {
+      "name": "griot",
+      "source": "./plugins/griot",
+      "description": "Learnings substrate: griot capture/use/compact CLI + griot-* skills + griot-* judge/rewriter/operator/rubric-author agents."
+    },
+    {
+      "name": "guild",
+      "source": "./plugins/guild",
+      "description": "Panel substrate: guild-validate / guild-whiteboard / guild-spawn skills + guild CLI + whiteboard-* / evaluator-* / generator-* agents."
+    },
+    {
+      "name": "loom",
+      "source": "./plugins/loom",
+      "description": "Project substrate: loom-* skills + loom CLI for plans, research, sessions, checkins, retros, archives.",
+      "dependencies": ["guild", "griot"]
+    },
+    {
+      "name": "ev",
+      "source": "./plugins/ev",
+      "description": "Execution loops: ev-loop-confidence (tiered transforms), ev-loop-interactive (paired units), ev-run (router).",
+      "dependencies": ["loom", "guild", "griot"]
+    },
+    {
+      "name": "review-skill",
+      "source": "./plugins/review-skill",
+      "description": "Standalone code-review skill for editing other skill bodies and agent files."
+    },
+    {
+      "name": "agent-loop-full",
+      "source": "./plugins/agent-loop-full",
+      "description": "Meta-bundle: zero-content plugin that cascade-installs the full agent-loop family (griot, guild, loom, ev, review-skill).",
+      "dependencies": ["griot", "guild", "loom", "ev", "review-skill"]
+    }
+  ]
+}
