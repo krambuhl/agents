@@ -12,7 +12,12 @@
       "number": 1,
       "name": "Phase 1",
       "status": "in-progress",
-      "branch": "marketplace-portable-install.followup"
+      "branch": "marketplace-portable-install.followup",
+      "pr": {
+        "number": 12,
+        "url": "https://github.com/krambuhl/agents/pull/12",
+        "state": "open"
+      }
     }
   ]
 }
