@@ -82,15 +82,13 @@ Skill bodies cite docs as `docs/<file>.md`. The resolution rule:
 - On a contributor machine working inside the marketplace clone,
   `docs/<file>.md` is the literal relative path from the
   marketplace root.
-- On a consumer machine that ran `install.sh`,
-  `~/.agents/docs/<file>.md` is the symlink that resolves to the
-  same file in the cloned marketplace. The `~/.agents/docs/`
-  symlink is created by `install.sh` (whole-dir target mirroring
-  `cli` and `learnings`).
+- On a consumer machine with the plugin installed via Claude Code,
+  `docs/<file>.md` is the plugin-relative path resolved by Claude
+  Code's plugin loader (the docs/ directory ships inside the
+  plugin tree).
 
-Either path works — they resolve to the same file via the symlink.
-The convention in skill bodies is to use the unqualified
-`docs/<file>.md` form for brevity. The symlink does the work.
+Either way, the unqualified `docs/<file>.md` form in skill bodies
+resolves correctly. No symlink dance required.
 
 ### `[portable]` marker
 

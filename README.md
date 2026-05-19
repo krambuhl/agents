@@ -134,7 +134,7 @@ only invocation suitable for CI.
   in share-me PR #1 (2026-05-16).
 - Promoted to this dedicated marketplace repo in share-me PR A
   (2026-05-17), so it's no longer coupled to any single project.
-- Migrated from monolithic `install.sh` symlink-farm into Claude
+- Migrated from monolithic symlink-farm setup script into Claude
   Code plugins in
   [marketplace-portable-install](projects/2026-05-19-marketplace-portable-install/PLAN.md)
   (2026-05-19), so consumers install via `claude plugin install`
