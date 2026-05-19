@@ -29,6 +29,13 @@ superseded here.
 re-ordering, the OQ2 resolution, the hidden pre-conditions in W6,
 and the three new tests now baked into § Verification.
 
+**V4 empirical foundation**: as of revision 2 (this revision), V4 is
+RESOLVED by an in-session smoke test. The verified field name is
+`dependencies` (not `requires` — the placeholder used in revision 1).
+The cascade install behavior, local-marketplace-path support, and
+orphan-prune semantics were all confirmed empirically against a
+sandbox marketplace. See § Verification V4 for the result.
+
 ## Scope
 
 ### In
@@ -40,15 +47,16 @@ and the three new tests now baked into § Verification.
   - `guild@krambuhl` — `guild-*` skills + `guild` CLI +
     `whiteboard-*`, `evaluator-*`, `generator-*` agents
   - `loom@krambuhl` — `loom-*` skills + `loom` CLI. Declares
-    dependency on `guild@krambuhl` (loom-research and loom-plan
-    compose guild skills) and `griot@krambuhl` (startup-brief
-    convention requires `bin/griot use --as=llm`).
+    `dependencies: ["guild", "griot"]` (loom-research and loom-plan
+    compose guild skills; startup-brief convention requires
+    `bin/griot use --as=llm`).
   - `ev@krambuhl` — `ev-loop-confidence`, `ev-loop-interactive`,
-    `ev-run` skills. Declares dependency on `loom`, `guild`, `griot`.
+    `ev-run` skills. Declares `dependencies: ["loom", "guild", "griot"]`.
   - `review-skill@krambuhl` — the `review-skill` skill alone, no
     deps.
-  - `agent-loop-full@krambuhl` — meta-plugin bundling all five (the
-    turnkey install). Shape gated by V4 outcome — see § Verification V4/V5.
+  - `agent-loop-full@krambuhl` — zero-content meta-plugin with
+    `dependencies: ["griot", "guild", "loom", "ev", "review-skill"]`.
+    Cascade auto-install handles the bundle (verified in V4 smoke test).
 - New marketplace directory layout: `plugins/<name>/` per plugin,
   each self-contained. The authoritative top-level
   `cli/`/`skills/`/`agents/` becomes source-of-truth; per-plugin
@@ -94,21 +102,29 @@ and the three new tests now baked into § Verification.
 - `ev/*` skill body preflight: `command -v loom guild griot >/dev/null || fail`
   at the top of each ev-* skill body. Fails loud with actionable
   message if any dep plugin isn't enabled.
-- Manifest-level dependency declarations in marketplace.json (if
-  Claude Code's API supports `requires` or equivalent — see
-  Verification V4; V4 runs in W0 gating, before manifest authoring).
+- Manifest-level `dependencies` declarations on each plugin entry,
+  per the V4-verified `dependencies` field shape. Bare-string for
+  same-marketplace deps; object form
+  `{ "name": "X", "version": "~1.0" }` if semver pinning is added
+  later. **Note**: `dependencies` is the actual field name; revision 1
+  of this plan used `requires` as a placeholder.
 - Delete `install.sh` (no deprecation period; user is the only
   consumer).
 - README rewrite. New install instructions: `claude plugin install
-  agent-loop-full@krambuhl --scope local` (turnkey, shape per V5) or
-  per-family `claude plugin install loom@krambuhl --scope local`
-  (granular).
+  agent-loop-full@krambuhl --scope local` (turnkey via cascade
+  install) or per-family `claude plugin install loom@krambuhl
+  --scope local` (granular; loom's own deps cascade-install too).
 - Cleanup of stale references in skill bodies (the `~/.agents/...`
   paths flagged by RESEARCH Phase 0 V3 audit; addressed in W6).
 - Pre-W6 phantom-verb audit: 15-min skim of all 103 `bin/<cli>`
   references for skills citing nonexistent verbs (per the round-1
   substrate finding about `bin/loom adopt`). Disambiguate before
   the mechanical rewrite begins.
+- **Dev workflow tip**: `claude plugin marketplace add <local-path>`
+  works for registering a local marketplace clone. Use this for
+  iterating on the plugin layout before publishing to GitHub. The
+  V4 smoke test used this path; works against any directory with
+  a valid `.claude-plugin/marketplace.json`.
 
 ### Out (deferred or never)
 
@@ -133,6 +149,9 @@ and the three new tests now baked into § Verification.
 - Loom-substrate refactor to split per family. The loom CLI stays
   monolithic inside `loom@krambuhl`; only the marketplace ships
   granularly.
+- Post-install hooks on plugin install. The V4 smoke test
+  confirmed Claude Code has no install-time hook mechanism. Not
+  needed — cascade `dependencies` handles bundling natively.
 
 ### Pre-migration housekeeping (separate small PR before the main one)
 
@@ -151,25 +170,25 @@ The work splits into ordered workstreams inside the one PR. The
 order below is the **substrate-shape order** (per the Phase 1
 pre-execution whiteboard's substrate-engineer + skeptic findings):
 generators fold over upstream state, so the sync script runs last
-among mechanical steps; the V4 verification gates manifest shape,
-so it runs before the marketplace skeleton.
+among mechanical steps; the V4 verification gated manifest shape
+and has now been resolved positively, so W0 collapses to the
+remaining unresolved gates.
 
-0. **Pre-flight verifications (W0 — new, gating)**: Run V1, V4,
-   V5 spike, and OQ2 confirmation before authoring any code. V4
-   determines whether the manifest can use a `requires` field;
-   V5 spike picks the `agent-loop-full` shape (lean option (c)
-   docs-only if V4 fails — substrate-fit answer per substrate-
-   engineer Finding 6). V1 establishes whether `.claude/settings.
-   local.json` is silently auto-installed by colleagues' Claude
-   Code sessions; the meta-plugin scope decision depends on it.
+0. **Pre-flight verifications (W0 — gating)**: V4 + V5 are
+   RESOLVED (this revision). V1 still runs in W0 to establish
+   whether `.claude/settings.local.json` is silently auto-installed
+   by colleagues' Claude Code sessions; the meta-plugin scope
+   decision and the README's install-scope guidance depend on it.
    OQ2 is pre-resolved (commit generated trees — see § Decisions)
    but reconfirm by sketching a small generated tree to feel the
-   diff size. **Output**: decisions captured in checkin notes;
-   PR body includes the V4/V1 results so the reviewer ratifies
-   the chosen manifest shape against an in-diff fact.
+   diff size. OQ1 is RESOLVED (this revision) — plugin source
+   paths in marketplace.json are relative to the marketplace root.
+   **Output**: V1 outcome captured in checkin notes; PR body
+   includes the V1 result so the reviewer ratifies the chosen
+   install-scope guidance against an in-diff fact.
 1. **Marketplace skeleton**: `.claude-plugin/marketplace.json` with
-   6 entries (manifest shape per W0's V4 outcome); `plugins/<name>/`
-   empty directories.
+   6 entries (manifest shape per V4-verified `dependencies` field);
+   `plugins/<name>/` empty directories.
 2. **`bin/griot init` verb (W4 in the original numbering)**:
    sub-steps in order:
    - 2a. Add `gitignore-amendment` to CONVENTIONS.md § Declared
@@ -214,7 +233,10 @@ so it runs before the marketplace skeleton.
 8. **Documentation**: rewrite README and install docs to point at
    plugin install. Document the per-user `--scope local` pattern
    and the gitignore requirement for `.claude/settings.local.json`.
-   Install instructions match the V4/V5-determined manifest shape.
+   Install instructions show both turnkey
+   (`claude plugin install agent-loop-full@krambuhl --scope local`)
+   and granular (`claude plugin install loom@krambuhl --scope local`)
+   paths.
 9. **`install.sh` deletion**: remove the file. Companion grep
    tripwire test asserts no remaining references in the repo.
 
@@ -222,15 +244,16 @@ so it runs before the marketplace skeleton.
 
 ### Inter-plugin (within the marketplace)
 
-- `loom@krambuhl` requires `guild@krambuhl` + `griot@krambuhl`.
-  Declared in marketplace.json (V4) AND enforced via skill-body
-  preflight.
-- `ev@krambuhl` requires `loom@krambuhl` + `guild@krambuhl` +
-  `griot@krambuhl`. Same belt-and-suspenders pattern.
+- `loom@krambuhl` declares `dependencies: ["guild", "griot"]`.
+  Belt-and-suspenders: declared in marketplace.json AND enforced via
+  skill-body preflight.
+- `ev@krambuhl` declares `dependencies: ["loom", "guild", "griot"]`.
+  Same pattern. `loom` already implies `guild` + `griot` transitively
+  via its own `dependencies`, but declaring all three directly
+  is explicit and survives future restructuring.
 - `griot@krambuhl`, `guild@krambuhl`, `review-skill@krambuhl`
   have no inter-plugin deps.
-- `agent-loop-full@krambuhl` requires all five (its whole reason
-  for existing).
+- `agent-loop-full@krambuhl` declares all five as dependencies.
 
 ### External
 
@@ -279,35 +302,51 @@ skills will break after migration. **Pre-W6 design call already
 made**: option (c) — inline or `bin/<cli> docs` verb invocation
 (see § Scope).
 
-### V4 — Marketplace.json supports inter-plugin `requires` field
+### V4 — Marketplace.json `dependencies` field — RESOLVED
 
-Verify whether Claude Code's marketplace.json schema includes a
-`requires` (or equivalent) field on plugin entries that gates
-install on dependencies. **Pass**: declare deps in manifest.
-**Failure**: rely on runtime preflight + the meta-plugin pattern
-(`agent-loop-full@krambuhl`) for users who want turnkey, and
-document the manual-install order for granular users. **Gating**:
-runs in W0 before manifest authoring; if V4 fails, pivot the
-meta-plugin to documentation-only (option (c) per V5).
+**Verified empirically on 2026-05-19.** Claude Code's plugin
+manifest supports a `dependencies` field on plugin entries. Cascade
+auto-install confirmed: installing a meta-plugin triggers
+installation of its declared deps in the correct order. Local
+marketplace path support also confirmed.
 
-Read https://code.claude.com/docs/en/plugin-marketplaces.md +
-https://code.claude.com/docs/en/plugins-reference.md +
-spawn `claude-code-guide` to verify.
+**Smoke test summary**:
+- Created `/tmp/dep-smoke-test/` with `.claude-plugin/marketplace.json`
+  listing two plugins (`leaf-plugin`, `meta-plugin`) where
+  `meta-plugin`'s `plugin.json` declared `dependencies:
+  ["leaf-plugin"]`.
+- `claude plugin validate /tmp/dep-smoke-test` → `✔ Validation passed`.
+- `claude plugin marketplace add /tmp/dep-smoke-test` → registered.
+- `claude plugin install meta-plugin@dep-smoke-test --scope user`
+  → `✔ Successfully installed plugin: meta-plugin@dep-smoke-test
+  (scope: user) (+ 1 dependency: leaf-plugin)`.
+- `claude plugin list` showed both plugins installed.
+- `claude plugin uninstall meta-plugin@dep-smoke-test` → `✔
+  Successfully uninstalled plugin: meta-plugin. 1 auto-installed
+  dependency no longer needed: leaf-plugin. Run claude plugin prune
+  to remove.`
 
-### V5 — Meta-plugin (`agent-loop-full`) implementation shape
+**Authoritative docs**:
+- https://code.claude.com/docs/en/plugin-dependencies.md (field
+  shape + cascade semantics)
+- https://code.claude.com/docs/en/discover-plugins.md#manage-installed-plugins
+  (install behavior)
 
-If V4 confirms `requires`, `agent-loop-full` is a zero-content
-plugin that declares all five others as `requires`; install
-triggers cascade-install. If `requires` isn't supported, the
-substrate-fit answer is option (c) — ship as documentation only
-("to install the turnkey, run these five commands") — because
-option (a) doubles drift surface and option (b) makes the meta-
-plugin a different shape from its siblings (per substrate-engineer
-Finding 6).
+**Verified field name is `dependencies`, NOT `requires`.** Revision 1
+of this plan used `requires` as a placeholder; revision 2 (this
+revision) corrects this throughout.
 
-Plan-implementation decision: V5 spike runs in W0 alongside V4;
-the outcome is captured in the PR body so the reviewer ratifies
-the chosen shape against an in-diff fact.
+### V5 — Meta-plugin (`agent-loop-full`) implementation shape — RESOLVED
+
+**Resolved positively by V4's outcome.** `agent-loop-full@krambuhl`
+ships as a zero-content plugin (no skills, no agents, no CLI) with
+`dependencies: ["griot", "guild", "loom", "ev", "review-skill"]`.
+Cascade auto-install handles the bundle natively per V4.
+
+No post-install scripts needed. No content-duplication concerns. The
+three branches the original V5 enumerated ((a) copies-of-everything,
+(b) post-install script, (c) docs-only) all collapsed to the
+zero-content-with-deps shape once V4 confirmed the cascade.
 
 ### V6 — Full install smoke test on personal machine
 
@@ -349,6 +388,10 @@ The choice between V6-before-public vs V6-after-public is
 operationally important — testing in private gives a safety
 buffer for catching issues before public exposure.
 
+**Note**: local marketplace paths work (V4 confirmed), so the
+entire migration can be dev-tested locally without any
+public-vs-private decision blocking the work.
+
 ### V9 — `marketplace-manifest.test.ts` (new, registry-vs-reality tripwire)
 
 Unit test that reads `.claude-plugin/marketplace.json`, asserts the
@@ -357,7 +400,9 @@ asserts each declared `source` points at a directory that actually
 exists on disk. Same flavor as `parallel-work-invariant.test.ts`.
 Catches the "manifest is malformed and `claude plugin install`
 rejects it silently" failure class. **Lands in W1** alongside the
-manifest itself.
+manifest itself. **Bonus**: also assert each plugin's `dependencies`
+field references plugins that exist in the same marketplace (or
+explicitly mark cross-marketplace deps).
 
 ### V10 — `sync-shared.test.ts` (new, drift-detection tripwire)
 
@@ -390,16 +435,17 @@ trees** (per § Decisions OQ2 resolution); drift becomes a visible
 failure mode in CI rather than a silent plugin-publish-time
 divergence.
 
-### R2 — Inter-plugin install order without manifest deps (medium / high)
+### R2 — Inter-plugin install order (low / low) — collapsed by V4
 
-If V4 finds no manifest `requires` support, users who install
-`ev@krambuhl` first will hit runtime preflight failures until they
-also install loom/guild/griot. UX is rough.
+V4 confirmed that `dependencies` cascade-installs automatically.
+Granular install of `ev@krambuhl` (without first installing its
+deps manually) Just Works — Claude Code resolves and installs
+loom + guild + griot in the correct order.
 
-**Mitigation**: the `agent-loop-full@krambuhl` meta-plugin (or
-its docs-only equivalent per V5) solves this for turnkey install.
-README + skill-body error messages need to be crystal-clear about
-the dep chain for granular users.
+**Mitigation**: minimal. The runtime preflight in `ev/*` skill
+bodies remains as belt-and-suspenders (catches the edge case where
+a user manually `claude plugin disable`s a dep), but the install-
+time concern that motivated R2 is gone.
 
 ### R3 — Patreon Node version drift over time (low / high)
 
@@ -425,18 +471,16 @@ user's global gitignore should also include it (defense in depth).
 Optionally a monitor hook in the plugin warns on `git diff --cached`
 showing the file.
 
-### R5 — Meta-plugin without `requires` is awkward (medium / medium)
+### R5 — Meta-plugin shape (low / low) — collapsed by V4 + V5
 
-If V4 says no `requires` support, V5's spike for `agent-loop-full`
-shapes how clean the turnkey install actually is. Worst case:
-"install the turnkey" becomes "run these five commands" — barely a
-turnkey at all.
+The original R5 worried about the `agent-loop-full` shape if V4
+came back negative. V4 came back positive; V5 resolved to the
+zero-content + cascade-deps shape; R5 collapses to a stub.
 
-**Mitigation**: V4 + V5 are sequenced in W0. Substrate-fit answer
-on failure: option (c) docs-only (not option (b) post-install
-script). If both come back negative for clean meta-plugin support,
-revisit PQ-style decisions: maybe one bundled mega-plugin really
-was right (the "revisit" option from the plan-shape question).
+**Mitigation**: maintain V4's empirical record in this plan
+(§ Verification V4) so future readers see why the shape is what it
+is. If Claude Code's `dependencies` semantics ever change, the
+record gives a concrete reference point for revisiting V5.
 
 ### R6 — One-bundled-PR is large (medium / low)
 
@@ -473,16 +517,20 @@ loud-fail: make review boundaries explicit in the diff itself.
 Things this plan did not fully resolve and the implementation phase
 needs to decide:
 
-- **OQ1**: Plugin source path convention in marketplace.json. The
-  verified API shows `source` as a relative path string; exact
-  resolution semantics (relative to marketplace root? relative to
-  manifest?) need confirmation before authoring the manifest. **W0
-  picks this up alongside V4.**
+- **OQ1**: ~~Plugin source path convention in marketplace.json.~~
+  **RESOLVED** (revision 2): `source` is a relative path string
+  resolved relative to the marketplace root (the directory containing
+  `.claude-plugin/marketplace.json`). Confirmed by V4 smoke test
+  (`source: "./plugins/leaf-plugin"` worked as expected).
 - **OQ2**: ~~Whether `plugins/<name>/cli/lib/` is committed to git
-  or `.gitignore`d~~ **RESOLVED**: commit the generated trees. See
-  § Decisions.
+  or `.gitignore`d~~ **RESOLVED** (revision 1): commit the generated
+  trees. See § Decisions.
 - **OQ3**: Per-plugin manifest metadata (`plugin.json` inside each
   plugin source dir?) — what fields, what version pinning convention.
+  The V4 smoke test used minimal `plugin.json` (`name`, `version`,
+  `description`, `dependencies`) and it worked; the full field
+  surface and version pinning convention are still open for the
+  framework's purposes.
 - **OQ4**: Whether `review-skill@krambuhl` deserves to live in this
   marketplace at all, or move to a personal `krambuhl/skills`
   marketplace. The dossier suggested keeping it in this marketplace
@@ -506,19 +554,24 @@ See `INTERVIEW.md` for the full walked decision tree. Summary:
 | review-skill placement | Own plugin `review-skill@krambuhl` | Family-of-one; installable without the framework. |
 | a11y-review-file fate | Delete (pre-migration) | Per user. |
 | Shared CLI code | Duplicate per plugin via sync script | Per user. Simpler than npm publishing; CI catches drift. |
-| Inter-plugin deps | Manifest `requires` (if V4 pass) + runtime preflight + meta-plugin | Belt-and-suspenders; meta serves turnkey users. |
+| Inter-plugin deps | Manifest `dependencies` field (V4-verified) + runtime preflight + meta-plugin | Belt-and-suspenders; meta serves turnkey users. V4 empirical evidence in § Verification V4. |
 | install.sh fate | Delete in migration PR | Per user. No deprecation period; user is sole consumer. |
 | **OQ2: generated trees in git** | **Commit** | **Whiteboard panel converged (substrate-engineer + performance + skeptic): visible drift > silent publish-time divergence. Footprint is trivial (~100KB). R7 mitigation handles review-time noise.** |
-| **Workstream ordering** | **W0 (pre-flight gate) first; sync-shared runs last among mechanical** | **Whiteboard substrate-engineer + skeptic: V4 gates manifest shape; generators fold over upstream state so they run last; W4 sub-steps land contract-first to avoid mid-execution tripwire-test failures.** |
+| **Workstream ordering** | **W0 (pre-flight gate) first; sync-shared runs last among mechanical** | **Whiteboard substrate-engineer + skeptic: V4 gates manifest shape (now resolved); generators fold over upstream state so they run last; W4 sub-steps land contract-first to avoid mid-execution tripwire-test failures.** |
 | **`~/.agents/docs` resolution** | **Option (c): inline pointer or `bin/<cli> docs` verb** | **Whiteboard substrate-engineer: option (a) breaks the cleanup goal; option (b) requires post-install hooks of uncertain availability; option (c) is the substrate-fit answer.** |
-| **`agent-loop-full` shape on V4 failure** | **Option (c) docs-only, not option (b) post-install script** | **Whiteboard substrate-engineer Finding 6: option (b) makes the meta-plugin a different shape from siblings (content-bundles vs script-runner) — family-shape inconsistency.** |
+| **`agent-loop-full` shape** | **Zero-content + `dependencies` cascade (V4-verified)** | **V4 smoke test confirmed cascade auto-install. No post-install scripts needed. Original V5 branches all collapsed to this one shape.** |
+| **`dependencies` is the verified field name** | **Use `dependencies` throughout** | **V4 smoke test. Revision 1 used `requires` as placeholder; revision 2 corrected.** |
 
 ## Revision log
 
 
+- 2026-05-19 — V4 empirically validated: dependencies field works as documented (smoke-tested against sandbox marketplace). Mark V4/V5/OQ1 RESOLVED with empirical evidence; collapse R2/R5 failure-case branches; rename 'requires' to verified 'dependencies' throughout; add local-marketplace dev workflow tip.
+
 - 2026-05-19 — Fold Phase 1 pre-execution whiteboard findings into PLAN.md: add W0 pre-flight gating workstream (V1+V4+V5+OQ2-reconfirm); reorder workstreams so sync-shared runs last among mechanical (generators fold over upstream state); resolve OQ2 to commit-generated-trees with R7 added for review-time noise; make W4 sub-step ordering explicit (CONVENTIONS.md → registry → verb body); add V9/V10/V11 named tests; commit ~/.agents/docs resolution to option (c); add griot doctor cwd-vs-project-root warning; add parallel-test-safety constraint on project-root resolver.
 
 - **2026-05-19** (revision 1): Folded Phase 1 pre-execution whiteboard findings into the plan. Added W0 pre-flight gating workstream (V1 + V4 + V5 + OQ2-reconfirm); reordered remaining workstreams so sync-shared runs last among mechanical (generators fold over upstream state); resolved OQ2 to "commit generated trees" with R7 added to address review-time noise; made W4 sub-step ordering explicit (CONVENTIONS.md → registry → verb body → dispatch); added the `griot doctor` warning for cwd-vs-project-root learnings divergence; added parallel-test-safety constraint on the project-root resolver; added V9/V10/V11 named tests from testing-strategy panel; added drift-error-message convention to scope; resolved `~/.agents/docs` to option (c). Whiteboard at `whiteboards/1-execution-shape.md` is the source artifact.
+
+- **2026-05-19** (revision 2): V4 empirically validated via in-session smoke test against a sandbox marketplace (`/tmp/dep-smoke-test/`). Verified field name is `dependencies` (not `requires` — revision 1 placeholder). Cascade auto-install confirmed. Local marketplace path support confirmed (`claude plugin marketplace add <local-dir>`). Orphan-prune semantics confirmed. § V4 + § V5 marked RESOLVED with empirical evidence; § R5 collapsed (failure-case moot); § R2 collapsed (install-order concern gone). § OQ1 marked RESOLVED (source path is relative to marketplace root, per V4 smoke test). `requires` → `dependencies` throughout. W0 simplified — V4/V5 no longer pending. Added local-marketplace dev workflow tip to § Scope. Added note that local paths unblock dev-testing the migration without public-vs-private decisions.
 
 ## Next step
 
@@ -530,5 +583,6 @@ Since this plan is one bundled PR (not phased), the
 ev-loop-interactive phase name will be something like `migration` or
 `bundled-migration`. The Implement half of the RPI loop drives the
 work to completion, gated by the Verification tasks above. **W0
-(pre-flight gate) is the first unit; its checkin captures the V4/V5/V1
-outcomes that the rest of the PR depends on.**
+(pre-flight gate) is the first unit; its checkin captures the V1
+outcome (the remaining pre-flight verification after V4/V5/OQ1
+were resolved in revision 2).**
