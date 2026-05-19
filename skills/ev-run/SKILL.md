@@ -31,6 +31,22 @@ below mean `Skill(skill: <name>, args: "…")` — the Skill tool is how
 the router dispatches. CLI invocations like `bin/loom project read`
 mean `Bash("loom project read <args>")`.
 
+## Preflight
+
+Before doing anything else, verify the substrate CLIs are on PATH.
+The marketplace `dependencies` cascade handles install-time + enable-
+time correctness; this skill-body check catches the runtime case
+where a user disabled a dep plugin mid-session.
+
+Run:
+
+```
+Bash("command -v loom guild griot >/dev/null 2>&1 || { echo 'ev-run requires loom + guild + griot plugins on PATH. Enable them with: claude plugin enable loom@krambuhl guild@krambuhl griot@krambuhl' >&2; exit 1; }")
+```
+
+If exit code is non-zero, stop and surface the message to the
+operator verbatim — do not dispatch to any loop.
+
 ## Process
 
 ### 0. Parse arguments
