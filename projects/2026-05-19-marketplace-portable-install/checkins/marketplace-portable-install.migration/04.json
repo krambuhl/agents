@@ -1,0 +1,95 @@
+{
+  "schema_version": 1,
+  "number": "04",
+  "created": "2026-05-19T18:13:40.000Z",
+  "phase": {
+    "number": 1,
+    "name": "Phase 1"
+  },
+  "branch": "marketplace-portable-install.migration",
+  "unit": "W3 — Griot project-root resolution + doctor warning",
+  "contract": {
+    "goal": "Unify project-root semantics across griot verbs via a walk-up resolver. Verbs operate against the .git/-rooted project root regardless of where ctx.cwd points. Add griot doctor warning for pre-existing stray nested learnings/ directories. Helper takes a starting-path argument (parallel-test-safe).",
+    "acceptance_criteria": [
+      "cli/verbs/griot/_project-root.ts exports resolveProjectRoot(startingPath): walks up looking for .git/ (dir or file); falls back to startingPath; terminates at filesystem root; never reads process.cwd().",
+      "3 verbs (use.ts, capture.ts, init.ts) refactored — call resolveProjectRoot(ctx.cwd) early; fs ops use projectRoot instead of ctx.cwd.",
+      "GriotCliContext JSDoc reframed: ctx.cwd is 'starting hint for project-root walk-up.'",
+      "Nested-cwd integration tests per migrated verb (init, use, capture): create tmpdir with .git/ + nested subdir, set ctx.cwd to nested, assert verb operates on .git/-rooted project root.",
+      "cli/verbs/griot/doctor.ts: informational verb. Walks up; if cwd-learnings/ AND project-root-learnings/ both exist AND cwd !== projectRoot → divergence warning naming both paths; else 'griot doctor: ok'. Exit 0 in both cases.",
+      "cli/verbs/griot/doctor.test.ts: divergence, no-divergence, cwd-is-root, missing-learnings, no-git fallback cases.",
+      "cli/verbs/griot/index.ts dispatches doctor; GriotCliContext.cwd JSDoc updated.",
+      "makeProjectRoot factory gains gitInit:boolean option via discriminated-options signature; legacy string-prefix arg still accepted (backward compat for W2's init.test.ts).",
+      "cli/parallel-work-invariant.test.ts unchanged (doctor is read-only, no mutating-verb registry row needed).",
+      "npm test green."
+    ],
+    "rules_applied": [
+      "Resolver takes starting-path arg; never reads process.cwd(); parallel-test-safe.",
+      "Walk-up termination via parent-equality check (resolve(p, '..') === p) to handle filesystem root.",
+      "Doctor exit 0 in both warning and ok cases — informational, not gating.",
+      "Per-test tmpdir via makeProjectRoot; no process.chdir anywhere; ctx.cwd threaded explicitly to verbs."
+    ],
+    "disqualifiers": [
+      "No lift of resolver to cli/lib/ (narrow scope; future usage might justify lift later).",
+      "No top-level bin/loom doctor changes (separate substrate verb).",
+      "No skill-body changes (W4/W5).",
+      "No refactor of operator-checks.ts or mediate-panel.ts (they consume ctx.stdin only, not ctx.cwd).",
+      "No process.cwd() reads anywhere in new code or in tests."
+    ],
+    "inputs": [
+      "projects/2026-05-19-marketplace-portable-install/PLAN.md (§ Phases W3)",
+      "cli/verbs/griot/{use,capture,init}.ts (the 3 ctx.cwd users — operator-checks.ts and mediate-panel.ts unaffected)",
+      "cli/verbs/griot/index.ts (GriotCliContext shape)",
+      "cli/verbs/griot/_test-factory.ts (W2 factory; extended with gitInit option)"
+    ]
+  },
+  "execution": {
+    "actions": [
+      "Created cli/verbs/griot/_project-root.ts with resolveProjectRoot(startingPath). existsSync(.git) check covers both directory (regular clones) and file (worktree-shape) markers. Walk-up loop terminates via parent-equality check. Fallback returns resolve(startingPath) — preserves W2 tmpdir-without-git semantics for legacy callers.",
+      "Created cli/verbs/griot/_project-root.test.ts (~110 lines) with 7 tests across 4 describe blocks: .git directory marker (3 cases), .git file marker (1 case — worktree shape), no-.git fallback (2 cases including filesystem-root termination), disjoint-roots (1 case asserting per-tmpdir resolution doesn't cross-contaminate).",
+      "Extended makeProjectRoot factory with gitInit:boolean option. Used a discriminated signature accepting either a string prefix (preserves W2's call sites) or an options object {prefix?, gitInit?}. When gitInit is true, factory mkdirs an empty .git/ at the root — enough of a marker for resolveProjectRoot's walk-up without performing real git init.",
+      "Refactored cli/verbs/griot/use.ts: added resolveProjectRoot import; replaced 2 ctx.cwd resolve calls with projectRoot.",
+      "Refactored cli/verbs/griot/capture.ts: added resolveProjectRoot import; replaced 2 ctx.cwd resolve calls with projectRoot.",
+      "Refactored cli/verbs/griot/init.ts: added resolveProjectRoot import; ensureLearningsTree + amendGitignore now operate on projectRoot.",
+      "Created cli/verbs/griot/doctor.ts: divergence detection branch (cwd !== projectRoot AND both have learnings/) emits a structured warning; ok branch otherwise. Exit 0 in both cases per the informational-verb rule.",
+      "Created cli/verbs/griot/doctor.test.ts: 5 tests covering divergence-detected, only-root-has-learnings, cwd-is-root, neither-has-learnings, no-git fallback.",
+      "Added nested-cwd integration tests in init.test.ts (new describe block; verifies learnings/ + .gitignore land at root, not nested), use.test.ts (new describe block; verifies rollup is read from project root despite nested cwd), capture.test.ts (new describe block; verifies capture lands at root learnings/session-notes/).",
+      "Updated cli/verbs/griot/index.ts: import doctorVerb + 'doctor: doctorVerb' dispatch entry. Rewrote GriotCliContext.cwd JSDoc to document the new 'starting hint for project-root walk-up' semantics.",
+      "npx vitest run cli/verbs/griot/ → 111/111 passed (was 101). +10 from W3-specific test additions; existing griot tests continue to pass against the refactored verbs because the no-.git fallback returns startingPath unchanged, matching pre-refactor behavior.",
+      "npm test (full suite) → 554/554 passed (was 539; +15 from W3).",
+      "Invoked /guild-validate with manual panel (contract-fit + naming + test-unit per agents/PANEL-COMPOSITION.md; derive-panel still fallback-only per W1's substrate-path bug). All three returned approved. Two advisory observations: (a) test-unit — parallel-safety test name oversells what's tested (sync resolver doesn't exercise concurrency); (b) naming — gitInit boolean reads as imperative verb-noun rather than predicate (advisory only; not a regression).",
+      "Applied advisory (a) as inline polish: renamed describe block from 'parallel safety' to 'disjoint roots', dropped the Promise.all-wrapping-Promise.resolve scaffolding (no value over direct sync calls), added a comment explaining the parallel-test-safety guarantee actually comes from mkdtempSync uniqueness rather than from this test's framing. Considered advisory (b) but kept gitInit — factory-options surface, call sites read clearly, evaluator explicitly didn't escalate."
+    ],
+    "files_touched": [
+      "cli/verbs/griot/_project-root.ts",
+      "cli/verbs/griot/_project-root.test.ts",
+      "cli/verbs/griot/_test-factory.ts",
+      "cli/verbs/griot/use.ts",
+      "cli/verbs/griot/use.test.ts",
+      "cli/verbs/griot/capture.ts",
+      "cli/verbs/griot/capture.test.ts",
+      "cli/verbs/griot/init.ts",
+      "cli/verbs/griot/init.test.ts",
+      "cli/verbs/griot/doctor.ts",
+      "cli/verbs/griot/doctor.test.ts",
+      "cli/verbs/griot/index.ts"
+    ],
+    "corrections": []
+  },
+  "scope": [
+    "cli/verbs/griot/ (project-root resolution refactor + new doctor verb + nested-cwd integration tests)"
+  ],
+  "changes_since_previous": "W2 (b7ea2de) added the griot init verb + Category 4 + gitignore-amendment exception. W3 builds on W2's makeProjectRoot factory by extending it with gitInit, then unifies how the 3 ctx.cwd-using griot verbs resolve project root, adds nested-cwd integration tests per verb, and ships the doctor warning verb for pre-refactor footgun detection.",
+  "verdict": {
+    "result": "approved",
+    "reasons": []
+  },
+  "notes_for_pr": [
+    "Resolver shape: walk-up checks existsSync('.git') which covers both directory (regular clones) and file (worktree-shape) markers — verified in the .git-file-marker describe block. Termination uses parent-equality check (resolve(p, '..') === p) to handle filesystem-root edge case; the / fallback test smoke-tests the guard.",
+    "Backward-compat for W2: legacy string-prefix arg to makeProjectRoot still accepted via discriminated signature. W2's init.test.ts call sites (makeProjectRoot('init-verb-test-')) work unchanged. New call sites use options object: makeProjectRoot({prefix: '...', gitInit: true}).",
+    "Doctor verb shape: walks up via resolveProjectRoot; if cwd-learnings/ AND project-root-learnings/ both exist AND cwd !== projectRoot → emits structured warning naming both paths + remediation hint. Exit 0 in both warning and ok cases — doctor is informational, not gating. To fail builds on warnings, grep the output.",
+    "ctx.cwd JSDoc rewrite (in index.ts) is the only semantically-breaking surface change: the field's documented contract shifts from 'the repo cwd where learnings/ resolves directly' to 'starting hint for project-root walk-up.' Field name and type unchanged; existing callers pass through cleanly. A future workstream might rename the field for clarity but that's a bigger contract break and out of W3's scope.",
+    "Substrate-path bug (W1/W2 carry-over) still active: bin/guild derive-panel reads from .claude/agents/PANEL-COMPOSITION.md but file lives at agents/PANEL-COMPOSITION.md. Manual panel composition continues. Fix likely lands alongside W4 skill-body work or substrate cleanup.",
+    "Advisory polish applied: parallel-safety test renamed to 'disjoint roots' with the Promise.all scaffolding dropped — the sync resolver wasn't actually exercising concurrency; the disjoint-roots-via-mkdtempSync guarantee is what the test asserts.",
+    "Naming evaluator's gitInit advisory considered but not applied: factory-options-surface boolean reads acceptably; evaluator explicitly didn't escalate. Logged here for visibility."
+  ]
+}

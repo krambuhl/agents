@@ -123,6 +123,37 @@ describe('griot init: existing .gitignore', () => {
   });
 });
 
+describe('griot init: nested-cwd project-root resolution', () => {
+  let gitRoot: string;
+  let gitCleanup: () => void;
+
+  beforeEach(() => {
+    ({ root: gitRoot, cleanup: gitCleanup } = makeProjectRoot({
+      prefix: 'init-verb-nested-test-',
+      gitInit: true,
+    }));
+  });
+
+  afterEach(() => {
+    gitCleanup();
+  });
+
+  test('operates on the .git/-rooted project root, not the nested cwd', () => {
+    const nested = join(gitRoot, 'sketches', 'one');
+    mkdirSync(nested, { recursive: true });
+
+    const result = initVerb([], { cwd: nested });
+
+    expect(result.exitCode).toBe(0);
+    // learnings/ lands at the project root, NOT under the nested cwd
+    expect(existsSync(join(gitRoot, 'learnings', 'session-notes'))).toBe(true);
+    expect(existsSync(join(nested, 'learnings'))).toBe(false);
+    // .gitignore lands at the project root too
+    expect(existsSync(join(gitRoot, '.gitignore'))).toBe(true);
+    expect(existsSync(join(nested, '.gitignore'))).toBe(false);
+  });
+});
+
 describe('griot init: pre-existing learnings tree', () => {
   test('preserves existing learnings/session-notes/<folder>/ content', () => {
     const captureFolder = learnings('session-notes', '2026-05-19-T00-00-00-existing');

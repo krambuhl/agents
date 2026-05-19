@@ -2,6 +2,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { parseArgs } from 'node:util';
 import type { DispatchResult, GriotCliContext } from './index.ts';
+import { resolveProjectRoot } from './_project-root.ts';
 
 type Checkin = {
   unit: string;
@@ -443,7 +444,8 @@ export function captureVerb(rest: string[], ctx: GriotCliContext): DispatchResul
     return fail(`argument parse failure: ${(err as Error).message}`);
   }
   const { values } = parsed;
-  const sessionNotesRoot = resolve(ctx.cwd, 'learnings/session-notes');
+  const projectRoot = resolveProjectRoot(ctx.cwd);
+  const sessionNotesRoot = resolve(projectRoot, 'learnings/session-notes');
 
   const hasFinding = values['evaluator-finding'] !== undefined;
   const hasCheckin = values['from-checkin'] !== undefined;
@@ -462,7 +464,7 @@ export function captureVerb(rest: string[], ctx: GriotCliContext): DispatchResul
     return failWithHint('--from-checkin=<path> is required');
   }
 
-  const resolvedCheckin = resolve(ctx.cwd, checkinPath);
+  const resolvedCheckin = resolve(projectRoot, checkinPath);
   if (!existsSync(resolvedCheckin)) return fail(`checkin not found: ${checkinPath}`);
 
   const content = readFileSync(resolvedCheckin, 'utf-8');

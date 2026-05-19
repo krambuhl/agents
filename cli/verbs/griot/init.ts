@@ -1,6 +1,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import type { DispatchResult, GriotCliContext } from './index.ts';
+import { resolveProjectRoot } from './_project-root.ts';
 
 // Subdirs scaffolded at init. session-notes is the active write path
 // for `griot capture`; nightly is named in `use.ts`'s tier-separation
@@ -90,8 +91,9 @@ export function initVerb(
   _rest: string[],
   ctx: GriotCliContext,
 ): DispatchResult {
-  const tree = ensureLearningsTree(ctx.cwd);
-  const gitignore = amendGitignore(ctx.cwd);
+  const projectRoot = resolveProjectRoot(ctx.cwd);
+  const tree = ensureLearningsTree(projectRoot);
+  const gitignore = amendGitignore(projectRoot);
 
   const action: InitResult = {
     learnings_created: tree.learningsCreated,

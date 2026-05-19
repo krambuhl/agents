@@ -2,6 +2,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { parseArgs } from 'node:util';
 import type { DispatchResult, GriotCliContext } from './index.ts';
+import { resolveProjectRoot } from './_project-root.ts';
 
 // Hardcoded path: tier-separation invariant. The substrate's learnings
 // system has multiple tiers; only the rollup is loaded at session time.
@@ -126,8 +127,9 @@ export function useVerb(rest: string[], ctx: GriotCliContext): DispatchResult {
     };
   }
 
-  const rollupPath = resolve(ctx.cwd, ROLLUP_PATH);
-  const legacyPath = resolve(ctx.cwd, LEGACY_ROLLUP_PATH);
+  const projectRoot = resolveProjectRoot(ctx.cwd);
+  const rollupPath = resolve(projectRoot, ROLLUP_PATH);
+  const legacyPath = resolve(projectRoot, LEGACY_ROLLUP_PATH);
 
   // Format-detection error path (whiteboard skeptic Finding 1 / Phase 4
   // rollup): if the legacy rollup.md is present but rollup.json is
