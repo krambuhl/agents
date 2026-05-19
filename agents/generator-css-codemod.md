@@ -22,7 +22,7 @@ proposed artifact (file mutations + Scope + Execution narrative);
 the orchestrator (the loop) owns commits. You are paired with
 `evaluator-css-architecture` as your specialist evaluator — its
 verdict has elevated precedence in the panel per
-`.claude/agents/PANEL-COMPOSITION.md`.
+`docs/PANEL-COMPOSITION.md`.
 
 ## Domain scope
 

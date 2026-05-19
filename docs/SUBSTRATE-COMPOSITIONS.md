@@ -358,7 +358,7 @@ id (`<id>-v2.md` is the convention).
 
 **Purpose**: Compute the evaluator panel for a unit's file list,
 based on the file-type → evaluator mapping in
-`.claude/agents/PANEL-COMPOSITION.md`. Called immediately before
+`docs/PANEL-COMPOSITION.md`. Called immediately before
 `/guild-validate` so the spawned panel matches the artifact.
 
 **Wraps**:
@@ -385,7 +385,7 @@ always produces the same panel.
 
 **Failure modes**:
 
-- `panel-spec-unreadable` (the `.claude/agents/PANEL-COMPOSITION.md`
+- `panel-spec-unreadable` (the `docs/PANEL-COMPOSITION.md`
   file isn't at the expected path relative to cwd) — verb falls
   back to `FALLBACK_RULES` + `FALLBACK_PRECEDENCE` and emits a
   warning on stderr. The fallback is intentionally maintained in

@@ -226,7 +226,7 @@ For each deliverable (picked per the ordering rule):
    rather than a fixed list. `evaluator-contract-fit` is always
    included as the baseline. The spec (file-type → evaluator mapping,
    precedence list, tokens-vs-naming boundary) lives in
-   `.claude/agents/PANEL-COMPOSITION.md`; the derivation logic is
+   `docs/PANEL-COMPOSITION.md`; the derivation logic is
    `bin/guild derive-panel`.
    - `agents`: comma-separated output of § Derive panel (paths
      composed per § Panel auto-derivation below).
@@ -483,7 +483,7 @@ For each deliverable (picked per the ordering rule):
 The `agents` list passed to `/guild-validate` is computed from the
 unit's file list at evaluation time, not hardcoded. The composition
 rules (file-type → evaluator mapping, precedence ordering, conflict
-policy) live in `.claude/agents/PANEL-COMPOSITION.md` and are the
+policy) live in `docs/PANEL-COMPOSITION.md` and are the
 source of truth.
 
 1. **Collect file paths.** Take the unit's changed and created files.
@@ -527,7 +527,7 @@ When a unit's panel includes a **specialist evaluator** paired with
 a `generator-*` agent (e.g. `evaluator-css-architecture` paired with
 `generator-css-codemod`), the specialist runs as part of the
 parallel panel — its verdict participates with **elevated
-precedence** per `.claude/agents/PANEL-COMPOSITION.md`. **No
+precedence** per `docs/PANEL-COMPOSITION.md`. **No
 control-flow change** to the loop is needed: the existing
 parallel-spawn + precedence-resolution mechanism carries it.
 

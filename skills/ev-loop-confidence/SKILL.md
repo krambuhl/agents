@@ -260,7 +260,7 @@ For each unit inside a tier:
    rather than a fixed list. `evaluator-contract-fit` is always
    included as the baseline. The spec (file-type → evaluator mapping,
    precedence list, tokens-vs-naming boundary) lives in
-   `.claude/agents/PANEL-COMPOSITION.md`; the derivation logic is
+   `docs/PANEL-COMPOSITION.md`; the derivation logic is
    § Derive panel.
    - `agents`: comma-separated output of § Derive panel (paths
      composed per § Panel auto-derivation below).
@@ -387,7 +387,7 @@ For each unit inside a tier:
 The `agents` list passed to `/guild-validate` is computed from the
 unit's file list at evaluation time, not hardcoded. The composition
 rules (file-type → evaluator mapping, precedence ordering, conflict
-policy) live in `.claude/agents/PANEL-COMPOSITION.md` and are the
+policy) live in `docs/PANEL-COMPOSITION.md` and are the
 source of truth.
 
 1. **Collect file paths.** Take the unit's changed and created files
