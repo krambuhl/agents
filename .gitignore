@@ -1,6 +1,9 @@
 # Generated on every `./install.sh` run — kept out of the repo to keep
-# the marketplace canonical content free of derived shims.
-bin/
+# the marketplace canonical content free of derived shims. Anchored
+# to the repo root so per-plugin `plugins/<name>/bin/` source shims
+# (committed as part of the marketplace-portable-install migration)
+# remain tracked.
+/bin/
 
 # Per-machine Node deps — install with `npm install` for the test harness.
 # Covers both root and any nested node_modules in cli/ or elsewhere.
