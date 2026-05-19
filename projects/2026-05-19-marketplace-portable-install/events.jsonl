@@ -10,3 +10,9 @@
 {"at":"2026-05-19T18:37:48.938Z","event":"checkin-created","detail":{"number":"05","branch":"marketplace-portable-install.migration"}}
 {"at":"2026-05-19T18:58:53.448Z","event":"checkin-created","detail":{"number":"06","branch":"marketplace-portable-install.migration"}}
 {"at":"2026-05-19T19:17:52.910Z","event":"checkin-created","detail":{"number":"07","branch":"marketplace-portable-install.migration"}}
+{"at":"2026-05-19T19:40:49.240Z","event":"phase-started","detail":{"phase":1,"name":"Phase 1"}}
+{"at":"2026-05-19T19:46:59.258Z","event":"checkin-created","detail":{"number":"08","branch":"marketplace-portable-install.followup"}}
+{"at":"2026-05-19T19:49:30.710Z","event":"checkin-created","detail":{"number":"09","branch":"marketplace-portable-install.followup"}}
+{"at":"2026-05-19T19:52:30.715Z","event":"checkin-created","detail":{"number":"10","branch":"marketplace-portable-install.followup"}}
+{"at":"2026-05-19T19:53:35.750Z","event":"phase-started","detail":{"phase":1,"name":"Phase 1"}}
+{"at":"2026-05-19T19:54:16.914Z","event":"session-saved","detail":{"filename":"2026-05-19-b.json"}}

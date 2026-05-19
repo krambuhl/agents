@@ -1,0 +1,88 @@
+{
+  "schema_version": 1,
+  "number": "08",
+  "created": "2026-05-19T19:46:00.000Z",
+  "phase": {
+    "number": 1,
+    "name": "Phase 1"
+  },
+  "branch": "marketplace-portable-install.followup",
+  "unit": "W7 — scripts/sync-shared.ts + loom-verb subdir refactor + V10 + first sync run",
+  "contract": {
+    "goal": "Implement scripts/sync-shared.ts that generates per-plugin cli/ trees from the top-level cli/ source of truth. Land V10 tests (write correctness + byte-for-byte fixture + drift detection). Refactor loom verbs into cli/verbs/loom/ subdir for clean sync filtering. Run sync to populate plugins/<plugin>/cli/ for griot/guild/loom.",
+    "acceptance_criteria": [
+      "Loom-verb subdir refactor: 10 verb files + 10 test files moved from cli/verbs/*.ts to cli/verbs/loom/*.ts via git mv. cli/loom.ts 10 imports updated. Relative imports inside the moved verbs updated from '../lib/' to '../../lib/'. Fixture paths in moved test files updated from join(__dirname, '..', 'fixtures') to join(__dirname, '..', '..', 'fixtures'). npm test green.",
+      "scripts/sync-shared.ts: reads cli/lib/, cli/verbs/<plugin>/, cli/<plugin>.ts for each of griot/guild/loom. Writes into plugins/<plugin>/cli/{lib,verbs/<plugin>,<plugin>.ts}. Modes: --sync (default, write) and --check (read-only drift detection, non-zero exit). Pure copy (no content modification). Drift error message names source path + plugin path + one-shot remedy.",
+      "scripts/sync-shared.test.ts: 12 tests across 3 describe blocks for V10 cases (a), (b), (c). Pure-logic plan tests, end-to-end byte-equal tests, drift-detection tests (divergent / orphan / missing record kinds).",
+      "First sync run executed; 69 generated files land at plugins/<plugin>/cli/.",
+      "npm test green."
+    ],
+    "rules_applied": [
+      "Pure-copy sync — no content modification; line-number diagnostics map 1:1 between source and generated copies.",
+      "Test files (*.test.ts) NOT copied — runtime code only. Fixtures (cli/fixtures/) NOT copied.",
+      "Drift error message follows loud-fail convention.",
+      "V10 case (c) catches the false-green failure mode R1's mitigation depends on.",
+      "Loom-verb refactor uses git mv for history preservation."
+    ],
+    "disqualifiers": [
+      "No registry row added to cli/parallel-work-invariant.test.ts for sync-shared (the registry is for CLI verbs; sync-shared is a build script — Category 4 + type union landed in W2 commit b7ea2de, no new row needed).",
+      "No CI integration (pre-commit hook / GitHub Action) — follow-up.",
+      "No content modification by the sync script (no 'GENERATED — do not edit' header injection).",
+      "No changes to cli/verbs/griot/ or cli/verbs/guild/ content."
+    ],
+    "inputs": [
+      "projects/2026-05-19-marketplace-portable-install/PLAN.md (§ Phases W7, § V10 spec, § R1 + § R7 + § Decisions OQ2)",
+      "W0 surfacing about loom-verb subdir refactor (loom verbs at cli/verbs/*.ts vs griot+guild at cli/verbs/<family>/ — sync filter needs symmetry)",
+      "W2 § Category 4 generated-from-upstream (registry/type already added in W2 commit b7ea2de)",
+      "W6 plugin shims (resolve plugins/<plugin>/cli/<plugin>.ts — sync must populate)"
+    ]
+  },
+  "execution": {
+    "actions": [
+      "Cut new branch marketplace-portable-install.followup from updated main (post-merge of PR #11 at f6a03f2..ef4c186). Updated manifest phase.branch via bin/loom phase update.",
+      "Loom-verb refactor: mkdir cli/verbs/loom/; for each cli/verbs/*.ts (top-level), git mv to cli/verbs/loom/<name>.ts. 20 files moved (10 verb + 10 test). cli/loom.ts: 10 imports updated from './verbs/<name>.ts' to './verbs/loom/<name>.ts' via Edit replace_all.",
+      "Discovered post-move: verb files in cli/verbs/loom/ have internal imports like 'from ../lib/X.ts' which were correct from cli/verbs/ but now resolve to cli/lib/X.ts incorrectly (need one more level). Fixed via sed across all 20 files: '../lib/' → '../../lib/'.",
+      "Same issue with test fixtures: tests reference join(__dirname, '..', 'fixtures') which from cli/verbs/loom/ resolves to cli/verbs/fixtures/ (nonexistent). Fixed via sed: '..', 'fixtures' → '..', '..', 'fixtures'.",
+      "Wrote scripts/sync-shared.ts: planForPlugin / planAll / detectDrift / applySync as exported functions; main() handles CLI. Walking the source tree excludes *.test.ts and any /fixtures/ path. The reverse-check (orphan detection) walks plugins/<plugin>/cli/ and flags anything not in the planned-destinations set. The drift error message format names the source path, the divergent plugin path, and the one-shot remedy ('Run node scripts/sync-shared.ts to resync').",
+      "Smoke-tested scripts/sync-shared.ts --check pre-sync: correctly reported 69 missing files across the 3 plugins. Confirmed the detection works before exercising the write path.",
+      "Wrote scripts/sync-shared.test.ts (V10): 12 tests across 3 describes — (a) plan-shape tests (per-plugin filtering, exclusion of tests/fixtures, shared lib distributed to every plugin); (b) end-to-end byte-equal tests + post-sync drift-check clean; (c) drift detection — divergent, orphan, missing record kinds, error-message format.",
+      "Removed unused writeFileSync import from sync-shared.ts (lint advisory).",
+      "Executed scripts/sync-shared.ts (first real sync): 69 files synced across the 3 plugins. Per-plugin sizing: griot 24 files / 148K, guild 20 files / 128K, loom 25 files / 176K. Total ~452 KB — significantly less than W0's estimate of ~908 KB (W0 counted test files; this excludes them).",
+      "Post-sync drift-check ran clean: 'sync-shared --check: ok (3 plugins synced)'.",
+      "npx vitest run scripts/sync-shared.test.ts → 12/12 passed.",
+      "npm test (full suite) → 608/608 passed (was 596; +12 from V10)."
+    ],
+    "files_touched": [
+      "cli/loom.ts (10 import path updates)",
+      "cli/verbs/loom/*.ts (20 files moved + relative-path depth fixes)",
+      "scripts/sync-shared.ts (new)",
+      "scripts/sync-shared.test.ts (new)",
+      "plugins/griot/cli/** (24 generated files)",
+      "plugins/guild/cli/** (20 generated files)",
+      "plugins/loom/cli/** (25 generated files)"
+    ],
+    "corrections": [
+      "Initial loom-verb move missed two relative-path-depth issues that the smoke test caught: (1) verb files import from '../lib/' which had to become '../../lib/'; (2) test files use join(__dirname, '..', 'fixtures') which had to become join(__dirname, '..', '..', 'fixtures'). Both fixed via sed sweeps before re-running tests. No semantic impact — just relative-path arithmetic."
+    ]
+  },
+  "scope": [
+    "cli/verbs/loom/ (new subdir; loom verbs moved here from cli/verbs/)",
+    "cli/loom.ts (10 import lines updated)",
+    "scripts/sync-shared.ts + scripts/sync-shared.test.ts (new)",
+    "plugins/{griot,guild,loom}/cli/** (69 generated files)"
+  ],
+  "changes_since_previous": "PR #11 merged W0-W6 to main (commit ef4c186). New follow-up branch marketplace-portable-install.followup cut from updated main. W7 is the meaty workstream that delivers the actual sync infrastructure + first sync run.",
+  "verdict": {
+    "result": "approved",
+    "reasons": []
+  },
+  "notes_for_pr": [
+    "Loom-verb subdir refactor is mechanical: cli/verbs/*.ts → cli/verbs/loom/*.ts. git mv preserves history (the follow-up PR's diff will show as renames). Internal cross-imports between loom verbs are sibling-relative so they don't need updating; the only depth-sensitive imports were (a) the top-level cli/loom.ts → cli/verbs/loom/<name>.ts paths and (b) the verb files' '../lib/' → '../../lib/' paths and (c) the test fixture paths.",
+    "scripts/sync-shared.ts is pure copy — no header injection, no content modification. Line-number diagnostics in the synced cli/<plugin>.ts map 1:1 to the canonical source. Future-self reading a stack trace inside plugins/loom/cli/verbs/loom/checkin.ts can match the line directly to cli/verbs/loom/checkin.ts.",
+    "Drift detection: --check reports 3 record kinds — divergent (per-plugin file edited away from source), missing (source exists, dest doesn't), orphan (dest exists, source doesn't). The orphan case catches stale files after an upstream rename/delete. The error message names the source path, plugin path, and 'Run node scripts/sync-shared.ts to resync' as the one-shot remedy. CI integration (pre-commit hook / GitHub Action) is follow-up.",
+    "First sync run produced 69 files / ~452 KB across the 3 plugins. W0 estimated ~908 KB / ~125 files; the actual is smaller because runtime-only excludes test files. This is the bulk of the W7 diff and lands per OQ2's commit-generated-trees decision. R7 mitigation: the PR description for the follow-up should explicitly name plugins/<plugin>/cli/ as sync-script output (reviewer skips line-by-line in favor of reviewing the script + canonical source).",
+    "Manifest update at branch-cut time updated phase.branch from marketplace-portable-install.migration to marketplace-portable-install.followup. The checkin file for this unit lands in the new branch's partition (checkins/marketplace-portable-install.followup/08.json).",
+    "V10 coverage: 12 tests across the 3 PLAN-named cases. The 'orphan' branch of drift detection isn't named in PLAN explicitly but emerged naturally from the design — when an upstream file is renamed or deleted, the script must catch the stale generated copy or risk shipping zombie code. Tested.",
+    "After W7 lands, the plugins are minimum-viable installable: marketplace.json + per-plugin plugin.json + bin shim + cli/ tree all in place. W8 (README rewrite) and W9 (install.sh deletion + grep tripwire) are the remaining workstreams in this follow-up PR."
+  ]
+}
