@@ -29,7 +29,7 @@ the right loop. Owns no work of its own.
 Invocations of `/ev-loop-*` and `/loom-archive` and `/loom-plan` skills
 below mean `Skill(skill: <name>, args: "…")` — the Skill tool is how
 the router dispatches. CLI invocations like `bin/loom project read`
-mean `Bash("bin/loom project read <args>")`.
+mean `Bash("loom project read <args>")`.
 
 ## Process
 
@@ -75,9 +75,9 @@ working with.
 Refresh state via the loom CLI:
 
 ```
-bin/loom project read <slug> --pretty
-bin/loom events read <slug> --limit=20 --pretty
-bin/loom session list <slug> --pretty   # for the last session's open_threads
+loom project read <slug> --pretty
+loom events read <slug> --limit=20 --pretty
+loom session list <slug> --pretty   # for the last session's open_threads
 ```
 
 Take in the manifest, recent events, and the latest session handoff.
@@ -110,7 +110,7 @@ classification.
 
 ### 1.5. Load learnings
 
-Run `Bash("bin/griot use --as=llm")`. The verb reads
+Run `Bash("griot use --as=llm")`. The verb reads
 `learnings/rollup.json` and renders it as LLM-friendly prose, prints
 the status line and (if loaded) the content + citation contract to
 stdout — the Bash result lands the load in conversation context. Do

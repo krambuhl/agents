@@ -26,10 +26,9 @@ findings, not a markdown prose RETROSPECTIVE.md. Categories are
 
 **Format reference**: `docs/LOOM-CONVENTIONS.md`
 (§ `retros/<filename>.json` — the retro artifact shape;
-marketplace-rooted, resolved on consumer machines via the
-`~/.agents/docs` symlink). Pairs with `bin/loom retro write` and
-`bin/loom project archive`, both of which append their respective
-events (`retro-written`, `archived`).
+plugin-relative path, present in every install of the `loom` plugin).
+Pairs with `loom retro write` and `loom project archive`, both of
+which append their respective events (`retro-written`, `archived`).
 
 ## Arguments
 
@@ -210,7 +209,7 @@ Write to a temp file at `/tmp/loom-retro-<slug>-project.json`.
 ### 5. Write the retro
 
 ```
-Bash("bin/loom retro write <slug> --retro-file=<temp-path>")
+Bash("loom retro write <slug> --retro-file=<temp-path>")
 ```
 
 This appends the `retro-written` event with
@@ -219,7 +218,7 @@ This appends the `retro-written` event with
 ### 6. Archive the project
 
 ```
-Bash("bin/loom project archive <slug>")
+Bash("loom project archive <slug>")
 ```
 
 This is non-atomic by design (manifest flips, event appends, dir

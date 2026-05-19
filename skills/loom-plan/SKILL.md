@@ -59,7 +59,7 @@ interview's questions tersely and the loop closes fast.
 
 ### 1. Pre-flight + recovery check
 
-- Run `Bash("bin/griot use --as=llm")` to load the learnings rollup
+- Run `Bash("griot use --as=llm")` to load the learnings rollup
   per the substrate startup-brief convention.
 - Resolve the slug from the topic (same kebab-case derivation as
   `/loom-research`).
@@ -160,7 +160,7 @@ auto-mode):
 - Write the candidate PLAN.md to a temp path
   (`/tmp/loom-plan-<slug>.md`).
 - Derive the evaluator panel via § Derive panel:
-  `Bash("bin/guild derive-panel --files=/tmp/loom-plan-<slug>.md")`.
+  `Bash("guild derive-panel --files=/tmp/loom-plan-<slug>.md")`.
   For a markdown plan, the fallback rules yield
   `evaluator-contract-fit` alone; with PANEL-COMPOSITION.md readable,
   the panel may expand.
@@ -203,7 +203,7 @@ step 6). Compose the INTERVIEW.md to
 Invoke:
 
 ```
-Bash("bin/loom plan <slug-or-topic> \
+Bash("loom plan <slug-or-topic> \
   --plan-file=/tmp/loom-plan-<slug>.md \
   --interview-file=/tmp/loom-interview-<slug>.md")
 ```

@@ -27,12 +27,12 @@ detection (see step 5 of the unit loop).
 **Does not compose**: other loops. Substrate plumbing dispatches
 directly to the CLIs (see § Substrate compositions).
 
-**Format reference**: `docs/LOOM-CONVENTIONS.md` (marketplace-rooted;
-resolved on consumer machines via the `~/.agents/docs` symlink).
+**Format reference**: `docs/LOOM-CONVENTIONS.md` (plugin-relative
+path; present in every install of the `loom` plugin).
 
 Skill invocations like `/guild-validate` below mean
 `Skill(skill: <name>, args: "…")`. CLI invocations like
-`bin/loom phase update` mean `Bash("bin/loom phase update <args>")`.
+`loom phase update` mean `Bash("loom phase update <args>")`.
 Antagonist evaluation runs through `/guild-validate`, which spawns
 evaluator agents in parallel via `/guild-spawn`; the loop itself never
 calls the `Agent` tool directly.

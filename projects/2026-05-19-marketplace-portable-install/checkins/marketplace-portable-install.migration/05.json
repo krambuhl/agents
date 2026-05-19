@@ -1,0 +1,83 @@
+{
+  "schema_version": 1,
+  "number": "05",
+  "created": "2026-05-19T18:37:00.000Z",
+  "phase": {
+    "number": 1,
+    "name": "Phase 1"
+  },
+  "branch": "marketplace-portable-install.migration",
+  "unit": "W4 — Skill body rewrites (phantom audit + ~/.agents/docs + bare-command) + V11",
+  "contract": {
+    "goal": "Migrate skill bodies for plugin-install compatibility — consumers invoke skills with bare <cli> commands (resolved via per-plugin bin shims on Claude Code's Bash PATH) rather than marketplace-local bin/<cli> paths. Lands V11 grep tripwire defending against regressions. Disambiguates phantom-verb references first.",
+    "acceptance_criteria": [
+      "4a phantom-verb audit recorded in notes_for_pr: 103 bin/<cli> verb refs surveyed across skills/, identified 0 phantom invocations. The 2 references to hypothetical future verbs (bin/loom events append, bin/loom pr reconcile) are forward-looking documentation properly caveated in their own context.",
+      "4b ~/.agents/docs resolution: 3 skill files (loom-archive:30, ev-loop-interactive:31, ev-loop-confidence:31) replaced the symlink reference with plugin-relative-path language ('plugin-relative path; present in every install of the loom plugin').",
+      "4c Mechanical rewrite: 16 Bash(\"bin/<cli> ...\") sites → Bash(\"<cli> ...\"); 8 bash-code-block lead-with-bin/<cli> sites rewritten (post-install consistency). Prose noun references ('the bin/loom CLI') left intact.",
+      "V11 test (cli/skill-bodies-call-bare-commands.test.ts) — static grep tripwire reading every skills/<name>/SKILL.md, asserts zero Bash(\"bin/<cli>\") sites AND zero bash-code-block leading-with-bin/<cli> sites.",
+      "npm test green; V11 contributes new passing assertions."
+    ],
+    "rules_applied": [
+      "Sub-step ordering per PLAN W4: 4a → 4b → 4c → V11.",
+      "Path-noun vs invocation distinction: prose discussion of bin/<cli> as marketplace-source-of-truth stays; commands meant to be invoked get rewritten.",
+      "V11 test flavor matches cli/parallel-work-invariant.test.ts + cli/marketplace-manifest.test.ts (static fixture + vitest)."
+    ],
+    "disqualifiers": [
+      "No sync-shared work (W7).",
+      "No bin-shim creation (W6).",
+      "No ev/* preflight command-v additions (W5).",
+      "No README rewrite (W8).",
+      "No rewrite of plain-prose noun refs.",
+      "No edits to non-SKILL.md files (docs/, agents/, README.md stay as-is)."
+    ],
+    "inputs": [
+      "projects/2026-05-19-marketplace-portable-install/PLAN.md (§ Phases W4 sub-steps, § V11 spec, § Scope option (c))",
+      "13 skills/<name>/SKILL.md files (a11y-review-file deleted pre-W4 in commit c0aa154 per § Pre-migration housekeeping)",
+      "cli/parallel-work-invariant.test.ts + cli/marketplace-manifest.test.ts (V11 test-pattern reference)"
+    ]
+  },
+  "execution": {
+    "actions": [
+      "4a phantom-verb audit: surveyed all 103 bin/<cli> references across skills/. Real-verb cross-check ran each cited verb against bin/loom, bin/griot, bin/guild help output. Two candidate phantoms found: bin/loom events append (referenced once at loom-research/SKILL.md:368) and bin/loom pr reconcile (referenced once at ev-run/SKILL.md:98). Both are explicit forward-looking documentation — loom-research says 'call ... if/when such a verb exists; until then, ... direct file append'; ev-run says 'see the open question in projects/2026-05-15-trout-sunset/PLAN.md about whether bin/loom pr reconcile should ship.' Zero phantom-as-invocation hits. No remediations needed.",
+      "4b ~/.agents/docs resolution: replaced the 'marketplace-rooted, resolved on consumer machines via the ~/.agents/docs symlink' framing in 3 sites with 'plugin-relative path; present in every install of the <plugin> plugin.' Picked option (c) per PLAN scope — inline the path explanation rather than introduce a new <cli> docs verb.",
+      "4c Mechanical rewrite executed across 8 skills (the ones with Bash(\"bin/<cli>) sites) plus 3 more (with bash-code-block leading bin/<cli>). 16 Bash() invocations rewritten + 8 bash-code-block invocations rewritten = 24 sites total. Loop-iteration discovered the Edit tool's per-file Read-before-Edit guard fires per-edit in parallel batches; some edits had to be re-issued after explicit Read calls. No semantic impact, just additional turns.",
+      "Wrote cli/skill-bodies-call-bare-commands.test.ts (V11): listSkillFiles enumerates every skills/<name>/SKILL.md, sanity check asserts at least one was found, then for each skill 2 assertions — (a) Bash(\"bin/<cli>) regex match returns empty offending list, (b) bash-code-block walker (tracks fence state + shell-language detection) returns empty offending list. Failure messages embed offending file:line for fast remediation.",
+      "Initial V11 walker had a fence-state bug surfaced by evaluator-test-unit: a non-shell block's close-fence was treated as the opener of a phantom bash block on the next fence line. Bug skews toward false-positive (loud), not false-negative (silent), so V11's defensive purpose isn't compromised — but worth fixing now. Refactored the walker to track 'inFencedBlock' (any language) separately from 'blockIsShell' (only check invocations when both are true). Added zsh + console to the shell-language set as siblings of bash/sh/shell.",
+      "npx vitest run cli/skill-bodies-call-bare-commands.test.ts → 27/27 passed (1 sanity + 2 per skill × 13 skills).",
+      "npm test (full suite) → 581/581 passed (was 554; +27 from V11).",
+      "Invoked /guild-validate with contract-fit + test-unit (derive-panel now correctly resolved per the substrate-path fix in eb618d4). Both returned approved. The walker bug above came from test-unit's spot-check; applied as polish inline."
+    ],
+    "files_touched": [
+      "skills/loom-revise-plan/SKILL.md",
+      "skills/loom-plan/SKILL.md",
+      "skills/guild-whiteboard/SKILL.md",
+      "skills/loom-research/SKILL.md",
+      "skills/loom-archive/SKILL.md",
+      "skills/ev-loop-interactive/SKILL.md",
+      "skills/ev-loop-confidence/SKILL.md",
+      "skills/ev-run/SKILL.md",
+      "skills/griot-load/SKILL.md",
+      "skills/griot-compact/SKILL.md",
+      "skills/guild-validate/SKILL.md",
+      "cli/skill-bodies-call-bare-commands.test.ts"
+    ],
+    "corrections": []
+  },
+  "scope": [
+    "skills/<name>/SKILL.md (11 files rewritten for bare-command invocations + 3 also updated for ~/.agents/docs resolution)",
+    "cli/skill-bodies-call-bare-commands.test.ts (new V11 tripwire)"
+  ],
+  "changes_since_previous": "W3 (5d5c1d4) unified griot project-root resolution. W4 is the broad skill-body sweep: bare-command rewrites + ~/.agents/docs resolution + V11 grep tripwire. Phantom-verb audit confirmed no actionable phantoms (PLAN's known concern about bin/loom adopt referred to install.sh:154 which W9 deletes; in-skill phantoms turned out to be forward-looking documentation, not invocations). The substrate-path fix from earlier in this session (eb618d4 — derive-panel now resolves docs/PANEL-COMPOSITION.md correctly) was the precondition for this unit's automatic panel composition.",
+  "verdict": {
+    "result": "approved",
+    "reasons": []
+  },
+  "notes_for_pr": [
+    "Phantom-verb audit results: 103 total bin/<cli> references surveyed across 12 skill files. 0 phantom-as-invocation hits. The 2 suspect refs (bin/loom events append at loom-research/SKILL.md:368 and bin/loom pr reconcile at ev-run/SKILL.md:98) are explicit forward-looking documentation properly caveated in their own context as 'if/when such a verb exists.' PLAN's bin/loom adopt note referred to install.sh:154 specifically — that file gets deleted entirely in W9, so the typo is moot.",
+    "~/.agents/docs resolution applied via PLAN option (c) — inline plugin-relative-path language rather than introducing a new <cli> docs verb. The 3 affected skill bodies (loom-archive, ev-loop-interactive, ev-loop-confidence) now describe docs/LOOM-CONVENTIONS.md as a plugin-relative path 'present in every install of the loom plugin.' Future maintainers reading the skill bodies don't have to know about the legacy install.sh symlink-farm to understand the doc reference.",
+    "Mechanical rewrite coverage: 16 Bash(\"bin/<cli>) tool invocations + 8 bash-code-block lead-with-bin/<cli> command examples rewritten = 24 invocation sites across 11 SKILL.md files. Prose noun refs like 'the bin/griot namespace' or 'verbs under bin/griot' intentionally left alone — they discuss the marketplace source-of-truth path, not an invocation, and V11's test doesn't flag them.",
+    "V11 test (cli/skill-bodies-call-bare-commands.test.ts) wires a hard-fail tripwire for the two invocation patterns. Anyone re-introducing Bash(\"bin/<cli>) or `bin/<cli>` inside a ```bash block in any SKILL.md gets a loud test failure with file:line + the offending text inline. Defensive against the bulk-rewrite-missed-something failure mode.",
+    "Free polish applied during evaluator pass: V11's fence walker had a state bug (non-shell block's close-fence would phantom-open a bash block on the next fence line). Caught by evaluator-test-unit's spot-check. Refactored to track 'inFencedBlock' (any language) separately from 'blockIsShell' (only check invocations when both true). Added zsh + console to the shell-language set. Bug never fired in production (current skills don't have the trigger pattern) but would have surfaced as a false-positive later.",
+    "Carry-over surfacing: PR description for the bundled migration should explicitly call out which files in the diff are sync-script output once W7 lands (per R7 mitigation). W4's diff is all hand-authored skill-body edits + one new test — fully human-reviewable line-by-line."
+  ]
+}
