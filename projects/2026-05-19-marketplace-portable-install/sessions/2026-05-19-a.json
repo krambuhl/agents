@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "date": "2026-05-19",
+  "letter": "a",
+  "phases_touched": [
+    1
+  ],
+  "checkins_written": [
+    "01",
+    "02",
+    "03",
+    "04"
+  ],
+  "pr_activity": [
+    "Pushed branch marketplace-portable-install.migration to origin (b7ea2de + 5d5c1d4)",
+    "Draft PR NOT yet opened — gh pr create was blocked by auto-mode classifier mid-session; user needs to run `!gh pr create --draft --title \"[migration] Marketplace portable install (W0-W9)\" --body-file=/tmp/loom-w0/pr-body.md` themselves (body staged at /tmp/loom-w0/pr-body.md)"
+  ],
+  "what_happened": [
+    "Cut execution branch marketplace-portable-install.migration from main per new <project>.<phase-lazy-name> convention.",
+    "Landed branch-naming-convention housekeeping commit (00319b0) — docs/LOOM-CONVENTIONS.md § Branch naming + Step 0 sub-step in both ev-loop skill bodies.",
+    "W0 (4a798ad): pre-flight verifications. V1 (documented-behavior method) — settings.local.json IS honored on colleague clones at local precedence; recommend --scope user as primary install command. OQ2 sizing: ~908 KB / ~125 generated files across the 3 CLI-shipping plugins.",
+    "W1 (ab4e9dd): marketplace skeleton — .claude-plugin/marketplace.json with 6 entries + 6 per-plugin plugin.json + V9 manifest tripwire (57 assertions). claude plugin validate passes.",
+    "W2 (b7ea2de): bin/griot init verb + Category 4 generated-from-upstream + gitignore-amendment declared exception. makeProjectRoot test factory introduced. 13 init tests.",
+    "W3 (5d5c1d4): _project-root.ts walk-up resolver + 3 verb refactors (use, capture, init) + nested-cwd integration tests + new griot doctor warning verb. makeProjectRoot factory extended with gitInit option. 15 new tests.",
+    "npm test: 554/554 passing (up from 469 at session start; +85 over the session from V9 + W2 + W3 additions)."
+  ],
+  "open_threads": [
+    "PR open is blocked — user needs to run `!gh pr create --draft --title \"[migration] Marketplace portable install (W0-W9)\" --body-file=/tmp/loom-w0/pr-body.md` themselves to open the draft PR (body staged at /tmp/loom-w0/pr-body.md). The auto-mode classifier blocked the automated call mid-session.",
+    "Substrate path-lookup bug: bin/guild derive-panel reads from .claude/agents/PANEL-COMPOSITION.md but the actual spec lives at agents/PANEL-COMPOSITION.md. Manual panel composition has been the workaround for W1/W2/W3. Fix likely lands alongside W4 skill-body rewrites or as substrate cleanup. Captured in checkin notes_for_pr for W1/W2/W3.",
+    "Loom verb layout asymmetry surfaced in W0: loom verbs live at cli/verbs/*.ts top-level while griot+guild verbs are in cli/verbs/<family>/. W7's sync script needs to filter cleanly — likely refactors loom verbs into cli/verbs/loom/ for layout symmetry, OR hardcodes the loom-verb file list. Decision lives in W7's contract.",
+    "Housekeeping commit (00319b0) currently rides along on the migration branch. PLAN's '## Pre-migration housekeeping (separate small PR before the main one)' section notes that housekeeping should ship its own small PR. The user chose 'push + open draft PR now' rather than splitting; revisit if reviewer prefers split at PR-review time.",
+    "V1 finding implies a refinement to PLAN's install-scope guidance: recommend --scope user as primary instead of --scope local. PLAN.md is not yet revised to reflect this — W8 (README rewrite) is where the refinement formally lands. Optionally revise PLAN.md sooner via /loom-revise-plan if user wants the plan and W8 in sync."
+  ],
+  "notes": [
+    "Branch state at session end: marketplace-portable-install.migration is 5 commits ahead of main (1 housekeeping + 4 W0-W3 checkins). All commits pushed to origin.",
+    "Remaining workstreams: W4 (skill body rewrites), W5 (ev/* preflight checks), W6 (per-plugin bin shims), W7 (sync-shared script + Category 4 row), W8 (README rewrite — adopt V1 --scope user finding), W9 (install.sh deletion + V11 grep tripwire).",
+    "Next /ev-run dispatches into W4. W4 is itself sub-step-ordered (4a phantom-verb audit → 4b ~/.agents/docs resolution → 4c mechanical Bash bin-prefix rewrite) and lands V11 (skill-bodies-call-bare-commands.test.ts) alongside.",
+    "Session productivity: 4 substantial workstreams completed across ~145-minute window. No corrections recorded mid-session. All evaluator panel runs returned approved; advisory observations applied inline as polish where they made the code clearly better, noted-but-not-applied where the evaluator explicitly didn't escalate (gitInit naming, V1 documented-behavior method caveat)."
+  ]
+}
