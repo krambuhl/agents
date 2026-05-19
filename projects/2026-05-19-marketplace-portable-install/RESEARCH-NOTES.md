@@ -102,7 +102,7 @@ install actually work.
 
 Spawned 8 engineers in parallel via `/guild-spawn` (composed from
 `/guild-whiteboard`'s skill). Brief at
-`projects/2026-05-18-marketplace-portable-install/whiteboards/research-shift-01-cli-residency-and-learnings-location.md`.
+`projects/2026-05-19-marketplace-portable-install/whiteboards/research-shift-01-cli-residency-and-learnings-location.md`.
 
 In parallel, invoked the `claude-code-guide` Agent to verify the
 actual Claude Code plugin/marketplace API before the panel
@@ -192,7 +192,7 @@ Going forward in this session, all decision-point questions used
 ## Whiteboard contributions — pointer
 
 Per-engineer verbatim contributions live at
-`projects/2026-05-18-marketplace-portable-install/whiteboards/research-shift-01-cli-residency-and-learnings-location.md`,
+`projects/2026-05-19-marketplace-portable-install/whiteboards/research-shift-01-cli-residency-and-learnings-location.md`,
 round 1, ~1500 lines across 8 attributed sections.
 
 This RESEARCH-NOTES.md does not duplicate the verbatim sections;

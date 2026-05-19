@@ -398,7 +398,7 @@ pre-flight cleanup PR.
 ## Whiteboard contributions
 
 Full attributed sections live at
-`projects/2026-05-18-marketplace-portable-install/whiteboards/research-shift-01-cli-residency-and-learnings-location.md`,
+`projects/2026-05-19-marketplace-portable-install/whiteboards/research-shift-01-cli-residency-and-learnings-location.md`,
 round 1. One synthesized paragraph per substantive engineer:
 
 - **`whiteboard-design-systems`** found the literal install-command
@@ -489,7 +489,7 @@ round 1. One synthesized paragraph per substantive engineer:
 16. https://code.claude.com/docs/en/discover-plugins.md (interactive
     install via `/plugin`).
 17. Whiteboard
-    `projects/2026-05-18-marketplace-portable-install/whiteboards/research-shift-01-cli-residency-and-learnings-location.md`,
+    `projects/2026-05-19-marketplace-portable-install/whiteboards/research-shift-01-cli-residency-and-learnings-location.md`,
     round 1, eight attributed engineer sections.
 18. User decisions captured via `AskUserQuestion` on 2026-05-18:
     project-root marker (.git/ walk-up), untether verb (skip), no
