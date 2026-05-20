@@ -1,5 +1,4 @@
 {
   "name": "agent-loop-full",
-  "version": "0.1.1",
   "description": "Meta-bundle: zero-content plugin that cascade-installs the full agent-loop family (griot, guild, loom, ev, review-skill)."
 }

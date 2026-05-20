@@ -37,7 +37,16 @@ interface MarketplaceManifest {
 
 interface PluginManifest {
   readonly name: string;
-  readonly version: string;
+  /**
+   * `version` is intentionally OPTIONAL. Per Claude Code docs:
+   *   "If you omit `version` and host this marketplace in git,
+   *    every commit automatically counts as a new version."
+   * The krambuhl marketplace adopted that posture so high-velocity
+   * dev doesn't require a version-bump ritual on every content
+   * change. If a plugin re-adds the field, it pins itself and
+   * users only get updates when the field changes.
+   */
+  readonly version?: string;
   readonly description?: string;
 }
 
@@ -121,9 +130,15 @@ describe('marketplace manifest: plugin entries', () => {
         expect(pluginManifest.name).toBe(expectedName);
       });
 
-      test('plugin.json declares a non-empty version string', () => {
+      test('plugin.json version field, if present, is a non-empty string', () => {
+        // Version is intentionally optional in this marketplace
+        // (every-commit auto-versions). When it IS set, it must be
+        // a non-empty string — empty/whitespace pins to a bogus
+        // version that the updater would silently honor.
         const pluginManifest = readPluginManifest(entry!.source);
-        expect(pluginManifest.version).toMatch(/.+/);
+        if (pluginManifest.version !== undefined) {
+          expect(pluginManifest.version).toMatch(/.+/);
+        }
       });
     });
   }
