@@ -35,8 +35,71 @@ import { fileURLToPath } from 'node:url';
 const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = resolve(SCRIPT_DIR, '..');
 
+/** All plugins the sync script handles. Order is sync-iteration order. */
+export const PLUGINS = [
+  'griot',
+  'guild',
+  'loom',
+  'ev',
+  'review-skill',
+  'agent-loop-full',
+] as const;
+export type PluginName = (typeof PLUGINS)[number];
+
+/** Subset that ships a CLI (lib + verbs + entrypoint). Kept as a
+ *  named export because tests still differentiate plugins-with-cli
+ *  from skill-only plugins (e.g. ev/review-skill/agent-loop-full). */
 export const PLUGINS_WITH_CLI = ['griot', 'guild', 'loom'] as const;
-export type PluginName = (typeof PLUGINS_WITH_CLI)[number];
+
+/** Per-plugin content rules. Defines which top-level skills/<dir>/
+ *  and agents/<file>.md belong to each plugin. The CLI subset is
+ *  implicit: cli/verbs/<plugin>/ + cli/<plugin>.ts (handled below). */
+interface PluginContentRule {
+  /** Skill directories whose names start with one of these prefixes
+   *  belong to this plugin. e.g. 'griot-' matches 'griot-load'. */
+  skillPrefixes: ReadonlyArray<string>;
+  /** Skill directories with these EXACT names belong to this plugin.
+   *  Use for the unprefixed catch-alls (currently just 'review-skill'). */
+  skillExacts: ReadonlyArray<string>;
+  /** Agent files whose names start with one of these prefixes belong
+   *  to this plugin. e.g. 'whiteboard-' matches 'whiteboard-a11y.md'. */
+  agentPrefixes: ReadonlyArray<string>;
+}
+
+const PLUGIN_CONTENT_RULES: Record<PluginName, PluginContentRule> = {
+  griot: {
+    skillPrefixes: ['griot-'],
+    skillExacts: [],
+    agentPrefixes: ['griot-'],
+  },
+  guild: {
+    skillPrefixes: ['guild-'],
+    skillExacts: [],
+    agentPrefixes: ['whiteboard-', 'evaluator-', 'generator-'],
+  },
+  loom: {
+    skillPrefixes: ['loom-'],
+    skillExacts: [],
+    agentPrefixes: [],
+  },
+  ev: {
+    skillPrefixes: ['ev-'],
+    skillExacts: [],
+    agentPrefixes: [],
+  },
+  'review-skill': {
+    skillPrefixes: [],
+    skillExacts: ['review-skill'],
+    agentPrefixes: [],
+  },
+  'agent-loop-full': {
+    // Zero-content meta-bundle — cascade-installs the other 5 via
+    // marketplace dependencies. Owns no skills + no agents.
+    skillPrefixes: [],
+    skillExacts: [],
+    agentPrefixes: [],
+  },
+};
 
 interface SyncSpec {
   /** Source path relative to repo root. */
@@ -76,18 +139,33 @@ function walkFiles(root: string, repoRoot: string): string[] {
   return out;
 }
 
+/** Does this skill-dir name belong to the plugin? */
+function skillBelongsToPlugin(skillName: string, rule: PluginContentRule): boolean {
+  if (rule.skillExacts.includes(skillName)) return true;
+  return rule.skillPrefixes.some((p) => skillName.startsWith(p));
+}
+
+/** Does this agent file name belong to the plugin? */
+function agentBelongsToPlugin(agentName: string, rule: PluginContentRule): boolean {
+  return rule.agentPrefixes.some((p) => agentName.startsWith(p));
+}
+
 export function planForPlugin(plugin: PluginName, repoRoot = REPO_ROOT): PluginPlan {
   const files: SyncSpec[] = [];
+  const rule = PLUGIN_CONTENT_RULES[plugin];
 
-  // 1. Shared lib — every CLI-shipping plugin gets all of cli/lib/*
-  for (const rel of walkFiles(join(repoRoot, 'cli', 'lib'), repoRoot)) {
-    files.push({
-      source: rel,
-      destination: join('plugins', plugin, rel),
-    });
+  // 1. Shared lib — every CLI-shipping plugin gets all of cli/lib/*.
+  //    Skipped for skill-only plugins (no cli/ tree on disk for them).
+  if (PLUGINS_WITH_CLI.includes(plugin as (typeof PLUGINS_WITH_CLI)[number])) {
+    for (const rel of walkFiles(join(repoRoot, 'cli', 'lib'), repoRoot)) {
+      files.push({
+        source: rel,
+        destination: join('plugins', plugin, rel),
+      });
+    }
   }
 
-  // 2. Per-plugin verbs subtree
+  // 2. Per-plugin verbs subtree (CLI-shipping plugins only)
   const verbsDir = join('cli', 'verbs', plugin);
   for (const rel of walkFiles(join(repoRoot, verbsDir), repoRoot)) {
     files.push({
@@ -96,7 +174,7 @@ export function planForPlugin(plugin: PluginName, repoRoot = REPO_ROOT): PluginP
     });
   }
 
-  // 3. Plugin entry point
+  // 3. Plugin entry point (CLI-shipping plugins only)
   const entry = join('cli', `${plugin}.ts`);
   if (existsSync(join(repoRoot, entry))) {
     files.push({
@@ -105,11 +183,45 @@ export function planForPlugin(plugin: PluginName, repoRoot = REPO_ROOT): PluginP
     });
   }
 
+  // 4. Skills — walk top-level skills/<dir>/, include all files under
+  //    any dir whose name belongs to this plugin per PLUGIN_CONTENT_RULES.
+  const skillsRoot = join(repoRoot, 'skills');
+  if (existsSync(skillsRoot)) {
+    for (const skillName of readdirSync(skillsRoot)) {
+      const skillDir = join(skillsRoot, skillName);
+      if (!statSync(skillDir).isDirectory()) continue;
+      if (!skillBelongsToPlugin(skillName, rule)) continue;
+      for (const rel of walkFiles(skillDir, repoRoot)) {
+        files.push({
+          source: rel,
+          destination: join('plugins', plugin, rel),
+        });
+      }
+    }
+  }
+
+  // 5. Agents — walk top-level agents/, include each file whose name
+  //    belongs to this plugin per PLUGIN_CONTENT_RULES.
+  const agentsRoot = join(repoRoot, 'agents');
+  if (existsSync(agentsRoot)) {
+    for (const agentEntry of readdirSync(agentsRoot)) {
+      const agentPath = join(agentsRoot, agentEntry);
+      if (!statSync(agentPath).isFile()) continue;
+      if (!agentBelongsToPlugin(agentEntry, rule)) continue;
+      const rel = relative(repoRoot, agentPath);
+      if (isExcluded(rel)) continue;
+      files.push({
+        source: rel,
+        destination: join('plugins', plugin, rel),
+      });
+    }
+  }
+
   return { plugin, files };
 }
 
 export function planAll(repoRoot = REPO_ROOT): PluginPlan[] {
-  return PLUGINS_WITH_CLI.map((p) => planForPlugin(p, repoRoot));
+  return PLUGINS.map((p) => planForPlugin(p, repoRoot));
 }
 
 interface DriftRecord {
@@ -156,12 +268,15 @@ export function detectDrift(repoRoot = REPO_ROOT): DriftRecord[] {
       }
     }
 
-    // Reverse check: every file under plugins/<plugin>/cli/ must
-    // have a matching source. Catches stale files left after an
-    // upstream rename / delete.
-    const pluginCliRoot = join(repoRoot, 'plugins', plan.plugin, 'cli');
-    if (existsSync(pluginCliRoot)) {
-      for (const rel of walkFiles(pluginCliRoot, repoRoot)) {
+    // Reverse check: every file under the SYNC-MANAGED subdirs of
+    // plugins/<plugin>/ must have a matching source. Catches stale
+    // files left after an upstream rename / delete. The .claude-plugin/
+    // and bin/ subdirs are hand-authored substrate (not sync-managed)
+    // and are intentionally excluded.
+    for (const syncManagedDir of ['cli', 'skills', 'agents']) {
+      const root = join(repoRoot, 'plugins', plan.plugin, syncManagedDir);
+      if (!existsSync(root)) continue;
+      for (const rel of walkFiles(root, repoRoot)) {
         if (!expectedDestinations.has(rel)) {
           records.push({
             plugin: plan.plugin,
@@ -185,12 +300,15 @@ export function applySync(repoRoot = REPO_ROOT): { copied: number; removed: numb
 
   for (const plan of plans) {
     const expectedDestinations = new Set(plan.files.map((f) => f.destination));
-    const pluginCliRoot = join(repoRoot, 'plugins', plan.plugin, 'cli');
 
-    // Remove orphans first (files in the generated tree that no
-    // longer have an upstream source).
-    if (existsSync(pluginCliRoot)) {
-      for (const rel of walkFiles(pluginCliRoot, repoRoot)) {
+    // Remove orphans first (files in the SYNC-MANAGED subdirs that
+    // no longer have an upstream source). The .claude-plugin/ and
+    // bin/ subdirs are hand-authored substrate and intentionally
+    // excluded from orphan sweeping.
+    for (const syncManagedDir of ['cli', 'skills', 'agents']) {
+      const root = join(repoRoot, 'plugins', plan.plugin, syncManagedDir);
+      if (!existsSync(root)) continue;
+      for (const rel of walkFiles(root, repoRoot)) {
         if (!expectedDestinations.has(rel)) {
           rmSync(join(repoRoot, rel), { force: true });
           removed += 1;
@@ -217,7 +335,11 @@ function main(argv: string[]): number {
   if (checkMode) {
     const drift = detectDrift();
     if (drift.length === 0) {
-      process.stdout.write(`sync-shared --check: ok (3 plugins synced)\n`);
+      const planned = planAll();
+      const withFiles = planned.filter((p) => p.files.length > 0).length;
+      process.stdout.write(
+        `sync-shared --check: ok (${withFiles} plugin${withFiles === 1 ? '' : 's'} synced)\n`,
+      );
       return 0;
     }
     for (const record of drift) {

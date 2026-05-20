@@ -61,6 +61,17 @@ function buildMinimalSourceTree(): void {
   write('cli/griot.ts', '#!/usr/bin/env node\nconsole.log("griot");\n');
   write('cli/guild.ts', '#!/usr/bin/env node\nconsole.log("guild");\n');
   write('cli/loom.ts', '#!/usr/bin/env node\nconsole.log("loom");\n');
+  // Skills — one per plugin under its prefix
+  write('skills/griot-load/SKILL.md', '---\nname: griot-load\n---\nfixture\n');
+  write('skills/guild-validate/SKILL.md', '---\nname: guild-validate\n---\nfixture\n');
+  write('skills/loom-plan/SKILL.md', '---\nname: loom-plan\n---\nfixture\n');
+  write('skills/ev-run/SKILL.md', '---\nname: ev-run\n---\nfixture\n');
+  write('skills/review-skill/SKILL.md', '---\nname: review-skill\n---\nfixture\n');
+  // Agents — one per agent-namespace
+  write('agents/griot-judge.md', '---\nname: griot-judge\n---\nfixture\n');
+  write('agents/whiteboard-skeptic.md', '---\nname: whiteboard-skeptic\n---\nfixture\n');
+  write('agents/evaluator-contract-fit.md', '---\nname: evaluator-contract-fit\n---\nfixture\n');
+  write('agents/generator-base.md', '---\nname: generator-base\n---\nfixture\n');
   // Excluded: test files + fixtures (should NOT be copied)
   write('cli/lib/manifest.test.ts', 'test stub');
   write('cli/verbs/griot/use.test.ts', 'test stub');
@@ -69,17 +80,19 @@ function buildMinimalSourceTree(): void {
 }
 
 describe('V10 (a): planForPlugin returns expected source/dest pairs', () => {
-  test('griot plan covers cli/lib + cli/verbs/griot + cli/griot.ts only', () => {
+  test('griot plan covers cli/lib + cli/verbs/griot + cli/griot.ts + griot-* skills + griot-* agents', () => {
     buildMinimalSourceTree();
     const plan = planForPlugin('griot', root);
 
     const sources = plan.files.map((f) => f.source).sort();
     expect(sources).toEqual(
       [
+        'agents/griot-judge.md',
         'cli/griot.ts',
         'cli/lib/events.ts',
         'cli/lib/manifest.ts',
         'cli/verbs/griot/use.ts',
+        'skills/griot-load/SKILL.md',
       ].sort(),
     );
 
@@ -241,6 +254,127 @@ describe('V10 (c): drift detection — false-green failure-mode tripwire', () =>
     // loud-fail drift error messages.
     expect(record?.message).toContain('plugins/griot/cli/lib/manifest.ts');
     expect(record?.message).toContain('cli/lib/manifest.ts');
+    expect(record?.message).toMatch(/sync-shared\.ts/);
+  });
+});
+
+describe('skills + agents: per-plugin sync (gap caught by V6 smoke test)', () => {
+  test('skills are filtered by plugin prefix', () => {
+    buildMinimalSourceTree();
+    const griotPlan = planForPlugin('griot', root);
+    const guildPlan = planForPlugin('guild', root);
+    const loomPlan = planForPlugin('loom', root);
+
+    const griotSkills = griotPlan.files
+      .map((f) => f.source)
+      .filter((s) => s.startsWith('skills/'));
+    const guildSkills = guildPlan.files
+      .map((f) => f.source)
+      .filter((s) => s.startsWith('skills/'));
+    const loomSkills = loomPlan.files
+      .map((f) => f.source)
+      .filter((s) => s.startsWith('skills/'));
+
+    expect(griotSkills).toEqual(['skills/griot-load/SKILL.md']);
+    expect(guildSkills).toEqual(['skills/guild-validate/SKILL.md']);
+    expect(loomSkills).toEqual(['skills/loom-plan/SKILL.md']);
+  });
+
+  test('skill-only plugins (ev, review-skill) get their skills with no CLI', () => {
+    buildMinimalSourceTree();
+    const evPlan = planForPlugin('ev', root);
+    const reviewPlan = planForPlugin('review-skill', root);
+
+    // ev gets its skill, no cli/, no agents/
+    expect(evPlan.files.map((f) => f.source)).toEqual(['skills/ev-run/SKILL.md']);
+    // review-skill matches via exact name (not prefix) since it has no '-' suffix.
+    expect(reviewPlan.files.map((f) => f.source)).toEqual([
+      'skills/review-skill/SKILL.md',
+    ]);
+  });
+
+  test('agent-loop-full meta-bundle plans zero files', () => {
+    buildMinimalSourceTree();
+    const plan = planForPlugin('agent-loop-full', root);
+    expect(plan.files).toEqual([]);
+  });
+
+  test('agents are namespaced: griot-* → griot; whiteboard-/evaluator-/generator-* → guild', () => {
+    buildMinimalSourceTree();
+    const griotAgents = planForPlugin('griot', root)
+      .files.map((f) => f.source)
+      .filter((s) => s.startsWith('agents/'));
+    const guildAgents = planForPlugin('guild', root)
+      .files.map((f) => f.source)
+      .filter((s) => s.startsWith('agents/'));
+
+    expect(griotAgents).toEqual(['agents/griot-judge.md']);
+    // guild gets all three agent-namespace prefixes.
+    expect([...guildAgents].sort()).toEqual([
+      'agents/evaluator-contract-fit.md',
+      'agents/generator-base.md',
+      'agents/whiteboard-skeptic.md',
+    ]);
+  });
+
+  test('end-to-end byte-equal: synced skill SKILL.md matches its source', () => {
+    buildMinimalSourceTree();
+    applySync(root);
+
+    expect(read('plugins/griot/skills/griot-load/SKILL.md')).toBe(
+      read('skills/griot-load/SKILL.md'),
+    );
+    expect(read('plugins/guild/agents/whiteboard-skeptic.md')).toBe(
+      read('agents/whiteboard-skeptic.md'),
+    );
+    expect(read('plugins/ev/skills/ev-run/SKILL.md')).toBe(
+      read('skills/ev-run/SKILL.md'),
+    );
+  });
+
+  test('drift detection: mutated skill SKILL.md flagged as divergent', () => {
+    buildMinimalSourceTree();
+    applySync(root);
+
+    writeFileSync(
+      join(root, 'plugins/griot/skills/griot-load/SKILL.md'),
+      'tampered\n',
+      'utf8',
+    );
+
+    const drift = detectDrift(root);
+    const griotSkill = drift.find(
+      (d) => d.destination === 'plugins/griot/skills/griot-load/SKILL.md',
+    );
+    expect(griotSkill?.kind).toBe('divergent');
+    expect(griotSkill?.source).toBe('skills/griot-load/SKILL.md');
+  });
+
+  test('drift detection: orphan agent file in plugin tree flagged', () => {
+    buildMinimalSourceTree();
+    applySync(root);
+
+    write('plugins/guild/agents/orphan.md', '---\nname: orphan\n---\nstale\n');
+
+    const drift = detectDrift(root);
+    const orphan = drift.find(
+      (d) => d.destination === 'plugins/guild/agents/orphan.md',
+    );
+    expect(orphan?.kind).toBe('orphan');
+  });
+});
+
+// Trailing artifact from the original drift-message test; kept for
+// the structural close-out of the original describe-block above.
+describe('V10 (c) closure: drift-message format coverage (already asserted above)', () => {
+  test('drift message format also names the script name', () => {
+    buildMinimalSourceTree();
+    applySync(root);
+    writeFileSync(join(root, 'plugins/griot/cli/lib/manifest.ts'), 'x', 'utf8');
+    const drift = detectDrift(root);
+    const record = drift.find(
+      (d) => d.destination === 'plugins/griot/cli/lib/manifest.ts',
+    );
     expect(record?.message).toContain('sync-shared.ts');
   });
 });
