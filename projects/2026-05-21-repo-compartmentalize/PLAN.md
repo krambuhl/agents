@@ -17,7 +17,7 @@ at-root layer**: the `cli/`, `skills/`, `agents/`, `docs/` directories at
 the repo root will go away. Each plugin becomes the authoritative source
 for the content it ships, and `scripts/sync-shared.ts` shrinks from "mirror
 everything from root into plugin trees" to "mirror only genuinely cross-cutting
-artifacts (the shared lib + docs) from the new `shared` plugin into consumer
+artifacts (the commons lib + docs) from the new `commons` plugin into consumer
 plugins." This is a bigger structural reshape than the research initially
 recommended, but it matches the user's compartmentalize intent and removes
 the relic edit-time layer that the marketplace migration left behind.
@@ -26,27 +26,27 @@ the relic edit-time layer that the marketplace migration left behind.
 
 ### In scope
 
-- New `shared` plugin (`plugins/shared/`) housing `grill-me`, `review-skill`,
-  `find-skills`, the cross-substrate docs, and the shared TS lib.
+- New `commons` plugin (`plugins/commons/`) housing `grill-me`, `review-skill`,
+  `find-skills`, the cross-substrate docs, and the commons TS lib.
 - Dissolution of root-level `cli/`, `skills/`, `agents/`, `docs/` directories.
-- `sync-shared.ts` rewrite: from root→plugins to shared→consumers.
+- `sync-shared.ts` rewrite: from root→plugins to commons→consumers.
 - Draft restructure: `cli/lib/draft-project.ts` and `cli/lib/draft-git.ts`
   dissolve into `cli/lib/project.ts` and `cli/lib/git.ts` respectively; all
   "draft" prose / comment / package-keyword / skill-text references are swept.
 - `learnings/` migration into the griot capture pipeline so the marketplace
   eats its own dog food and produces a real `learnings/rollup.json`.
-- Folding `plugins/review-skill/` into `plugins/shared/` (one fewer top-level
+- Folding `plugins/review-skill/` into `plugins/commons/` (one fewer top-level
   marketplace entry).
 - Deleting root `bin/` shims (gitignored relics with misleading provenance).
 
 ### Out of scope
 
 - Cross-plugin runtime code import (the canonical-shift moves the canonical
-  source from `cli/` to `plugins/shared/cli/`, but each consumer plugin still
+  source from `cli/` to `plugins/commons/cli/`, but each consumer plugin still
   ships its own synced copy at install-time — no runtime cross-plugin
   resolution required).
 - Migrating `moshi-best-practices` (user's personal Mosh/SSH/tmux helper,
-  doesn't fit the shared substrate identity).
+  doesn't fit the commons substrate identity).
 - Hunting `claude-code-guide` agent (not in this repo; likely ships with a
   different installed plugin).
 - Repairing broken user-global symlinks (`~/.claude/skills/draft-plan`,
@@ -63,7 +63,7 @@ the relic edit-time layer that the marketplace migration left behind.
 - `projects/CONVENTIONS.md` placement + loom-as-runtime-owner declaration
   (RESEARCH.md § 6): the conventions doc inside `projects/` is functionally
   a loom invariant, but the directory lives at repo root for legacy
-  reasons. Moving the doc into the loom plugin (or `plugins/shared/docs/`)
+  reasons. Moving the doc into the loom plugin (or `plugins/commons/docs/`)
   and updating the marketplace description to declare loom owns
   `projects/` at runtime is a small clarification. RESEARCH framed it as
   lower-priority because moving the directory itself would touch archived
@@ -74,48 +74,112 @@ the relic edit-time layer that the marketplace migration left behind.
 
 ### Phase 1 — Setup (backward-compatible groundwork, 2 PRs)
 
-**PR1 — Create `plugins/shared/` skeleton + marketplace entry**
+**PR1 — Create `plugins/commons/` skeleton + marketplace entry**
 
-- Add `plugins/shared/.claude-plugin/plugin.json` with `{name: "shared",
+- Add `plugins/commons/.claude-plugin/plugin.json` with `{name: "commons",
   description: ...}` (no `version` field per the every-commit-auto-version
   posture, RESEARCH.md § 11).
-- Add `plugins/shared/bin/<no bin>` — shared ships no CLI of its own
+- Add `plugins/commons/bin/<no bin>` — commons ships no CLI of its own
   (initially), only skills + docs + a lib for other plugins to consume.
-- Update `.claude-plugin/marketplace.json` to register shared and add it as
+- Update `.claude-plugin/marketplace.json` to register commons and add it as
   a dependency of every other plugin that needs `grill-me`, `review-skill`,
-  the shared lib, or the docs. Initial cascade after this PR:
-  - `griot`: no shared dep yet (none of griot's content cites docs from
-    the root directory today — verify in PR; RESEARCH.md § 1's grep didn't
-    flag griot specifically; double-check before adding the dep)
-  - `guild`: same — verify
-  - `loom`: gains `shared` dep (loom skills cite `docs/AGENT-CONVENTIONS.md`,
-    RESEARCH.md § 3)
-  - `ev`: gains `shared` dep (ev skills cite multiple docs)
-  - `agent-loop-full`: gains `shared` in the cascade list
-- Update `cli/marketplace-manifest.test.ts:53-60,201-209` to assert shared
-  is present in the cascade and that the dependency wiring is consistent.
+  the commons lib, or the docs. **Per the interview's cascade-wiring
+  decision (option a — wire all eventual consumers at PR1, even when
+  commons is content-empty), the initial cascade after this PR is**:
+  - `griot`: gains `commons` dep (CLI-shipping plugin; will receive
+    `commons/cli/lib/` content post-PR3)
+  - `guild`: gains `commons` dep (same — CLI-shipping)
+  - `loom`: gains `commons` dep (loom skills cite `docs/AGENT-CONVENTIONS.md`,
+    RESEARCH.md § 3; also CLI-shipping)
+  - `ev`: gains `commons` dep (ev skills cite multiple docs)
+  - `agent-loop-full`: gains `commons` in the cascade list (it's the
+    meta-bundle; cascades the family including commons)
+  - `review-skill`: no `commons` dep (its content folds INTO commons at PR8;
+    plugin disappears at that point)
+- **Dependency ordering** (per design-systems whiteboard finding): list
+  `commons` first in each consumer's dependency array (substrate-kind
+  dependencies precede peer-kind dependencies). So `loom: ["commons",
+  "guild", "griot"]`. Add a test assertion enforcing "if `commons` is
+  a dependency, it's the first element."
+- Update `cli/marketplace-manifest.test.ts:53-60,201-209` to assert
+  commons is present in the cascade AND that the closed-set "exactly 7
+  plugins, named X" invariant is preserved (don't loosen to "any name
+  allowed" — the closed-set tripwire is load-bearing per the skeptic's
+  whiteboard note). Split substrate-dep assertions from peer-dep
+  assertions so the two semantic kinds are visible in CI output.
 - Update `scripts/sync-shared.ts:PLUGINS` and add a `PLUGIN_CONTENT_RULES`
-  entry for shared (placeholder: shared owns nothing yet at this PR — content
-  moves in Phase 2). Empty plugin content tree at this stage.
-- **Backward-compat**: nothing breaks. The shared plugin exists with zero
-  content; consumers don't yet depend on it for anything live.
+  entry for commons (placeholder: commons owns nothing yet at this PR
+  — content moves in Phase 2). Empty plugin content tree at this stage.
+- **Description copy** for `plugins/commons/.claude-plugin/plugin.json`:
+  name the role, not the inventory. Draft: "Foundation substrate:
+  cross-cutting helpers (commons CLI lib + agent-conventions docs) that
+  the loom, guild, griot, and ev plugins all depend on. Cascades in via
+  marketplace dependencies; consumers receive a synced local copy at
+  install time." Survives day-1 emptiness because it describes role,
+  not contents.
+- Update `agent-loop-full`'s description in marketplace.json to include
+  commons in the cascaded family list.
+- **Backward-compat**: nothing breaks. The commons plugin exists with
+  zero content; consumers depend on it but receive no synced files until
+  PR2 populates the new sync direction and PR3 actually moves content in.
 
 Verification: `npm test` passes (in particular the marketplace-manifest
-test); fresh install of `agent-loop-full@krambuhl` cascades shared in
+test); fresh install of `agent-loop-full@krambuhl` cascades commons in
 without error.
 
-**PR2 — Extend `sync-shared.ts` for the shared→consumer direction**
+**PR2 — Extend `sync-shared.ts` for the commons→consumer direction**
 
-- Add the new sync mode: `plugins/shared/cli/lib/` → every consumer plugin's
-  `cli/lib/`, and `plugins/shared/docs/` → every consumer plugin's `docs/`.
-- Keep the old root→plugin sync working in parallel so the canonical sources
-  at root continue to be the live edit point during Phase 1. (Both paths
-  active simultaneously; the test suite must pass with both modes.)
-- Update `scripts/sync-shared.test.ts` to cover the new sync direction.
+Architectural shape (per the substrate-engineer whiteboard finding):
+**one planner emitting both kinds of SyncSpec with a source discriminator**,
+NOT two parallel planners. The invariant "every file under sync-managed
+subdirs has exactly one upstream source" must survive the extension.
+
+- Refactor the planner to emit `SyncSpec { kind: 'root' | 'commons',
+  source, destination }`. `detectDrift`/`applySync` stay single-pass.
+- Add per-flow consumer rules: `PLUGIN_SHARED_CONSUMERS = { lib: [...],
+  docs: [...] }`. doc-consumer-set differs from lib-consumer-set —
+  `ev` needs docs but has no `cli/`; `agent-loop-full` is content-empty
+  and excluded from both.
+- Add the new sync mode: `plugins/commons/cli/lib/` → every consumer
+  plugin's `cli/lib/`, and `plugins/commons/docs/` → every consumer
+  plugin's `docs/`.
+- Keep the old root→plugin sync working in parallel so the canonical
+  sources at root continue to be the live edit point during Phase 1.
+  (Both kinds of SyncSpec active simultaneously through the same
+  planner; the test suite passes with the unified contract.)
+- **Add `origin: 'root-canonical' | 'commons-canonical'` field to
+  `DriftRecord`** (per the testing-strategy whiteboard finding). When
+  CI fails, the developer can distinguish "edited wrong source" from
+  "sync script has wrong mapping for one of the two directions."
+- **Add a conflict-detection guard in `detectDrift`** (per the skeptic
+  whiteboard finding): if any destination has more than one upstream
+  source claiming it, fail loudly. Permanent tripwire against the
+  dual-write window — survives into Phase 3.
+- **Add a tripwire test asserting `plugins/commons/` is leaf-source-only**
+  (per substrate-engineer): no `cli/verbs/`, no plugin-specific content.
+  Defends the deterministic-generator property under Category 4 of
+  `projects/CONVENTIONS.md`.
+- **Add a wall-clock budget assertion in the test suite** (per
+  performance whiteboard finding): sync runs under ~1 second for the
+  empty-commons case. Not a tight bound — catches O(n²) accidents in
+  later phases.
+- Update `scripts/sync-shared.test.ts`. Split the fixture builder into
+  three factories per the testing-strategy whiteboard finding:
+  `buildOldDirectionTree()`, `buildCommonsDirectionTree()`,
+  `buildBothDirectionsTree()`. Three describe blocks, each defending
+  one named risk.
+- Rewrite the sync-shared.ts banner comment to describe the contract
+  in its eventual shape (commons → consumers), not the half-broken
+  transitional state. The transitional state is documented by the code;
+  the banner names intent.
 - Run `node scripts/sync-shared.ts` to materialize the new (empty)
-  shared→consumer flows so the test fixtures exist.
-- **Backward-compat**: existing dev workflow unchanged; the new sync paths
-  are no-ops until Phase 2 actually populates `plugins/shared/`.
+  commons→consumer flows so the test fixtures exist.
+- **Backward-compat**: existing dev workflow unchanged; the new sync
+  paths are no-ops until Phase 2 actually populates
+  `plugins/commons/`. Per substrate-engineer: the commons planner emits
+  zero specs when commons has no content; drift detection has nothing
+  to compare; `--check` passes trivially. Verify in a test
+  ("commons with empty content yields zero specs, zero drift").
 
 Verification: `npm test`; `node scripts/sync-shared.ts --check` passes
 (no drift); manually inspect that consumer plugin trees still get root
@@ -123,30 +187,30 @@ canonical content as before.
 
 ### Phase 2 — Bulk migrations (strict serial, 5 PRs)
 
-**PR3 — Move shared lib + docs into `plugins/shared/`; cut over canonical source**
+**PR3 — Move commons lib + docs into `plugins/commons/`; cut over canonical source**
 
-- Move `cli/lib/*.ts` (~13 files) into `plugins/shared/cli/lib/*.ts`. The
-  shared copy is now the authoritative source.
+- Move `cli/lib/*.ts` (~13 files) into `plugins/commons/cli/lib/*.ts`. The
+  commons copy is now the authoritative source.
 - Move `docs/AGENT-CONVENTIONS.md`, `docs/LOOM-CONVENTIONS.md`,
   `docs/PANEL-COMPOSITION.md`, `docs/SUBSTRATE-COMPOSITIONS.md` into
-  `plugins/shared/docs/`.
+  `plugins/commons/docs/`.
 - Rewrite `scripts/sync-shared.ts`: drop the root→plugin mirror for
-  `cli/lib/` and for the to-be-deleted root `docs/`; the new shared→consumer
+  `cli/lib/` and for the to-be-deleted root `docs/`; the new commons→consumer
   flow becomes the only path for these.
 - Run sync so all consumer plugin trees pick up `cli/lib/` and `docs/` from
-  shared. Per-plugin `cli/lib/` and `docs/` copies are still synced
+  commons. Per-plugin `cli/lib/` and `docs/` copies are still synced
   (RESEARCH.md § 3 + Q3 of the interview — sync-into-every-plugin won out
   over cross-plugin-resolution).
 - Update the AGENT-CONVENTIONS.md § "Marketplace-rooted doc paths" claim at
-  `docs/AGENT-CONVENTIONS.md:78-91` (now at `plugins/shared/docs/...`) to
+  `docs/AGENT-CONVENTIONS.md:78-91` (now at `plugins/commons/docs/...`) to
   describe the new shape accurately: "docs/X.md resolves to the consumer
-  plugin's own synced copy of plugins/shared/docs/X.md."
+  plugin's own synced copy of plugins/commons/docs/X.md."
 - Keep root `cli/lib/` and root `docs/` directories during this PR as
   copies to avoid breaking the canonical edit-time pattern that still
   drives PR4. (Phase 3 deletes them.)
 
 Verification: `npm test`; every skill citation of `docs/X.md` resolves
-locally in every consumer plugin tree (a new `plugins/shared/cli/docs-
+locally in every consumer plugin tree (a new `plugins/commons/cli/docs-
 resolution.test.ts` that walks each consumer's `docs/` and asserts every
 referenced doc file exists is the concrete check — write it if not
 already covered by the existing sync drift check).
@@ -160,7 +224,7 @@ already covered by the existing sync drift check).
   root; the per-plugin copy is authoritative.
 - Rewrite `scripts/sync-shared.ts` to drop the root→plugin mirroring for
   skills, agents, and per-plugin CLI. The script now only handles
-  shared→consumer for `cli/lib/` and `docs/`.
+  commons→consumer for `cli/lib/` and `docs/`.
 - Update `cli/sync-shared.test.ts` to reflect the new (much smaller)
   contract.
 - Add a tripwire test that asserts root `skills/`, `agents/`, `cli/<plugin>.ts`,
@@ -177,26 +241,26 @@ Verification: `npm test`; sync drift check passes (no spurious files in
 the new sync's output); the tripwire test fires when root `skills/` is
 re-introduced.
 
-**PR5 — Migrate `grill-me` + `find-skills` into `plugins/shared/skills/`**
+**PR5 — Migrate `grill-me` + `find-skills` into `plugins/commons/skills/`**
 
 - Copy `~/.claude/skills/grill-me/SKILL.md` (the 11-line skill body cited
-  in RESEARCH.md § 7) into `plugins/shared/skills/grill-me/SKILL.md`.
+  in RESEARCH.md § 7) into `plugins/commons/skills/grill-me/SKILL.md`.
 - Copy `~/.claude/skills/find-skills/SKILL.md` into
-  `plugins/shared/skills/find-skills/SKILL.md`.
+  `plugins/commons/skills/find-skills/SKILL.md`.
 - Update `scripts/sync-shared.ts:PLUGIN_CONTENT_RULES` for shared to
   declare ownership of `grill-me` and `find-skills`. (The skills live
-  directly in `plugins/shared/skills/`; no root sync since canonical root
+  directly in `plugins/commons/skills/`; no root sync since canonical root
   is gone.)
 - Delete the `feedback_vscode_remote_ssh_split_session.md`-adjacent
   memory note about grill-me being a user-global (or update it to say
-  "now bundled in the shared plugin via the marketplace cascade"). Out
+  "now bundled in the commons plugin via the marketplace cascade"). Out
   of repo (lives in `~/.claude/projects/...memory`); flag in the PR
   description.
 - Verify `loom-plan`, `loom-revise-plan`, `loom-research` skill citations
   to `/grill-me` now resolve (RESEARCH.md § 7).
 
 Verification: `npm test`; manually invoke `/grill-me` on a fresh
-`agent-loop-full` install (cascading shared in) and confirm it resolves.
+`agent-loop-full` install (cascading commons in) and confirm it resolves.
 
 **PR6 — Draft restructure**
 
@@ -204,16 +268,16 @@ This is the biggest single-PR file-touch but mechanically uniform per
 RESEARCH.md § 1.
 
 - **Module dissolution**:
-  - Merge `plugins/shared/cli/lib/draft-project.ts` into
-    `plugins/shared/cli/lib/project.ts`. Both filter functions
+  - Merge `plugins/commons/cli/lib/draft-project.ts` into
+    `plugins/commons/cli/lib/project.ts`. Both filter functions
     (`findByPlan`, `findByManifest`) end up exposed from `project.ts`.
     The duplicated `SLUG_RE` / `DATELESS_RE` regexes collapse into the
     single set already in `project.ts`.
-  - Rename `plugins/shared/cli/lib/draft-git.ts` to
-    `plugins/shared/cli/lib/git.ts` (the only git wrapper in the repo;
+  - Rename `plugins/commons/cli/lib/draft-git.ts` to
+    `plugins/commons/cli/lib/git.ts` (the only git wrapper in the repo;
     "draft" prefix is misleading).
-  - Merge `plugins/shared/cli/lib/draft-project.test.ts` into
-    `plugins/shared/cli/lib/project.test.ts`.
+  - Merge `plugins/commons/cli/lib/draft-project.test.ts` into
+    `plugins/commons/cli/lib/project.test.ts`.
 
 - **Import sweep** (RESEARCH.md § 1):
   - `plugins/loom/cli/verbs/loom/plan.ts:12-13` — update imports
@@ -275,25 +339,25 @@ JSON.
 
 ### Phase 3 — Cleanup (close the loop, 4 PRs)
 
-**PR8 — Fold `plugins/review-skill/` into `plugins/shared/`**
+**PR8 — Fold `plugins/review-skill/` into `plugins/commons/`**
 
 - Move `plugins/review-skill/skills/review-skill/SKILL.md` into
-  `plugins/shared/skills/review-skill/SKILL.md`.
+  `plugins/commons/skills/review-skill/SKILL.md`.
 - Delete `plugins/review-skill/` directory entirely.
 - Update `.claude-plugin/marketplace.json`:
   - Remove `review-skill` as a top-level plugin entry.
   - Remove `review-skill` from `agent-loop-full`'s dependency cascade
-    (shared already in there per PR1).
+    (commons already in there per PR1).
 - Update `cli/marketplace-manifest.test.ts:53-60,201-209` to assert
-  shared owns review-skill and that review-skill is no longer a
+  commons owns review-skill and that review-skill is no longer a
   standalone plugin.
 - Update `scripts/sync-shared.ts:PLUGIN_CONTENT_RULES`: drop the
-  review-skill entry (lines 90-94 currently); shared now owns
+  review-skill entry (lines 90-94 currently); commons now owns
   `review-skill` along with `grill-me` and `find-skills`.
 - Update `README.md` plugin table (line 13-22).
 
 Verification: `npm test`; install `agent-loop-full@krambuhl` on a fresh
-machine — `/review-skill` invocation resolves via shared rather than the
+machine — `/review-skill` invocation resolves via commons rather than the
 old standalone plugin.
 
 **PR9 — Delete canonical root directories**
@@ -334,7 +398,7 @@ dev-loop ergonomic deletion don't conflate.
   (the install.sh era is over twice — once when install.sh was deleted in
   W9 of marketplace-portable-install, and now when the dev shims themselves
   go away). (Note: the test file path itself moves with PR3 into the
-  `plugins/shared/cli/` tree; this PR removes it from wherever it ended
+  `plugins/commons/cli/` tree; this PR removes it from wherever it ended
   up post-shift.)
 - Update `.gitignore:1-6` to drop the entry for `/bin/` (it's no longer
   needed).
@@ -377,21 +441,21 @@ expected content-draft hits in `griot/cli/verbs/griot/capture.ts`.
 ## Dependencies
 
 ```
-PR1 (shared skeleton)
+PR1 (commons skeleton)
    ↓
 PR2 (sync extension)
    ↓
-PR3 (move lib + docs into shared)
+PR3 (move lib + docs into commons)
    ↓
 PR4 (dissolve canonical root for content)
    ↓
-PR5 (grill-me + find-skills into shared)
+PR5 (grill-me + find-skills into commons)
    ↓
 PR6 (draft restructure)
    ↓
 PR7 (learnings → griot pipeline)
    ↓
-PR8 (fold review-skill into shared)
+PR8 (fold review-skill into commons)
    ↓
 PR9 (delete canonical root directories)
    ↓
@@ -430,7 +494,7 @@ continuously:
   - `grill-me` invocation resolves (PR5)
   - `docs/AGENT-CONVENTIONS.md` resolves locally to each consumer plugin's
     synced copy (PR3)
-  - `/review-skill` resolves via shared (PR8)
+  - `/review-skill` resolves via commons (PR8)
   - `/draft-*` invocations are no-ops or 404s (no dead references — PR6 +
     PR11 sweep)
   - root `bin/<cli>` shims absent (PR10)
@@ -442,7 +506,7 @@ continuously:
 
 Claude Code plugin dependency cascades are verified by the manifest test
 (`cli/marketplace-manifest.test.ts:201-209`) but not by a fresh-machine
-smoke test. Adding shared to the cascade introduces a sixth plugin in
+smoke test. Adding commons to the cascade introduces a sixth plugin in
 the install chain; if any consumer cascades in the wrong order on a
 fresh install, skills may not resolve correctly until a second install
 pass. Mitigation: explicitly run the V4-style smoke test that
@@ -453,10 +517,10 @@ verify all 6 plugins resolve their skills.
 
 Between PR3 (canonical shift) and PR4 (dissolution of root for skills/agents
 /per-plugin CLI), the repo has a mixed shape: some content is authoritative
-in `plugins/shared/`, the rest is still root-canonical. Devs editing during
+in `plugins/commons/`, the rest is still root-canonical. Devs editing during
 this window need to know which is which. Mitigation: the PR3 description
 should explicitly call out "DO NOT edit root `cli/lib/` or root `docs/`
-after this PR lands — edit `plugins/shared/`." A README note added in PR3
+after this PR lands — edit `plugins/commons/`." A README note added in PR3
 and removed in PR9 (when the root directories themselves are deleted).
 
 **R3 — PR6 (draft restructure) is the biggest file-touch in the bulk phase**
@@ -506,9 +570,13 @@ keep `scripts/` rather than fold sync-shared.ts into `cli/`.
 
 Resolved during the interview (full transcript in `INTERVIEW.md`):
 
-1. **Shared plugin scope**: maximal — `grill-me`, `review-skill`,
+1. **Commons plugin scope**: maximal — `grill-me`, `review-skill`,
    `find-skills`, `docs/`, `cli/lib/` (after canonical-shift). `moshi-best-practices`
-   stays a user-global; `claude-code-guide` is out of scope.
+   stays a user-global; `claude-code-guide` is out of scope. Named
+   `commons` per the design-systems whiteboard finding (the original
+   working name "shared" was literal-not-semantic; `commons` carries the
+   "shared infrastructure that belongs to no one" semantic and reads
+   honestly when content-empty on day 1).
 
 2. **Docs delivery mechanism**: sync `docs/` into every consumer plugin that
    references docs (RESEARCH.md § 3 + Q1 option A). No cross-plugin loader
@@ -529,7 +597,7 @@ Resolved during the interview (full transcript in `INTERVIEW.md`):
 
 7. **Canonical-at-root layer**: dissolve. `cli/`, `skills/`, `agents/`, `docs/`
    at root all go away. Each plugin is self-contained for its own content;
-   only `cli/lib/` + `docs/` (cross-cutting) flow from `plugins/shared/`
+   only `cli/lib/` + `docs/` (cross-cutting) flow from `plugins/commons/`
    into consumer plugins via the shrunk `sync-shared.ts`. This is the
    defining commitment.
 
