@@ -1,11 +1,11 @@
 # Project conventions
 
-Marketplace-wide invariants for the loom / draft / guild / griot substrate.
+Marketplace-wide invariants for the loom / guild / griot / ev substrate.
 This file holds invariants that constrain how mutating CLI verbs may
 write to substrate state. The companion registry of every mutating
 verb and its category lives in
-`cli/parallel-work-invariant.test.ts`, which asserts this doc and the
-registry stay aligned.
+`plugins/commons/cli/parallel-work-invariant.test.ts`, which asserts
+this doc and the registry stay aligned.
 
 ## Parallel-work invariant
 
@@ -65,7 +65,7 @@ Each Category-3 verb MUST declare which exception it writes to,
 chosen from the declared exceptions set below.
 
 Examples:
-- `draft revise` (target: `projects/<slug>/PLAN.md`,
+- `loom revise-plan` (target: `projects/<slug>/PLAN.md`,
   exception: `PLAN.md`)
 - `loom phase update` (target: `projects/<slug>/manifest.json`,
   exception: `manifest.json`)
@@ -85,8 +85,8 @@ substrate accepts single-writer assumptions. A new Category-3 verb
 that targets a fixed path NOT named here requires a new exception
 entry in this section AND a corresponding line in the registry.
 
-- **`PLAN.md`** — the project plan. Mutated by `draft revise`. The
-  plan changes when the work changes; the loom-managed workflow
+- **`PLAN.md`** — the project plan. Mutated by `loom revise-plan`.
+  The plan changes when the work changes; the loom-managed workflow
   has the user serializing revisions.
 - **`manifest.json`** — the project manifest. Mutated by
   `loom phase update` and `loom project scaffold`. The manifest is
@@ -120,9 +120,10 @@ fixed path), and idempotency holds across re-runs by construction
 rather than by the verb being a no-op when state matches.
 
 Examples:
-- `sync-shared` — script lands in workstream W7 of the
-  marketplace-portable-install migration. Reads top-level
-  `cli/lib/` + `cli/verbs/<family>/` and writes per-plugin subsets
-  under `plugins/<name>/cli/`. The CI drift-detection check
-  (V10 case (c)) catches forgotten re-runs by mutating a per-plugin
-  file post-sync and asserting non-zero exit.
+- `sync-shared` — script at `scripts/sync-shared.ts`. Reads the
+  commons-canonical sources at `plugins/commons/cli/lib/` and
+  `plugins/commons/docs/` and writes per-plugin subsets under
+  `plugins/<name>/cli/lib/` and `plugins/<name>/docs/` for the
+  declared consumer plugins. The CI drift-detection check catches
+  forgotten re-runs by mutating a per-plugin file post-sync and
+  asserting non-zero exit.

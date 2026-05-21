@@ -21,3 +21,5 @@
 {"at":"2026-05-21T20:13:45.949Z","event":"checkin-created","detail":{"number":"09","branch":"repo-compartmentalize.cleanup"}}
 {"at":"2026-05-21T20:36:04.829Z","event":"pr-opened","detail":{"pr":26,"url":"https://github.com/krambuhl/agents/pull/26"}}
 {"at":"2026-05-21T20:41:52.044Z","event":"checkin-created","detail":{"number":"10","branch":"repo-compartmentalize.cleanup"}}
+{"at":"2026-05-21T20:45:45.436Z","event":"pr-opened","detail":{"pr":27,"url":"https://github.com/krambuhl/agents/pull/27"}}
+{"at":"2026-05-21T20:56:17.269Z","event":"checkin-created","detail":{"number":"11","branch":"repo-compartmentalize.cleanup"}}
