@@ -35,8 +35,13 @@ import { fileURLToPath } from 'node:url';
 const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = resolve(SCRIPT_DIR, '..');
 
-/** All plugins the sync script handles. Order is sync-iteration order. */
+/** All plugins the sync script handles. Order is sync-iteration order.
+ *  `commons` listed first because it's the substrate-source for the
+ *  forthcoming commons→consumer sync direction (PR2 lands the planner
+ *  extension; PR3 starts moving content in). At PR1 it's a content-empty
+ *  placeholder. */
 export const PLUGINS = [
+  'commons',
   'griot',
   'guild',
   'loom',
@@ -67,6 +72,15 @@ interface PluginContentRule {
 }
 
 const PLUGIN_CONTENT_RULES: Record<PluginName, PluginContentRule> = {
+  commons: {
+    // Substrate-source plugin. Content moves in via PR3 (cli/lib/ + docs/)
+    // and PR5 (grill-me + find-skills); at PR1 it's a content-empty
+    // placeholder so the marketplace cascade has a target. Skill+agent
+    // ownership prefixes will populate as content lands.
+    skillPrefixes: [],
+    skillExacts: [],
+    agentPrefixes: [],
+  },
   griot: {
     skillPrefixes: ['griot-'],
     skillExacts: [],

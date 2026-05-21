@@ -10,16 +10,17 @@ being coupled to one repo).
 
 ## Install
 
-The marketplace ships as six self-contained Claude Code plugins:
+The marketplace ships as seven self-contained Claude Code plugins:
 
 | Plugin | What it provides | Depends on |
 |---|---|---|
-| `griot@krambuhl` | Learnings substrate: `griot` CLI + `griot-*` skills + judge/rewriter agents | — |
-| `guild@krambuhl` | Antagonist-panel substrate: `guild` CLI + `guild-*` skills + `whiteboard-*` / `evaluator-*` / `generator-*` agents | — |
-| `loom@krambuhl` | Project substrate: `loom` CLI + `loom-*` skills (plans, research, sessions, checkins, retros, archives) | `guild`, `griot` |
-| `ev@krambuhl` | Execution loops: `ev-loop-confidence`, `ev-loop-interactive`, `ev-run` skills | `loom`, `guild`, `griot` |
+| `commons@krambuhl` | Foundation substrate: cross-cutting helpers (shared CLI lib + agent-conventions docs + interview/review skills) used by the rest of the family | — |
+| `griot@krambuhl` | Learnings substrate: `griot` CLI + `griot-*` skills + judge/rewriter agents | `commons` |
+| `guild@krambuhl` | Antagonist-panel substrate: `guild` CLI + `guild-*` skills + `whiteboard-*` / `evaluator-*` / `generator-*` agents | `commons` |
+| `loom@krambuhl` | Project substrate: `loom` CLI + `loom-*` skills (plans, research, sessions, checkins, retros, archives) | `commons`, `guild`, `griot` |
+| `ev@krambuhl` | Execution loops: `ev-loop-confidence`, `ev-loop-interactive`, `ev-run` skills | `commons`, `loom`, `guild`, `griot` |
 | `review-skill@krambuhl` | Standalone code-review skill | — |
-| `agent-loop-full@krambuhl` | Meta-bundle: zero-content plugin that cascade-installs the full family | all five above |
+| `agent-loop-full@krambuhl` | Meta-bundle: zero-content plugin that cascade-installs the full family | all six above |
 
 ### Recommended: turnkey install with `--scope user`
 
@@ -36,9 +37,12 @@ Claude Code sessions**. See § Install scopes below for the load-
 bearing rationale.
 
 `agent-loop-full@krambuhl` is zero-content; its only job is to
-cascade-install `griot` + `guild` + `loom` + `ev` + `review-skill`
-in dependency order. The cascade is a Claude Code feature (confirmed
-empirically in the migration's V4 smoke test).
+cascade-install `commons` + `griot` + `guild` + `loom` + `ev` +
+`review-skill` in dependency order. The cascade is a Claude Code
+feature (confirmed empirically in the migration's V4 smoke test).
+`commons` is the foundation substrate every other family plugin
+depends on; substrate-kind dependencies are listed first in each
+consumer's `dependencies` array (substrate-first ordering convention).
 
 ### Granular install (cherry-pick a plugin)
 
