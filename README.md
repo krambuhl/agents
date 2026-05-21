@@ -113,20 +113,39 @@ already present. No-ops on re-run.
 
 ## Authoring against this marketplace
 
-The canonical sources live at the repo root (`cli/`, `skills/`,
-`agents/`). The per-plugin trees under `plugins/<name>/` are
-**generated**:
+Two source-of-truth directions feed the per-plugin trees under
+`plugins/<name>/`, distinguished by where the canonical content
+lives:
 
-- Skill and agent files are mirrored from `skills/<name>/SKILL.md`
-  and `agents/<name>.md` into `plugins/<plugin>/skills/<name>/` and
-  `plugins/<plugin>/agents/<name>.md` respectively.
-- CLI source files are mirrored from `cli/lib/`, `cli/verbs/<plugin>/`,
-  and `cli/<plugin>.ts` into `plugins/<plugin>/cli/`.
+- **`commons-canonical`** (post-PR3 of the in-progress
+  `repo-compartmentalize` project): cross-cutting content authored
+  inside `plugins/commons/` — the shared TS lib at
+  `plugins/commons/cli/lib/` and the substrate-wide docs at
+  `plugins/commons/docs/`. `scripts/sync-shared.ts` mirrors these
+  into each consumer plugin (lib → CLI-shipping plugins; docs →
+  every plugin that cites `docs/X.md` in its skill bodies).
+- **`root-canonical`** (legacy; dissolving in PR4): content at the
+  repo root that hasn't yet moved into a plugin tree —
+  `cli/verbs/<plugin>/`, `cli/<plugin>.ts`, `skills/<plugin-prefix>-*/`,
+  and `agents/<plugin-prefix>-*.md`. Each consumer plugin receives
+  its slice of this via `sync-shared.ts`. PR4 of
+  `repo-compartmentalize` makes each plugin's tree authoritative
+  for its own skills/agents/per-plugin CLI; PR9 deletes the root
+  copies outright.
 
-Edit the canonical sources; run `scripts/sync-shared.ts` before
-committing. The repo's V10 test (`scripts/sync-shared.test.ts`)
-catches drift; `node scripts/sync-shared.ts --check` is the read-
-only invocation suitable for CI.
+**DO NOT edit root `cli/lib/` or root `docs/` directly.** Both
+directories exist as inert duplicates during the PR3→PR9 transition
+(preserving the import chain for root `cli/verbs/*`'s
+`../../lib/X.ts` references until PR4 dissolves it). Authoritative
+edits land in `plugins/commons/cli/lib/` and `plugins/commons/docs/`.
+PR9 deletes the root copies.
+
+Workflow: edit the canonical sources (in `plugins/commons/` for
+lib + docs, in `cli/verbs/<plugin>/` etc. for the rest), then run
+`node scripts/sync-shared.ts` before committing. The repo's V10
+tests in `scripts/sync-shared.test.ts` catch drift across both
+directions; `node scripts/sync-shared.ts --check` is the read-only
+invocation suitable for CI.
 
 ## Where this came from
 
