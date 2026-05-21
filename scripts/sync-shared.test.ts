@@ -109,50 +109,38 @@ function buildBothDirectionsTree(): void {
 }
 
 describe('V10 (a): planForPlugin returns expected source/dest pairs', () => {
-  test('griot plan covers cli/lib + cli/verbs/griot + cli/griot.ts + griot-* skills + griot-* agents', () => {
+  test('griot plan covers only commons-canonical lib + docs (post-PR4: root claims nothing)', () => {
     buildBothDirectionsTree();
     const plan = planForPlugin('griot', root);
 
     const sources = plan.files.map((f) => f.source).sort();
-    // Post-PR3: cli/lib/ moved from root-canonical to commons-canonical.
-    // Lib sources now live at plugins/commons/cli/lib/* (the consumer
-    // plugin receives them from the commons direction).
+    // Post-PR4: root-canonical claims NOTHING. Each plugin's
+    // skills/agents/verbs/entry are authoritative in its own tree
+    // (not sync-managed). The planner only emits commons-canonical
+    // specs — lib for PLUGINS_WITH_CLI consumers, docs for
+    // doc-consumers.
     expect(sources).toEqual(
       [
-        'agents/griot-judge.md',
-        'cli/griot.ts',
-        'cli/verbs/griot/use.ts',
         'plugins/commons/cli/lib/events.ts',
         'plugins/commons/cli/lib/helpers.ts',
         'plugins/commons/cli/lib/manifest.ts',
         'plugins/commons/docs/AGENT-CONVENTIONS.md',
         'plugins/commons/docs/PANEL-COMPOSITION.md',
-        'skills/griot-load/SKILL.md',
       ].sort(),
     );
 
-    // All destinations are namespaced under the plugin's source dir.
+    // All destinations are namespaced under the plugin's tree.
     for (const { destination } of plan.files) {
       expect(destination.startsWith('plugins/griot/')).toBe(true);
     }
   });
 
-  test('plan excludes test files and fixtures', () => {
+  test('plan excludes test files and fixtures (commons-canonical exclusion still holds)', () => {
     buildBothDirectionsTree();
     const plan = planForPlugin('griot', root);
     const sources = plan.files.map((f) => f.source);
-    expect(sources).not.toContain('cli/griot.test.ts');
     expect(sources).not.toContain('plugins/commons/cli/lib/manifest.test.ts');
-    expect(sources).not.toContain('cli/verbs/griot/use.test.ts');
     expect(sources.some((s) => s.includes('/fixtures/'))).toBe(false);
-  });
-
-  test('plan filters per-plugin verbs subtree (griot plan does not include guild or loom verbs)', () => {
-    buildOldDirectionTree();
-    const plan = planForPlugin('griot', root);
-    const sources = plan.files.map((f) => f.source);
-    expect(sources.some((s) => s.startsWith('cli/verbs/guild/'))).toBe(false);
-    expect(sources.some((s) => s.startsWith('cli/verbs/loom/'))).toBe(false);
   });
 
   test('every plugin gets the same shared lib subset (post-PR3: from commons)', () => {
@@ -171,8 +159,8 @@ describe('V10 (a): planForPlugin returns expected source/dest pairs', () => {
   });
 });
 
-describe('V10 (b): applySync end-to-end byte-for-byte match', () => {
-  test('every generated file byte-equals its upstream source', () => {
+describe('V10 (b): applySync end-to-end byte-for-byte match (commons-canonical only post-PR4)', () => {
+  test('lib file synced from commons byte-equals its commons source', () => {
     buildBothDirectionsTree();
     const cwd = process.cwd();
     try {
@@ -182,39 +170,31 @@ describe('V10 (b): applySync end-to-end byte-for-byte match', () => {
       process.chdir(cwd);
     }
 
-    // Spot-check three files across all three plugins.
-    // Post-PR3: lib is sourced from plugins/commons/cli/lib/.
+    // Post-PR4: only commons-canonical content is synced. Lib content
+    // flows from plugins/commons/cli/lib/ → each consumer's
+    // plugins/<consumer>/cli/lib/. Docs flow similarly.
     expect(read('plugins/griot/cli/lib/manifest.ts')).toBe(
       read('plugins/commons/cli/lib/manifest.ts'),
     );
-    expect(read('plugins/guild/cli/verbs/guild/derive-panel.ts')).toBe(
-      read('cli/verbs/guild/derive-panel.ts'),
+    expect(read('plugins/loom/docs/AGENT-CONVENTIONS.md')).toBe(
+      read('plugins/commons/docs/AGENT-CONVENTIONS.md'),
     );
-    expect(read('plugins/loom/cli/loom.ts')).toBe(read('cli/loom.ts'));
   });
 
   test('post-sync drift-check reports no drift on a clean tree', () => {
-    buildOldDirectionTree();
+    buildBothDirectionsTree();
     applySync(root);
     const drift = detectDrift(root);
     expect(drift).toEqual([]);
   });
 
-  test('test files do NOT land in the generated tree', () => {
-    buildOldDirectionTree();
+  test('commons-canonical test files do NOT land in consumer generated trees', () => {
+    buildBothDirectionsTree();
     applySync(root);
-    // The excluded files exist upstream but must not be copied.
-    expect(() => read('plugins/griot/cli/griot.test.ts')).toThrow();
+    // commons lib test files (e.g. plugins/commons/cli/lib/manifest.test.ts)
+    // must not be copied into consumer plugin trees — the isExcluded()
+    // rule still keeps *.test.ts out of the sync.
     expect(() => read('plugins/griot/cli/lib/manifest.test.ts')).toThrow();
-    expect(() => read('plugins/griot/cli/verbs/griot/use.test.ts')).toThrow();
-  });
-
-  test('plugin entries land at plugins/<name>/cli/<name>.ts (matches W6 shim resolution path)', () => {
-    buildOldDirectionTree();
-    applySync(root);
-    expect(read('plugins/griot/cli/griot.ts')).toBe(read('cli/griot.ts'));
-    expect(read('plugins/guild/cli/guild.ts')).toBe(read('cli/guild.ts'));
-    expect(read('plugins/loom/cli/loom.ts')).toBe(read('cli/loom.ts'));
   });
 });
 
@@ -298,109 +278,57 @@ describe('V10 (c): drift detection — false-green failure-mode tripwire', () =>
   });
 });
 
-describe('skills + agents: per-plugin sync (gap caught by V6 smoke test)', () => {
-  test('skills are filtered by plugin prefix', () => {
-    buildOldDirectionTree();
-    const griotPlan = planForPlugin('griot', root);
-    const guildPlan = planForPlugin('guild', root);
-    const loomPlan = planForPlugin('loom', root);
+describe('skills + agents: post-PR4 plugin-authoritative', () => {
+  // Pre-PR4, this describe block defended the root-canonical sync of
+  // skills/<dir>/ and agents/<file>.md into per-plugin trees. PR4
+  // dissolved that direction — each plugin's skills/agents are
+  // authoritative in its own tree, not synced from root. So the old
+  // tests are moot. The block stays as a regression check that the
+  // planner does NOT spuriously claim plugin-authoritative content.
 
-    const griotSkills = griotPlan.files
-      .map((f) => f.source)
-      .filter((s) => s.startsWith('skills/'));
-    const guildSkills = guildPlan.files
-      .map((f) => f.source)
-      .filter((s) => s.startsWith('skills/'));
-    const loomSkills = loomPlan.files
-      .map((f) => f.source)
-      .filter((s) => s.startsWith('skills/'));
-
-    expect(griotSkills).toEqual(['skills/griot-load/SKILL.md']);
-    expect(guildSkills).toEqual(['skills/guild-validate/SKILL.md']);
-    expect(loomSkills).toEqual(['skills/loom-plan/SKILL.md']);
+  test('planForPlugin emits zero specs for plugins/<plugin>/skills/ (authoritative)', () => {
+    buildBothDirectionsTree();
+    // No matter what's at root skills/, the planner doesn't claim skills.
+    for (const plugin of ['griot', 'guild', 'loom', 'ev', 'review-skill'] as const) {
+      const plan = planForPlugin(plugin, root);
+      const skillSpecs = plan.files.filter((f) => f.destination.includes('/skills/'));
+      expect(skillSpecs).toEqual([]);
+    }
   });
 
-  test('skill-only plugins (ev, review-skill) get their skills with no CLI', () => {
-    buildOldDirectionTree();
-    const evPlan = planForPlugin('ev', root);
-    const reviewPlan = planForPlugin('review-skill', root);
+  test('planForPlugin emits zero specs for plugins/<plugin>/agents/ (authoritative)', () => {
+    buildBothDirectionsTree();
+    for (const plugin of ['griot', 'guild', 'loom', 'ev'] as const) {
+      const plan = planForPlugin(plugin, root);
+      const agentSpecs = plan.files.filter((f) => f.destination.includes('/agents/'));
+      expect(agentSpecs).toEqual([]);
+    }
+  });
 
-    // ev gets its skill, no cli/, no agents/
-    expect(evPlan.files.map((f) => f.source)).toEqual(['skills/ev-run/SKILL.md']);
-    // review-skill matches via exact name (not prefix) since it has no '-' suffix.
-    expect(reviewPlan.files.map((f) => f.source)).toEqual([
-      'skills/review-skill/SKILL.md',
-    ]);
+  test('planForPlugin emits zero specs for plugins/<plugin>/cli/verbs/ (authoritative)', () => {
+    buildBothDirectionsTree();
+    for (const plugin of ['griot', 'guild', 'loom'] as const) {
+      const plan = planForPlugin(plugin, root);
+      const verbSpecs = plan.files.filter((f) => f.destination.includes('/cli/verbs/'));
+      expect(verbSpecs).toEqual([]);
+    }
+  });
+
+  test('planForPlugin emits zero specs for plugins/<plugin>/cli/<plugin>.ts (authoritative)', () => {
+    buildBothDirectionsTree();
+    for (const plugin of ['griot', 'guild', 'loom'] as const) {
+      const plan = planForPlugin(plugin, root);
+      const entrySpecs = plan.files.filter(
+        (f) => f.destination === `plugins/${plugin}/cli/${plugin}.ts`,
+      );
+      expect(entrySpecs).toEqual([]);
+    }
   });
 
   test('agent-loop-full meta-bundle plans zero files', () => {
-    buildOldDirectionTree();
+    buildBothDirectionsTree();
     const plan = planForPlugin('agent-loop-full', root);
     expect(plan.files).toEqual([]);
-  });
-
-  test('agents are namespaced: griot-* → griot; whiteboard-/evaluator-/generator-* → guild', () => {
-    buildOldDirectionTree();
-    const griotAgents = planForPlugin('griot', root)
-      .files.map((f) => f.source)
-      .filter((s) => s.startsWith('agents/'));
-    const guildAgents = planForPlugin('guild', root)
-      .files.map((f) => f.source)
-      .filter((s) => s.startsWith('agents/'));
-
-    expect(griotAgents).toEqual(['agents/griot-judge.md']);
-    // guild gets all three agent-namespace prefixes.
-    expect([...guildAgents].sort()).toEqual([
-      'agents/evaluator-contract-fit.md',
-      'agents/generator-base.md',
-      'agents/whiteboard-skeptic.md',
-    ]);
-  });
-
-  test('end-to-end byte-equal: synced skill SKILL.md matches its source', () => {
-    buildOldDirectionTree();
-    applySync(root);
-
-    expect(read('plugins/griot/skills/griot-load/SKILL.md')).toBe(
-      read('skills/griot-load/SKILL.md'),
-    );
-    expect(read('plugins/guild/agents/whiteboard-skeptic.md')).toBe(
-      read('agents/whiteboard-skeptic.md'),
-    );
-    expect(read('plugins/ev/skills/ev-run/SKILL.md')).toBe(
-      read('skills/ev-run/SKILL.md'),
-    );
-  });
-
-  test('drift detection: mutated skill SKILL.md flagged as divergent', () => {
-    buildOldDirectionTree();
-    applySync(root);
-
-    writeFileSync(
-      join(root, 'plugins/griot/skills/griot-load/SKILL.md'),
-      'tampered\n',
-      'utf8',
-    );
-
-    const drift = detectDrift(root);
-    const griotSkill = drift.find(
-      (d) => d.destination === 'plugins/griot/skills/griot-load/SKILL.md',
-    );
-    expect(griotSkill?.kind).toBe('divergent');
-    expect(griotSkill?.source).toBe('skills/griot-load/SKILL.md');
-  });
-
-  test('drift detection: orphan agent file in plugin tree flagged', () => {
-    buildOldDirectionTree();
-    applySync(root);
-
-    write('plugins/guild/agents/orphan.md', '---\nname: orphan\n---\nstale\n');
-
-    const drift = detectDrift(root);
-    const orphan = drift.find(
-      (d) => d.destination === 'plugins/guild/agents/orphan.md',
-    );
-    expect(orphan?.kind).toBe('orphan');
   });
 });
 

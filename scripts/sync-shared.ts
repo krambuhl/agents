@@ -4,21 +4,20 @@
  *
  * Two source-of-truth directions, distinguished by SyncSpec.origin:
  *
- *   1. `root-canonical` — content authored at the repo root, narrowing
- *      over time. As of PR3 of the repo-compartmentalize project, root-
- *      canonical claims: cli/verbs/, cli/(plugin-name).ts,
- *      skills/(plugin-prefix), and agents/(plugin-prefix).md.
- *      (cli/lib was moved to commons-canonical in PR3; root cli/lib
- *      stays as an inert duplicate until PR9 deletion.)
+ *   1. `root-canonical` — historically claimed cli/lib, cli/verbs/,
+ *      cli/(plugin-name).ts, skills/(plugin-prefix), and
+ *      agents/(plugin-prefix).md at the repo root. PR3 cut cli/lib
+ *      over to commons-canonical; PR4 dissolved the rest. As of PR4,
+ *      root-canonical claims NOTHING — the SyncOrigin variant is
+ *      kept in the type system so existing DriftRecord/SyncSpec
+ *      shapes survive the transition window. PR9 deletes the root
+ *      directories outright (they're currently inert duplicates).
  *
  *   2. `commons-canonical` — content authored inside `plugins/commons/`
  *      (cli/lib, docs) mirrored into each consumer plugin's tree per
  *      the `COMMONS_CONSUMERS` table. Lib goes to PLUGINS_WITH_CLI;
  *      docs go to every plugin that cites docs/X.md in its skill bodies.
- *
- * PR4 dissolves root-canonical for skills/agents/per-plugin CLI. PR9
- * deletes root cli/, skills/, agents/, docs/ entirely. After that
- * sequence completes, commons-canonical is the only direction.
+ *      Post-PR4, this is the ONLY direction emitting specs.
  *
  * Registered as Category 4 `generated-from-upstream` per
  * `projects/CONVENTIONS.md`. The output is deterministically derived
@@ -96,64 +95,12 @@ export const COMMONS_CONSUMERS = {
   docs: ['griot', 'guild', 'loom', 'ev'] as ReadonlyArray<PluginName>,
 } as const;
 
-/** Per-plugin content rules. Defines which top-level skills/<dir>/
- *  and agents/<file>.md belong to each plugin. The CLI subset is
- *  implicit: cli/verbs/<plugin>/ + cli/<plugin>.ts (handled below). */
-interface PluginContentRule {
-  /** Skill directories whose names start with one of these prefixes
-   *  belong to this plugin. e.g. 'griot-' matches 'griot-load'. */
-  skillPrefixes: ReadonlyArray<string>;
-  /** Skill directories with these EXACT names belong to this plugin.
-   *  Use for the unprefixed catch-alls (currently just 'review-skill'). */
-  skillExacts: ReadonlyArray<string>;
-  /** Agent files whose names start with one of these prefixes belong
-   *  to this plugin. e.g. 'whiteboard-' matches 'whiteboard-a11y.md'. */
-  agentPrefixes: ReadonlyArray<string>;
-}
-
-const PLUGIN_CONTENT_RULES: Record<PluginName, PluginContentRule> = {
-  commons: {
-    // Substrate-source plugin. Content moves in via PR3 (cli/lib/ + docs/)
-    // and PR5 (grill-me + find-skills); at PR1 it's a content-empty
-    // placeholder so the marketplace cascade has a target. Skill+agent
-    // ownership prefixes will populate as content lands.
-    skillPrefixes: [],
-    skillExacts: [],
-    agentPrefixes: [],
-  },
-  griot: {
-    skillPrefixes: ['griot-'],
-    skillExacts: [],
-    agentPrefixes: ['griot-'],
-  },
-  guild: {
-    skillPrefixes: ['guild-'],
-    skillExacts: [],
-    agentPrefixes: ['whiteboard-', 'evaluator-', 'generator-'],
-  },
-  loom: {
-    skillPrefixes: ['loom-'],
-    skillExacts: [],
-    agentPrefixes: [],
-  },
-  ev: {
-    skillPrefixes: ['ev-'],
-    skillExacts: [],
-    agentPrefixes: [],
-  },
-  'review-skill': {
-    skillPrefixes: [],
-    skillExacts: ['review-skill'],
-    agentPrefixes: [],
-  },
-  'agent-loop-full': {
-    // Zero-content meta-bundle — cascade-installs the other 5 via
-    // marketplace dependencies. Owns no skills + no agents.
-    skillPrefixes: [],
-    skillExacts: [],
-    agentPrefixes: [],
-  },
-};
+// PR4 removed the PluginContentRule type and PLUGIN_CONTENT_RULES
+// table. Pre-PR4 they filtered root skills/<dir>/ and root agents/<file>
+// into per-plugin trees; post-PR4 each plugin owns its skills/agents
+// authoritatively (no root-canonical claims), so the rules table has
+// no consumer. If a future sync direction needs per-plugin filtering,
+// reconstitute the shape near its use.
 
 /** Which direction this spec was generated from.
  *  - `root-canonical`: source is at the repo root (cli/, skills/, agents/).
@@ -202,90 +149,25 @@ function walkFiles(root: string, repoRoot: string): string[] {
   return out;
 }
 
-/** Does this skill-dir name belong to the plugin? */
-function skillBelongsToPlugin(skillName: string, rule: PluginContentRule): boolean {
-  if (rule.skillExacts.includes(skillName)) return true;
-  return rule.skillPrefixes.some((p) => skillName.startsWith(p));
-}
-
-/** Does this agent file name belong to the plugin? */
-function agentBelongsToPlugin(agentName: string, rule: PluginContentRule): boolean {
-  return rule.agentPrefixes.some((p) => agentName.startsWith(p));
-}
-
 export function planForPlugin(plugin: PluginName, repoRoot = REPO_ROOT): PluginPlan {
   const files: SyncSpec[] = [];
-  const rule = PLUGIN_CONTENT_RULES[plugin];
 
-  // === root-canonical direction (legacy; dissolves at PR3-PR4) ===
+  // === root-canonical direction (FULLY DISSOLVED in PR4) ===
+  //
+  // Pre-PR3, root-canonical claimed: cli/lib/, cli/verbs/<plugin>/,
+  // cli/(plugin).ts, skills/(plugin-prefix), agents/(plugin-prefix).md.
+  //
+  // PR3 cut cli/lib/ over to commons-canonical (and root cli/lib/ stays
+  // as an inert duplicate until PR9). PR4 dissolves the remaining root
+  // claims — each plugin's own `plugins/<plugin>/cli/verbs/<plugin>/`,
+  // `plugins/<plugin>/cli/<plugin>.ts`, `plugins/<plugin>/skills/`, and
+  // `plugins/<plugin>/agents/` subtrees become AUTHORITATIVE; they are
+  // no longer mirrored from root.
+  //
+  // Root `cli/verbs/`, `cli/<plugin>.ts`, `skills/`, and `agents/` stay
+  // as inert duplicates during the PR4→PR9 window; PR9 deletes them.
 
-  // 1. Shared lib — historically root-canonical, cut over to
-  //    commons-canonical in PR3. The lib content now lives at
-  //    plugins/commons/cli/lib/ and reaches consumer plugins via the
-  //    commons-canonical branch below. Root cli/lib/ is kept as an
-  //    inert duplicate during the PR3→PR4 window so that root
-  //    cli/verbs/<plugin>/'s `../../lib/X.ts` imports continue to
-  //    resolve. PR9 deletes root cli/lib/ outright; PR4 dissolves
-  //    root cli/verbs/, removing the dependency on root cli/lib/ at
-  //    edit time.
-
-  // 2. Per-plugin verbs subtree (CLI-shipping plugins only)
-  const verbsDir = join('cli', 'verbs', plugin);
-  for (const rel of walkFiles(join(repoRoot, verbsDir), repoRoot)) {
-    files.push({
-      source: rel,
-      destination: join('plugins', plugin, rel),
-      origin: 'root-canonical',
-    });
-  }
-
-  // 3. Plugin entry point (CLI-shipping plugins only)
-  const entry = join('cli', `${plugin}.ts`);
-  if (existsSync(join(repoRoot, entry))) {
-    files.push({
-      source: entry,
-      destination: join('plugins', plugin, entry),
-      origin: 'root-canonical',
-    });
-  }
-
-  // 4. Skills — walk top-level skills/<dir>/, include all files under
-  //    any dir whose name belongs to this plugin per PLUGIN_CONTENT_RULES.
-  const skillsRoot = join(repoRoot, 'skills');
-  if (existsSync(skillsRoot)) {
-    for (const skillName of readdirSync(skillsRoot)) {
-      const skillDir = join(skillsRoot, skillName);
-      if (!statSync(skillDir).isDirectory()) continue;
-      if (!skillBelongsToPlugin(skillName, rule)) continue;
-      for (const rel of walkFiles(skillDir, repoRoot)) {
-        files.push({
-          source: rel,
-          destination: join('plugins', plugin, rel),
-          origin: 'root-canonical',
-        });
-      }
-    }
-  }
-
-  // 5. Agents — walk top-level agents/, include each file whose name
-  //    belongs to this plugin per PLUGIN_CONTENT_RULES.
-  const agentsRoot = join(repoRoot, 'agents');
-  if (existsSync(agentsRoot)) {
-    for (const agentEntry of readdirSync(agentsRoot)) {
-      const agentPath = join(agentsRoot, agentEntry);
-      if (!statSync(agentPath).isFile()) continue;
-      if (!agentBelongsToPlugin(agentEntry, rule)) continue;
-      const rel = relative(repoRoot, agentPath);
-      if (isExcluded(rel)) continue;
-      files.push({
-        source: rel,
-        destination: join('plugins', plugin, rel),
-        origin: 'root-canonical',
-      });
-    }
-  }
-
-  // === commons-canonical direction (forthcoming; no-op while commons is empty) ===
+  // === commons-canonical direction ===
   //
   // The substrate-source plugin (`commons`) is never a consumer of these
   // flows — it's the source. Skipping consumer logic for commons itself
@@ -415,16 +297,24 @@ export function detectDrift(repoRoot = REPO_ROOT): DriftRecord[] {
     // plugins/<plugin>/ must have a matching source. Catches stale
     // files left after an upstream rename / delete.
     //
-    // - `.claude-plugin/` and `bin/` are hand-authored substrate
-    //   (intentionally excluded; never sync-managed).
-    // - `commons` is the substrate-source plugin — its entire tree is
-    //   hand-authored (or future-content). We never orphan-sweep
-    //   commons; doing so would delete the very files that commons is
-    //   meant to source out to other plugins.
+    // Post-PR4, only the commons-canonical direction writes into
+    // consumer plugin trees, so only its destination subtrees are
+    // sync-managed:
+    //   - plugins/<consumer>/cli/lib/   (commons-canonical lib mirror)
+    //   - plugins/<consumer>/docs/      (commons-canonical docs mirror)
+    //
+    // Excluded from orphan-sweep:
+    // - plugins/<plugin>/skills/, plugins/<plugin>/agents/,
+    //   plugins/<plugin>/cli/verbs/, plugins/<plugin>/cli/<plugin>.ts
+    //   are AUTHORITATIVE plugin content as of PR4 (no upstream source;
+    //   orphan-sweeping would delete the very files the plugin owns).
+    // - `.claude-plugin/` and `bin/` are hand-authored substrate.
+    // - The `commons` plugin's tree is itself the substrate-source
+    //   (never a destination).
     if (plan.plugin === 'commons') continue;
 
-    for (const syncManagedDir of ['cli', 'skills', 'agents', 'docs']) {
-      const root = join(repoRoot, 'plugins', plan.plugin, syncManagedDir);
+    for (const syncManagedSubdir of [join('cli', 'lib'), 'docs']) {
+      const root = join(repoRoot, 'plugins', plan.plugin, syncManagedSubdir);
       if (!existsSync(root)) continue;
       for (const rel of walkFiles(root, repoRoot)) {
         if (!expectedDestinations.has(rel)) {
@@ -452,16 +342,17 @@ export function applySync(repoRoot = REPO_ROOT): { copied: number; removed: numb
   for (const plan of plans) {
     const expectedDestinations = new Set(plan.files.map((f) => f.destination));
 
-    // Remove orphans first (files in the SYNC-MANAGED subdirs that
-    // no longer have an upstream source). Excluded:
-    // - `.claude-plugin/` and `bin/` are hand-authored substrate.
-    // - `commons` is the substrate-SOURCE plugin: its entire tree is
-    //   hand-authored content that other plugins consume; never
-    //   orphan-sweep here or applySync would delete the very files
-    //   it's meant to source out.
+    // Remove orphans first (files in the SYNC-MANAGED subdirs that no
+    // longer have an upstream source). Post-PR4, sync-managed subdirs
+    // are exactly the commons-canonical destinations: `cli/lib/` and
+    // `docs/`. Everything else in the plugin tree (`cli/verbs/`,
+    // `cli/<plugin>.ts`, `skills/`, `agents/`, `.claude-plugin/`,
+    // `bin/`) is plugin-authoritative and never orphan-swept. The
+    // `commons` plugin itself is never orphan-swept either (it's the
+    // substrate source, not a destination).
     if (plan.plugin !== 'commons') {
-      for (const syncManagedDir of ['cli', 'skills', 'agents', 'docs']) {
-        const root = join(repoRoot, 'plugins', plan.plugin, syncManagedDir);
+      for (const syncManagedSubdir of [join('cli', 'lib'), 'docs']) {
+        const root = join(repoRoot, 'plugins', plan.plugin, syncManagedSubdir);
         if (!existsSync(root)) continue;
         for (const rel of walkFiles(root, repoRoot)) {
           if (!expectedDestinations.has(rel)) {
