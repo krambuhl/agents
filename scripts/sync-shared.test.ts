@@ -11,8 +11,9 @@ import { afterEach, beforeEach, describe, expect, test } from 'vitest';
 import {
   applySync,
   detectDrift,
-  PLUGINS_WITH_CLI,
   planForPlugin,
+  COMMONS_CONSUMERS,
+  PLUGINS_WITH_CLI,
 } from './sync-shared.ts';
 
 /**
@@ -49,7 +50,7 @@ function read(path: string): string {
   return readFileSync(join(root, path), 'utf8');
 }
 
-function buildMinimalSourceTree(): void {
+function buildOldDirectionTree(): void {
   // Shared lib (all 3 plugins copy this)
   write('cli/lib/manifest.ts', 'export const MANIFEST = "fixture";\n');
   write('cli/lib/events.ts', 'export const EVENTS = "fixture";\n');
@@ -79,9 +80,33 @@ function buildMinimalSourceTree(): void {
   write('cli/griot.test.ts', 'test stub');
 }
 
+/**
+ * PR2 fixture: commons-canonical source content only.
+ * Populates `plugins/commons/cli/lib/` and `plugins/commons/docs/` with
+ * a small file each. No root-canonical content. Defends the new
+ * commons→consumer direction in isolation.
+ */
+function buildCommonsDirectionTree(): void {
+  write('plugins/commons/cli/lib/helpers.ts', 'export const HELPERS = "commons-fixture";\n');
+  write('plugins/commons/docs/AGENT-CONVENTIONS.md', '# Agent conventions fixture\n');
+  write('plugins/commons/docs/PANEL-COMPOSITION.md', '# Panel composition fixture\n');
+}
+
+/**
+ * PR2 fixture: both directions populated — root-canonical AND
+ * commons-canonical. Defends the interaction (the actual risk Phase 1
+ * introduces). Uses non-overlapping destinations by default; tests
+ * that want to exercise the conflict guard write a colliding file
+ * after this builder runs.
+ */
+function buildBothDirectionsTree(): void {
+  buildOldDirectionTree();
+  buildCommonsDirectionTree();
+}
+
 describe('V10 (a): planForPlugin returns expected source/dest pairs', () => {
   test('griot plan covers cli/lib + cli/verbs/griot + cli/griot.ts + griot-* skills + griot-* agents', () => {
-    buildMinimalSourceTree();
+    buildOldDirectionTree();
     const plan = planForPlugin('griot', root);
 
     const sources = plan.files.map((f) => f.source).sort();
@@ -103,7 +128,7 @@ describe('V10 (a): planForPlugin returns expected source/dest pairs', () => {
   });
 
   test('plan excludes test files and fixtures', () => {
-    buildMinimalSourceTree();
+    buildOldDirectionTree();
     const plan = planForPlugin('griot', root);
     const sources = plan.files.map((f) => f.source);
     expect(sources).not.toContain('cli/griot.test.ts');
@@ -113,7 +138,7 @@ describe('V10 (a): planForPlugin returns expected source/dest pairs', () => {
   });
 
   test('plan filters per-plugin verbs subtree (griot plan does not include guild or loom verbs)', () => {
-    buildMinimalSourceTree();
+    buildOldDirectionTree();
     const plan = planForPlugin('griot', root);
     const sources = plan.files.map((f) => f.source);
     expect(sources.some((s) => s.startsWith('cli/verbs/guild/'))).toBe(false);
@@ -121,7 +146,7 @@ describe('V10 (a): planForPlugin returns expected source/dest pairs', () => {
   });
 
   test('every plugin gets the same shared lib subset', () => {
-    buildMinimalSourceTree();
+    buildOldDirectionTree();
     const libFiles = ['cli/lib/events.ts', 'cli/lib/manifest.ts'];
     for (const plugin of PLUGINS_WITH_CLI) {
       const plan = planForPlugin(plugin, root);
@@ -135,7 +160,7 @@ describe('V10 (a): planForPlugin returns expected source/dest pairs', () => {
 
 describe('V10 (b): applySync end-to-end byte-for-byte match', () => {
   test('every generated file byte-equals its upstream source', () => {
-    buildMinimalSourceTree();
+    buildOldDirectionTree();
     const cwd = process.cwd();
     try {
       process.chdir(root);
@@ -155,14 +180,14 @@ describe('V10 (b): applySync end-to-end byte-for-byte match', () => {
   });
 
   test('post-sync drift-check reports no drift on a clean tree', () => {
-    buildMinimalSourceTree();
+    buildOldDirectionTree();
     applySync(root);
     const drift = detectDrift(root);
     expect(drift).toEqual([]);
   });
 
   test('test files do NOT land in the generated tree', () => {
-    buildMinimalSourceTree();
+    buildOldDirectionTree();
     applySync(root);
     // The excluded files exist upstream but must not be copied.
     expect(() => read('plugins/griot/cli/griot.test.ts')).toThrow();
@@ -171,7 +196,7 @@ describe('V10 (b): applySync end-to-end byte-for-byte match', () => {
   });
 
   test('plugin entries land at plugins/<name>/cli/<name>.ts (matches W6 shim resolution path)', () => {
-    buildMinimalSourceTree();
+    buildOldDirectionTree();
     applySync(root);
     expect(read('plugins/griot/cli/griot.ts')).toBe(read('cli/griot.ts'));
     expect(read('plugins/guild/cli/guild.ts')).toBe(read('cli/guild.ts'));
@@ -181,7 +206,7 @@ describe('V10 (b): applySync end-to-end byte-for-byte match', () => {
 
 describe('V10 (c): drift detection — false-green failure-mode tripwire', () => {
   test('mutated per-plugin file post-sync is reported as divergent', () => {
-    buildMinimalSourceTree();
+    buildOldDirectionTree();
     applySync(root);
 
     // Mutate one per-plugin file post-sync — simulates a careless edit
@@ -205,7 +230,7 @@ describe('V10 (c): drift detection — false-green failure-mode tripwire', () =>
   });
 
   test('orphan file in plugin tree (no upstream source) is reported', () => {
-    buildMinimalSourceTree();
+    buildOldDirectionTree();
     applySync(root);
 
     // Add a file in the generated tree that has no upstream source.
@@ -221,7 +246,7 @@ describe('V10 (c): drift detection — false-green failure-mode tripwire', () =>
   });
 
   test('missing file in plugin tree (upstream exists, dest does not) is reported', () => {
-    buildMinimalSourceTree();
+    buildOldDirectionTree();
     applySync(root);
 
     // Delete a synced file; --check should flag it as missing.
@@ -237,7 +262,7 @@ describe('V10 (c): drift detection — false-green failure-mode tripwire', () =>
   });
 
   test('drift message names source path + plugin path + one-shot remedy', () => {
-    buildMinimalSourceTree();
+    buildOldDirectionTree();
     applySync(root);
     writeFileSync(
       join(root, 'plugins/griot/cli/lib/manifest.ts'),
@@ -260,7 +285,7 @@ describe('V10 (c): drift detection — false-green failure-mode tripwire', () =>
 
 describe('skills + agents: per-plugin sync (gap caught by V6 smoke test)', () => {
   test('skills are filtered by plugin prefix', () => {
-    buildMinimalSourceTree();
+    buildOldDirectionTree();
     const griotPlan = planForPlugin('griot', root);
     const guildPlan = planForPlugin('guild', root);
     const loomPlan = planForPlugin('loom', root);
@@ -281,7 +306,7 @@ describe('skills + agents: per-plugin sync (gap caught by V6 smoke test)', () =>
   });
 
   test('skill-only plugins (ev, review-skill) get their skills with no CLI', () => {
-    buildMinimalSourceTree();
+    buildOldDirectionTree();
     const evPlan = planForPlugin('ev', root);
     const reviewPlan = planForPlugin('review-skill', root);
 
@@ -294,13 +319,13 @@ describe('skills + agents: per-plugin sync (gap caught by V6 smoke test)', () =>
   });
 
   test('agent-loop-full meta-bundle plans zero files', () => {
-    buildMinimalSourceTree();
+    buildOldDirectionTree();
     const plan = planForPlugin('agent-loop-full', root);
     expect(plan.files).toEqual([]);
   });
 
   test('agents are namespaced: griot-* → griot; whiteboard-/evaluator-/generator-* → guild', () => {
-    buildMinimalSourceTree();
+    buildOldDirectionTree();
     const griotAgents = planForPlugin('griot', root)
       .files.map((f) => f.source)
       .filter((s) => s.startsWith('agents/'));
@@ -318,7 +343,7 @@ describe('skills + agents: per-plugin sync (gap caught by V6 smoke test)', () =>
   });
 
   test('end-to-end byte-equal: synced skill SKILL.md matches its source', () => {
-    buildMinimalSourceTree();
+    buildOldDirectionTree();
     applySync(root);
 
     expect(read('plugins/griot/skills/griot-load/SKILL.md')).toBe(
@@ -333,7 +358,7 @@ describe('skills + agents: per-plugin sync (gap caught by V6 smoke test)', () =>
   });
 
   test('drift detection: mutated skill SKILL.md flagged as divergent', () => {
-    buildMinimalSourceTree();
+    buildOldDirectionTree();
     applySync(root);
 
     writeFileSync(
@@ -351,7 +376,7 @@ describe('skills + agents: per-plugin sync (gap caught by V6 smoke test)', () =>
   });
 
   test('drift detection: orphan agent file in plugin tree flagged', () => {
-    buildMinimalSourceTree();
+    buildOldDirectionTree();
     applySync(root);
 
     write('plugins/guild/agents/orphan.md', '---\nname: orphan\n---\nstale\n');
@@ -368,7 +393,7 @@ describe('skills + agents: per-plugin sync (gap caught by V6 smoke test)', () =>
 // the structural close-out of the original describe-block above.
 describe('V10 (c) closure: drift-message format coverage (already asserted above)', () => {
   test('drift message format also names the script name', () => {
-    buildMinimalSourceTree();
+    buildOldDirectionTree();
     applySync(root);
     writeFileSync(join(root, 'plugins/griot/cli/lib/manifest.ts'), 'x', 'utf8');
     const drift = detectDrift(root);
@@ -376,5 +401,180 @@ describe('V10 (c) closure: drift-message format coverage (already asserted above
       (d) => d.destination === 'plugins/griot/cli/lib/manifest.ts',
     );
     expect(record?.message).toContain('sync-shared.ts');
+  });
+});
+
+// ============================================================
+// PR2 — commons-canonical sync direction
+// ============================================================
+
+describe('PR2 (a): commons-source planner — empty-commons no-op invariant', () => {
+  test('with no commons content, planForPlugin emits zero commons-canonical specs', () => {
+    buildOldDirectionTree();
+    for (const plugin of COMMONS_CONSUMERS.lib) {
+      const plan = planForPlugin(plugin, root);
+      const commonsSpecs = plan.files.filter((f) => f.origin === 'commons-canonical');
+      expect(commonsSpecs).toEqual([]);
+    }
+    for (const plugin of COMMONS_CONSUMERS.docs) {
+      const plan = planForPlugin(plugin, root);
+      const commonsSpecs = plan.files.filter((f) => f.origin === 'commons-canonical');
+      expect(commonsSpecs).toEqual([]);
+    }
+  });
+
+  test('with no commons content, applySync writes only root-canonical files', () => {
+    buildOldDirectionTree();
+    applySync(root);
+    const drift = detectDrift(root);
+    expect(drift).toEqual([]);
+  });
+
+  test('every root-canonical SyncSpec carries origin: "root-canonical"', () => {
+    buildOldDirectionTree();
+    for (const plugin of PLUGINS_WITH_CLI) {
+      const plan = planForPlugin(plugin, root);
+      const wrongOrigin = plan.files.find((f) => f.origin !== 'root-canonical');
+      expect(wrongOrigin).toBeUndefined();
+    }
+  });
+});
+
+describe('PR2 (b): commons-source planner — populated commons fixture', () => {
+  test('lib-consumers (griot/guild/loom) receive commons/cli/lib/* mirror', () => {
+    buildBothDirectionsTree();
+    for (const plugin of COMMONS_CONSUMERS.lib) {
+      const plan = planForPlugin(plugin, root);
+      const libSpecs = plan.files.filter(
+        (f) =>
+          f.origin === 'commons-canonical' &&
+          f.source.startsWith('plugins/commons/cli/lib/'),
+      );
+      expect(libSpecs.length).toBeGreaterThan(0);
+      // Destinations land under each consumer's own cli/lib/
+      for (const spec of libSpecs) {
+        expect(spec.destination.startsWith(`plugins/${plugin}/cli/lib/`)).toBe(true);
+      }
+    }
+  });
+
+  test('doc-consumers receive commons/docs/* mirror; lib-only-consumers do not get docs', () => {
+    buildBothDirectionsTree();
+
+    // ev is a doc-consumer but NOT a lib-consumer (it has no cli/).
+    const evPlan = planForPlugin('ev', root);
+    const evDocs = evPlan.files.filter(
+      (f) => f.origin === 'commons-canonical' && f.source.startsWith('plugins/commons/docs/'),
+    );
+    expect(evDocs.length).toBeGreaterThan(0);
+    const evLib = evPlan.files.filter(
+      (f) => f.origin === 'commons-canonical' && f.source.startsWith('plugins/commons/cli/lib/'),
+    );
+    expect(evLib).toEqual([]);
+
+    // ev's doc destinations land at plugins/ev/docs/*
+    for (const spec of evDocs) {
+      expect(spec.destination.startsWith('plugins/ev/docs/')).toBe(true);
+    }
+  });
+
+  test('plugins NOT in either consumer set get zero commons-canonical specs', () => {
+    buildBothDirectionsTree();
+    // review-skill and agent-loop-full are excluded from both lib and docs consumer sets.
+    for (const plugin of ['review-skill', 'agent-loop-full'] as const) {
+      const plan = planForPlugin(plugin, root);
+      const commonsSpecs = plan.files.filter((f) => f.origin === 'commons-canonical');
+      expect(commonsSpecs).toEqual([]);
+    }
+  });
+
+  test('commons plugin itself is never a sync DESTINATION for commons-canonical flows', () => {
+    buildBothDirectionsTree();
+    const commonsPlan = planForPlugin('commons', root);
+    // commons IS the source; it should never receive synced files from itself.
+    const commonsSelfSinks = commonsPlan.files.filter(
+      (f) => f.origin === 'commons-canonical',
+    );
+    expect(commonsSelfSinks).toEqual([]);
+  });
+
+  test('end-to-end byte-equal: commons-canonical files mirror correctly', () => {
+    buildBothDirectionsTree();
+    applySync(root);
+    // The fixture's helpers.ts and AGENT-CONVENTIONS.md should land at
+    // each consumer's tree byte-equal to the commons source.
+    expect(read('plugins/griot/cli/lib/helpers.ts')).toBe(
+      read('plugins/commons/cli/lib/helpers.ts'),
+    );
+    expect(read('plugins/loom/docs/AGENT-CONVENTIONS.md')).toBe(
+      read('plugins/commons/docs/AGENT-CONVENTIONS.md'),
+    );
+    expect(read('plugins/ev/docs/PANEL-COMPOSITION.md')).toBe(
+      read('plugins/commons/docs/PANEL-COMPOSITION.md'),
+    );
+  });
+});
+
+describe('PR2 (c): conflict-detection guard — dual-write tripwire', () => {
+  test('a destination claimed by both root-canonical AND commons-canonical fires a conflict record', () => {
+    buildBothDirectionsTree();
+    // Force a conflict: commons declares `plugins/commons/cli/lib/manifest.ts`
+    // as a source for plugins/griot/cli/lib/manifest.ts. Root canonical
+    // already claims the same destination via cli/lib/manifest.ts. Two
+    // sources, one destination = conflict.
+    write('plugins/commons/cli/lib/manifest.ts', 'export const MANIFEST = "commons-version";\n');
+
+    const drift = detectDrift(root);
+    const conflict = drift.find(
+      (d) =>
+        d.kind === 'conflict' &&
+        d.destination === 'plugins/griot/cli/lib/manifest.ts',
+    );
+    expect(conflict).toBeDefined();
+    expect(conflict?.message).toMatch(/claimed by multiple upstream sources/);
+    expect(conflict?.message).toMatch(/root-canonical/);
+    expect(conflict?.message).toMatch(/commons-canonical/);
+  });
+
+  test('no conflict reported when destinations are disjoint', () => {
+    buildBothDirectionsTree();
+    // Fixture's commons content (helpers.ts, docs/*) doesn't collide with
+    // root-canonical's content (manifest.ts, events.ts). No conflicts.
+    const drift = detectDrift(root);
+    const conflicts = drift.filter((d) => d.kind === 'conflict');
+    expect(conflicts).toEqual([]);
+  });
+});
+
+describe('PR2: commons is leaf-source-only — substrate invariant', () => {
+  test('COMMONS_CONSUMERS excludes commons from both lib and docs lists', () => {
+    // commons IS the source, never a consumer. If a future edit
+    // accidentally adds commons to either list, the planner would
+    // attempt commons → commons sync (recursive smell).
+    expect(COMMONS_CONSUMERS.lib).not.toContain('commons');
+    expect(COMMONS_CONSUMERS.docs).not.toContain('commons');
+  });
+
+  test('planForPlugin("commons") emits zero specs against fixture trees', () => {
+    // commons has no skills, no agents, no cli/<commons>.ts entry, and
+    // no cli/verbs/commons/. Even with both source trees populated, it
+    // plans nothing because it's the source, not a consumer.
+    buildBothDirectionsTree();
+    const plan = planForPlugin('commons', root);
+    expect(plan.files).toEqual([]);
+  });
+});
+
+describe('PR2: wall-clock budget — catches catastrophic O(n^2) regressions', () => {
+  test('applySync against the minimal fixture runs in under 1000ms', () => {
+    buildOldDirectionTree();
+    const start = Date.now();
+    applySync(root);
+    const elapsed = Date.now() - start;
+    // Loose budget — the actual fixture syncs ~15 small files in single-digit
+    // milliseconds on a modern laptop. 1000ms catches accidents (e.g., a
+    // glob that walks node_modules or projects/archive/) without flaking
+    // on slow CI runners.
+    expect(elapsed).toBeLessThan(1000);
   });
 });
