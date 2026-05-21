@@ -17,7 +17,7 @@ import { describe, expect, test } from 'vitest';
  * structural assertions on a hand-authored substrate file.
  */
 
-const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
 
 const MARKETPLACE_PATH = join(REPO_ROOT, '.claude-plugin/marketplace.json');
 

@@ -17,3 +17,5 @@
 {"at":"2026-05-21T19:27:17.731Z","event":"checkin-created","detail":{"number":"07","branch":"repo-compartmentalize.bulk"}}
 {"at":"2026-05-21T19:36:39.322Z","event":"phase-started","detail":{"phase":3,"name":"Phase 3 — Cleanup"}}
 {"at":"2026-05-21T19:38:35.115Z","event":"checkin-created","detail":{"number":"08","branch":"repo-compartmentalize.cleanup"}}
+{"at":"2026-05-21T19:52:13.108Z","event":"pr-opened","detail":{"pr":25,"url":"https://github.com/krambuhl/agents/pull/25"}}
+{"at":"2026-05-21T20:13:45.949Z","event":"checkin-created","detail":{"number":"09","branch":"repo-compartmentalize.cleanup"}}

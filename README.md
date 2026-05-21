@@ -102,13 +102,11 @@ already present. No-ops on re-run.
 | Dir | What | Count |
 |---|---|---|
 | `.claude-plugin/marketplace.json` | The marketplace catalog. Lists all 6 plugins + dependencies cascade. | 1 |
-| `plugins/<name>/` | Per-plugin source trees. Each contains `.claude-plugin/plugin.json` (identity), `bin/<cli>` (entry shim w/ Node ≥24 check), `skills/` (slash commands), `agents/` (subagents), and `cli/` (synced from the canonical top-level `cli/`). | 6 |
-| `skills/` | Canonical source-of-truth for slash-commandable skills — `/loom-plan`, `/loom-research`, `/guild-whiteboard`, `/loom-archive`, `/ev-run`, etc. The plugin trees mirror this. | 13 |
-| `agents/` | Canonical source-of-truth for subagent definitions — `whiteboard-*`, `griot-*`, `evaluator-*`, `generator-*`. The plugin trees mirror this. | 28 |
-| `cli/` | Canonical TypeScript implementation of `guild`, `griot`, `loom`. `scripts/sync-shared.ts` copies this into per-plugin `plugins/<name>/cli/` trees. | — |
-| `scripts/sync-shared.ts` | Build script that propagates canonical sources into per-plugin trees. Run before commit if you've touched `cli/` or `skills/`. CI also drift-checks (`--check`). | — |
+| `plugins/<name>/` | Per-plugin source trees. Each is self-contained: `.claude-plugin/plugin.json` (identity), `bin/<cli>` (entry shim w/ Node ≥24 check), `skills/` (slash commands), `agents/` (subagents), and `cli/` (TypeScript implementation). The plugin tree is authoritative for everything it ships. | 6 |
+| `plugins/commons/` | Foundation substrate plugin: cross-cutting helpers (`cli/lib/` and `docs/`) that the other plugins receive via `scripts/sync-shared.ts`. Also ships the shared skills (`grill-me`, `find-skills`, `review-skill`). | 1 (within plugins/) |
+| `scripts/sync-shared.ts` | Build script that propagates `plugins/commons/{cli/lib,docs}/` into consumer plugin trees. Run after editing `plugins/commons/`. CI also drift-checks (`--check`). | — |
+| `projects/` | Loom-managed project artifacts: PLAN.md / RESEARCH.md / checkins / sessions / retros. Append-only at runtime; archived projects live under `projects/archive/`. | — |
 | `learnings/` | Accumulated craft knowledge — short markdown notes that show up in `griot use --as=llm` output for any plugin-enabled session. | 4+ |
-| `docs/` | Substrate-wide conventions: `LOOM-CONVENTIONS.md`, `SUBSTRATE-COMPOSITIONS.md`, `PANEL-COMPOSITION.md`, `AGENT-CONVENTIONS.md`. | — |
 
 ## Authoring against this marketplace
 
@@ -130,13 +128,6 @@ Everything else — `plugins/<plugin>/skills/`, `plugins/<plugin>/agents/`,
 `plugins/<plugin>/cli/verbs/<plugin>/`, `plugins/<plugin>/cli/<plugin>.ts`,
 and their tests — is plugin-authoritative. Edit there directly; no
 sync step touches those files.
-
-**Root `cli/`, root `skills/`, root `agents/`, and root `docs/`** are
-inert duplicates left over from the pre-`repo-compartmentalize`
-canonical-at-root shape. They exist on disk for the PR3→PR9 transition
-window so root `cli/verbs/`'s `../../lib/X.ts` import chain doesn't
-break mid-flight. **DO NOT edit them.** Authoritative edits land in
-`plugins/<name>/`. PR9 of `repo-compartmentalize` deletes them outright.
 
 Workflow:
 1. Edit the authoritative source (in the appropriate plugin tree, or
