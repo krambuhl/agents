@@ -3,7 +3,7 @@
   "title": "Repo Compartmentalize",
   "slug": "2026-05-21-repo-compartmentalize",
   "started": "2026-05-21",
-  "status": "active",
+  "status": "archived",
   "current_branch": null,
   "latest_checkin": null,
   "strategy": "interactive",
@@ -17,7 +17,7 @@
     {
       "number": 3,
       "name": "Phase 3 — Cleanup",
-      "status": "in-progress",
+      "status": "completed",
       "branch": "repo-compartmentalize.cleanup"
     }
   ]
