@@ -3,7 +3,7 @@ import { copyFileSync, existsSync, mkdirSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { LoomError } from '../../lib/errors.ts';
 import { createSlug } from '../../lib/project.ts';
-import { type GitRunner, defaultGitRunner } from '../../lib/draft-git.ts';
+import { type GitRunner, defaultGitRunner } from '../../lib/git.ts';
 import { appendEvent } from '../../lib/events.ts';
 import {
   writeLoomSubstrate,

@@ -1,8 +1,14 @@
-import { test, expect, beforeEach, afterEach } from 'vitest';
+import { test, describe, expect, beforeEach, afterEach } from 'vitest';
 import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
-import { resolveProject, listProjects, createSlug } from './project.ts';
+import {
+  resolveProject,
+  listProjects,
+  createSlug,
+  resolveProjectByPlan,
+  listProjectsByPlan,
+} from './project.ts';
 
 let projectsRoot: string;
 
@@ -146,4 +152,138 @@ test('createSlug: malformed date throws invalid-date', () => {
   expect(() => createSlug('valid topic', '2026-05-15T00:00:00')).toThrow(
     /invalid-date/,
   );
+});
+
+// ===== PLAN.md filter variants (merged from draft-project.test.ts in PR6) =====
+//
+// These tests came from the dissolved `draft-project.ts` module. PR6 of
+// repo-compartmentalize moved the PLAN.md-filter functions into this
+// file (as `resolveProjectByPlan` + `listProjectsByPlan`). The
+// assertions check the same behaviors against the new symbol names.
+
+describe('resolveProjectByPlan + listProjectsByPlan: PLAN.md filter', () => {
+  let projectsRoot: string;
+
+  function makePlanOnlyProject(root: string, slug: string): void {
+    const path = join(root, slug);
+    mkdirSync(path, { recursive: true });
+    // Marker file: a project qualifies for the PLAN.md filter if it
+    // carries PLAN.md. Plan-only projects (this case) have just PLAN.md,
+    // no manifest.json. Loom-adopted projects (both markers) also
+    // qualify; see makeLoomAndPlanProject below.
+    writeFileSync(join(path, 'PLAN.md'), '# Plan\n');
+  }
+
+  function makeLoomOnlyProject(root: string, slug: string): void {
+    const path = join(root, slug);
+    mkdirSync(path, { recursive: true });
+    // Loom-only: manifest.json but no PLAN.md. Unusual state — loom is
+    // meant to coexist with planning artifacts; surfacing it via this
+    // filter would mask the missing PLAN.md.
+    writeFileSync(join(path, 'manifest.json'), '{}');
+  }
+
+  function makeLoomAndPlanProject(root: string, slug: string): void {
+    const path = join(root, slug);
+    mkdirSync(path, { recursive: true });
+    // Loom + plan: both markers. This is the default post-adoption
+    // state — loom owns execution state, PLAN.md owns planning
+    // artifacts. The PLAN.md filter sees it.
+    writeFileSync(join(path, 'manifest.json'), '{}');
+    writeFileSync(join(path, 'PLAN.md'), '# Plan\n');
+  }
+
+  beforeEach(() => {
+    projectsRoot = mkdtempSync(join(tmpdir(), 'plan-filter-test-'));
+    makePlanOnlyProject(projectsRoot, '2026-05-10-project-a');
+    makePlanOnlyProject(projectsRoot, '2026-05-15-plan-cli');
+    makeLoomOnlyProject(projectsRoot, '2026-05-15-loom-cli');
+    makeLoomAndPlanProject(projectsRoot, '2026-05-15-trout-sunset');
+    mkdirSync(join(projectsRoot, '2026-05-20-bare'));
+    makePlanOnlyProject(join(projectsRoot, 'archive'), '2026-04-01-old-project');
+    writeFileSync(join(projectsRoot, 'CONVENTIONS.md'), '# noise\n');
+  });
+
+  afterEach(() => {
+    rmSync(projectsRoot, { recursive: true, force: true });
+  });
+
+  test('resolveProjectByPlan: full slug returns its path', () => {
+    const p = resolveProjectByPlan('2026-05-15-plan-cli', projectsRoot);
+    expect(p).toBe(join(projectsRoot, '2026-05-15-plan-cli'));
+  });
+
+  test('resolveProjectByPlan: date-less suffix returns unique match', () => {
+    const p = resolveProjectByPlan('plan-cli', projectsRoot);
+    expect(p).toBe(join(projectsRoot, '2026-05-15-plan-cli'));
+  });
+
+  test('resolveProjectByPlan: archived slug falls back to archive/', () => {
+    const p = resolveProjectByPlan('old-project', projectsRoot);
+    expect(p).toBe(join(projectsRoot, 'archive', '2026-04-01-old-project'));
+  });
+
+  test('resolveProjectByPlan: relative path resolves to absolute', () => {
+    const rel = './2026-05-15-plan-cli';
+    const p = resolveProjectByPlan(join(projectsRoot, rel), projectsRoot);
+    expect(p).toBe(resolve(projectsRoot, '2026-05-15-plan-cli'));
+  });
+
+  test('resolveProjectByPlan: nonexistent slug throws project-not-found', () => {
+    expect(() => resolveProjectByPlan('does-not-exist', projectsRoot)).toThrow(
+      /project-not-found/,
+    );
+  });
+
+  test('resolveProjectByPlan: ambiguous suffix throws slug-ambiguous with candidates', () => {
+    makePlanOnlyProject(projectsRoot, '2026-05-20-foo');
+    makePlanOnlyProject(projectsRoot, '2026-05-25-foo');
+    try {
+      resolveProjectByPlan('foo', projectsRoot);
+      throw new Error('expected throw');
+    } catch (err: unknown) {
+      const e = err as { code: string; candidates?: string[] };
+      expect(e.code).toBe('slug-ambiguous');
+      expect(e.candidates).toBeDefined();
+      expect(e.candidates?.length).toBe(2);
+    }
+  });
+
+  test('resolveProjectByPlan: loom-only project (no PLAN.md) does NOT resolve', () => {
+    // The PLAN.md filter requires PLAN.md; manifest.json alone is not
+    // enough. 2026-05-15-loom-cli has manifest.json but no PLAN.md.
+    expect(() => resolveProjectByPlan('loom-cli', projectsRoot)).toThrow(
+      /project-not-found/,
+    );
+  });
+
+  test('resolveProjectByPlan: loom + plan project (both markers) DOES resolve', () => {
+    // 2026-05-15-trout-sunset has BOTH markers. The PLAN.md filter
+    // qualifies it.
+    const p = resolveProjectByPlan('trout-sunset', projectsRoot);
+    expect(p).toBe(join(projectsRoot, '2026-05-15-trout-sunset'));
+  });
+
+  test('resolveProjectByPlan: bare directory without PLAN.md does NOT resolve', () => {
+    expect(() => resolveProjectByPlan('bare', projectsRoot)).toThrow(
+      /project-not-found/,
+    );
+  });
+
+  test('listProjectsByPlan: enumerates active PLAN-marker projects (including loom+plan)', () => {
+    // Includes: plan-only (PLAN.md without manifest.json) AND
+    // loom+plan (both markers). Excludes: loom-only (manifest.json
+    // without PLAN.md) and bare dirs.
+    const list = listProjectsByPlan(projectsRoot);
+    expect(list.map((p) => p.slug).sort()).toEqual([
+      '2026-05-10-project-a',
+      '2026-05-15-plan-cli',
+      '2026-05-15-trout-sunset',
+    ]);
+  });
+
+  test('listProjectsByPlan: --archived enumerates the archive', () => {
+    const list = listProjectsByPlan(projectsRoot, { archived: true });
+    expect(list.map((p) => p.slug)).toEqual(['2026-04-01-old-project']);
+  });
 });

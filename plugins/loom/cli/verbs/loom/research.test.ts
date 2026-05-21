@@ -10,7 +10,7 @@ import {
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { researchVerb, RESEARCH_VERBS } from './research.ts';
-import type { GitRunner } from '../../lib/draft-git.ts';
+import type { GitRunner } from '../../lib/git.ts';
 import { readEvents } from '../../lib/events.ts';
 
 let projectsRoot: string;
