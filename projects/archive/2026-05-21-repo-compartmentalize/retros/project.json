@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "type": "project",
+  "created": "2026-05-22T05:30:00.000Z",
+  "findings": [
+    {
+      "category": "kept-well",
+      "description": "The 3-phase decomposition (setup → bulk → cleanup) held cleanly through all 11 PRs. Each PR was independently revertible without unwinding the rest. PLAN's 'asymmetric rollback profiles' framing for splitting PR9/PR10 paid off in practice — PR9 was the substrate-level dissolution, PR10 the dev-loop shim cleanup, and they merged independently.",
+      "evidence": "PRs #25, #26, #27, #28 in Phase 3 alone; PLAN.md § Dependencies + Decisions § 8 'strict serial per Q8 answer'."
+    },
+    {
+      "category": "kept-well",
+      "description": "The grill-me-at-contract-negotiation posture rescued PR9 from silent test-coverage loss. When PLAN's literal 'rm -rf root dirs' turned out to leave 5 cross-cutting tests orphaned, surfacing the gap via AskUserQuestion before execution let the user redirect to option A (move 4 to commons). Scope expanded under explicit authorization rather than by silent guess.",
+      "evidence": "Checkin 09's correction: 'PLAN PR9 \\'rm -rf root dirs\\' was too simplistic … Grilled user (per CLAUDE.md grill-me posture) before proceeding; user chose option A.' The 4 tests now live at plugins/commons/cli/."
+    },
+    {
+      "category": "improvement",
+      "description": "PLAN.md drift across phases — multiple PRs needed scope expansion mid-execution because PLAN was written upfront and couldn't anticipate downstream consequences of earlier-phase moves. PR7 forked (PLAN cited non-existent griot CLI verbs init/compact/--from-note), PR9 needed grilling (orphan cross-cutting tests), PR11 added 2 adjacent CONVENTIONS.md findings, PR9 needed a derive-panel inline fix. The pattern: late-phase PRs accumulate downstream-consequence work the PLAN missed.",
+      "evidence": "PR7 checkin notes_for_pr ('PLAN PR7 description in retrospect was aspirational'); PR9 checkin's two corrections; PR11 checkin's notes on the 2 scope additions vs PLAN."
+    },
+    {
+      "category": "improvement",
+      "description": "Fixture-discovery breakage repeated twice. PR3 and PR4 both hit the same shape — copying lib/verb tests into new plugin trees broke their `../fixtures/` resolution. Two separate corrections (checkins 03 and 04) for the same class of bug. The first should have triggered a PLAN update to anticipate the second; instead the same surprise landed twice.",
+      "evidence": "Checkin 03 correction: 'lib tests in plugins/commons/cli/lib/*.test.ts … couldn't find fixtures … Copied cli/fixtures/ → plugins/commons/cli/fixtures/'. Checkin 04 correction: 'copied verb tests into plugin trees but they couldn't find fixtures … Same shape as the PR3 commons-fixtures correction.'"
+    },
+    {
+      "category": "process-change",
+      "description": "Four substrate-level gaps surfaced during this project, all worth addressing as a single coherent substrate-improvement followup: (1) no `loom phase add` verb — phase introduction requires direct manifest editing; (2) `loom pr open` emits pr-opened AFTER the unit commit — orphans the event into the next PR's bookkeeping; (3) `writeCheckin` immutability vs `/ev-loop-interactive` Step 2.1's contract-then-finalize framing — Pattern A vs Pattern B workarounds; (4) `guild derive-panel` SPEC_PATH resolves from process.cwd() rather than plugin-install-root — works in-repo, breaks for consumer projects. Captured in 2 memory files so future sessions inherit the workarounds; substrate fixes would eliminate the need for the workarounds entirely.",
+      "evidence": "Memory files feedback_loom_phase_and_checkin_gaps.md (gaps #1 + #2) and feedback_loom_pr_opened_orphan_and_guild_spec_path.md (gaps #3 + #4); PR9 inline derive-panel fix at plugins/guild/cli/verbs/guild/derive-panel.ts:23."
+    },
+    {
+      "category": "follow-up",
+      "description": "Three PLAN-deferred items still on the floor, intentionally not addressed in this project: per-plugin cli/lib/ trim (each CLI plugin carries the full lib copy including unused helpers — ~12KB dead code per plugin); plugin.json description deduplication with marketplace.json (single-source-of-truth opportunity); projects/CONVENTIONS.md placement (the doc is functionally a loom invariant but lives at repo root; relocating to plugins/commons/docs/ or plugins/loom/docs/ is a small clarification that this project's PR11 prose-swept but did not relocate).",
+      "evidence": "PLAN.md § Deferred (3 items listed with explicit rationale); RESEARCH.md § 3, § 6, § 11."
+    },
+    {
+      "category": "follow-up",
+      "description": "The 4 substrate gaps from the process-change finding are a coherent next-project candidate. Memory files act as the handoff mechanism — the next ev-loop session inherits the workarounds and can decide whether to fix the substrate or live with the carry patterns. A substrate-improvement project of ~4 small PRs would close all four gaps.",
+      "evidence": "Memory files in ~/.claude/projects/-Users-krambuhl-Sites-agents/memory/: feedback_loom_phase_and_checkin_gaps.md, feedback_loom_pr_opened_orphan_and_guild_spec_path.md."
+    }
+  ]
+}
