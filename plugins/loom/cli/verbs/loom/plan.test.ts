@@ -10,7 +10,7 @@ import {
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { planVerb, reviseVerb } from './plan.ts';
-import type { GitRunner } from '../../lib/draft-git.ts';
+import type { GitRunner } from '../../lib/git.ts';
 
 let projectsRoot: string;
 let planFile: string;

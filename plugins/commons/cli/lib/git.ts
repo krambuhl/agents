@@ -1,11 +1,12 @@
 import { spawnSync } from 'node:child_process';
 import { LoomError } from './errors.ts';
 
-// Thin abstraction over the small set of `git` operations draft needs:
-// asking whether a file is committed (collision check for `plan`),
-// and the add-and-commit pair (commit phase of `plan` and `revise`).
+// Thin abstraction over the small set of `git` operations loom's
+// planning verbs need: asking whether a file is committed (collision
+// check for `plan`), and the add-and-commit pair (commit phase of
+// `plan` and `revise-plan`).
 //
-// Tests inject a stub `GitRunner` via `DraftCliContext.gitRunner`;
+// Tests inject a stub `GitRunner` via the verb's `CliContext.gitRunner`;
 // production code uses `defaultGitRunner` which shells out to `git`.
 export type GitRunner = {
   // Returns true when `filePath` is tracked in HEAD (i.e. committed
