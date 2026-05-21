@@ -51,6 +51,7 @@ interface PluginManifest {
 }
 
 const EXPECTED_PLUGIN_NAMES = [
+  'commons',
   'griot',
   'guild',
   'loom',
@@ -95,7 +96,7 @@ describe('marketplace manifest: top-level shape', () => {
 describe('marketplace manifest: plugin entries', () => {
   const m = readMarketplace();
 
-  test('declares exactly the six expected plugins', () => {
+  test('declares exactly the seven expected plugins', () => {
     const declared = m.plugins.map((p) => p.name).sort();
     const expected = [...EXPECTED_PLUGIN_NAMES].sort();
     expect(declared).toEqual(expected);
@@ -178,28 +179,33 @@ describe('marketplace manifest: declared dependency edges (per PLAN)', () => {
     return entry.dependencies.map((d) => (typeof d === 'string' ? d : d.name));
   }
 
-  test('griot has no dependencies', () => {
-    expect(depsOf('griot')).toEqual([]);
-  });
-
-  test('guild has no dependencies', () => {
-    expect(depsOf('guild')).toEqual([]);
+  test('commons has no dependencies (foundation; depends on nothing)', () => {
+    expect(depsOf('commons')).toEqual([]);
   });
 
   test('review-skill has no dependencies', () => {
     expect(depsOf('review-skill')).toEqual([]);
   });
 
-  test('loom depends on guild and griot', () => {
-    expect([...depsOf('loom')].sort()).toEqual(['griot', 'guild']);
+  test('griot depends on commons (and only commons)', () => {
+    expect([...depsOf('griot')].sort()).toEqual(['commons']);
   });
 
-  test('ev depends on loom, guild, griot', () => {
-    expect([...depsOf('ev')].sort()).toEqual(['griot', 'guild', 'loom']);
+  test('guild depends on commons (and only commons)', () => {
+    expect([...depsOf('guild')].sort()).toEqual(['commons']);
   });
 
-  test('agent-loop-full depends on all five family plugins', () => {
+  test('loom depends on commons, guild, griot', () => {
+    expect([...depsOf('loom')].sort()).toEqual(['commons', 'griot', 'guild']);
+  });
+
+  test('ev depends on commons, loom, guild, griot', () => {
+    expect([...depsOf('ev')].sort()).toEqual(['commons', 'griot', 'guild', 'loom']);
+  });
+
+  test('agent-loop-full depends on all six family plugins (including commons)', () => {
     expect([...depsOf('agent-loop-full')].sort()).toEqual([
+      'commons',
       'ev',
       'griot',
       'guild',
@@ -207,4 +213,33 @@ describe('marketplace manifest: declared dependency edges (per PLAN)', () => {
       'review-skill',
     ]);
   });
+});
+
+describe('marketplace manifest: substrate-first dependency ordering', () => {
+  // Substrate-kind dependencies (commons) precede peer-kind dependencies
+  // (guild, griot, loom) in each consumer's `dependencies` array. This
+  // encodes the semantic distinction so the JSON read order makes
+  // "depends on the foundation" visually distinct from "depends on a
+  // peer." If a future re-order alphabetizes the array for tidiness,
+  // this test catches the drift.
+  //
+  // From the design-systems whiteboard finding (Phase 1, round 1):
+  // "Order the dependency array by kind: substrate first, peer second."
+
+  const m = readMarketplace();
+  const byName = new Map(m.plugins.map((p) => [p.name, p] as const));
+
+  function rawDepsOf(name: string): ReadonlyArray<string> {
+    const entry = byName.get(name);
+    if (!entry?.dependencies) return [];
+    return entry.dependencies.map((d) => (typeof d === 'string' ? d : d.name));
+  }
+
+  for (const pluginName of ['griot', 'guild', 'loom', 'ev', 'agent-loop-full'] as const) {
+    test(`${pluginName} lists commons as its first dependency`, () => {
+      const deps = rawDepsOf(pluginName);
+      expect(deps.length).toBeGreaterThan(0);
+      expect(deps[0]).toBe('commons');
+    });
+  }
 });

@@ -1,0 +1,4 @@
+{
+  "name": "commons",
+  "description": "Foundation substrate: cross-cutting helpers (shared CLI lib + agent-conventions docs + interview/review skills) that the loom, guild, griot, and ev plugins all depend on. Cascades in via marketplace dependencies; consumers receive a synced local copy at install time."
+}

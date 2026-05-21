@@ -4,29 +4,36 @@
     "name": "Evan Krambuhl",
     "email": "evan.krambuhl@gmail.com"
   },
-  "description": "Agent-loop substrate: loom (projects), griot (learnings), guild (panels), ev (loops), review-skill, and the agent-loop-full meta-bundle.",
+  "description": "Agent-loop substrate: commons (foundation), loom (projects), griot (learnings), guild (panels), ev (loops), review-skill, and the agent-loop-full meta-bundle.",
   "plugins": [
+    {
+      "name": "commons",
+      "source": "./plugins/commons",
+      "description": "Foundation substrate: cross-cutting helpers (shared CLI lib + agent-conventions docs + interview/review skills) that the loom, guild, griot, and ev plugins all depend on. Cascades in via marketplace dependencies; consumers receive a synced local copy at install time."
+    },
     {
       "name": "griot",
       "source": "./plugins/griot",
-      "description": "Learnings substrate: griot capture/use/compact CLI + griot-* skills + griot-* judge/rewriter/operator/rubric-author agents."
+      "description": "Learnings substrate: griot capture/use/compact CLI + griot-* skills + griot-* judge/rewriter/operator/rubric-author agents.",
+      "dependencies": ["commons"]
     },
     {
       "name": "guild",
       "source": "./plugins/guild",
-      "description": "Panel substrate: guild-validate / guild-whiteboard / guild-spawn skills + guild CLI + whiteboard-* / evaluator-* / generator-* agents."
+      "description": "Panel substrate: guild-validate / guild-whiteboard / guild-spawn skills + guild CLI + whiteboard-* / evaluator-* / generator-* agents.",
+      "dependencies": ["commons"]
     },
     {
       "name": "loom",
       "source": "./plugins/loom",
       "description": "Project substrate: loom-* skills + loom CLI for plans, research, sessions, checkins, retros, archives.",
-      "dependencies": ["guild", "griot"]
+      "dependencies": ["commons", "guild", "griot"]
     },
     {
       "name": "ev",
       "source": "./plugins/ev",
       "description": "Execution loops: ev-loop-confidence (tiered transforms), ev-loop-interactive (paired units), ev-run (router).",
-      "dependencies": ["loom", "guild", "griot"]
+      "dependencies": ["commons", "loom", "guild", "griot"]
     },
     {
       "name": "review-skill",
@@ -36,8 +43,8 @@
     {
       "name": "agent-loop-full",
       "source": "./plugins/agent-loop-full",
-      "description": "Meta-bundle: zero-content plugin that cascade-installs the full agent-loop family (griot, guild, loom, ev, review-skill).",
-      "dependencies": ["griot", "guild", "loom", "ev", "review-skill"]
+      "description": "Meta-bundle: zero-content plugin that cascade-installs the full agent-loop family (commons, griot, guild, loom, ev, review-skill).",
+      "dependencies": ["commons", "griot", "guild", "loom", "ev", "review-skill"]
     }
   ]
 }
