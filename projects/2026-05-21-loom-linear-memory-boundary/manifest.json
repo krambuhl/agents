@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "title": "Loom Linear Memory Boundary",
+  "slug": "2026-05-21-loom-linear-memory-boundary",
+  "started": "2026-05-21",
+  "status": "active",
+  "current_branch": null,
+  "latest_checkin": null,
+  "strategy": "interactive",
+  "phases": [
+    {
+      "number": 1,
+      "name": "Phase 1",
+      "status": "not-started"
+    }
+  ]
+}
