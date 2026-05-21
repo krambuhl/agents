@@ -56,7 +56,6 @@ const EXPECTED_PLUGIN_NAMES = [
   'guild',
   'loom',
   'ev',
-  'review-skill',
   'agent-loop-full',
 ] as const;
 
@@ -96,7 +95,7 @@ describe('marketplace manifest: top-level shape', () => {
 describe('marketplace manifest: plugin entries', () => {
   const m = readMarketplace();
 
-  test('declares exactly the seven expected plugins', () => {
+  test('declares exactly the six expected plugins', () => {
     const declared = m.plugins.map((p) => p.name).sort();
     const expected = [...EXPECTED_PLUGIN_NAMES].sort();
     expect(declared).toEqual(expected);
@@ -183,10 +182,6 @@ describe('marketplace manifest: declared dependency edges (per PLAN)', () => {
     expect(depsOf('commons')).toEqual([]);
   });
 
-  test('review-skill has no dependencies', () => {
-    expect(depsOf('review-skill')).toEqual([]);
-  });
-
   test('griot depends on commons (and only commons)', () => {
     expect([...depsOf('griot')].sort()).toEqual(['commons']);
   });
@@ -203,14 +198,13 @@ describe('marketplace manifest: declared dependency edges (per PLAN)', () => {
     expect([...depsOf('ev')].sort()).toEqual(['commons', 'griot', 'guild', 'loom']);
   });
 
-  test('agent-loop-full depends on all six family plugins (including commons)', () => {
+  test('agent-loop-full depends on all five family plugins (including commons)', () => {
     expect([...depsOf('agent-loop-full')].sort()).toEqual([
       'commons',
       'ev',
       'griot',
       'guild',
       'loom',
-      'review-skill',
     ]);
   });
 });

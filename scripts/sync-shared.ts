@@ -64,14 +64,13 @@ export const PLUGINS = [
   'guild',
   'loom',
   'ev',
-  'review-skill',
   'agent-loop-full',
 ] as const;
 export type PluginName = (typeof PLUGINS)[number];
 
 /** Subset that ships a CLI (lib + verbs + entrypoint). Kept as a
  *  named export because tests still differentiate plugins-with-cli
- *  from skill-only plugins (e.g. ev/review-skill/agent-loop-full). */
+ *  from skill-only plugins (e.g. ev/agent-loop-full). */
 export const PLUGINS_WITH_CLI = ['griot', 'guild', 'loom'] as const;
 
 /** Per-flow consumer rules for the `commons-canonical` sync direction.
@@ -86,9 +85,8 @@ export const PLUGINS_WITH_CLI = ['griot', 'guild', 'loom'] as const;
  *     Wider — includes `ev` (skill-only, no cli/ tree) because ev's skill
  *     bodies cite `docs/X.md` paths that must resolve at install-time.
  *
- *  `commons`, `review-skill`, and `agent-loop-full` are excluded from
- *  both. Commons IS the source, not a consumer. review-skill folds into
- *  commons in a future PR. agent-loop-full is zero-content.
+ *  `commons` and `agent-loop-full` are excluded from both. Commons IS
+ *  the source, not a consumer. agent-loop-full is zero-content.
  */
 export const COMMONS_CONSUMERS = {
   lib: ['griot', 'guild', 'loom'] as ReadonlyArray<PluginName>,
