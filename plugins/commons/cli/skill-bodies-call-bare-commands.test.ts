@@ -19,8 +19,8 @@ import { describe, expect, test } from 'vitest';
  * the source-of-truth path, not an invocation.
  */
 
-const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const SKILLS_ROOT = join(REPO_ROOT, 'skills');
+const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
+const PLUGINS_ROOT = join(REPO_ROOT, 'plugins');
 
 interface SkillFile {
   readonly relativePath: string;
@@ -30,22 +30,33 @@ interface SkillFile {
 }
 
 function listSkillFiles(): ReadonlyArray<SkillFile> {
-  const entries = readdirSync(SKILLS_ROOT);
   const skills: SkillFile[] = [];
-  for (const name of entries) {
-    const skillDir = join(SKILLS_ROOT, name);
-    if (!statSync(skillDir).isDirectory()) continue;
-    const path = join(skillDir, 'SKILL.md');
+  const pluginEntries = readdirSync(PLUGINS_ROOT);
+  for (const pluginName of pluginEntries) {
+    const skillsDir = join(PLUGINS_ROOT, pluginName, 'skills');
+    let skillNames: string[];
     try {
-      const body = readFileSync(path, 'utf8');
-      skills.push({
-        relativePath: join('skills', name, 'SKILL.md'),
-        absolutePath: path,
-        body,
-        lines: body.split('\n'),
-      });
+      if (!statSync(skillsDir).isDirectory()) continue;
+      skillNames = readdirSync(skillsDir);
     } catch {
-      // No SKILL.md in this directory; not a skill source.
+      // Plugin has no skills/ subtree; skip.
+      continue;
+    }
+    for (const name of skillNames) {
+      const skillDir = join(skillsDir, name);
+      if (!statSync(skillDir).isDirectory()) continue;
+      const path = join(skillDir, 'SKILL.md');
+      try {
+        const body = readFileSync(path, 'utf8');
+        skills.push({
+          relativePath: join('plugins', pluginName, 'skills', name, 'SKILL.md'),
+          absolutePath: path,
+          body,
+          lines: body.split('\n'),
+        });
+      } catch {
+        // No SKILL.md in this directory; not a skill source.
+      }
     }
   }
   return skills;

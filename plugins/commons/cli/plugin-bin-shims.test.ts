@@ -26,7 +26,7 @@ import { afterEach, beforeEach, describe, expect, test } from 'vitest';
  * can be exercised without depending on the W7 sync-shared output.
  */
 
-const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
 const PLUGINS = ['griot', 'guild', 'loom'] as const;
 
 // A minimal PATH for tests that need to RESTRICT node availability.
