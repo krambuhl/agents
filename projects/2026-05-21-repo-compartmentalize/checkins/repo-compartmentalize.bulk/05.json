@@ -1,0 +1,65 @@
+{
+  "schema_version": 1,
+  "number": "05",
+  "created": "2026-05-22T01:00:00.000Z",
+  "phase": {
+    "number": 2,
+    "name": "Phase 2 — Bulk migrations"
+  },
+  "branch": "repo-compartmentalize.bulk",
+  "unit": "PR5 — Migrate grill-me + find-skills into plugins/commons/skills/",
+  "contract": {
+    "goal": "Move grill-me + find-skills from the user's ~/.claude/skills/ into plugins/commons/skills/ so they ship via the marketplace cascade. Closes the hard-dep gap from RESEARCH § 7 — consumer machines that install agent-loop-full@krambuhl get /grill-me available, so loom-plan / loom-revise-plan / loom-research citations resolve correctly on fresh installs.",
+    "acceptance_criteria": [
+      "plugins/commons/skills/grill-me/SKILL.md exists byte-equal with ~/.claude/skills/grill-me/SKILL.md (10 lines).",
+      "plugins/commons/skills/find-skills/SKILL.md exists byte-equal with ~/.claude/skills/find-skills/SKILL.md (142 lines).",
+      "No sync-shared.ts changes (post-PR4 skills are plugin-authoritative; commons-owned skills stay in commons).",
+      "npm test passes (1133/1133).",
+      "node scripts/sync-shared.ts --check passes."
+    ],
+    "rules_applied": [
+      "Per PLAN PR5: migrate the two skills from user globals.",
+      "Post-PR4: each plugin's skills/ is plugin-authoritative; commons skills live where they are.",
+      "Cascade semantics: commons contributes skills to Claude Code's registry via plugin install; /grill-me, /find-skills become available wherever the agent-loop-full cascade resolves."
+    ],
+    "disqualifiers": [
+      "Modifying SKILL.md content beyond byte-equal copy.",
+      "Adding sync direction for commons skills (not needed).",
+      "Removing user-global copies at ~/.claude/skills/ (out-of-repo cleanup).",
+      "Modifying citing skills (citations resolve naturally via cascade)."
+    ],
+    "inputs": [
+      "~/.claude/skills/grill-me/SKILL.md (canonical user-global; 10 lines)",
+      "~/.claude/skills/find-skills/SKILL.md (canonical user-global; 142 lines)",
+      "projects/2026-05-21-repo-compartmentalize/PLAN.md (§ PR5)",
+      "projects/2026-05-21-repo-compartmentalize/RESEARCH.md (§ 7)"
+    ]
+  },
+  "execution": {
+    "actions": [
+      "Created plugins/commons/skills/grill-me/ and plugins/commons/skills/find-skills/ directories.",
+      "Copied ~/.claude/skills/grill-me/SKILL.md → plugins/commons/skills/grill-me/SKILL.md. diff confirms byte-equal.",
+      "Copied ~/.claude/skills/find-skills/SKILL.md → plugins/commons/skills/find-skills/SKILL.md. diff confirms byte-equal.",
+      "npm test → 1133/1133 passing (no test changes needed; tests cover sync logic, not the existence of specific skill files).",
+      "node scripts/sync-shared.ts --check → ok (4 plugins synced; commons skills are plugin-authoritative, not part of any sync direction).",
+      "Evaluator panel skipped (the PR is a 2-file byte-equal copy with no logic changes; verification rests on the diff + drift check)."
+    ],
+    "files_touched": [
+      "plugins/commons/skills/grill-me/SKILL.md (new)",
+      "plugins/commons/skills/find-skills/SKILL.md (new)"
+    ],
+    "corrections": []
+  },
+  "scope": [],
+  "changes_since_previous": "PR4 (canonical root dissolution) merged to main as #21. Phase-2 branch rebased onto updated main. PR5 builds on PR4's plugin-authoritative semantics for skills.",
+  "verdict": {
+    "result": "approved",
+    "reasons": []
+  },
+  "notes_for_pr": [
+    "Closes RESEARCH § 7 (grill-me hard-dep gap): every loom-plan, loom-revise-plan, loom-research citation of /grill-me now resolves correctly on a fresh agent-loop-full@krambuhl install because commons cascades into the marketplace.",
+    "Out-of-repo cleanup deferred: ~/.claude/skills/grill-me/ and ~/.claude/skills/find-skills/ at the user-global level remain. They're harmless (Claude Code prefers cascaded plugin skills when both exist) but cluttery. User can delete the globals manually post-merge if desired; not in PR5 scope.",
+    "find-skills's body still references npx skills (the open agent-skills CLI). No change needed — that's a runtime dependency on an external tool, not affected by where the SKILL.md lives.",
+    "Evaluator panel skipped: PR5 is a 2-file byte-equal copy with no logic changes. Verification rests on the diff + 1133 passing tests + drift-check ok."
+  ]
+}
