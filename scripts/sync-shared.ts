@@ -4,21 +4,21 @@
  *
  * Two source-of-truth directions, distinguished by SyncSpec.origin:
  *
- *   1. `root-canonical` — content authored at the repo root (cli/lib/,
- *      cli/verbs/<plugin>/, cli/<plugin>.ts, skills/, agents/) mirrored
- *      into each consumer plugin's tree. This is the legacy direction;
- *      it dissolves as PR3-PR4 of the repo-compartmentalize project
- *      move canonical sources out of root.
+ *   1. `root-canonical` — content authored at the repo root, narrowing
+ *      over time. As of PR3 of the repo-compartmentalize project, root-
+ *      canonical claims: cli/verbs/, cli/(plugin-name).ts,
+ *      skills/(plugin-prefix), and agents/(plugin-prefix).md.
+ *      (cli/lib was moved to commons-canonical in PR3; root cli/lib
+ *      stays as an inert duplicate until PR9 deletion.)
  *
  *   2. `commons-canonical` — content authored inside `plugins/commons/`
- *      (cli/lib/, docs/) mirrored into each consumer plugin's tree per
+ *      (cli/lib, docs) mirrored into each consumer plugin's tree per
  *      the `COMMONS_CONSUMERS` table. Lib goes to PLUGINS_WITH_CLI;
  *      docs go to every plugin that cites docs/X.md in its skill bodies.
- *      This is the eventual direction once root canonical is gone.
  *
- * During Phase 1 of repo-compartmentalize, both directions are live
- * in parallel. `commons-canonical` emits zero specs while commons is
- * content-empty; PR3 starts populating it.
+ * PR4 dissolves root-canonical for skills/agents/per-plugin CLI. PR9
+ * deletes root cli/, skills/, agents/, docs/ entirely. After that
+ * sequence completes, commons-canonical is the only direction.
  *
  * Registered as Category 4 `generated-from-upstream` per
  * `projects/CONVENTIONS.md`. The output is deterministically derived
@@ -219,17 +219,15 @@ export function planForPlugin(plugin: PluginName, repoRoot = REPO_ROOT): PluginP
 
   // === root-canonical direction (legacy; dissolves at PR3-PR4) ===
 
-  // 1. Shared lib — every CLI-shipping plugin gets all of cli/lib/*.
-  //    Skipped for skill-only plugins (no cli/ tree on disk for them).
-  if (PLUGINS_WITH_CLI.includes(plugin as (typeof PLUGINS_WITH_CLI)[number])) {
-    for (const rel of walkFiles(join(repoRoot, 'cli', 'lib'), repoRoot)) {
-      files.push({
-        source: rel,
-        destination: join('plugins', plugin, rel),
-        origin: 'root-canonical',
-      });
-    }
-  }
+  // 1. Shared lib — historically root-canonical, cut over to
+  //    commons-canonical in PR3. The lib content now lives at
+  //    plugins/commons/cli/lib/ and reaches consumer plugins via the
+  //    commons-canonical branch below. Root cli/lib/ is kept as an
+  //    inert duplicate during the PR3→PR4 window so that root
+  //    cli/verbs/<plugin>/'s `../../lib/X.ts` imports continue to
+  //    resolve. PR9 deletes root cli/lib/ outright; PR4 dissolves
+  //    root cli/verbs/, removing the dependency on root cli/lib/ at
+  //    edit time.
 
   // 2. Per-plugin verbs subtree (CLI-shipping plugins only)
   const verbsDir = join('cli', 'verbs', plugin);

@@ -1,0 +1,97 @@
+{
+  "schema_version": 1,
+  "number": "03",
+  "created": "2026-05-21T22:00:00.000Z",
+  "phase": {
+    "number": 2,
+    "name": "Phase 2 — Bulk migrations"
+  },
+  "branch": "repo-compartmentalize.bulk",
+  "unit": "PR3 — Move cli/lib + docs canonical into plugins/commons/; cut over canonical source",
+  "contract": {
+    "goal": "Cut over the canonical source for shared lib + cross-substrate docs from the repo root into plugins/commons/. Drop cli/lib/ from sync-shared.ts's root-canonical direction; commons-canonical now exclusively handles lib + docs distribution. Each consumer plugin (griot/guild/loom for lib; griot/guild/loom/ev for docs) gains a synced docs/ tree at install time — closes the long-standing 'docs/ doesn't ship with plugins' gap (RESEARCH § 3). Root cli/lib/ + root docs/ kept as inert copies during the PR3→PR9 window (preserves root cli/verbs/'s import chain until PR4 dissolves it).",
+    "acceptance_criteria": [
+      "plugins/commons/cli/lib/*.ts contains byte-equal copies of cli/lib/*.ts (source + test files).",
+      "plugins/commons/docs/*.md contains byte-equal copies of all 4 conventions docs.",
+      "scripts/sync-shared.ts: root-canonical direction no longer walks cli/lib/. Banner comment updated to describe the new shape.",
+      "plugins/commons/docs/AGENT-CONVENTIONS.md § 'Marketplace-rooted doc paths' rewritten.",
+      "After sync, plugins/<consumer>/docs/ populated for griot/guild/loom/ev (16 NEW files).",
+      "Root cli/lib/ + root docs/ UNCHANGED.",
+      "README.md gains a note about the canonical shift + DO NOT EDIT instruction.",
+      "npm test + sync-shared.ts --check pass."
+    ],
+    "rules_applied": [
+      "PR2's invariant: every destination has exactly one upstream source. Dropping cli/lib/ from root direction preserves this since commons-canonical now claims those destinations exclusively.",
+      "Conservative cutover: COPY into commons; don't delete root. Root stays as inert duplicate for the PR3→PR4 window so root cli/verbs/'s `../../lib/X.ts` imports still resolve.",
+      "Test files move with sources. Fixtures (cli/fixtures/) move alongside the lib tests since the tests depend on fixtures via `../fixtures/` relative paths.",
+      "PLAN.md PR3 deferrals respected: no draft restructure (PR6 scope), no cli/lib/project.ts:148-151 dead-cite fix (PR11 scope)."
+    ],
+    "disqualifiers": [
+      "Deleting root cli/lib/ or root docs/ in this PR (PR9 scope).",
+      "Modifying root cli/lib/ source files (inert duplicates after this PR).",
+      "Including draft restructure or dead-cite fix.",
+      "Updating root docs/AGENT-CONVENTIONS.md (canonical text now lives at plugins/commons/docs/).",
+      "Skipping the README canonical-shift note.",
+      "Test failures."
+    ],
+    "inputs": [
+      "projects/2026-05-21-repo-compartmentalize/PLAN.md (§ PR3)",
+      "projects/2026-05-21-repo-compartmentalize/RESEARCH.md (§ 3 docs-doesn't-ship gap)",
+      "projects/2026-05-21-repo-compartmentalize/whiteboards/1-setup.md (substrate-engineer orphan-sweep finding)",
+      "scripts/sync-shared.ts (post-PR2 shape with origin discriminator + COMMONS_CONSUMERS)",
+      "scripts/sync-shared.test.ts (fixture builders + V10 + PR2 tests)",
+      "cli/lib/ (14 source + 7 test files to copy)",
+      "cli/fixtures/ (8 fixture files to copy alongside lib tests)",
+      "docs/ (4 conventions docs to copy)",
+      "README.md (target for canonical-shift note)"
+    ]
+  },
+  "execution": {
+    "actions": [
+      "Copied cli/lib/*.ts (14 source + 7 test files) to plugins/commons/cli/lib/. Byte-equal at copy time.",
+      "Copied docs/*.md (4 conventions docs) to plugins/commons/docs/. Byte-equal at copy time.",
+      "Copied cli/fixtures/* (8 JSON/JSONL fixtures) to plugins/commons/cli/fixtures/. The lib tests in plugins/commons/cli/lib/*.test.ts resolve fixtures via `../fixtures/` relative path; the fixture copy is necessary for the moved tests to discover their fixtures.",
+      "Modified scripts/sync-shared.ts banner: rewritten to describe the two-direction contract in its post-PR3 shape (root-canonical narrowed; commons-canonical claims cli/lib + docs).",
+      "Removed the cli/lib/ walk from the root-canonical direction in planForPlugin. Left an explanatory comment block in its place documenting the PR3→PR9 transition reasoning.",
+      "Rewrote plugins/commons/docs/AGENT-CONVENTIONS.md § 'Marketplace-rooted doc paths' to describe the new shape (commons is authoritative; each consumer receives a synced copy; no cross-plugin path resolution required).",
+      "Rewrote README.md § 'Authoring against this marketplace' with the two-direction explanation + explicit 'DO NOT edit root cli/lib/ or root docs/' instruction during the PR3→PR9 window.",
+      "Ran `node scripts/sync-shared.ts` to materialize the new sync output. 125 files synced total. NEW: plugins/{griot,guild,loom,ev}/docs/ directories with 4 docs each (16 new files). Existing: plugins/{griot,guild,loom}/cli/lib/ unchanged in content (now sourced from commons-canonical; bytes identical to pre-PR3).",
+      "Restructured scripts/sync-shared.test.ts fixtures post-PR3: buildOldDirectionTree narrowed to root-only content (no lib writes — root no longer claims cli/lib/). buildCommonsDirectionTree enriched with manifest.ts/events.ts/helpers.ts/manifest.test.ts + the existing docs/*. V10 (a/b/c) tests that exercise lib switched from buildOldDirectionTree to buildBothDirectionsTree. Assertions reading 'cli/lib/X.ts' updated to 'plugins/commons/cli/lib/X.ts'.",
+      "Removed the PR2 (c) FIRES test (moot post-PR3 — the natural cli/lib/-vs-cli/lib/ conflict is structurally impossible since root no longer claims cli/lib/). Kept the disjoint-baseline test as regression coverage against accidental re-introduction of an overlapping claim. Added comment block documenting the coverage gap and the two routes to restore positive coverage (refactor to expose a testable function OR a future direction change that re-introduces overlap).",
+      "Ran npm test → 747/747 passing (was 648 pre-PR3; +99 because lib tests now also run from plugins/commons/cli/lib/*.test.ts).",
+      "Ran `node scripts/sync-shared.ts --check` → ok (5 plugins synced; no drift; conflict-detection guard reports zero conflicts because root-canonical no longer claims cli/lib/ destinations).",
+      "Ran /guild-validate with 4 evaluators (contract-fit, react-api, test-unit, naming). Three approved cleanly. evaluator-naming's output was truncated mid-investigation (no explicit VERDICT line; tool_uses=12) — self-checked naming consistency: buildOldDirectionTree/CommonsDirectionTree/BothDirectionsTree semantics earn their names post-PR3; origin/root-canonical/commons-canonical vocabulary consistent across banner+AGENT-CONVENTIONS+README; no 'shared' working-name leftovers introduced. evaluator-test-unit raised one substantive advisory (conflict-guard positive-fire test removed; coverage gap acknowledged via comment in the disjoint-baseline test)."
+    ],
+    "files_touched": [
+      "scripts/sync-shared.ts",
+      "scripts/sync-shared.test.ts",
+      "README.md",
+      "plugins/commons/cli/lib/* (new)",
+      "plugins/commons/cli/fixtures/* (new)",
+      "plugins/commons/docs/* (new)",
+      "plugins/griot/docs/* (new, synced)",
+      "plugins/guild/docs/* (new, synced)",
+      "plugins/loom/docs/* (new, synced)",
+      "plugins/ev/docs/* (new, synced)"
+    ],
+    "corrections": [
+      "Mid-execution: JSDoc banner edit accidentally embedded `*/` (from glob notation `skills/<plugin-prefix>-*/`) which Node's TypeScript stripper interpreted as comment-close, producing a syntax error. Fixed by switching to parenthesized notation `skills/(plugin-prefix)`.",
+      "Mid-execution: after moving lib tests to plugins/commons/cli/lib/*.test.ts, they couldn't find fixtures (their `../fixtures/` resolution looked at plugins/commons/cli/fixtures/, which didn't exist). Copied cli/fixtures/ → plugins/commons/cli/fixtures/ to restore fixture discovery.",
+      "Mid-execution: pre-existing V10 (a/b/c) tests assumed root claims cli/lib/. Post-PR3 they fail because root no longer does. Fixed via the fixture restructure above + V10 assertion updates. The semantic split is: buildOldDirectionTree = root-only; buildCommonsDirectionTree = commons-only; buildBothDirectionsTree = composition.",
+      "Mid-execution: PR2 (c) FIRES test (asserting the conflict guard fires when root-canonical and commons-canonical both claim cli/lib/) became structurally impossible post-PR3. Removed the FIRES test and acknowledged the coverage gap in a comment on the disjoint-baseline test. The conflict-guard CODE remains intact and ready for future overlapping claims."
+    ]
+  },
+  "scope": [],
+  "changes_since_previous": "PR1 + PR2 merged to main (PR #18 and #19). Phase 1 marked completed in manifest. New phase-2 branch `repo-compartmentalize.bulk` cut from updated main. Manifest's phases array doesn't have Phase 2 entry (loom phase update doesn't support adding new phases via CLI — known substrate gap; PLAN.md remains source of truth).",
+  "verdict": {
+    "result": "approved",
+    "reasons": []
+  },
+  "notes_for_pr": [
+    "BREAKING CHANGE for contributors: root cli/lib/ and root docs/ are NO LONGER canonical. Edits to those locations are inert (don't propagate via sync). Authoritative edits land in plugins/commons/cli/lib/ and plugins/commons/docs/. Root copies are preserved during the PR3→PR9 window to keep root cli/verbs/'s `../../lib/X.ts` imports resolving; PR9 deletes them.",
+    "Single biggest compartmentalization-gap closure: docs now ship inside consumer plugin trees. Per RESEARCH § 3, the docs-doesn't-ship-with-plugins gap was the largest finding. Every consumer that cites `docs/X.md` in skills (loom, ev) now resolves the citation against its own plugin-local synced copy.",
+    "Advisory acknowledged: PR2 (c) conflict-guard FIRES test removed (moot since root no longer claims cli/lib/ destinations). The guard CODE remains in detectDrift and the disjoint-baseline test catches spurious-fire regressions. Restoring positive-fire test coverage is captured as future work in a comment in scripts/sync-shared.test.ts.",
+    "Inline correction during execution: Node's TypeScript stripper choked on `*/` inside the JSDoc banner (interpreted as comment-close). Fixed by switching glob notation from `*/` to parenthesized form. Lesson: avoid `*/` sequences inside JSDoc on Node 22+ TS-stripping path.",
+    "Test count: 747 → up from 648 pre-PR3 (+99). The increase is from lib tests now running BOTH at plugins/commons/cli/lib/*.test.ts (authoritative) AND at root cli/lib/*.test.ts (inert duplicates). Tests against inert duplicates pass trivially (same bytes); they continue to pass until PR9 deletes the root copies."
+  ]
+}

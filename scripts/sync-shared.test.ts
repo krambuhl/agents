@@ -51,43 +51,47 @@ function read(path: string): string {
 }
 
 function buildOldDirectionTree(): void {
-  // Shared lib (all 3 plugins copy this)
-  write('cli/lib/manifest.ts', 'export const MANIFEST = "fixture";\n');
-  write('cli/lib/events.ts', 'export const EVENTS = "fixture";\n');
-  // Per-plugin verb subtrees
+  // Post-PR3, root-canonical NO LONGER claims cli/lib/ (commons-canonical
+  // owns it). Old direction now covers: cli/verbs/, cli/(plugin).ts,
+  // skills/(plugin-prefix), agents/(plugin-prefix).md only.
+  //
+  // Per-plugin verb subtrees (still root-canonical until PR4)
   write('cli/verbs/griot/use.ts', 'export const useVerb = () => null;\n');
   write('cli/verbs/guild/derive-panel.ts', 'export const dp = () => null;\n');
   write('cli/verbs/loom/project.ts', 'export const PROJECT_VERBS = {};\n');
-  // Plugin entries
+  // Plugin entries (still root-canonical until PR4)
   write('cli/griot.ts', '#!/usr/bin/env node\nconsole.log("griot");\n');
   write('cli/guild.ts', '#!/usr/bin/env node\nconsole.log("guild");\n');
   write('cli/loom.ts', '#!/usr/bin/env node\nconsole.log("loom");\n');
-  // Skills — one per plugin under its prefix
+  // Skills — one per plugin under its prefix (still root-canonical until PR4)
   write('skills/griot-load/SKILL.md', '---\nname: griot-load\n---\nfixture\n');
   write('skills/guild-validate/SKILL.md', '---\nname: guild-validate\n---\nfixture\n');
   write('skills/loom-plan/SKILL.md', '---\nname: loom-plan\n---\nfixture\n');
   write('skills/ev-run/SKILL.md', '---\nname: ev-run\n---\nfixture\n');
   write('skills/review-skill/SKILL.md', '---\nname: review-skill\n---\nfixture\n');
-  // Agents — one per agent-namespace
+  // Agents — one per agent-namespace (still root-canonical until PR4)
   write('agents/griot-judge.md', '---\nname: griot-judge\n---\nfixture\n');
   write('agents/whiteboard-skeptic.md', '---\nname: whiteboard-skeptic\n---\nfixture\n');
   write('agents/evaluator-contract-fit.md', '---\nname: evaluator-contract-fit\n---\nfixture\n');
   write('agents/generator-base.md', '---\nname: generator-base\n---\nfixture\n');
-  // Excluded: test files + fixtures (should NOT be copied)
-  write('cli/lib/manifest.test.ts', 'test stub');
+  // Excluded: test files + fixtures (should NOT be copied to consumers).
   write('cli/verbs/griot/use.test.ts', 'test stub');
   write('cli/fixtures/manifest-basic.json', '{}');
   write('cli/griot.test.ts', 'test stub');
 }
 
 /**
- * PR2 fixture: commons-canonical source content only.
+ * PR2/PR3 fixture: commons-canonical source content only.
  * Populates `plugins/commons/cli/lib/` and `plugins/commons/docs/` with
- * a small file each. No root-canonical content. Defends the new
- * commons→consumer direction in isolation.
+ * the lib + docs content consumer plugins receive via sync-shared.ts.
+ * No root-canonical content. Defends the commons→consumer direction in
+ * isolation.
  */
 function buildCommonsDirectionTree(): void {
+  write('plugins/commons/cli/lib/manifest.ts', 'export const MANIFEST = "fixture";\n');
+  write('plugins/commons/cli/lib/events.ts', 'export const EVENTS = "fixture";\n');
   write('plugins/commons/cli/lib/helpers.ts', 'export const HELPERS = "commons-fixture";\n');
+  write('plugins/commons/cli/lib/manifest.test.ts', 'test stub');
   write('plugins/commons/docs/AGENT-CONVENTIONS.md', '# Agent conventions fixture\n');
   write('plugins/commons/docs/PANEL-COMPOSITION.md', '# Panel composition fixture\n');
 }
@@ -106,17 +110,23 @@ function buildBothDirectionsTree(): void {
 
 describe('V10 (a): planForPlugin returns expected source/dest pairs', () => {
   test('griot plan covers cli/lib + cli/verbs/griot + cli/griot.ts + griot-* skills + griot-* agents', () => {
-    buildOldDirectionTree();
+    buildBothDirectionsTree();
     const plan = planForPlugin('griot', root);
 
     const sources = plan.files.map((f) => f.source).sort();
+    // Post-PR3: cli/lib/ moved from root-canonical to commons-canonical.
+    // Lib sources now live at plugins/commons/cli/lib/* (the consumer
+    // plugin receives them from the commons direction).
     expect(sources).toEqual(
       [
         'agents/griot-judge.md',
         'cli/griot.ts',
-        'cli/lib/events.ts',
-        'cli/lib/manifest.ts',
         'cli/verbs/griot/use.ts',
+        'plugins/commons/cli/lib/events.ts',
+        'plugins/commons/cli/lib/helpers.ts',
+        'plugins/commons/cli/lib/manifest.ts',
+        'plugins/commons/docs/AGENT-CONVENTIONS.md',
+        'plugins/commons/docs/PANEL-COMPOSITION.md',
         'skills/griot-load/SKILL.md',
       ].sort(),
     );
@@ -128,11 +138,11 @@ describe('V10 (a): planForPlugin returns expected source/dest pairs', () => {
   });
 
   test('plan excludes test files and fixtures', () => {
-    buildOldDirectionTree();
+    buildBothDirectionsTree();
     const plan = planForPlugin('griot', root);
     const sources = plan.files.map((f) => f.source);
     expect(sources).not.toContain('cli/griot.test.ts');
-    expect(sources).not.toContain('cli/lib/manifest.test.ts');
+    expect(sources).not.toContain('plugins/commons/cli/lib/manifest.test.ts');
     expect(sources).not.toContain('cli/verbs/griot/use.test.ts');
     expect(sources.some((s) => s.includes('/fixtures/'))).toBe(false);
   });
@@ -145,9 +155,12 @@ describe('V10 (a): planForPlugin returns expected source/dest pairs', () => {
     expect(sources.some((s) => s.startsWith('cli/verbs/loom/'))).toBe(false);
   });
 
-  test('every plugin gets the same shared lib subset', () => {
-    buildOldDirectionTree();
-    const libFiles = ['cli/lib/events.ts', 'cli/lib/manifest.ts'];
+  test('every plugin gets the same shared lib subset (post-PR3: from commons)', () => {
+    buildBothDirectionsTree();
+    const libFiles = [
+      'plugins/commons/cli/lib/events.ts',
+      'plugins/commons/cli/lib/manifest.ts',
+    ];
     for (const plugin of PLUGINS_WITH_CLI) {
       const plan = planForPlugin(plugin, root);
       const sources = plan.files.map((f) => f.source);
@@ -160,7 +173,7 @@ describe('V10 (a): planForPlugin returns expected source/dest pairs', () => {
 
 describe('V10 (b): applySync end-to-end byte-for-byte match', () => {
   test('every generated file byte-equals its upstream source', () => {
-    buildOldDirectionTree();
+    buildBothDirectionsTree();
     const cwd = process.cwd();
     try {
       process.chdir(root);
@@ -170,8 +183,9 @@ describe('V10 (b): applySync end-to-end byte-for-byte match', () => {
     }
 
     // Spot-check three files across all three plugins.
+    // Post-PR3: lib is sourced from plugins/commons/cli/lib/.
     expect(read('plugins/griot/cli/lib/manifest.ts')).toBe(
-      read('cli/lib/manifest.ts'),
+      read('plugins/commons/cli/lib/manifest.ts'),
     );
     expect(read('plugins/guild/cli/verbs/guild/derive-panel.ts')).toBe(
       read('cli/verbs/guild/derive-panel.ts'),
@@ -206,7 +220,7 @@ describe('V10 (b): applySync end-to-end byte-for-byte match', () => {
 
 describe('V10 (c): drift detection — false-green failure-mode tripwire', () => {
   test('mutated per-plugin file post-sync is reported as divergent', () => {
-    buildOldDirectionTree();
+    buildBothDirectionsTree();
     applySync(root);
 
     // Mutate one per-plugin file post-sync — simulates a careless edit
@@ -246,7 +260,7 @@ describe('V10 (c): drift detection — false-green failure-mode tripwire', () =>
   });
 
   test('missing file in plugin tree (upstream exists, dest does not) is reported', () => {
-    buildOldDirectionTree();
+    buildBothDirectionsTree();
     applySync(root);
 
     // Delete a synced file; --check should flag it as missing.
@@ -258,11 +272,12 @@ describe('V10 (c): drift detection — false-green failure-mode tripwire', () =>
     );
     expect(missing).toBeDefined();
     expect(missing?.kind).toBe('missing');
-    expect(missing?.source).toBe('cli/lib/manifest.ts');
+    // Post-PR3: lib is sourced from plugins/commons/cli/lib/.
+    expect(missing?.source).toBe('plugins/commons/cli/lib/manifest.ts');
   });
 
   test('drift message names source path + plugin path + one-shot remedy', () => {
-    buildOldDirectionTree();
+    buildBothDirectionsTree();
     applySync(root);
     writeFileSync(
       join(root, 'plugins/griot/cli/lib/manifest.ts'),
@@ -278,7 +293,7 @@ describe('V10 (c): drift detection — false-green failure-mode tripwire', () =>
     // and the one-shot remedy. These are the substrate convention for
     // loud-fail drift error messages.
     expect(record?.message).toContain('plugins/griot/cli/lib/manifest.ts');
-    expect(record?.message).toContain('cli/lib/manifest.ts');
+    expect(record?.message).toContain('plugins/commons/cli/lib/manifest.ts');
     expect(record?.message).toMatch(/sync-shared\.ts/);
   });
 });
@@ -393,7 +408,7 @@ describe('skills + agents: per-plugin sync (gap caught by V6 smoke test)', () =>
 // the structural close-out of the original describe-block above.
 describe('V10 (c) closure: drift-message format coverage (already asserted above)', () => {
   test('drift message format also names the script name', () => {
-    buildOldDirectionTree();
+    buildBothDirectionsTree();
     applySync(root);
     writeFileSync(join(root, 'plugins/griot/cli/lib/manifest.ts'), 'x', 'utf8');
     const drift = detectDrift(root);
@@ -516,34 +531,38 @@ describe('PR2 (b): commons-source planner — populated commons fixture', () => 
 });
 
 describe('PR2 (c): conflict-detection guard — dual-write tripwire', () => {
-  test('a destination claimed by both root-canonical AND commons-canonical fires a conflict record', () => {
-    buildBothDirectionsTree();
-    // Force a conflict: commons declares `plugins/commons/cli/lib/manifest.ts`
-    // as a source for plugins/griot/cli/lib/manifest.ts. Root canonical
-    // already claims the same destination via cli/lib/manifest.ts. Two
-    // sources, one destination = conflict.
-    write('plugins/commons/cli/lib/manifest.ts', 'export const MANIFEST = "commons-version";\n');
+  // Post-PR3: the natural cli/lib/-vs-cli/lib/ conflict that PR2's FIRES
+  // test exercised is no longer possible — root-canonical no longer
+  // claims cli/lib/ destinations. The guard still defends against any
+  // FUTURE case where two directions overlap on a destination, but
+  // exercising it requires either (a) a contrived synthetic input
+  // (planner-bypass test), or (b) a regression that re-introduces an
+  // overlapping claim. PR3 removes the FIRES test as moot and keeps
+  // the disjoint test as a regression check against accidental
+  // re-introduction of the cli/lib/-overlap claim.
 
-    const drift = detectDrift(root);
-    const conflict = drift.find(
-      (d) =>
-        d.kind === 'conflict' &&
-        d.destination === 'plugins/griot/cli/lib/manifest.ts',
-    );
-    expect(conflict).toBeDefined();
-    expect(conflict?.message).toMatch(/claimed by multiple upstream sources/);
-    expect(conflict?.message).toMatch(/root-canonical/);
-    expect(conflict?.message).toMatch(/commons-canonical/);
-  });
-
-  test('no conflict reported when destinations are disjoint', () => {
+  test('no conflict reported when destinations are disjoint (post-PR3 baseline)', () => {
     buildBothDirectionsTree();
-    // Fixture's commons content (helpers.ts, docs/*) doesn't collide with
-    // root-canonical's content (manifest.ts, events.ts). No conflicts.
+    // Root-canonical claims cli/verbs/, cli/(plugin).ts, skills/, agents/.
+    // Commons-canonical claims cli/lib/, docs/. Disjoint claim sets.
     const drift = detectDrift(root);
     const conflicts = drift.filter((d) => d.kind === 'conflict');
     expect(conflicts).toEqual([]);
   });
+
+  // Coverage gap acknowledged: post-PR3 there is no natural-input test
+  // of the guard's positive-fire path (the cli/lib/-overlap scenario PR2
+  // exercised is structurally impossible now). Restoring positive
+  // coverage requires either:
+  //   (a) Extracting the conflict-detection block of detectDrift() into
+  //       a separately-exported function and testing it with synthetic
+  //       PluginPlan[] inputs, OR
+  //   (b) A future direction change that re-introduces overlapping
+  //       destinations (e.g. PR4 might shift cli/verbs/ such that root
+  //       and commons could each claim it during a brief mixed window),
+  //       at which point a natural-input FIRES test re-emerges.
+  // Tracked for a future cleanup PR; the disjoint-baseline test above
+  // catches regressions that re-introduce a spurious-fire bug.
 });
 
 describe('PR2: commons is leaf-source-only — substrate invariant', () => {
