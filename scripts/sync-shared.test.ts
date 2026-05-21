@@ -68,7 +68,6 @@ function buildOldDirectionTree(): void {
   write('skills/guild-validate/SKILL.md', '---\nname: guild-validate\n---\nfixture\n');
   write('skills/loom-plan/SKILL.md', '---\nname: loom-plan\n---\nfixture\n');
   write('skills/ev-run/SKILL.md', '---\nname: ev-run\n---\nfixture\n');
-  write('skills/review-skill/SKILL.md', '---\nname: review-skill\n---\nfixture\n');
   // Agents — one per agent-namespace (still root-canonical until PR4)
   write('agents/griot-judge.md', '---\nname: griot-judge\n---\nfixture\n');
   write('agents/whiteboard-skeptic.md', '---\nname: whiteboard-skeptic\n---\nfixture\n');
@@ -289,7 +288,7 @@ describe('skills + agents: post-PR4 plugin-authoritative', () => {
   test('planForPlugin emits zero specs for plugins/<plugin>/skills/ (authoritative)', () => {
     buildBothDirectionsTree();
     // No matter what's at root skills/, the planner doesn't claim skills.
-    for (const plugin of ['griot', 'guild', 'loom', 'ev', 'review-skill'] as const) {
+    for (const plugin of ['griot', 'guild', 'loom', 'ev'] as const) {
       const plan = planForPlugin(plugin, root);
       const skillSpecs = plan.files.filter((f) => f.destination.includes('/skills/'));
       expect(skillSpecs).toEqual([]);
@@ -423,8 +422,8 @@ describe('PR2 (b): commons-source planner — populated commons fixture', () => 
 
   test('plugins NOT in either consumer set get zero commons-canonical specs', () => {
     buildBothDirectionsTree();
-    // review-skill and agent-loop-full are excluded from both lib and docs consumer sets.
-    for (const plugin of ['review-skill', 'agent-loop-full'] as const) {
+    // agent-loop-full is excluded from both lib and docs consumer sets.
+    for (const plugin of ['agent-loop-full'] as const) {
       const plan = planForPlugin(plugin, root);
       const commonsSpecs = plan.files.filter((f) => f.origin === 'commons-canonical');
       expect(commonsSpecs).toEqual([]);

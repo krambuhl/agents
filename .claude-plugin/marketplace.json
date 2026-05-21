@@ -4,7 +4,7 @@
     "name": "Evan Krambuhl",
     "email": "evan.krambuhl@gmail.com"
   },
-  "description": "Agent-loop substrate: commons (foundation), loom (projects), griot (learnings), guild (panels), ev (loops), review-skill, and the agent-loop-full meta-bundle.",
+  "description": "Agent-loop substrate: commons (foundation), loom (projects), griot (learnings), guild (panels), ev (loops), and the agent-loop-full meta-bundle.",
   "plugins": [
     {
       "name": "commons",
@@ -36,15 +36,10 @@
       "dependencies": ["commons", "loom", "guild", "griot"]
     },
     {
-      "name": "review-skill",
-      "source": "./plugins/review-skill",
-      "description": "Standalone code-review skill for editing other skill bodies and agent files."
-    },
-    {
       "name": "agent-loop-full",
       "source": "./plugins/agent-loop-full",
-      "description": "Meta-bundle: zero-content plugin that cascade-installs the full agent-loop family (commons, griot, guild, loom, ev, review-skill).",
-      "dependencies": ["commons", "griot", "guild", "loom", "ev", "review-skill"]
+      "description": "Meta-bundle: zero-content plugin that cascade-installs the full agent-loop family (commons, griot, guild, loom, ev).",
+      "dependencies": ["commons", "griot", "guild", "loom", "ev"]
     }
   ]
 }

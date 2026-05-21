@@ -13,6 +13,12 @@
       "name": "Phase 1",
       "status": "completed",
       "branch": "repo-compartmentalize.setup"
+    },
+    {
+      "number": 3,
+      "name": "Phase 3 — Cleanup",
+      "status": "in-progress",
+      "branch": "repo-compartmentalize.cleanup"
     }
   ]
 }
