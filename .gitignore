@@ -1,13 +1,5 @@
-# Top-level bin/ was used by the legacy setup-script symlink farm
-# (deleted in W9 of the marketplace-portable-install migration). Kept
-# out of the repo so any local re-creation of those shims doesn't
-# pollute the canonical source. Anchored to the repo root so per-
-# plugin `plugins/<name>/bin/` source shims (committed as part of
-# the migration) remain tracked.
-/bin/
-
 # Per-machine Node deps — install with `npm install` for the test harness.
-# Covers both root and any nested node_modules in cli/ or elsewhere.
+# Covers both root and any nested node_modules.
 node_modules
 
 # OS noise

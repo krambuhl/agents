@@ -1,0 +1,85 @@
+{
+  "schema_version": 1,
+  "number": "10",
+  "created": "2026-05-22T04:30:00.000Z",
+  "phase": {
+    "number": 3,
+    "name": "Phase 3 — Cleanup"
+  },
+  "branch": "repo-compartmentalize.cleanup",
+  "unit": "PR10 — Delete root bin/ shims + .gitignore entry (dev-loop ergonomic cleanup)",
+  "contract": {
+    "goal": "Complete the dev-loop ergonomic cleanup (PLAN.md § Q6b). Delete the 3 root `bin/` shims (`bin/griot`, `bin/guild`, `bin/loom`) — gitignored relics with misleading provenance per RESEARCH § Q6b. The legacy setup-script symlink farm that needed them was deleted in W9 of marketplace-portable-install (over twice ago: once when install.sh was deleted in W9, and now when the dev-shim era ends). Drop the `/bin/` entry + its explanatory comment from `.gitignore` since the gitignored directory no longer exists. Post-PR10, developers run `node plugins/<plugin>/cli/<cli>.ts` for dev-loop testing, or install the plugin and use its bin.",
+    "acceptance_criteria": [
+      "Root `bin/` directory deleted (all 3 shims: griot, guild, loom; the directory itself deleted).",
+      "`.gitignore` no longer contains the `/bin/` entry.",
+      "`.gitignore` explanatory comment for the `/bin/` block deleted (6 lines: 'Top-level bin/ was used by the legacy setup-script symlink farm...' through 'plugin `plugins/<name>/bin/` source shims (committed as part of the migration) remain tracked.').",
+      "`.gitignore` node_modules comment updated to drop the now-incorrect `cli/` reference ('Covers both root and any nested node_modules in cli/ or elsewhere' → 'Covers both root and any nested node_modules').",
+      "`find . -maxdepth 1 -type d -name 'bin'` returns nothing.",
+      "`grep -rn 'install\\.sh' --include='*.ts' --include='*.md' .` returns no live hits outside `projects/archive/` (per PLAN PR10's verification — install.sh era is over twice over; no live references should survive).",
+      "`npm test` passes (no tests should reference root `bin/` shims — per-plugin tests use per-plugin bin shims; plugin-bin-shims.test.ts at plugins/commons/cli/ tests per-plugin bin shims via tmpdirs).",
+      "`node scripts/sync-shared.ts --check` passes (root `bin/` wasn't claimed by any active sync direction)."
+    ],
+    "rules_applied": [
+      "PLAN.md § PR10 — dev-loop ergonomic cleanup (Q6b). Complement to PR9's substrate-level canonical-root dissolution (Q7). Scope intentionally split per PLAN's 'asymmetric rollback profiles' rationale.",
+      "PR9 consolidation: cli/no-install-sh-refs.test.ts was already deleted in PR9, so PR10's scope shrinks to just root bin/ + .gitignore. PR9's checkin notes_for_pr captured this.",
+      "PR10 closes the install.sh era for the second (and final) time. The install.sh tripwire test was a forward-looking guard against accidental re-introduction; the substrate has now moved past it twice.",
+      ".gitignore comment hygiene: the node_modules comment referenced `cli/` as an example of where nested node_modules might live. Post-PR9 root cli/ is gone, so the example is stale. Updating the comment is reasonable in-scope ergonomic cleanup adjacent to the primary .gitignore edit (same file, same conceptual layer)."
+    ],
+    "disqualifiers": [
+      "Touching any plugin's bin/ shim (plugins/<plugin>/bin/<plugin>). Those are committed source shims that the marketplace install pipeline depends on; only ROOT bin/ goes away.",
+      "Touching any plugin's CLI entrypoint (plugins/<plugin>/cli/<plugin>.ts).",
+      "Touching anything in projects/ beyond this unit's checkin + auto-emitted events (no manifest edits, no archive moves).",
+      "Touching PLAN.md, package.json, README.md, or any other prose — PR11's territory.",
+      "Modifying `plugins/commons/cli/plugin-bin-shims.test.ts` — per-plugin bin shim parity is what that test defends; root bin/ deletion doesn't affect that invariant.",
+      "Adding new tests (PR10 is a pure deletion).",
+      "Test failures.",
+      "Drift on `node scripts/sync-shared.ts --check` after the change."
+    ],
+    "inputs": [
+      "projects/2026-05-21-repo-compartmentalize/PLAN.md (§ PR10)",
+      "projects/2026-05-21-repo-compartmentalize/RESEARCH.md (§ Q6b — root bin/ shim relics rationale)",
+      "bin/ (root directory; 3 shim files for deletion)",
+      ".gitignore (lines 1-7: /bin/ entry + comment block for deletion; lines 9-10: node_modules comment for cli/-mention cleanup)"
+    ]
+  },
+  "execution": {
+    "actions": [
+      "Wrote memory file for substrate gaps #3 and #4 surfaced in PR8-9 (feedback_loom_pr_opened_orphan_and_guild_spec_path.md). Added to MEMORY.md index. Two memory files now span the four substrate gaps surfaced this project.",
+      "Stashed orphan pr-opened event from PR9 (substrate gap #3, recurring). Synced main from origin (was 2 commits behind after PR #26 merge). Reset cleanup branch to updated main. Popped stash so the event lands in PR10's first commit as bookkeeping carry.",
+      "Audited PR10 surface: root bin/ has 3 shims (griot, guild, loom) — all gitignored per .gitignore:7. .gitignore comment block (lines 1-6) describes the legacy setup-script symlink farm. Also noted: node_modules comment at line 10 references `cli/` as nested-locations example, stale post-PR9.",
+      "PR9-consolidation note: cli/no-install-sh-refs.test.ts already deleted in PR9, so PR10 scope shrinks to root bin/ + .gitignore only (the install.sh tripwire test was PLAN PR10's 2nd bullet, now N/A).",
+      "Wrote contract-only checkin 10 via loom checkin write. Skipped grill: clean draft, small surface, no ambiguous fields. Auto-mode bias toward making reasonable calls; .gitignore comment cleanup is small in-scope adjacency.",
+      "rm -rf bin/ (deletes 3 shims + directory; gitignored so no git status entry for the deletion).",
+      "Edited .gitignore: removed the entire `/bin/` block (6-line comment + the `/bin/` line itself); shortened node_modules comment to drop the `cli/` mention. Resulting .gitignore is 4 lines + node_modules + .DS_Store.",
+      "Verified find . -maxdepth 1 -type d -name 'bin' → empty.",
+      "Verified npm test → 637/637 across 39 test files (unchanged from PR9 baseline; no test referenced root bin/).",
+      "Verified node scripts/sync-shared.ts --check → ok (4 plugins synced).",
+      "Verified install.sh sweep: 5 hits in projects/2026-05-21-repo-compartmentalize/{RESEARCH,RESEARCH-NOTES,PLAN}.md — all narrative-history references describing the migration story (same shape as projects/archive/ content; not live code calls). Will move to projects/archive/ when this project archives. Passes PLAN PR10's verification in spirit (no live calls) even though literal grep returns these hits while the project is still active.",
+      "Panel: evaluator-contract-fit only (diff is .gitignore + substrate bookkeeping; no .ts/.tsx files so react-api/test-unit/naming N/A per derive-panel auto-derivation). Returned VERDICT: approved with zero findings.",
+      "Scope-shift detection: 0 signals (panel clean; no user comment; no whiteboard; not at phase boundary — PR11 still to go before phase close)."
+    ],
+    "files_touched": [
+      "bin/ (root directory; deleted, including 3 gitignored shims griot/guild/loom — not tracked, so doesn't appear in git status)",
+      ".gitignore (6-line `/bin/` block removed + node_modules comment shortened to drop the now-stale `cli/` mention)",
+      "projects/2026-05-21-repo-compartmentalize/events.jsonl (carries PR9's orphan pr-opened event + new events for this unit auto-emitted by loom verbs)",
+      "projects/2026-05-21-repo-compartmentalize/checkins/repo-compartmentalize.cleanup/10.json (this checkin)"
+    ],
+    "corrections": []
+  },
+  "scope": [],
+  "changes_since_previous": "PR9 (delete canonical root cli/skills/agents/docs/) merged to main as PR #26. Cleanup branch reset to updated main and restarted for PR10. Same orphan-event carry pattern as PR9 carried PR8's: PR10's first commit folds PR9's pr-opened event from events.jsonl (substrate gap #3, captured in [[loom-pr-opened-orphan-event-and-guild-spec-path-gaps]]).",
+  "verdict": {
+    "result": "approved",
+    "reasons": []
+  },
+  "notes_for_pr": [
+    "Penultimate Phase 3 PR. PR11 (prose sweep: package.json keywords, README, draft-* dead references) closes the phase and the project.",
+    "PR10 is SMALLER than PLAN suggested because PR9 consolidated the cli/no-install-sh-refs.test.ts deletion (PR10's 2nd bullet in PLAN). Today's PR is just root bin/ shim deletion + .gitignore cleanup.",
+    "Substrate gap #3 reoccurred this unit (PR9's pr-opened event was uncommitted on cleanup branch). Same Pattern A carry as PR9 used for PR8's. Captured in [[loom-pr-opened-orphan-event-and-guild-spec-path-gaps]] memory for future ev-loop sessions.",
+    ".gitignore comment hygiene: dropped the `cli/` mention from the node_modules comment since root cli/ went away in PR9. Small adjacency to the primary edit (same file, same conceptual layer — gitignore comments describing what gets excluded).",
+    "install.sh sweep technicality: PLAN PR10's verification says `git grep -n 'install\\.sh' returns no live hits outside projects/archive/`. Today the hits exist in projects/2026-05-21-repo-compartmentalize/{RESEARCH,RESEARCH-NOTES,PLAN}.md — the active project's own narrative dossier. They're not LIVE references (no code calls install.sh); they're history narrative, same shape as projects/archive/ content. Verification passes the spirit; will pass literal once this project archives (PR after PR11, presumably).",
+    "Panel: evaluator-contract-fit only (no .ts files in diff; derive-panel auto-derivation handled this). Approved, zero findings.",
+    "Whiteboard: skipped (Phase 3 precedent; minuscule mechanical PR)."
+  ]
+}
