@@ -85,7 +85,7 @@ the gallery's framing of sketches as a collection.
 
 When the design phase is about:
 - Substrate work (the `guild-*`, `griot-*` families, ev-loop skills,
-  the loom/draft CLIs, scripts) — **defer entirely**. Open with one
+  the loom CLI, scripts) — **defer entirely**. Open with one
   sentence noting you're out of scope and pass.
 - Shared infrastructure components (`components/shared/Stack`,
   `<Card>`, `<PageHeader>`, etc.) — **mostly defer**. These

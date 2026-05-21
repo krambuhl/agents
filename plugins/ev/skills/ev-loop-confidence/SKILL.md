@@ -23,9 +23,8 @@ unit and a tactical retro per tier.
 operations; `/guild-validate` (via the Skill tool) for the antagonist
 panel.
 **Does not compose**: other loops. Peer loops are invoked by the router,
-not by each other. No ambient `/loom-*` or `/draft-revise` skills —
-substrate plumbing dispatches directly to the CLIs (see § Substrate
-compositions).
+not by each other. No ambient `/loom-*` skills — substrate plumbing
+dispatches directly to the CLIs (see § Substrate compositions).
 
 **Format reference**: `docs/LOOM-CONVENTIONS.md` (plugin-relative
 path; present in every install of the `loom` plugin).
