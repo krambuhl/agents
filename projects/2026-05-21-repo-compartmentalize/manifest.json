@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "title": "Repo Compartmentalize",
+  "slug": "2026-05-21-repo-compartmentalize",
+  "started": "2026-05-21",
+  "status": "active",
+  "current_branch": null,
+  "latest_checkin": null,
+  "strategy": "interactive",
+  "phases": [
+    {
+      "number": 1,
+      "name": "Phase 1",
+      "status": "not-started"
+    }
+  ]
+}

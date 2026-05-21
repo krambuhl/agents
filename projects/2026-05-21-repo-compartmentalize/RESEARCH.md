@@ -1,0 +1,213 @@
+# Research — repo-compartmentalize
+
+## Context
+
+The `agents` marketplace ships six Claude Code plugins (griot, guild, loom, ev, review-skill, agent-loop-full) backed by canonical sources at the repo root (`cli/`, `skills/`, `agents/`, `docs/`) that `scripts/sync-shared.ts` mirrors into per-plugin trees under `plugins/<name>/`. The user (Evan) called out drift between the canonical shape and the per-plugin shape, questioned whether root dirs like `scripts/` and `learnings/` still earn their keep, asked whether `review-skill` + `grill-me` should consolidate into a `shared` plugin, and explicitly invited a relic-hunt.
+
+This dossier surfaces the relics, names the load-bearing architectural questions, and recommends a scope for the follow-up plan. The audit reads file-by-file; every claim cites a path + line.
+
+## Findings
+
+### 1. "draft" is the legacy name for loom's planning surface — and it's still everywhere
+
+Per the archived `loom-absorb-draft` project, the planning verbs (`plan`, `revise`, `research`) used to live under a separate `draft` CLI before being absorbed into loom. The rename never finished — the **modules**, **comments**, **doc text**, **fixture content**, **package keywords**, and even one **skill cross-reference** still say "draft".
+
+Module filenames (still imported across loom verbs):
+- `cli/lib/draft-project.ts` — imported by `cli/verbs/loom/plan.ts:12`, `cli/verbs/loom/project.ts` (indirect)
+- `cli/lib/draft-git.ts` — imported by `cli/verbs/loom/plan.ts:13`, `cli/verbs/loom/research.ts:6`, `cli/verbs/loom/project.ts:29`, `cli/verbs/loom/plan.test.ts:13`, `cli/verbs/loom/research.test.ts:13`
+
+Module **doctext** that conceptualizes loom + draft as separate things:
+- `cli/lib/draft-project.ts:6-13` — "Draft's filter is one-sided…", "Loom-managed projects also carry manifest.json", "loom + draft as paired halves of one project: draft owns planning, loom owns execution"
+- `cli/lib/draft-git.ts:4-9` — "Thin abstraction over the small set of `git` operations draft needs… Tests inject a stub `GitRunner` via `DraftCliContext.gitRunner`" (`DraftCliContext` type may or may not still exist; the rename is half-done)
+- `cli/lib/project.ts:148-151` — "Draft-only projects (PLAN.md without manifest.json) are invisible to loom by design — see LOOM-CONVENTIONS.md § Pairing with draft." That section **does not exist** in `docs/LOOM-CONVENTIONS.md` (verified by grepping section headers; latest section list runs through `## Project layout`, `## Branch naming`, `## Schema versioning`, `## Artifact shapes`, etc. — no "Pairing with draft").
+- `cli/verbs/loom/project.ts:23-29` — "they have the same `??` defaults the handlers expected when they lived under the draft surface"
+- `cli/verbs/loom/plan.test.ts:53,70,111,143` — test name "writes both draft files + auto-adopts loom + commits" and assorted comments referring to "draft files" / "draft-plan message" (these are PLAN-and-INTERVIEW files, not anything draft-related anymore)
+
+Doc text:
+- `projects/CONVENTIONS.md:3` — "Marketplace-wide invariants for the loom / draft / guild / griot substrate." → should drop draft (3-substrate world)
+- `projects/CONVENTIONS.md:68` — `draft revise (target: projects/<slug>/PLAN.md, exception: PLAN.md)` — should be `loom revise-plan`. The companion test registry at `cli/parallel-work-invariant.test.ts:96-101` correctly says `loom revise-plan`; the doc lags.
+- `projects/CONVENTIONS.md:88` — "PLAN.md — the project plan. Mutated by `draft revise`." → same fix
+- `agents/whiteboard-sketch-ideation.md:88` — "the loom/draft CLIs, scripts" → "the loom CLI" (whiteboard-sketch is in the guild plugin via PLUGIN_CONTENT_RULES at `scripts/sync-shared.ts:78`)
+- `package.json:4` — description `"Marketplace for the draft/guild/griot/loom agent framework"`
+- `package.json:16` — keyword `"draft"`
+
+Live skill that names a dead command:
+- `skills/ev-loop-confidence/SKILL.md:25-28` — "No ambient `/loom-*` or `/draft-revise` skills — substrate plumbing dispatches directly to the CLIs". The string `/draft-revise` names a slash command that **never shipped under that name**; the current command is `/loom-revise-plan`. The sentence's intent is "don't compose other loops as skills", but `/draft-revise` is the wrong example.
+
+A non-relic that still pings the search: `cli/verbs/griot/capture.ts:208,212,262` writes `# Learning draft` headers — these are **content drafts** (an unrefined learning entry), not the legacy "draft" CLI. They're fine, but the name collision adds noise to the rename grep.
+
+### 2. The root `bin/` shims are pre-marketplace fossils with a misleading provenance comment
+
+The repo root has three executable shims at `bin/loom`, `bin/guild`, `bin/griot` (16 lines each). They're **gitignored** by `.gitignore:1-6` ("Top-level bin/ was used by the legacy setup-script symlink farm (deleted in W9 of the marketplace-portable-install migration)"). Yet each shim still carries the comment "Generated by install.sh on every run; do not hand-edit (changes will be overwritten on re-install)" at line 3.
+
+Verified relic state:
+- `find /Users/krambuhl/Sites/agents -maxdepth 3 -name "install.sh"` returns 0 hits outside `projects/archive/` and the `cli/no-install-sh-refs.test.ts` tripwire.
+- The tripwire test (`cli/no-install-sh-refs.test.ts:50`) passes today only because git ls-files excludes these untracked shims (the iteration is over `git ls-files`, line 28).
+- These shims are also functionally inferior to the plugin shims at `plugins/<name>/bin/<cli>` (49 lines each, with symlink-safe resolution at lines 12-20 and Node ≥24 enforcement at lines 28-41) — the root shims have neither.
+
+So the root `bin/` exists as a developer-loop convenience (running `bin/loom` from the repo root during development) but is documented as a relic of a system that no longer exists. The provenance comment is the load-bearing relic; the script files themselves are fine to keep as local dev shortcuts, but they should either be **regenerated to match the plugin-shim shape** or **stamped with an accurate comment** that explains the dev-loop role.
+
+### 3. The mirror pattern is consistent but the doc lies about what gets synced
+
+`scripts/sync-shared.ts:39-102` declares the source-of-truth → plugin-tree contract:
+- Every CLI-shipping plugin (griot/guild/loom; see `PLUGINS_WITH_CLI` at line 52) receives the **entire** `cli/lib/` tree (lines 159-166). Verified by `diff -q /Users/krambuhl/Sites/agents/cli/lib/ /Users/krambuhl/Sites/agents/plugins/<plugin>/cli/lib/` — only difference is test files (excluded at line 117-121).
+- Each plugin owns only its own `cli/verbs/<plugin>/` (lines 168-175) and `cli/<plugin>.ts` (lines 177-184).
+- Skill + agent files are filtered by `PLUGIN_CONTENT_RULES` (lines 69-102): griot owns `griot-*`, guild owns `whiteboard-* / evaluator-* / generator-*`, loom owns `loom-*`, ev owns `ev-*`, review-skill owns the exact name, agent-loop-full owns nothing.
+
+The contract is coherent. Two consequences:
+- **Every CLI-shipping plugin carries the full `cli/lib/` (~13 files), including helpers the plugin's own verbs don't import.** E.g. `plugins/griot/cli/lib/draft-project.ts` exists even though no griot verb imports it. Trade-off: simpler invariant for the sync script vs. ~12KB of dead code per plugin. The user's "compartmentalize" framing might want this trimmed to per-plugin-actually-used-only, but the trim adds complexity (a real dependency walk) and the wins are tiny. **Recommendation: leave as-is unless a strong reason emerges.**
+- **`docs/` is NOT synced into any plugin tree.** Verified by `find /Users/krambuhl/Sites/agents/plugins -name "docs" -type d` (0 results). But `docs/AGENT-CONVENTIONS.md:78-91` § "Marketplace-rooted doc paths" explicitly says "On a consumer machine with the plugin installed via Claude Code, `docs/<file>.md` is the plugin-relative path resolved by Claude Code's plugin loader (the docs/ directory ships inside the plugin tree)." This is **factually wrong** today. And many skills cite `docs/<file>.md`: loom-plan (lines 35,37,39,41), loom-revise-plan (36,38,40), loom-research (37,39,41), loom-archive (27,130,158), ev-loop-interactive (30,62,63,149,207), ev-loop-confidence, ev-run. On a fresh plugin install, these doc-references resolve to nothing.
+
+  This is the single biggest compartmentalization gap. Three viable fixes: (a) sync `docs/` into every plugin that needs it, (b) move docs into a dedicated `shared` plugin and have other plugins depend on it, (c) inline the load-bearing doc sections into each skill body and demote `docs/` to contributor-side reference material. The user's "shared plugin" instinct lines up with (b).
+
+### 4. `learnings/` at the repo root is orphan content
+
+`learnings/` contains 4 markdown notes (`bulk-transforms.md`, `check-version-before-config.md`, `generator-antagonist-pattern.md`, `verify-dependency-usage.md`). `git log --diff-filter=A --all --oneline -- learnings/*.md` shows all 4 came from the initial commit (`83740f5`).
+
+Who reads them? **Nobody.** The griot rollup-loading path (`cli/verbs/griot/use.ts:9-12`) reads only `learnings/rollup.json`, never individual `.md` files. The format-detection error path (line 138-140) is the only code that even names the legacy `learnings/rollup.md` format. The 4 raw-note files predate the rollup pipeline.
+
+The naming-as-architecture problem doubles: `griot init` (`cli/verbs/griot/init.ts:15,76`) adds `learnings/` to a consumer repo's `.gitignore` so consumer learnings stay local. But this repo (the marketplace itself) **commits** its `learnings/`. Same directory name, opposite policy. A first-time reader walking this repo will conflate the marketplace's seed corpus with the per-consumer-project learnings the griot pipeline creates.
+
+Three options: (a) delete the 4 files (nothing reads them); (b) elevate them into a proper griot capture pipeline run that produces a real `rollup.json` for this repo (so this repo eats its own dog food); (c) move them under a different name (e.g. `seed-learnings/` or `docs/learnings/`) to disambiguate.
+
+### 5. `scripts/` is one file pretending to be a directory
+
+`scripts/` holds exactly one runtime file (`sync-shared.ts`) + its test (`sync-shared.test.ts`). The script is invoked from the repo root as `node scripts/sync-shared.ts` (per `README.md:106,122-125`). No other scripts live there; no plans I can see to add more.
+
+Options: (a) move into `cli/` as `cli/sync-shared.ts` (it's a CLI-flavored maintenance tool that already imports `node:fs/path/url`), promoting it to a peer of `cli/loom.ts`/`cli/guild.ts`/`cli/griot.ts`; (b) keep `scripts/` for future maintenance scripts and accept the one-file dir; (c) absorb it into one of the per-plugin trees (but it serves all plugins, so no single plugin owns it). (a) feels right; the script's job is "regenerate plugin trees from canonical sources" and `cli/` is the canonical CLI surface.
+
+### 6. `projects/` lives at the root but is semantically owned by loom
+
+`projects/` houses every loom-managed project (archive only today — there's no `projects/active/`). `projects/CONVENTIONS.md` declares parallel-work invariants for the loom + guild + griot CLIs writing into project state. The path is also hardcoded into the loom CLI's `deriveProjectsRoot` (`cli/loom.ts:166-168`).
+
+The repo treats `projects/` as a peer of `cli/` and `skills/`. But functionally it's a workspace owned by the loom CLI — every project subdir is loom's mutation target, and the conventions doc inside is a loom invariant. Moving the doc to `docs/PROJECT-CONVENTIONS.md` or symbolically declaring `projects/` "loom's substrate at runtime" (the way `learnings/` is griot's) is a small clarification. The `bin/loom project list` etc. all work today regardless.
+
+**Lower-priority finding** — the structural seam is real but moving the directory would touch many archived projects' internal paths. Recommend: leave `projects/` where it is, move `projects/CONVENTIONS.md` into `docs/` or into the loom plugin, and update the user-facing description of the marketplace to say "loom owns `projects/` at runtime."
+
+### 7. `grill-me` is a hard dependency but doesn't ship with the marketplace
+
+`grill-me` is the relentless-interview skill the loom planning skills all invoke. It lives at `~/.claude/skills/grill-me/SKILL.md` (verified — 11-line skill body) — the user's **personal global**, not in this repo at all.
+
+Skills that depend on `/grill-me`:
+- `skills/loom-plan/SKILL.md:4` (description), 56 ("flavor-routing grill-me question"), 123 ("Walk the decision tree branch by branch. The grill-me posture is"), 179 ("iterate on each via grill-me follow-up")
+- `skills/loom-revise-plan/SKILL.md:4,94,106,128,155`
+- `skills/loom-research/SKILL.md:4`
+
+A consumer who installs the loom plugin on a fresh machine won't have `/grill-me` available. The skill bodies don't degrade gracefully — they just instruct Claude to "Run a grill-me interview" and assume the skill is on PATH. This is a real correctness gap.
+
+This is the clearest argument for a **shared plugin**: a single plugin (`shared@krambuhl` or similar) that ships `grill-me`, `review-skill`, and any future cross-substrate skills. Other plugins declare it as a dependency. The marketplace's existing pattern (`loom` depends on `guild + griot`; `ev` depends on `loom + guild + griot`) already proves the cascade works.
+
+### 8. `review-skill` as a one-skill plugin is over-compartmentalized
+
+`plugins/review-skill/` exists solely to ship `skills/review-skill/SKILL.md`. That's a real Claude Code skill (a 13-line frontmatter + ~600-line body at `skills/review-skill/SKILL.md`). But it's a generic utility — it reviews skill/agent/command files for quality — not a substrate primitive. Giving it its own plugin (with its own `.claude-plugin/plugin.json`) elevates an utility to substrate-shape.
+
+The compartmentalize question: review-skill + grill-me + any future cross-cutting utility all share the same shape ("standalone skill, no substrate dependencies, broadly useful"). They want a `shared` plugin (per the user's brief). Once the `shared` plugin exists, `review-skill` ceases to exist as its own plugin entity. Marketplace plugin count drops 6 → 6 (shared replaces review-skill), or 6 → 7 if you keep review-skill standalone for users who want only that one skill — but the dependency cascade should be the canonical install path.
+
+### 9. `agent-loop-full` is justified
+
+The meta-bundle plugin at `plugins/agent-loop-full/` ships only `.claude-plugin/plugin.json` (1 file). Its sole role is the cascade install via the marketplace manifest's `dependencies: [griot, guild, loom, ev, review-skill]` (`.claude-plugin/marketplace.json:46-51`). The README (line 22, 38-41) calls out that the V4 smoke test confirmed cascade-install works. Test coverage at `cli/marketplace-manifest.test.ts:201-209` asserts the dependency list.
+
+Keep it. The zero-content plugin is a real Claude Code UX pattern, not a relic.
+
+### 10. The `ev` plugin compartmentalization is clean
+
+`plugins/ev/` ships 3 skills (ev-loop-confidence, ev-loop-interactive, ev-run). No CLI, no agents. Per `scripts/sync-shared.ts:85-89`, ev owns the `ev-` prefix. Cross-plugin coupling at the **content** level: every ev skill body invokes `loom`, `guild`, `griot` as bare commands (verified by `cli/skill-bodies-call-bare-commands.test.ts`). Plugin dependencies in `marketplace.json:33-37` correctly declare `ev → loom + guild + griot`.
+
+Compartmentalization-wise, ev is the cleanest plugin in the repo. The user's "ev-run/ev-loop should also be its own thing" instinct is already realized. The only nit: ev skill bodies reference `bin/loom`/`bin/guild`/`bin/griot` in **prose** (e.g. `skills/ev-loop-confidence/SKILL.md:22`, `skills/ev-run/SKILL.md:18`) — the test allowlists prose mentions (per `cli/skill-bodies-call-bare-commands.test.ts:14-19`), so this is intentional, but it conflicts with the post-install reality where `bin/` paths don't exist on PATH and only bare commands do. The prose risks confusing a reader who doesn't know the test's allow-list. Minor.
+
+### 11. Per-plugin `plugin.json` shape is consistent
+
+All six `plugin.json` files are minimal `{name, description}` — no `version`, no other fields. Per `cli/marketplace-manifest.test.ts:38-51`, `version` is intentionally optional (every-commit-auto-version posture, recorded in memory feedback note `feedback_plugin_version_bump_required.md`). Descriptions in the per-plugin manifests duplicate the description in `marketplace.json` verbatim; not a relic, just a tiny single-source-of-truth opportunity.
+
+### 12. User-global symlinks reference deleted skills (out of scope, but signal)
+
+`~/.claude/skills/draft-plan` → `/Users/krambuhl/Sites/agents/skills/draft-plan/` (target MISSING — directory does not exist)
+`~/.claude/skills/a11y-review-file` → `/Users/krambuhl/Sites/agents/skills/a11y-review-file/` (target MISSING)
+
+These broken symlinks live in the user's personal `~/.claude/`, not in this repo. They're a clue that an earlier project migrated skill names without sweeping the user's globals. Out of scope for this repo's compartmentalize work, but worth noting.
+
+### 13. Minor doc/code drift items
+- `cli/lib/project.ts:151` — references `LOOM-CONVENTIONS.md § Pairing with draft`, a section that doesn't exist (verified).
+- `cli/verbs/loom/project.ts:23-29` — multi-line comment still says "when they lived under the draft surface".
+- `~/.claude/agents/PANEL-COMPOSITION.md` — a stray copy of `docs/PANEL-COMPOSITION.md` sitting in the user's globals agent directory, not in this repo (out of scope but flagged).
+
+## Open questions
+
+### Q1: How should `docs/` reach the consumer?
+Three architectures:
+1. **Sync docs into every plugin** that needs them. `scripts/sync-shared.ts` adds a `docs/` step to `planForPlugin`. Each plugin ships a copy of the relevant `docs/<file>.md`. Trade-off: easy, low-magic, but ~16KB × 4 docs duplicated across plugins. Aligns with current AGENT-CONVENTIONS.md claim that "the docs/ directory ships inside the plugin tree."
+2. **Move docs into a shared plugin.** Create `shared@krambuhl` (or `substrate-docs@krambuhl`); other plugins depend on it. Doc references resolve via Claude Code's plugin loader looking up `shared/docs/<file>.md`. Cleaner, but requires plugin-loader cross-plugin path resolution to actually work — needs verification with Claude Code's behavior. (The CLAUDE.md feedback memory notes plugins are installed as copies, so cross-plugin `docs/X.md` resolution may not work out of the box.)
+3. **Inline doc content into skills**, demote `docs/` to contributor-side reference material that never ships. Most invasive but eliminates the cross-resolution problem entirely.
+
+**Recommended for plan**: option 1 (sync docs to plugins) is the smallest delta and matches the doc's own claim. Option 2 + 3 require larger conversations.
+
+### Q2: What's the membership of the proposed `shared` plugin?
+Candidates the user named or implied:
+- `grill-me` (currently in user globals, not in repo) — must move into repo first
+- `review-skill` (currently its own plugin)
+
+Candidates the audit surfaces:
+- `find-skills` (lives in user globals as `~/.agents/skills/find-skills`; not in this repo)
+- `claude-code-guide` (not found anywhere; brief was speculative)
+- The `docs/` directory (per Q1 option 2)
+
+**Recommended for plan**: at minimum, `shared` ships `grill-me` + `review-skill`. Whether to fold in `docs/` is gated on Q1.
+
+### Q3: Should the canonical mirror collapse to single source of truth inside each plugin?
+Today: `cli/`, `skills/`, `agents/` at root; `plugins/<name>/{cli,skills,agents}/` are sync-derived. The `sync-shared.ts` script enforces drift detection.
+
+Alternative shapes:
+- **(a) Keep as is.** Root canonical + sync script. Pro: contributors edit one source; sync catches drift. Con: doubles disk + adds a build step.
+- **(b) Collapse: only `plugins/<name>/` exists.** Each plugin owns its own files; no top-level mirror. Pro: simpler. Con: shared `cli/lib/` becomes a coordination problem — either every plugin's `cli/lib/` diverges (bad) or the lib lives in one plugin and the others depend on it via Claude Code's plugin cross-resolution (uncertain to work).
+- **(c) Invert: only top-level exists.** No `plugins/<name>/` at all; the marketplace.json points to subsets of the top-level dirs. Pro: no duplication. Con: not how Claude Code plugins are shaped (each plugin needs its own self-contained tree at install time, per the V4 smoke test).
+
+**Recommended for plan**: keep (a). It works today. The two real problems (docs not in plugin trees, skills assume `docs/` ships) are fixable by extending `sync-shared.ts`, not by collapsing the mirror.
+
+### Q4: Where does `learnings/` belong?
+- Delete the 4 orphan notes — nothing reads them.
+- Or migrate them through griot's compaction pipeline so this repo grows its own `rollup.json` and eats its own dog food.
+- Or move to `docs/seed-learnings/` to disambiguate from per-consumer-project learnings.
+
+**Recommended for plan**: delete (lowest cost, lowest risk). If the user wants to keep them as historical seed corpus, migrate to `docs/seed-learnings/` to break the naming collision with `griot init`'s gitignored `learnings/`.
+
+### Q5: Does `scripts/sync-shared.ts` belong in `cli/`?
+It's a single-file directory whose script is the only build step in the repo. Folding into `cli/sync-shared.ts` removes a top-level dir and aligns the maintenance script with the CLI surface that triggers it (the sync script writes into the plugin trees that house the CLI's per-plugin copies).
+
+**Recommended for plan**: yes, move to `cli/sync-shared.ts`. Update all references — `README.md:106,122-125`, `scripts/sync-shared.test.ts` location, `projects/CONVENTIONS.md:123-128`.
+
+### Q6: Rename `cli/lib/draft-*` modules?
+This is the biggest mechanical change (touches ~10 files), with two flavors:
+- **Rename only**: `draft-project.ts → loom-plan-project.ts`, `draft-git.ts → loom-git.ts`. Update every import and doc reference.
+- **Restructure**: collapse `cli/lib/draft-*` into the existing `cli/lib/project.ts` and `cli/lib/git.ts` (if not already present), so the planning helpers no longer live as separate modules.
+
+**Recommended for plan**: rename only (Tier 1 codemod-style). The restructure is a bigger architectural conversation and may not pull its weight.
+
+## Recommended scope for the plan
+
+A single plan with three phases (per the user's "three-phase pattern" preference: setup → bulk → cleanup):
+
+**Phase 1 — Setup / preparation** (small, low-risk PRs):
+- Spec the `shared` plugin (Q2 answer). Add `plugins/shared/.claude-plugin/plugin.json`, declare dependencies cascade, update `scripts/sync-shared.ts:PLUGINS` and `PLUGIN_CONTENT_RULES` to give `shared` its skills.
+- Spec the docs-sync change (Q1 answer). Extend `sync-shared.ts` to mirror `docs/` into each plugin (or into shared, per Q1's decision).
+- Audit + decision PR on `learnings/` (Q4): delete vs. preserve.
+- Audit + decision PR on `scripts/` location (Q5).
+
+**Phase 2 — Bulk migrations** (mechanical, parallel-friendly):
+- Wave 2a — **Move `grill-me` from user globals into `plugins/shared/skills/grill-me/`.** Create the canonical `skills/grill-me/` source and let sync handle the rest. Update memory note about grill-me being a user-global.
+- Wave 2b — **Move `review-skill` plugin into the shared plugin.** Update marketplace manifest (remove review-skill as its own plugin, add the membership entry; update agent-loop-full's deps; update the dependency-cascade tests at `cli/marketplace-manifest.test.ts:53-60,201-209`).
+- Wave 2c — **Draft → loom rename codemod.** Rename `cli/lib/draft-project.ts → cli/lib/loom-plan-project.ts` (or similar), rename `cli/lib/draft-git.ts → cli/lib/loom-git.ts`, update all imports, sweep all doc/comment references (see Finding 1 for the full list).
+- Wave 2d — **Sync `docs/` into per-plugin trees** (or into shared, per Q1). Extend `sync-shared.ts`. Verify every `docs/<file>.md` skill citation now resolves at install-time.
+
+**Phase 3 — Cleanup**:
+- Delete `learnings/` orphans (or migrate to `docs/seed-learnings/`).
+- Move `scripts/sync-shared.ts → cli/sync-shared.ts` and delete `scripts/`.
+- Regenerate / re-stamp root `bin/` shims to either match the plugin shims or carry an honest comment.
+- Update `package.json` description + keywords (drop "draft").
+- Sweep `projects/CONVENTIONS.md` to use current verb names.
+- Fix the `ev-loop-confidence/SKILL.md:25-28` `/draft-revise` reference.
+- Fix the `cli/lib/project.ts:151` dead doc-section reference.
+- Update README.md "What's inside" table to reflect new shape.
+
+The plan is splittable by phase, then by wave inside phase 2. Each wave is a single conceptual unit (rename, plugin restructure, sync extension, etc.) and can ship independently per the user's "one conceptual unit per PR" preference. Phase 1 PRs are the most carefully reviewed (architecture); phase 2 waves are agent-friendly mechanical work; phase 3 is the satisfying cleanup.
+
+Estimated PR count: **8–12** across the three phases. Files touched: somewhere between 40 and 80, most of them mechanical sweeps.
