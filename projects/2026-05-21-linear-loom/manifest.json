@@ -22,7 +22,8 @@
     {
       "number": 3,
       "name": "Project lifecycle verbs",
-      "status": "not-started"
+      "status": "in-progress",
+      "branch": "ev-agent.linear-loom.project-verbs"
     },
     {
       "number": 4,
