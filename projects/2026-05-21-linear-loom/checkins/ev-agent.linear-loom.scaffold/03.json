@@ -1,0 +1,61 @@
+{
+  "schema_version": 1,
+  "number": "03",
+  "created": "2026-05-22T17:19:23.000Z",
+  "phase": {
+    "number": 2,
+    "name": "Plugin scaffolding"
+  },
+  "branch": "ev-agent.linear-loom.scaffold",
+  "unit": "U3 — Documentation (README + SETUP)",
+  "contract": {
+    "goal": "Write the operator-facing README + SETUP for plugins/linear-loom/. README orients on what the plugin is, scope, phase status. SETUP walks the operator through the one-time bootstrap (Linear personal API key, ~/.linear-loom/config.json fallback, linear-loom configure, linear-loom project create). Phase 2 = scaffolding; docs are forward-written — verbs return not-implemented today and ship in Phases 3-6.",
+    "acceptance_criteria": [
+      "README.md (plugin root) covers: what the plugin is; personal-CLI scope (no orchestration); composes guild but NOT loom/griot (per DESIGN.md § 17 + § 18); Phase-status table; pointers to DESIGN.md, SETUP.md, PLAN.md.",
+      "SETUP.md (plugin root) covers in order: prerequisites, Linear personal API key (env var primary, ~/.linear-loom/config.json fallback per § 9), Linear Project identification (§ 5), linear-loom configure --linear-project=<id> (§ 10), linear-loom project create <slug> --linear-project=<id> with per-slug linear.json marker (§ 4), troubleshooting.",
+      "Both docs are forward-honest about not-yet-wired verbs and the phase each ships in. README phase table shows Phase 2 = 'this PR'.",
+      "DESIGN.md section references are accurate.",
+      "No editing of any other file besides README.md + SETUP.md (the events.jsonl modification is U2's loom-pr-open orphan event, surfaced for transparency)."
+    ],
+    "rules_applied": [
+      "Prose-only artifact → panel auto-derivation returns evaluator-contract-fit only (per docs/PANEL-COMPOSITION.md row 46).",
+      "Forward-honest documentation: verbs not yet wired are explicitly called out as not-implemented with phase pointers.",
+      "Cross-references to DESIGN.md cite real section numbers (§ 4, § 5, § 6, § 9, § 10, § 15, § 17, § 18, § 20)."
+    ],
+    "disqualifiers": [
+      "Claiming any verb is wired when it isn't (Phase 3-6 territory).",
+      "Promising features outside the v1 scope reduction (no orchestration, no ephemeral compute — explicitly deferred per DESIGN.md round 2 fork).",
+      "Adding loom or griot to the dependency narrative (the fork excises both)."
+    ],
+    "inputs": [
+      "plugins/linear-loom/docs/DESIGN.md (§ 4, § 5, § 6, § 9, § 10, § 15, § 17, § 18, § 20)",
+      "projects/2026-05-21-linear-loom/PLAN.md (Phase headings + status)",
+      ".claude-plugin/marketplace.json (linear-loom's dependency declaration: commons + guild only)"
+    ]
+  },
+  "execution": {
+    "actions": [
+      "Surveyed plugins/loom + plugins/guild + plugins/griot + plugins/commons for README/SETUP precedent — none exist; linear-loom is the first plugin to ship operator-facing prose docs in this marketplace.",
+      "Wrote plugins/linear-loom/README.md (68 lines): one-paragraph orientation; 'what this is' (personal-CLI scope, composes guild, NOT loom/griot per § 17 + § 18); 'what lives where' (bin/cli/skills/contracts/agents/docs); 8-row Phase-status table mapping each phase to its PLAN.md row and branch; pointer to SETUP.md, DESIGN.md, PLAN.md.",
+      "Wrote plugins/linear-loom/SETUP.md (166 lines): operator bootstrap in five numbered steps + Prerequisites + Common error shapes + When things go wrong. Steps in order: API key generation → Linear Project identification → linear-loom configure → linear-loom project create → start working. Cited DESIGN.md sections inline (§ 4, § 5, § 6, § 9, § 10, § 15, § 17, § 18, § 20).",
+      "Both docs use forward-honest language about Phase-2-scaffold-not-yet-wired state; README phase table marks Phase 2 = 'this PR', Phases 3-8 = 'not started'.",
+      "Ran panel: derive-panel returned contract-fit only (prose-only artifact). Verdict: approved."
+    ],
+    "files_touched": [
+      "plugins/linear-loom/README.md",
+      "plugins/linear-loom/SETUP.md"
+    ],
+    "corrections": []
+  },
+  "scope": [],
+  "changes_since_previous": "Third unit on this branch. U1 reconciled the manifest with PLAN.md; U2 scaffolded the loadable plugin shell + opened PR #34. This unit completes Phase 2 by adding the operator-facing prose docs. The events.jsonl modification in this commit is U2's loom-pr-open orphan pr-opened event — captured here per the known substrate behavior (the verb's event lags the unit-commit boundary).",
+  "verdict": {
+    "result": "approved",
+    "reasons": []
+  },
+  "notes_for_pr": [
+    "linear-loom is the first plugin in this marketplace to ship operator-facing README + SETUP prose. The convention here (README + SETUP at plugin root, both in operator voice; DESIGN.md under docs/ for the architectural spec) is worth carrying to future plugins.",
+    "Both docs are forward-written: they describe the verbs Phases 3-6 will ship and flag every one with the phase pointer + not-implemented status. Operators reading this PR's docs get the substrate's full mental model even though only --help and structured-error paths run today.",
+    "events.jsonl carries U2's pr-opened orphan event (the loom pr open verb emits the event AFTER the unit-commit boundary, so it ships with whichever commit comes next). This is the documented behavior in the feedback_loom_pr_opened_orphan_and_guild_spec_path memory."
+  ]
+}
