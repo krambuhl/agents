@@ -3,7 +3,7 @@
 **Slug**: `2026-05-21-linear-loom`
 **Authored**: 2026-05-21
 **Status**: plan, partial (Phases 1-2 concrete, 3+ sketched)
-**Research foundation**: `projects/2026-05-21-loom-linear-memory-boundary/RESEARCH.md`
+**Research foundation**: [`RESEARCH.md`](RESEARCH.md) (consolidated into this project from the earlier boundary-research dossier)
 
 ## Context
 
@@ -45,9 +45,10 @@ independent concern.
 Loom remains untouched. linear-loom develops in `plugins/linear-loom/`
 as a parallel additive substrate.
 
-The architectural foundation is documented in the
-[boundary-research dossier](../2026-05-21-loom-linear-memory-boundary/RESEARCH.md),
-which surveys: ADR community consensus on in-repo decision records;
+The architectural foundation is documented in this project's
+[RESEARCH.md](RESEARCH.md) (originally a separate boundary-research
+project, since consolidated under linear-loom). It surveys: ADR
+community consensus on in-repo decision records;
 Linear's product surface (Documents, MCP server, agent model, no
 billable seats for agents); OpenAI Symphony's prior art for "Linear
 as agent control plane" (April 2026, polling-based); and the
