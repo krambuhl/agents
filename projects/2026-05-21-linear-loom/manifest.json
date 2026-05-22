@@ -34,7 +34,8 @@
     {
       "number": 5,
       "name": "Plan-to-tasks generation",
-      "status": "not-started"
+      "status": "in-progress",
+      "branch": "ev-agent.linear-loom.tasks-parser"
     },
     {
       "number": 6,
