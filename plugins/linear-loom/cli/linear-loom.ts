@@ -5,6 +5,7 @@ import { PROJECT_VERBS } from './verbs/project.ts';
 import { research } from './verbs/research.ts';
 import { plan } from './verbs/plan.ts';
 import { retro } from './verbs/retro.ts';
+import { TASKS_VERBS } from './verbs/tasks.ts';
 
 // ---------- Namespace registry ----------
 //
@@ -43,6 +44,7 @@ const VERBLESS_HANDLERS: Record<string, VerbHandler> = {
 
 const VERB_HANDLERS: Record<string, Record<string, VerbHandler>> = {
   project: PROJECT_VERBS,
+  tasks: TASKS_VERBS,
 };
 
 function printHelp(): void {
