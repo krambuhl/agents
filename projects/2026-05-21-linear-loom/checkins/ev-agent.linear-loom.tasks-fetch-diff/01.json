@@ -1,0 +1,75 @@
+{
+  "schema_version": 1,
+  "number": "01",
+  "created": "2026-05-22T21:38:32.000Z",
+  "phase": {
+    "number": 5,
+    "name": "Plan-to-tasks generation"
+  },
+  "branch": "ev-agent.linear-loom.tasks-fetch-diff",
+  "unit": "U2 — Linear-state fetch + PLAN.md ↔ Linear diff",
+  "contract": {
+    "goal": "Ship the two pure modules that compose into the reconciliation step of linear-loom tasks generate: linear-state.ts (GraphQL fetch + composed-key parsing) and plan-diff.ts (tree-diff against PLAN.md). No Linear writes — U3 applies.",
+    "acceptance_criteria": [
+      "composeLinearDescription extends DESIGN.md § 13 with a **Composed key**: <key> first line for parseable identity.",
+      "parseComposedKey extracts the key; rejects invalid characters; handles null/empty.",
+      "fetchLinearState queries Linear in one GraphQL doc; returns Map<composed_key, LinearStateNode> + unkeyed[].",
+      "Distinguishes Batches (parent === null) from Tasks (parent !== null).",
+      "computeDiff emits create/update/rekey/archive/noop op shapes per DESIGN.md § 12.3.",
+      "Rename via was=<old-id> (§ 12.6): leaf-id substitution to lookup old composed key; emits rekey op with title/body changed flags; falls through to create when no old record.",
+      "summarizeDiff counts ops by kind; partitionArchiveOps splits archive ops into safe (backlog/unstarted/undefined) vs in_flight for § 12.4 gating.",
+      "No Linear writes from this unit (pure read + transformation).",
+      "+19 unit tests; npm test 787 passing."
+    ],
+    "rules_applied": [
+      "DESIGN.md § 12.2 (composed key as stable identity).",
+      "DESIGN.md § 12.3 (reconciliation policy: PLAN.md authoritative, create/update/archive paths).",
+      "DESIGN.md § 12.5 (title + body sync only; diff only emits update when those differ).",
+      "DESIGN.md § 12.6 (rename via was=<old-id>; leaf-id substitution to find old Linear record).",
+      "DESIGN.md § 13 (provenance header — extended with composed key as the first parseable line)."
+    ],
+    "disqualifiers": [
+      "Making Linear writes from this unit (U3 territory).",
+      "Gating --prune flag (U3 territory).",
+      "Auto-resolving in-flight archives (partitionArchiveOps just labels them; U3 decides)."
+    ],
+    "inputs": [
+      "plugins/linear-loom/docs/DESIGN.md § 12.2, § 12.3, § 12.5, § 12.6, § 13",
+      "PLAN.md Phase 5 D2/D3",
+      "U1's plan-parser.ts (ParsedPlan, FlatNode, flattenPlan)",
+      "U1 of Phase 4's documents.ts (provenance header pattern that the composed-key header extends)"
+    ]
+  },
+  "execution": {
+    "actions": [
+      "Wrote linear-state.ts (~180 lines): TASKS_STATE_QUERY (single GraphQL doc fetching project + projectMilestones + label-filtered issues), parseComposedKey (regex on `**Composed key**: <key>` header line), composeLinearDescription (extends § 13 header with composed-key first line), fetchLinearState (parses Milestones into Phase candidates; Issues with parent=null into Batches; Issues with parent!=null into Tasks). Items missing composed-key headers land in `unkeyed[]` for visibility.",
+      "Wrote plan-diff.ts (~270 lines): DiffOp discriminated union (5 kinds), computeDiff walks flattenPlan, matches by composed_key, emits create/update/rekey/archive/noop. Rename path uses composedKeyWithSubstitution helper to swap leaf id. Archive sweep over unmatched Linear-side keys. summarizeDiff + partitionArchiveOps as count/gating helpers.",
+      "Composer DI on computeDiff: composeTitle + composeBody injected by caller so the diff doesn't bake in the exact title/body format (U3 wires the production composers). Tests use simple identity-style composers to keep assertions readable.",
+      "Wrote 19 unit tests: 9 linear-state (parseComposedKey edge cases, composeLinearDescription round-trip via parseComposedKey, fetchLinearState happy + error + Milestone/Batch/Task distinction + unkeyed segregation), 10 plan-diff (3-create, update-on-title-diff, update-on-body-diff, noop suppression default, include_noops flag, rekey-with-was=, was=-fallthrough-to-create, archive sweep, summarizeDiff, partitionArchiveOps).",
+      "Mid-development cleanup: 3 unused imports flagged by tsc (LinearStateNode in plan-diff.ts, LinearLoomError in linear-state.test.ts, DiffOpArchive in plan-diff.test.ts) — removed.",
+      "Verified: npm test → 787 passing (was 768 after U1; +19). Panel: all 4 evaluators approved on first run."
+    ],
+    "files_touched": [
+      "plugins/linear-loom/cli/lib/linear-state.ts",
+      "plugins/linear-loom/cli/lib/linear-state.test.ts",
+      "plugins/linear-loom/cli/lib/plan-diff.ts",
+      "plugins/linear-loom/cli/lib/plan-diff.test.ts"
+    ],
+    "corrections": [
+      "Cleanup of 3 unused imports surfaced after the first test run (LinearStateNode, LinearLoomError, DiffOpArchive)."
+    ]
+  },
+  "scope": [],
+  "changes_since_previous": "Second unit of Phase 5, stacked on the now-merged #41 (PLAN.md parser). All three modules (parser, state-fetch, diff) are pure functions with no Linear writes. U3 ships the verb that composes them and applies the diff with --prune-gated archives + provenance-headered title/body composers.",
+  "verdict": {
+    "result": "approved",
+    "reasons": []
+  },
+  "notes_for_pr": [
+    "The composed-key header (`**Composed key**: <key>` as the first line of every linear-loom-authored description) is the lookup mechanism for identity across re-runs. Operator-edited descriptions that preserve this header round-trip cleanly; descriptions that drop it become orphans on the next generate (the diff will emit a fresh create at the same composed key + an archive of the orphan).",
+    "DiffOpUpdate asymmetry observation (non-blocking, surfaced by naming evaluator): title gets a narrative pair (`title_before` / `title_after`); body gets a predicate (`body_changed`). Intentional — title diffs are short enough to display inline in a summary, bodies are long. Worth a near-future code comment to preserve the design intent. Recorded as a Phase 6 polish candidate.",
+    "ArchivePartition pair naming observation (non-blocking): `safe_to_archive` (action-readiness) vs `in_flight` (state) is mildly asymmetric. Intentional — communicates the gating purpose better than a symmetric `safe`/`unsafe` would. Punted to a future polish revision; recording the design choice here.",
+    "Composer dependency injection on computeDiff is a deliberate seam: the diff doesn't bake in the exact title/body format. U3 wires the production composers (slug-prefixed titles + composeLinearDescription-wrapped bodies); tests use identity-style stubs. This keeps the diff logic testable without recreating the full title/body shape per test.",
+    "No Linear writes anywhere in this unit. The verb in U3 takes the DiffOp[] from computeDiff and applies each op via the appropriate Linear API mutation. partitionArchiveOps surfaces the in-flight ones so U3 can gate them behind --prune (DESIGN.md § 12.4)."
+  ]
+}
