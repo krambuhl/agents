@@ -1,0 +1,69 @@
+{
+  "schema_version": 1,
+  "number": "01",
+  "created": "2026-05-22T21:18:07.000Z",
+  "phase": {
+    "number": 5,
+    "name": "Plan-to-tasks generation"
+  },
+  "branch": "ev-agent.linear-loom.tasks-parser",
+  "unit": "U1 — PLAN.md parser",
+  "contract": {
+    "goal": "Ship plugins/linear-loom/cli/lib/plan-parser.ts — the PLAN.md → tree parser per DESIGN.md § 12.1, § 12.2, § 12.6. Pure markdown-to-tree transformation; no Linear-side I/O. U2/U3 will compose this against Linear's current state during diff + apply.",
+    "acceptance_criteria": [
+      "parsePlan(markdown) → {phases: ParsedPhase[]}. ParsedPhase carries {kind:'phase', number, id, was, composed_key, prose, body, batches[]}. ParsedBatch + ParsedTask are parallel.",
+      "Composed keys per § 12.2: <phase-id> for phases, <phase-id>.<batch-id> for batches, <phase-id>.<batch-id>.<task-id> for tasks.",
+      "Only the ## Phases section parsed; other ## sections (Context, Risks, Decisions log) ignored.",
+      "plan-parse-failed thrown for: missing ## Phases, multiple ## Phases, Task outside Batch, duplicate IDs at any parent level, invalid kebab-case ID.",
+      "was=<old-id> annotation supported on Phase, Batch, Task (§ 12.6).",
+      "Em-dash (—) and hyphen (-) tolerated as heading separator.",
+      "Phase + Batch prose-body lines captured in node's body field.",
+      "flattenPlan walks the tree in document order, emitting FlatNode per node with composed_key + kind."
+    ],
+    "rules_applied": [
+      "DESIGN.md § 12.1 (subheading scheme: ## Phases wrapper, ### Phase N [id] — prose, #### Batch N [id] — prose, - [id] prose).",
+      "DESIGN.md § 12.2 (parent-scoped uniqueness; composed keys).",
+      "DESIGN.md § 12.6 (was=<old-id> rename annotation).",
+      "Pure function: no I/O, no globals, no Linear API calls. Fully testable without mocking."
+    ],
+    "disqualifiers": [
+      "Making Linear API calls (U2/U3 territory).",
+      "Reading from disk (caller supplies the markdown string).",
+      "Adding runtime deps.",
+      "Conflating composed-key uniqueness with global-uniqueness (parent-scoped only)."
+    ],
+    "inputs": [
+      "plugins/linear-loom/docs/DESIGN.md § 12.1, § 12.2, § 12.6",
+      "PLAN.md Phase 5 D1 (the parser is the first generate-flow deliverable)"
+    ]
+  },
+  "execution": {
+    "actions": [
+      "Wrote plugins/linear-loom/cli/lib/plan-parser.ts (~225 lines): ParsedPlan / ParsedPhase / ParsedBatch / ParsedTask types, parsePlan function (extractPhasesSection → header-by-header walk → duplicate-ID checks), flattenPlan + FlatNode helper for the U2/U3 diff step.",
+      "Regex grammar: ID_BRACKET matches `[<kebab>]` or `[<kebab> was=<kebab>]`; PHASE_HEADING / BATCH_HEADING tolerate em-dash and hyphen; TASK_BULLET matches `- [<id>] <prose>`. kebab-case ID validation enforced at parse time (no uppercase, no leading/trailing dash).",
+      "Wrote 15 unit tests: happy path with composed-key assertions, ignored ## sections, Task-outside-Batch error, missing-Phases error, every duplicate-ID variant (Phase / Batch under same Phase / Task under same Batch), parent-scoped same-ID-allowed positive case, was= annotation on all three node kinds, three invalid-ID rejection paths, multiple-Phases error, em-dash/hyphen tolerance, body-prose capture under Phase + Batch, flattenPlan document-order walk, LinearLoomError code check.",
+      "Verified: plan-parser tests → 15/15. Full repo suite → 768 passing (was 753 after Phase 4; +15).",
+      "Panel: all 4 evaluators approved. test-unit raised a non-blocking advisory about the catch-block test lacking expect.assertions(2); fixed mid-iteration with a 1-line addition so a future SUT change that stops throwing wouldn't silently pass."
+    ],
+    "files_touched": [
+      "plugins/linear-loom/cli/lib/plan-parser.ts",
+      "plugins/linear-loom/cli/lib/plan-parser.test.ts"
+    ],
+    "corrections": [
+      "Test-unit advisory addressed mid-iteration: added `expect.assertions(2)` to the catch-block test on LinearLoomError code so a future SUT change that stops throwing wouldn't silently pass green."
+    ]
+  },
+  "scope": [],
+  "changes_since_previous": "First unit on the ev-agent.linear-loom.tasks-parser branch, cut from main after PR #40 closed Phase 4. This unit is the start of Phase 5 (Plan-to-tasks generation), per PLAN.md the most load-bearing verb in linear-loom — Sub-Issue reconciliation against PLAN.md as source of truth.",
+  "verdict": {
+    "result": "approved",
+    "reasons": []
+  },
+  "notes_for_pr": [
+    "Parser is the lookup-end of the Phase 5 generate flow — U2/U3 fetch Linear state, diff against this tree, apply create/update operations. U4 writes Linear URLs back into PLAN.md after generation.",
+    "Composed-key scheme is the substrate identity primitive for everything Linear-side. A Sub-Issue's stable identity is its composed key (e.g. `design-1.skeleton-1.decisions-1`); the U2/U3 diff matches existing Linear items by composed key, not by title. Rename detection via the `was=<old-id>` annotation re-keys Linear records on parse (the diff step preserves Linear-side state across an ID change).",
+    "Naming-evaluator observation worth a future revisit (non-blocking): `numberStr` is a local variable name that matches the Hungarian shape (Str suffix on a value about to be parseInt'd). Sibling local `idRaw` uses the `Raw` prefix convention for the same idea. Unifying them would help, but neither obscures meaning and both are file-local. Punted to a future revision.",
+    "Substrate-followup candidate (also non-blocking, naming-evaluator-surfaced): `prose` (one-line heading text) vs `body` (multi-line continuation) is structurally clear but a reader scanning the type definitions has to read the parser to understand the relationship. `headingProse + bodyProse` or `summary + body` would be more self-describing. Worth considering for Phase 5/6 polish.",
+    "Tests are pure-function shape: each test feeds a literal markdown string fixture and asserts on the parsed structure. No mocks at all — the SUT has no dependencies."
+  ]
+}
