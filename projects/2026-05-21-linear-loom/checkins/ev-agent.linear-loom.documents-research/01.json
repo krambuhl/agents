@@ -1,0 +1,80 @@
+{
+  "schema_version": 1,
+  "number": "01",
+  "created": "2026-05-22T19:45:37.000Z",
+  "phase": {
+    "number": 4,
+    "name": "Substrate mirroring"
+  },
+  "branch": "ev-agent.linear-loom.documents-research",
+  "unit": "U1 — Linear Documents lib + git resolver + research verb",
+  "contract": {
+    "goal": "Ship the Linear Documents lib + git resolver + linear-loom research verb (PLAN.md Phase 4 D1). Uploads RESEARCH.md and RESEARCH-NOTES.md as Linear Documents under the loom-project's bound Linear Project, prepending the standard 3-line provenance header per DESIGN.md § 13.",
+    "acceptance_criteria": [
+      "cli/lib/documents.ts: provenanceHeader() emits 3-line header + --- divider + blank line per § 13 literal example. composeDocumentBody() = header + verbatim file body. createDocument() calls Linear's documentCreate mutation; throws document-create-failed on success=false or null document.",
+      "cli/lib/git.ts: GitRunner interface (currentBranch + githubRemote); default runner shells git rev-parse + git config; exported parseGitHubRemote handles SSH + HTTPS, with and without .git suffix; throws remote-not-github on non-GitHub URLs.",
+      "cli/verbs/research.ts: async research verb; reads marker, resolves auth + git, reads --research-file + --notes-file, uploads two Documents with provenance headers, emits structured success with both Documents' ids/urls/titles. Partial-success path documented in error message.",
+      "cli/linear-loom.ts wires research into VERBLESS_HANDLERS.",
+      "+22 unit tests; npm test 730 passing.",
+      "CLI smoke: linear-loom research → missing-slug; with slug only → missing-args --research-file; with --research-file only → missing-args --notes-file."
+    ],
+    "rules_applied": [
+      "DESIGN.md § 13 (provenance header literal spec — 3 bold lines, blank, ---, blank, body).",
+      "DESIGN.md § 5 (Documents flat under Linear Project, title-prefixed as `<slug> · <filename>`).",
+      "DI continues: gitRunner + readFileFn + now + client + markerIO + resolveAuthFn all injectable.",
+      "Zero-dep posture: built-in fetch + node:fs + node:child_process only."
+    ],
+    "disqualifiers": [
+      "Writing back to git from research verb (read-only file upload).",
+      "Adding npm runtime deps.",
+      "Adding tsconfig.json.",
+      "Implementing plan or retro verbs (U2 territory).",
+      "Implementing the operator-direct skills (U3 territory).",
+      "Touching loom or griot plugins."
+    ],
+    "inputs": [
+      "plugins/linear-loom/docs/DESIGN.md § 5, § 13, § 17",
+      "PLAN.md Phase 4 D1 (research verb signature)",
+      "plugins/loom/cli/lib/git.ts (structural reference for GitRunner pattern)",
+      "U2's lib/marker.ts (readMarker, markerPath)",
+      "U1's lib/{linear-client,auth,errors}.ts foundation"
+    ]
+  },
+  "execution": {
+    "actions": [
+      "Wrote cli/lib/git.ts: GitRunner interface + defaultGitRunner shelling git rev-parse + git config; exported parseGitHubRemote with regex for SSH (git@github.com:...) and HTTPS (https://github.com/...) URL forms tolerant of trailing .git.",
+      "Wrote cli/lib/documents.ts: provenanceHeader() composes 3-line header per § 13; composeDocumentBody() concatenates header + body; createDocument() wraps Linear's documentCreate GraphQL mutation. document-create-failed surfaces on success=false or null document.",
+      "Wrote cli/verbs/research.ts: async research verb. Reads marker → resolves auth → resolves git branch + remote → reads --research-file + --notes-file → uploads two Documents with provenance headers → emits structured success. Partial-success message encodes 'research uploaded as <url>; notes failed' so the operator knows where to recover.",
+      "Wired research into VERBLESS_HANDLERS in cli/linear-loom.ts.",
+      "Wrote 22 unit tests: 7 git (parseGitHubRemote SSH/HTTPS/with-without-.git/non-github/malformed/hyphenated-org-repo); 6 documents (provenanceHeader literal-shape, composeDocumentBody, createDocument success/success=false/document-null/underlying-client-error); 9 research (missing slug, missing --research-file, missing --notes-file, marker-unreadable, research-file-unreadable, happy path with structured output, header-in-uploaded-body via fetchFn snoop, partial-success error envelope, --pretty).",
+      "Iteration: first test run had one failure on the provenance-header / body separation — DESIGN.md § 13 specifies a blank line between `---` and body content. Fixed by adding a trailing empty string to the header join array; verified via empirical Node run that the byte sequence matches the spec.",
+      "Panel iteration: contract-fit flagged on the first run claiming the body had two blank lines after `---` (miscounted join math). Re-ran contract-fit with an empirical byte-sequence dump as evidence — the actual output is `---\\n\\n<body>` (one blank line), matching § 13. Approved on re-run."
+    ],
+    "files_touched": [
+      "plugins/linear-loom/cli/lib/git.ts",
+      "plugins/linear-loom/cli/lib/git.test.ts",
+      "plugins/linear-loom/cli/lib/documents.ts",
+      "plugins/linear-loom/cli/lib/documents.test.ts",
+      "plugins/linear-loom/cli/verbs/research.ts",
+      "plugins/linear-loom/cli/verbs/research.test.ts",
+      "plugins/linear-loom/cli/linear-loom.ts"
+    ],
+    "corrections": [
+      "Mid-development: provenance header initially emitted only single newline between `---` and body. DESIGN.md § 13's literal example shows a blank line between divider and body. Fixed by adding a trailing empty string to the join array.",
+      "Panel iteration: contract-fit flagged on first run with criterion-unmet on the byte sequence (claimed two blank lines after `---`). Re-spawned contract-fit with empirical byte-sequence evidence captured by running the function via `node -e`. The actual output is `\\n---\\n\\n` after the header — divider plus exactly one blank line, matching § 13. Approved on re-run."
+    ]
+  },
+  "scope": [],
+  "changes_since_previous": "First unit on the ev-agent.linear-loom.documents-research branch (cut from main after PR #37 merged closing Phase 3). This commit also carries the orphan pr-opened event from PR #37's loom pr open call — same orphan-event pattern documented in the substrate memory.",
+  "verdict": {
+    "result": "approved",
+    "reasons": []
+  },
+  "notes_for_pr": [
+    "Provenance header verified empirically: `\\n\\n---\\n\\n` between the last bold line and the body — one blank line on each side of the divider, matching DESIGN.md § 13's literal example. The composeDocumentBody concatenates header + file body verbatim.",
+    "Git resolver lives in this verb's territory rather than in cli/lib/auth or cli/lib/marker because the provenance header is the only consumer today. plan + retro verbs (U2) will reuse it; ev-linear (Phase 7) inherits it through composition.",
+    "parseGitHubRemote handles the two URL shapes operators actually use (SSH git@github.com:..., HTTPS https://github.com/...). A non-GitHub remote surfaces as a structured remote-not-github error rather than silently writing a broken Source URL. Operators on non-GitHub hosting will need a follow-up to make the source-URL pattern pluggable; out of scope for v1 personal-CLI.",
+    "Partial-success path on the second Document upload (research succeeded, notes failed): the error message names the already-uploaded URL so the operator can either delete it via Linear UI or re-run after fixing the notes-side cause. No automatic rollback in v1.",
+    "Substrate-followup: derive-panel continues to over-apply evaluator-react-api to .ts files that don't import React. Same gap as Phase 3; same workaround (manually verify via grep that no react/react-dom imports exist). Substrate-fix candidate is adding an import-checking step to derive-panel."
+  ]
+}
