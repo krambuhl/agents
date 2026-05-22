@@ -19,3 +19,5 @@
 {"at":"2026-05-22T19:46:27.973Z","event":"phase-started","detail":{"phase":4,"name":"Substrate mirroring"}}
 {"at":"2026-05-22T19:47:39.743Z","event":"pr-opened","detail":{"pr":38,"url":"https://github.com/krambuhl/agents/pull/38"}}
 {"at":"2026-05-22T20:08:38.210Z","event":"checkin-created","detail":{"number":"01","branch":"ev-agent.linear-loom.plan-retro"}}
+{"at":"2026-05-22T20:49:38.765Z","event":"checkin-created","detail":{"number":"01","branch":"ev-agent.linear-loom.operator-skills"}}
+{"at":"2026-05-22T20:49:40.779Z","event":"phase-completed","detail":{"phase":4}}

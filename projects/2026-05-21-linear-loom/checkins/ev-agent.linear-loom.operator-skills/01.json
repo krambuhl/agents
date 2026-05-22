@@ -1,0 +1,72 @@
+{
+  "schema_version": 1,
+  "number": "01",
+  "created": "2026-05-22T20:48:53.000Z",
+  "phase": {
+    "number": 4,
+    "name": "Substrate mirroring"
+  },
+  "branch": "ev-agent.linear-loom.operator-skills",
+  "unit": "U3 — three operator-direct skills + Phase 4 close",
+  "contract": {
+    "goal": "Ship the three operator-direct skill SKILL.md files per PLAN.md Phase 4 D4 and DESIGN.md § 1: /linear-loom-research, /linear-loom-plan, /linear-loom-archive. Re-designed interviews tailored to linear-loom (DESIGN.md § 14) — not line-by-line ports of loom's. Each skill shells to the corresponding bin/linear-loom verb that landed in U1 + U2.",
+    "acceptance_criteria": [
+      "linear-loom-research skill: pre-flight + Linear-side bootstrap (conditional on marker absence) + grill-me interview + RESEARCH.md + RESEARCH-NOTES.md synthesis + shell to linear-loom research.",
+      "linear-loom-plan skill: bootstrap + collision-check + interview against DESIGN.md § 12.1 parser convention + temp-file synthesis + shell to linear-loom plan.",
+      "linear-loom-archive skill: marker-required pre-flight + project status snapshot + retro-type decision + interview + RETRO file + shell to linear-loom retro + opt-in commit + opt-in archive.",
+      "No griot composition in any of the three skills (DESIGN.md § 18). /griot-use mentioned only as 'operator invokes separately'.",
+      "All three are user-invocable: true, disable-model-invocation: true (operator-direct per DESIGN.md § 1)."
+    ],
+    "rules_applied": [
+      "DESIGN.md § 1 (three operator-direct slash skills only — no ambient).",
+      "DESIGN.md § 4 (no Linear-Project defaults; explicit per invocation).",
+      "DESIGN.md § 11 (Linear is source of truth — archive skill defers status-flip to Linear UI in v1).",
+      "DESIGN.md § 12.1 (PLAN.md parser convention — plan skill targets it explicitly).",
+      "DESIGN.md § 13 (provenance header — delegated to the CLI verbs the skills shell to).",
+      "DESIGN.md § 14 (re-designed interviews — not line-by-line ports of loom's skill bodies).",
+      "DESIGN.md § 17 + § 18 (fork + griot excision)."
+    ],
+    "disqualifiers": [
+      "Composing /griot-use / /griot-load / /griot-capture in any of the three skills (DESIGN.md § 18 forbids).",
+      "Auto-opening PRs from the skills (operator-side in v1).",
+      "Automating Linear-side status-flip in the archive skill (operator-manual per § 11 in v1).",
+      "Touching CLI verb code (this is a prose-only unit)."
+    ],
+    "inputs": [
+      "plugins/linear-loom/docs/DESIGN.md § 1, § 4, § 11, § 12.1, § 13, § 14, § 17, § 18",
+      "PLAN.md Phase 4 D4",
+      "plugins/loom/skills/loom-research/, loom-plan/, loom-archive/ (structural reference; NOT line-by-line port)",
+      "U1 (research verb) + U2 (plan + retro verbs) — the skills shell to these"
+    ]
+  },
+  "execution": {
+    "actions": [
+      "Wrote plugins/linear-loom/skills/linear-loom-research/SKILL.md (173 lines): frontmatter, pre-flight, conditional Linear-side bootstrap (step 2 — only when marker absent), grill-me interview with source-or-[unsourced] rule, RESEARCH.md/RESEARCH-NOTES.md synthesis to projects/<slug>/, shell to `linear-loom research <slug>`, report. /griot-use mentioned as operator-invoked separately (not composed).",
+      "Wrote plugins/linear-loom/skills/linear-loom-plan/SKILL.md (158 lines): slug resolution, conditional bootstrap, defensive collision-check before interview, plan interview tied to DESIGN.md § 12.1 parser convention (## Phases wrapper, ID-bracketed children), temp-file synthesis, shell to `linear-loom plan` which commits PLAN.md + uploads INTERVIEW.md.",
+      "Wrote plugins/linear-loom/skills/linear-loom-archive/SKILL.md (156 lines): pre-flight requiring existing marker (no bootstrap path), project status snapshot via `linear-loom project status` for orientation, retro-type decision with kebab-case enforcement, retro interview, temp-file synthesis, shell to `linear-loom retro`, opt-in commit + opt-in archive (status-flip is operator-manual in Linear UI per § 11).",
+      "Verified no griot composition: skills don't invoke /griot-use / /griot-load / /griot-capture; the research skill names /griot-use as a separate operator invocation if they want rollup context. /griot-capture entirely absent.",
+      "Frontmatter sanity-check: all three SKILL.md files declare user-invocable: true and disable-model-invocation: true. allowed-tools: Read, Write, Bash, AskUserQuestion (no Skill — these skills don't compose other skills).",
+      "Ran panel: derive-panel returned evaluator-contract-fit only (prose-only artifact per PANEL-COMPOSITION row 46). Approved on first run with one non-blocking observation about bin/linear-loom vs bare linear-loom prose inconsistency (the Bash() invocations use the correct on-PATH form throughout)."
+    ],
+    "files_touched": [
+      "plugins/linear-loom/skills/linear-loom-research/SKILL.md",
+      "plugins/linear-loom/skills/linear-loom-plan/SKILL.md",
+      "plugins/linear-loom/skills/linear-loom-archive/SKILL.md"
+    ],
+    "corrections": []
+  },
+  "scope": [],
+  "changes_since_previous": "Third and final Phase 4 unit. U1 + U2 (PRs #38, #39) merged. After this PR closes Phase 4 will be complete and the substrate-mirroring surface (research / plan / retro CLI + the three operator skills that consume them) ships end-to-end. Next phase is Phase 5 (Plan-to-tasks generation), the most load-bearing verb per PLAN.md line 221.",
+  "verdict": {
+    "result": "approved",
+    "reasons": []
+  },
+  "notes_for_pr": [
+    "Skills are re-designed per DESIGN.md § 14 — not 1:1 ports of loom's. Linear-side bootstrap questions front the interview when the marker file is absent; otherwise the skill jumps straight to the interview. Loom's grill-me + whiteboard + auto-mode + RECOVERY-STATUS.json machinery is intentionally pared down: v1's personal-CLI scope doesn't need that depth, and the operator can always invoke /loom-research separately if they want it.",
+    "No griot composition per DESIGN.md § 18. Research skill mentions /griot-use once as an option the operator may invoke separately (not composed). No /griot-capture writes anywhere.",
+    "All three skills shell to the bin/linear-loom verbs landed in #38 + #39. CLI code untouched in this PR.",
+    "Archive skill leaves Linear-side status-flip (open → archived) operator-manual via the Linear UI for v1, respecting DESIGN.md § 11's 'Linear is source of truth'. A future `linear-loom project archive` verb is named as the natural extension if the manual step becomes a papercut.",
+    "Naming-evaluator observation deferred for later (from U2 checkin): DispatchResult duplicated across 5 verb files. Still punted; this unit doesn't touch CLI code. Phase 5/6 with checkin / task verbs remains the natural revisit point.",
+    "Tests: 753 passing (+6 vs U2's 747; the increase comes from the marketplace-manifest.test.ts parametric assertions picking up the new linear-loom skills directory or similar — not from this unit adding test files. Confirms the marketplace test catches plugin-shape changes automatically)."
+  ]
+}
