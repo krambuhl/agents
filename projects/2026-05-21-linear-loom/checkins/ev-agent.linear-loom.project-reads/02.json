@@ -1,0 +1,73 @@
+{
+  "schema_version": 1,
+  "number": "02",
+  "created": "2026-05-22T19:33:18.000Z",
+  "phase": {
+    "number": 3,
+    "name": "Project lifecycle verbs"
+  },
+  "branch": "ev-agent.linear-loom.project-reads",
+  "unit": "U4 — project status",
+  "contract": {
+    "goal": "Ship linear-loom project status <slug> — operator-facing summary that names the current phase, lists active Sub-Issues (Linear tasks), and emits a single-line glance summary. Phase 3 closer.",
+    "acceptance_criteria": [
+      "cli/verbs/project.ts exports projectStatus; PROJECT_VERBS now [create, read, status].",
+      "Reads marker; on missing surfaces marker-unreadable.",
+      "Queries Linear in one GraphQL call: project (with projectMilestones) AND issues (filtered by the loom-project:<slug> label, ordered by updatedAt, first 50).",
+      "Derives current_phase: earliest in-progress milestone → fallback earliest not-started → null when all done.",
+      "Filters active tasks: state.type ∉ {completed, canceled}; caps at ACTIVE_TASK_LIMIT (20).",
+      "Maps active tasks to {identifier, title, state: state.name, url, updated_at: updatedAt}.",
+      "Output: {schema_version: 1, slug, title, linear_url, current_phase, active_tasks, active_task_count, summary}.",
+      "summary template: 'Phase N — <name> (<status>). <count> active task[s].' or 'No active or upcoming phase. <count> active task[s].'",
+      "+8 unit tests; npm test green."
+    ],
+    "rules_applied": [
+      "DESIGN.md § 4 (marker truth).",
+      "DESIGN.md § 5 + § 6 + § 12.5 (label-scoped Sub-Issue filtering via loom-project:<slug>).",
+      "DESIGN.md § 11 (Linear state authority — milestone state and Sub-Issue workflow state)."
+    ],
+    "disqualifiers": [
+      "Writing to Linear.",
+      "Touching marker.",
+      "Adding runtime JSON-schema validator dep.",
+      "Implementing 'recent comments' display — explicitly deferred to Phase 6 when the comment-write verbs land (no v1 comments to show yet).",
+      "Adding tsconfig.json."
+    ],
+    "inputs": [
+      "plugins/linear-loom/docs/DESIGN.md § 4, § 5, § 6, § 11, § 12.5",
+      "PLAN.md Phase 3 D3 (operator-facing summary of active tasks, current phase, recent comments)",
+      "U2's lib/marker.ts (readMarker, markerPath)",
+      "U3's parsePhaseFromMilestoneName + mapMilestoneStateToPhaseStatus helpers (reused for current_phase derivation)"
+    ]
+  },
+  "execution": {
+    "actions": [
+      "Added LinearProjectStatusResult type covering project (with milestones) + issues (filtered + ordered) in one GraphQL doc. ACTIVE_TASK_LIMIT=20 constant. PROJECT_STATUS_QUERY composes project lookup + issues lookup in one round trip.",
+      "Implemented projectStatus async verb: marker read → auth resolve → single GraphQL call → derive current_phase (in-progress > not-started > null) → filter + cap active tasks → assemble output with summary template.",
+      "summary template: 'Phase N — <name> (<status>). <count> active task[s].' for the typical case; 'No active or upcoming phase. <count> active task[s].' when no phase remains. Pluralization handled.",
+      "Added status to PROJECT_VERBS; CLI dispatch now reports [create, read, status] in candidates list.",
+      "+8 unit tests: missing-slug, marker-unreadable, happy-path-summary, fallback-to-not-started, null-phase-when-all-done, state-type filtering (active vs completed/canceled), 20-task cap, --pretty.",
+      "Recent comments deferred (PLAN.md asked for them; DESIGN.md § 7 says checkins are Sub-Issue comments; comment-write verbs are Phase 6, so no linear-loom-authored comments exist yet to surface). Documented in disqualifiers + notes.",
+      "Verified: npm test → 708 passing (was 700; +8). linear-loom project → candidates [create, read, status]. linear-loom project status → missing-slug.",
+      "Panel: all 4 evaluators approved on first run. Tighter packets continue to keep test-unit within its turn budget."
+    ],
+    "files_touched": [
+      "plugins/linear-loom/cli/verbs/project.ts",
+      "plugins/linear-loom/cli/verbs/project.test.ts"
+    ],
+    "corrections": []
+  },
+  "scope": [],
+  "changes_since_previous": "Second unit on the project-reads branch. U3 shipped project read + JSON Schema contract; this unit closes Phase 3 with the operator-facing status verb. All four Phase 3 lifecycle verbs (configure / create / read / status) now wired.",
+  "verdict": {
+    "result": "approved",
+    "reasons": []
+  },
+  "notes_for_pr": [
+    "Recent-comments display deferred to Phase 6. PLAN.md Phase 3 D3 listed 'recent comments' alongside 'active tasks' and 'current phase', but DESIGN.md § 7 puts check-ins as comments on Sub-Issues — the actual comment-write verbs ship in Phase 6 (checkin write, task comment). In v1 there are no linear-loom-authored comments to surface; showing only operator-written comments would be lower-signal than waiting. The status verb's output shape leaves room for a future `recent_comments` field without a breaking change.",
+    "Single GraphQL doc covers both the project lookup (with milestones) and the labeled Sub-Issue listing — cuts round-trips from 2 to 1 and shares any rate-limit cost between the two reads.",
+    "current_phase derivation uses the same parsePhaseFromMilestoneName helper U3 added — reuse keeps the slug-prefix filtering logic in one place so both verbs see the same milestone subset.",
+    "ACTIVE_TASK_LIMIT=20 is a substrate-default that should be operator-controllable later (a --limit flag would land cleanly). Phase 3 left it as a constant; no operator has hit the cap during planning, so prematurely optimising the affordance felt like scope creep.",
+    "Sandbox smoke testing (operator-side): the issues filter shape `{ labels: { name: { eq: $labelName } } }` mirrors Linear's documented IssueFilter schema, but only a live workspace confirms the field-by-field correctness. Mocked unit tests verify request structure + response handling but not Linear's actual schema."
+  ]
+}

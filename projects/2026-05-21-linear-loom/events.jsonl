@@ -10,3 +10,7 @@
 {"at":"2026-05-22T18:50:29.234Z","event":"phase-started","detail":{"phase":3,"name":"Project lifecycle verbs"}}
 {"at":"2026-05-22T18:52:59.431Z","event":"pr-opened","detail":{"pr":35,"url":"https://github.com/krambuhl/agents/pull/35"}}
 {"at":"2026-05-22T19:00:23.872Z","event":"checkin-created","detail":{"number":"01","branch":"ev-agent.linear-loom.project-create"}}
+{"at":"2026-05-22T19:29:56.427Z","event":"checkin-created","detail":{"number":"01","branch":"ev-agent.linear-loom.project-reads"}}
+{"at":"2026-05-22T19:29:58.069Z","event":"phase-started","detail":{"phase":3,"name":"Project lifecycle verbs"}}
+{"at":"2026-05-22T19:33:56.933Z","event":"checkin-created","detail":{"number":"02","branch":"ev-agent.linear-loom.project-reads"}}
+{"at":"2026-05-22T19:33:58.810Z","event":"phase-completed","detail":{"phase":3}}
