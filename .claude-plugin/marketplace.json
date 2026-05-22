@@ -30,6 +30,12 @@
       "dependencies": ["commons", "guild", "griot"]
     },
     {
+      "name": "linear-loom",
+      "source": "./plugins/linear-loom",
+      "description": "Linear-backed project substrate: linear-loom CLI + linear-loom-* skills for plans, research, tasks, retros against a Linear workspace. Personal-CLI scope (no orchestration); composes guild for panel validation.",
+      "dependencies": ["commons", "guild"]
+    },
+    {
       "name": "ev",
       "source": "./plugins/ev",
       "description": "Execution loops: ev-loop-confidence (tiered transforms), ev-loop-interactive (paired units), ev-run (router).",

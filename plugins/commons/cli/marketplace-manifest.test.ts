@@ -55,6 +55,7 @@ const EXPECTED_PLUGIN_NAMES = [
   'griot',
   'guild',
   'loom',
+  'linear-loom',
   'ev',
   'agent-loop-full',
 ] as const;
