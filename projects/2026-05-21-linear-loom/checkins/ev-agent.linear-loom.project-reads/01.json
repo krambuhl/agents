@@ -1,0 +1,73 @@
+{
+  "schema_version": 1,
+  "number": "01",
+  "created": "2026-05-22T19:29:12.000Z",
+  "phase": {
+    "number": 3,
+    "name": "Project lifecycle verbs"
+  },
+  "branch": "ev-agent.linear-loom.project-reads",
+  "unit": "U3 — project read + JSON Schema contract",
+  "contract": {
+    "goal": "Ship linear-loom project read <slug> and the JSON Schema contract at plugins/linear-loom/contracts/project-read.schema.json. project read reads the per-slug marker, queries Linear for project + milestones, emits a loom-compatible JSON shape (DESIGN.md § 19 output-stability contract) that ev-linear can pin against.",
+    "acceptance_criteria": [
+      "cli/verbs/project.ts exports projectRead; added to PROJECT_VERBS map alongside create.",
+      "Reads projects/<slug>/linear.json marker; on missing surfaces marker-unreadable.",
+      "Queries Linear for { project { id, name, url, projectMilestones { nodes { id, name, sortOrder, state, targetDate } } } }; on null project surfaces linear-project-not-found.",
+      "Filters milestones by name prefix '<slug> · Phase N — <description>'; non-matching ignored. Phase number extracted; phases sorted by number.",
+      "Maps Linear milestone state to phase status: backlog/unstarted/planned → not-started; started/in_progress → in-progress; completed/done → completed; canceled → canceled; else → unknown.",
+      "Output shape: {schema_version, slug, title, started, status, linear: {project_id, project_name, project_url}, phases: [{number, name, status, linear_milestone_id, target_date?}]}.",
+      "contracts/project-read.schema.json is a draft-07 JSON Schema gating the above shape.",
+      "CLI smokes: project read → missing-slug; project read my-thing without marker → marker-unreadable.",
+      "+9 unit tests; npm test green."
+    ],
+    "rules_applied": [
+      "DESIGN.md § 4 (marker is sole truth for slug→Linear binding).",
+      "DESIGN.md § 5 (Milestone = phase mapping).",
+      "DESIGN.md § 11 (Linear is source of truth for phase status; Sub-Issue workflow state for task status, but tasks not yet in scope).",
+      "DESIGN.md § 19 (linear-loom output stability contract; schema_version=1 establishes wire-version Phase 4 will pin to).",
+      "Zero-dep posture continues: schema is documentation-shaped, not validation-runtime. No JSON-schema validator npm dep added."
+    ],
+    "disqualifiers": [
+      "Adding a runtime JSON-schema validator dep.",
+      "Writing back to Linear (read-only verb).",
+      "Touching marker write logic (U2 owns).",
+      "Adding tsconfig.json.",
+      "Implementing project status (U4 owns)."
+    ],
+    "inputs": [
+      "plugins/linear-loom/docs/DESIGN.md § 4, § 5, § 11, § 19",
+      "U2's plugins/linear-loom/cli/lib/marker.ts (readMarker, markerPath)",
+      "U1's plugins/linear-loom/cli/lib/{linear-client,auth}.ts",
+      "plugins/loom/cli/verbs/loom/project.ts (output-shape reference for the loom-compatible mirror)"
+    ]
+  },
+  "execution": {
+    "actions": [
+      "Modified cli/verbs/project.ts: added LinearProjectReadResult type, PROJECT_READ_QUERY (queries project with id/name/url + nested projectMilestones { id, name, sortOrder, state, targetDate }), parsePhaseFromMilestoneName helper (regex matches '<slug> · Phase N — <description>' tolerant of em-dash and hyphen glyphs), mapMilestoneStateToPhaseStatus helper (Linear state strings → loom phase status enum), and projectRead async verb. Added 'read' entry to PROJECT_VERBS map. Updated header comment from 'read and status ship in U3 + U4' to spell out per-verb assignment.",
+      "Created plugins/linear-loom/contracts/project-read.schema.json: draft-07 JSON Schema with required fields, status enum on phases (not-started, in-progress, completed, canceled, unknown), top-level status enum (active, archived), schema_version const=1.",
+      "Modified cli/verbs/project.test.ts: added 8 projectRead tests (missing-slug, marker-unreadable, linear-project-not-found, happy path with multi-phase milestone parsing and slug-prefix filtering, state-mapping for all 7 documented Linear states, slug-prefix-and-pattern filtering, phase-number sorting when Linear returns out of order, --pretty) + 1 schema-validity test (parses + asserts top-level structure). markerIOReturning helper added.",
+      "Verified: npm test → 700 passing (was 691 after U2; +9). linear-loom project → exit 2 with candidates ['create','read']. linear-loom project read → exit 1 with missing-slug + verb=read in the error envelope.",
+      "Ran panel: derive-panel returned contract-fit + react-api + test-unit + naming. All four approved on first run (tighter packets adopted from the panel-budget-exhaust lesson captured between U2 and U3). naming surfaced one non-flag observation about 'started' vs 'started_at' field naming inconsistency with 'target_date'."
+    ],
+    "files_touched": [
+      "plugins/linear-loom/cli/verbs/project.ts",
+      "plugins/linear-loom/cli/verbs/project.test.ts",
+      "plugins/linear-loom/contracts/project-read.schema.json"
+    ],
+    "corrections": []
+  },
+  "scope": [],
+  "changes_since_previous": "First unit on the ev-agent.linear-loom.project-reads branch (stacked on main now that #35 + #36 are both merged). U1 (foundation + configure) and U2 (project create + marker) merged via #35 + #36; this unit builds the read-path that consumes what the write-path produces.",
+  "verdict": {
+    "result": "approved",
+    "reasons": []
+  },
+  "notes_for_pr": [
+    "Schema is documentation-shaped, not validation-runtime. No JSON-schema validator npm dep added. The schema_version=1 const establishes the wire-version Phase 4 (mirroring verbs that consume project read output) will pin against; bump on any breaking output-shape change.",
+    "Phase status mapping covers Linear's documented milestone state values (backlog, unstarted, planned, started, in_progress, completed, done, canceled, cancelled). Unknown values pass through as 'unknown' rather than being silently normalized — operator sees the actual state name rather than getting wrong-bucketed.",
+    "Phase parse is regex-based with both em-dash (—) and hyphen (-) tolerance because operators type both glyphs. The slug prefix is enforced so multiple loom-projects nested under the same Linear Project don't collide on shared milestone listings.",
+    "Naming-evaluator observation (non-blocking): the schema's 'started' field is a timestamp; 'started_at' would be more consistent with the sibling 'target_date' field. Decided to keep 'started' to match loom's manifest convention (loom's manifest.json also has bare 'started'). If we revisit naming for v2, harmonize across both substrates.",
+    "Sandbox smoke testing (operator-side, requires LINEAR_API_KEY + a real project with milestones): the projectMilestones.state field name is based on Linear's documented schema but only the smoke test confirms the live shape. If Linear's actual schema uses a different field, the structured-error envelope (graphql-error code from LinearClient) makes the failure debuggable."
+  ]
+}

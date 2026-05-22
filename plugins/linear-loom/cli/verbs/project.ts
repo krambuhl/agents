@@ -8,18 +8,21 @@ import {
   labelForSlug,
   markerExists,
   markerPath,
+  readMarker,
   writeMarker,
 } from '../lib/marker.ts';
 
 // `project` namespace verbs.
 //
-// `create` (this unit / U2): bootstrap a loom-project's per-slug
-// binding to a Linear Project. Verifies the Linear Project exists,
-// creates a workspace-scoped `loom-project:<slug>` label (idempotent
-// — looks up existing first), writes the marker file at
-// projects/<slug>/linear.json.
-//
-// `read` and `status` ship in U3 + U4 of Phase 3.
+// `create`  (U2): bootstrap a loom-project's per-slug binding to a
+//                 Linear Project. Verifies project exists, creates
+//                 workspace-scoped loom-project:<slug> label, writes
+//                 marker at projects/<slug>/linear.json.
+// `read`    (U3): reads the marker + queries Linear; emits a
+//                 loom-compatible JSON shape (DESIGN.md § 19 output
+//                 contract). Schema at contracts/project-read.schema.json.
+// `status`  (U4): operator-facing summary of active phase + recent
+//                 Sub-Issue activity.
 
 export interface ProjectContext {
   client?: LinearClient;
@@ -239,11 +242,202 @@ export async function projectCreate(
   };
 }
 
+interface LinearProjectReadResult {
+  project: {
+    id: string;
+    name: string;
+    url: string;
+    projectMilestones: {
+      nodes: Array<{
+        id: string;
+        name: string;
+        sortOrder: number;
+        state: string | null;
+        targetDate: string | null;
+      }>;
+    };
+  } | null;
+}
+
+const PROJECT_READ_QUERY = `
+  query LinearLoomProjectRead($id: String!) {
+    project(id: $id) {
+      id
+      name
+      url
+      projectMilestones {
+        nodes {
+          id
+          name
+          sortOrder
+          state
+          targetDate
+        }
+      }
+    }
+  }
+`;
+
+// Phase parse: matches "<slug> · Phase N — <name>" or
+// "<slug> · Phase N - <name>" (different dash glyphs operators
+// might type). The slug prefix is enforced so loom-project's
+// milestones don't collide with other loom-projects under the same
+// Linear Project (DESIGN.md § 5 + § 6).
+function parsePhaseFromMilestoneName(
+  milestoneName: string,
+  slug: string,
+): { number: number; name: string } | null {
+  const prefix = `${slug} · `;
+  if (!milestoneName.startsWith(prefix)) return null;
+  const rest = milestoneName.slice(prefix.length);
+  const match = /^Phase\s+(\d+)\s*[—-]\s*(.+)$/.exec(rest);
+  if (match === null) return null;
+  const numberStr = match[1];
+  const namePart = match[2];
+  if (numberStr === undefined || namePart === undefined) return null;
+  return {
+    number: Number.parseInt(numberStr, 10),
+    name: namePart.trim(),
+  };
+}
+
+// Status mapping (DESIGN.md § 11: Linear Milestone state is the
+// source of truth). Linear's projectMilestone.state is a string
+// field with values that map cleanly to loom's three-state phase
+// status. Unknown values pass through as `unknown` so the operator
+// sees them rather than getting silently normalized.
+function mapMilestoneStateToPhaseStatus(state: string | null): string {
+  if (state === null) return 'unknown';
+  switch (state.toLowerCase()) {
+    case 'backlog':
+    case 'unstarted':
+    case 'planned':
+      return 'not-started';
+    case 'started':
+    case 'in_progress':
+    case 'in-progress':
+      return 'in-progress';
+    case 'completed':
+    case 'done':
+      return 'completed';
+    case 'canceled':
+    case 'cancelled':
+      return 'canceled';
+    default:
+      return 'unknown';
+  }
+}
+
+export async function projectRead(
+  rest: string[],
+  ctx: ProjectContext = {},
+): Promise<DispatchResult> {
+  const { values, positionals } = parseArgs({
+    args: rest,
+    options: {
+      pretty: { type: 'boolean' as const },
+    },
+    allowPositionals: true,
+    strict: false,
+  });
+
+  const slug = positionals[0];
+  if (typeof slug !== 'string' || slug.trim() === '') {
+    return errToResult(
+      new LinearLoomError(
+        'missing-slug',
+        'project read requires a positional <slug> argument.',
+        { namespace: 'project', verb: 'read' },
+      ),
+    );
+  }
+
+  const projectsRoot = ctx.projectsRoot ?? 'projects';
+  const target = markerPath(slug.trim(), projectsRoot);
+
+  let marker: LinearMarker;
+  try {
+    marker = readMarker(target, ctx.markerIO);
+  } catch (err) {
+    return errToResult(err);
+  }
+
+  let authResolution;
+  try {
+    authResolution = (ctx.resolveAuthFn ?? resolveAuth)();
+  } catch (err) {
+    return errToResult(err);
+  }
+
+  const client =
+    ctx.client ?? new LinearClient({ apiKey: authResolution.apiKey });
+
+  let queryResult: LinearProjectReadResult;
+  try {
+    queryResult = await client.query<LinearProjectReadResult>(
+      PROJECT_READ_QUERY,
+      { id: marker.linear_project_id },
+    );
+  } catch (err) {
+    return errToResult(err);
+  }
+
+  if (queryResult.project === null) {
+    return errToResult(
+      new LinearLoomError(
+        'linear-project-not-found',
+        `No Linear Project with ID ${marker.linear_project_id} (the marker may point at a deleted Project, or the API key cannot see it).`,
+        { namespace: 'project', verb: 'read' },
+      ),
+    );
+  }
+
+  const project = queryResult.project;
+  const phases = project.projectMilestones.nodes
+    .map((milestone) => {
+      const parsed = parsePhaseFromMilestoneName(milestone.name, marker.slug);
+      if (parsed === null) return null;
+      return {
+        number: parsed.number,
+        name: parsed.name,
+        status: mapMilestoneStateToPhaseStatus(milestone.state),
+        linear_milestone_id: milestone.id,
+        ...(milestone.targetDate !== null
+          ? { target_date: milestone.targetDate }
+          : {}),
+      };
+    })
+    .filter(
+      (entry): entry is Exclude<typeof entry, null> => entry !== null,
+    )
+    .sort((a, b) => a.number - b.number);
+
+  const output = {
+    schema_version: 1,
+    slug: marker.slug,
+    title: project.name,
+    started: marker.created,
+    status: 'active',
+    linear: {
+      project_id: project.id,
+      project_name: project.name,
+      project_url: project.url,
+    },
+    phases,
+  };
+
+  return {
+    stdout: emit(output, values.pretty === true),
+    exitCode: 0,
+  };
+}
+
 export const PROJECT_VERBS: Record<
   string,
   (rest: string[], ctx?: ProjectContext) => Promise<DispatchResult>
 > = {
   create: projectCreate,
+  read: projectRead,
 };
 
 function emit(value: unknown, pretty: boolean): string {
