@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "title": "Linear Loom",
+  "slug": "2026-05-21-linear-loom",
+  "started": "2026-05-22",
+  "status": "active",
+  "current_branch": null,
+  "latest_checkin": null,
+  "strategy": "interactive",
+  "phases": [
+    {
+      "number": 1,
+      "name": "Phase 1",
+      "status": "not-started"
+    }
+  ]
+}
