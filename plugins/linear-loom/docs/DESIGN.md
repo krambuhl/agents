@@ -1,11 +1,14 @@
 # linear-loom — DESIGN
 
 **Status**: complete (Phase 1, Round 2). The architectural spine
-is now 20 resolved decisions; the tasks-generate parser branch is
-expanded with 7 sub-decisions in § 12. The earlier "Open
-questions" section is folded back into the resolved decisions.
-This doc will continue to evolve as Phase 2+ execution surfaces
-new decisions, but no branches are currently flagged as open.
+is now 21 resolved decisions; § 12 (tasks-generate parser) carries
+7 sub-decisions; § 17, § 18, § 19 capture the late-Round-2 rework
+that forks the `ev` plugin into a parallel `ev-linear` plugin
+(linear-loom-only, griot-free) rather than making the existing
+`ev` loop skills backend-aware. The earlier "Open questions"
+section is folded back into the resolved decisions. This doc will
+continue to evolve as Phase 2+ execution surfaces new decisions,
+but no branches are currently flagged as open.
 
 **Related**:
 - Plan: `projects/2026-05-21-linear-loom/PLAN.md`
@@ -25,9 +28,11 @@ additive.
 
 ## Decision register
 
-These 20 decisions form the architectural spine of linear-loom.
+These 21 decisions form the architectural spine of linear-loom.
 All are resolved; decision § 12 (tasks-generate parser) carries 7
-nested sub-decisions from the Round 2 grill.
+nested sub-decisions from the Round 2 grill. Decisions § 17, § 18,
+§ 19 capture the Round 2 ev-plugin-fork rework and supersede
+earlier dual-backend / cross-CLI-contract framings.
 
 ### 1. Skill architecture: minimal operator-direct surface
 
@@ -398,49 +403,127 @@ adopt linear-loom for new projects. Marker conflict (both files
 present for the same slug) errors loudly. No conversion utility
 in v1.
 
-### 17. `/ev-loop-interactive` becomes backend-aware
+### 17. ev plugin forks: `ev-linear` is linear-loom-only
 
-Small touch to the `ev` plugin: `/ev-loop-interactive` peeks
-the marker file at `projects/<slug>/` and routes substrate
-calls to the correct CLI (`bin/loom` or `bin/linear-loom`).
-Substrate contract: linear-loom CLI returns loom-compatible
-JSON shapes for read verbs (`project read`, `events read`) so
-the loop can route transparently. loom plugin untouched; only
-ev plugin grows backend-awareness.
+The earlier draft of this decision proposed making
+`/ev-loop-interactive` backend-aware (peek the marker file at
+`projects/<slug>/`, route to `bin/loom` or `bin/linear-loom`
+accordingly). That created real crossover complexity: a single
+loop skill carrying two substrate code paths, plus a
+cross-plugin JSON-Schema contract to keep both in sync. Round 2
+of the design grill rejected that shape and replaced it with a
+**fork**:
 
-### 18. Substrate-contract specification: JSON Schema + per-plugin golden fixtures
+- `plugins/ev/` continues unchanged. Its loop skills target
+  `bin/loom` exclusively, as today. Existing loom-backed
+  projects keep working.
+- `plugins/ev-linear/` is a new parallel plugin. Its loop skills
+  (`ev-linear:ev-run`, `ev-linear:ev-loop-interactive`,
+  `ev-linear:ev-loop-confidence`) target `bin/linear-loom`
+  exclusively. No marker-file peek, no `bin/loom` fallback, no
+  dual code paths.
 
-The contract that lets `/ev-loop-interactive` route to either
-backend transparently is specified as JSON Schema files in a
-shared location:
+ev-linear's skill bodies are derivatives of ev's bodies —
+identical in shape (preflight → orient → unit loop → checkpoint
+→ session-close), with every `bin/loom <verb>` call site
+replaced by the corresponding `bin/linear-loom <verb>` call
+site. Where loom and linear-loom CLIs diverge (e.g. linear-loom
+has no `events append` verb because Linear's native audit IS
+the event trail per § 8), ev-linear's body adapts; ev's body
+stays loom-shaped.
+
+Operator picks loop by namespace:
+
+- loom-backed project (`projects/<slug>/manifest.json`)
+  → `/ev-loop-interactive <slug> <phase>` (the `ev:` plugin).
+- linear-loom-backed project (`projects/<slug>/linear.json`)
+  → `/ev-linear:ev-loop-interactive <slug> <phase>` (the
+  `ev-linear:` plugin).
+
+No automatic routing layer. Operators that misname see a
+"slug not found"-style error from the wrong CLI; the failure
+mode is loud and immediate.
+
+**Why fork instead of route**: the dual-backend abstraction
+priced the maintenance of a cross-CLI contract that, in
+practice, would only ever have two callers. Forking pays the
+duplication cost (two parallel ev-loop bodies to keep in shape
+over time) in exchange for each plugin having exactly one
+substrate target and exactly one set of CLI invariants to test
+against. The duplication is bounded by the substrate skills'
+size (a few hundred lines each); the cross-CLI abstraction
+would have grown unboundedly as substrate verbs diverged.
+
+**Loom sunset is out of scope for this project.** ev-linear
+exists alongside ev indefinitely. When (if ever) the operator
+decides loom-backed projects are fully migrated, sunsetting
+`plugins/ev/` is its own follow-on workstream.
+
+### 18. ev-linear excises griot integration entirely
+
+`plugins/ev/` today carries griot integration in multiple
+places: `bin/griot use --as=llm` at every loop entry (rollup
+load), `bin/griot capture` call sites at recurring-finding
+threshold, scope-shift detection, manifest-vs-git drift, and
+auto-mode budget-exhaust paths. The capture surface has a
+documented classification gap — many of the documented writes
+fall back to the event emission alone because the verb does
+not yet support the required classification.
+
+ev-linear drops all of it. No rollup load at session start.
+No capture writes anywhere in the loop body. The skill bodies
+are simpler by a measurable margin (each capture site is
+~10–20 lines of intent + classification commentary that
+shrinks to zero).
+
+If the operator wants griot's rollup context inside an
+ev-linear session, they invoke `/griot-use` manually
+before/around the loop. If they want to compact session notes
+into the rollup, they invoke `/griot-compact` manually after.
+The loop itself stays griot-agnostic.
+
+**Why excise rather than narrow**: the griot integration's
+load-bearing surface (the rollup-load at session start) was
+the smallest cost to keep — but the operator's stated read is
+that griot's overall value to the loop has been limited. With
+the fork in § 17 already creating a clean break point, the
+Round 2 grill chose to take the bigger reduction now and add
+griot back later only with concrete evidence of value, rather
+than carrying the rollup-load on assumption.
+
+### 19. Substrate contract: linear-loom output stability, not cross-CLI parity
+
+The Round 1 draft of this decision proposed a cross-CLI JSON
+Schema in `plugins/loom/contracts/` that both `bin/loom` and
+`bin/linear-loom` would validate against. With the fork in
+§ 17, that's no longer needed — ev and ev-linear each consume
+one CLI's output and only one CLI's output, so cross-CLI parity
+is moot.
+
+What linear-loom still needs is **its own output stability
+contract** so that ev-linear can reliably parse `bin/linear-loom
+project read` and similar read verbs without breaking on
+internal refactors. That contract lives inside the linear-loom
+plugin:
 
 ```
-plugins/loom/contracts/
+plugins/linear-loom/contracts/
   project-read.schema.json
-  events-read.schema.json
-  session-list.schema.json
+  events-read.schema.json   (if/when linear-loom grows an event-read verb;
+                              see § 8 — linear-loom has no events.jsonl by design)
+  session-list.schema.json  (if/when sessions are added)
 ```
 
-loom authored the shape first, so the schema lives in the loom
-plugin's tree; linear-loom imports it as a relative-path
-dependency. Both `bin/loom` and `bin/linear-loom` validate their
-own read-verb outputs against the schema in their own test
-suites with golden-fixture cases:
+`bin/linear-loom` validates its own read-verb outputs against
+these schemas in its CLI test suite with golden fixtures.
+`ev-linear`'s loop skills consume the schemas (or a TypeScript
+projection) to type their parsed-output handling.
 
-```
-plugins/loom/cli/__tests__/output-contract.test.ts
-plugins/linear-loom/cli/__tests__/output-contract.test.ts
-```
+No `plugins/loom/contracts/` directory is created by this work.
+Loom's CLI output stability is whatever loom's own tests assert;
+ev-linear has no opinion on it.
 
-The `ev` plugin trusts the contract without itself running a
-cross-CLI integration test. This isolates the dependency: each
-CLI is responsible for its own conformance; the ev plugin only
-needs to read the schema (or a TypeScript projection of it) to
-type its parsed-output handling. No sandbox Linear workspace
-required for CI; no slow integration tests; tooling failures
-surface at the source rather than at the consumer.
-
-### 19. PR linkage: lean on Linear's native GitHub integration
+### 20. PR linkage: lean on Linear's native GitHub integration
 
 linear-loom does NOT mirror loom's `pr open / update / merged`
 verbs. Linear's native GitHub integration — configured once per
@@ -466,7 +549,7 @@ One less surface to maintain; relies on the operator's workspace
 config (documented in `plugins/linear-loom/README.md` as a
 prerequisite, alongside `LINEAR_API_KEY`).
 
-### 20. Rate-limit handling: personal-API-key budget is fine
+### 21. Rate-limit handling: personal-API-key budget is fine
 
 v1 expected daily traffic (well under 200 calls/day for typical
 operator gestures) sits two orders of magnitude below the
@@ -553,11 +636,11 @@ grill and folded back into the decision register:
 |------------------------|-----------------|
 | Tasks-generate parser convention | § 12 (7 sub-decisions) |
 | Skills inventory | § 1, § 14 |
-| PR-related state mapping | § 19 |
+| PR-related state mapping | § 20 |
 | Per-loom-project config defaults | § 4, § 9 |
-| Loop integration testability | § 18 |
+| Loop integration testability | § 19 |
 | Document templates content | § 13 |
-| Rate-limit reconciliation | § 9, § 20 |
+| Rate-limit reconciliation | § 9, § 21 |
 
 New open questions will inevitably surface during Phase 2
 (scaffolding) and Phase 3+ (implementation). Append them to this
