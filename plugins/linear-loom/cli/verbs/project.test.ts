@@ -2,7 +2,7 @@ import { test, expect, vi } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { projectCreate, projectRead } from './project.ts';
+import { projectCreate, projectRead, projectStatus } from './project.ts';
 import { LinearClient } from '../lib/linear-client.ts';
 import type { LinearMarker } from '../lib/marker.ts';
 
@@ -443,6 +443,216 @@ test('projectRead: --pretty pretty-prints', async () => {
           },
         },
       },
+    ]),
+    resolveAuthFn: stubAuth(),
+    projectsRoot: '/tmp/projects',
+    markerIO: markerIOReturning(SAMPLE_MARKER),
+  });
+  expect(result.exitCode).toBe(0);
+  expect(result.stdout).toContain('\n  ');
+});
+
+// ─── projectStatus ───────────────────────────────────────────────────────
+
+function statusResponse(opts: {
+  projectName?: string;
+  milestones?: Array<{
+    id: string;
+    name: string;
+    sortOrder: number;
+    state: string | null;
+  }>;
+  issues?: Array<{
+    id: string;
+    identifier: string;
+    title: string;
+    url: string;
+    updatedAt: string;
+    state: { name: string; type: string };
+  }>;
+}) {
+  return {
+    data: {
+      project:
+        opts.projectName === null
+          ? null
+          : {
+              id: 'lin-proj-1',
+              name: opts.projectName ?? 'My Sandbox',
+              url: 'https://linear.app/proj-1',
+              projectMilestones: {
+                nodes: opts.milestones ?? [],
+              },
+            },
+      issues: {
+        nodes: opts.issues ?? [],
+      },
+    },
+  };
+}
+
+test('projectStatus: errors on missing slug', async () => {
+  const result = await projectStatus([], {
+    client: clientWithResponses([]),
+    resolveAuthFn: stubAuth(),
+  });
+  expect(result.exitCode).toBe(1);
+  expect(JSON.parse(result.stderr ?? '').error).toBe('missing-slug');
+});
+
+test('projectStatus: surfaces marker-unreadable when marker missing', async () => {
+  const result = await projectStatus(['my-thing'], {
+    client: clientWithResponses([]),
+    resolveAuthFn: stubAuth(),
+    projectsRoot: '/tmp/projects',
+    markerIO: markerIOReturning(null),
+  });
+  expect(result.exitCode).toBe(1);
+  expect(JSON.parse(result.stderr ?? '').error).toBe('marker-unreadable');
+});
+
+test('projectStatus: emits summary with in-progress phase + active tasks', async () => {
+  const result = await projectStatus(['my-thing'], {
+    client: clientWithResponses([
+      statusResponse({
+        milestones: [
+          { id: 'm-1', name: 'my-thing · Phase 1 — Setup', sortOrder: 1, state: 'completed' },
+          { id: 'm-2', name: 'my-thing · Phase 2 — Build', sortOrder: 2, state: 'started' },
+          { id: 'm-3', name: 'my-thing · Phase 3 — Ship', sortOrder: 3, state: 'backlog' },
+        ],
+        issues: [
+          { id: 'i-1', identifier: 'ENG-101', title: 'Task A', url: 'https://l/1', updatedAt: '2026-05-22T12:00:00.000Z', state: { name: 'In Progress', type: 'started' } },
+          { id: 'i-2', identifier: 'ENG-102', title: 'Task B', url: 'https://l/2', updatedAt: '2026-05-22T11:00:00.000Z', state: { name: 'Todo', type: 'unstarted' } },
+        ],
+      }),
+    ]),
+    resolveAuthFn: stubAuth(),
+    projectsRoot: '/tmp/projects',
+    markerIO: markerIOReturning(SAMPLE_MARKER),
+  });
+  expect(result.exitCode).toBe(0);
+  const parsed = JSON.parse(result.stdout ?? '');
+  expect(parsed.slug).toBe('my-thing');
+  expect(parsed.title).toBe('My Sandbox');
+  expect(parsed.linear_url).toBe('https://linear.app/proj-1');
+  expect(parsed.current_phase).toEqual({
+    number: 2,
+    name: 'Build',
+    status: 'in-progress',
+    linear_milestone_id: 'm-2',
+  });
+  expect(parsed.active_tasks).toHaveLength(2);
+  expect(parsed.active_tasks[0]).toEqual({
+    identifier: 'ENG-101',
+    title: 'Task A',
+    state: 'In Progress',
+    url: 'https://l/1',
+    updated_at: '2026-05-22T12:00:00.000Z',
+  });
+  expect(parsed.active_task_count).toBe(2);
+  expect(parsed.summary).toBe('Phase 2 — Build (in-progress). 2 active tasks.');
+});
+
+test('projectStatus: falls back to earliest not-started when no in-progress phase', async () => {
+  const result = await projectStatus(['my-thing'], {
+    client: clientWithResponses([
+      statusResponse({
+        milestones: [
+          { id: 'm-1', name: 'my-thing · Phase 1 — Setup', sortOrder: 1, state: 'completed' },
+          { id: 'm-2', name: 'my-thing · Phase 2 — Build', sortOrder: 2, state: 'backlog' },
+        ],
+        issues: [],
+      }),
+    ]),
+    resolveAuthFn: stubAuth(),
+    projectsRoot: '/tmp/projects',
+    markerIO: markerIOReturning(SAMPLE_MARKER),
+  });
+  const parsed = JSON.parse(result.stdout ?? '');
+  expect(parsed.current_phase.number).toBe(2);
+  expect(parsed.current_phase.status).toBe('not-started');
+  expect(parsed.summary).toBe('Phase 2 — Build (not-started). 0 active tasks.');
+});
+
+test('projectStatus: current_phase null + no-phase summary when all phases done', async () => {
+  const result = await projectStatus(['my-thing'], {
+    client: clientWithResponses([
+      statusResponse({
+        milestones: [
+          { id: 'm-1', name: 'my-thing · Phase 1 — Done', sortOrder: 1, state: 'completed' },
+        ],
+        issues: [],
+      }),
+    ]),
+    resolveAuthFn: stubAuth(),
+    projectsRoot: '/tmp/projects',
+    markerIO: markerIOReturning(SAMPLE_MARKER),
+  });
+  const parsed = JSON.parse(result.stdout ?? '');
+  expect(parsed.current_phase).toBeNull();
+  expect(parsed.summary).toBe('No active or upcoming phase. 0 active tasks.');
+});
+
+test('projectStatus: filters out completed and canceled tasks from active_tasks', async () => {
+  const result = await projectStatus(['my-thing'], {
+    client: clientWithResponses([
+      statusResponse({
+        milestones: [
+          { id: 'm', name: 'my-thing · Phase 1 — X', sortOrder: 1, state: 'started' },
+        ],
+        issues: [
+          { id: '1', identifier: 'ENG-1', title: 'Active', url: 'u', updatedAt: 't', state: { name: 'In Progress', type: 'started' } },
+          { id: '2', identifier: 'ENG-2', title: 'Done', url: 'u', updatedAt: 't', state: { name: 'Done', type: 'completed' } },
+          { id: '3', identifier: 'ENG-3', title: 'Killed', url: 'u', updatedAt: 't', state: { name: 'Canceled', type: 'canceled' } },
+          { id: '4', identifier: 'ENG-4', title: 'Backlog', url: 'u', updatedAt: 't', state: { name: 'Backlog', type: 'backlog' } },
+        ],
+      }),
+    ]),
+    resolveAuthFn: stubAuth(),
+    projectsRoot: '/tmp/projects',
+    markerIO: markerIOReturning(SAMPLE_MARKER),
+  });
+  const parsed = JSON.parse(result.stdout ?? '');
+  expect(parsed.active_tasks.map((t: { identifier: string }) => t.identifier)).toEqual([
+    'ENG-1',
+    'ENG-4',
+  ]);
+});
+
+test('projectStatus: caps active_tasks at ACTIVE_TASK_LIMIT (20)', async () => {
+  const issues = Array.from({ length: 30 }, (_, i) => ({
+    id: `i-${i}`,
+    identifier: `ENG-${i}`,
+    title: `Task ${i}`,
+    url: `https://l/${i}`,
+    updatedAt: `2026-05-22T${String(i % 24).padStart(2, '0')}:00:00.000Z`,
+    state: { name: 'In Progress', type: 'started' },
+  }));
+  const result = await projectStatus(['my-thing'], {
+    client: clientWithResponses([
+      statusResponse({
+        milestones: [
+          { id: 'm', name: 'my-thing · Phase 1 — X', sortOrder: 1, state: 'started' },
+        ],
+        issues,
+      }),
+    ]),
+    resolveAuthFn: stubAuth(),
+    projectsRoot: '/tmp/projects',
+    markerIO: markerIOReturning(SAMPLE_MARKER),
+  });
+  const parsed = JSON.parse(result.stdout ?? '');
+  expect(parsed.active_tasks).toHaveLength(20);
+  expect(parsed.active_task_count).toBe(20);
+});
+
+test('projectStatus: --pretty pretty-prints', async () => {
+  const result = await projectStatus(['my-thing', '--pretty'], {
+    client: clientWithResponses([
+      statusResponse({
+        milestones: [],
+        issues: [],
+      }),
     ]),
     resolveAuthFn: stubAuth(),
     projectsRoot: '/tmp/projects',

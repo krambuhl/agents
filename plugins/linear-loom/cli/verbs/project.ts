@@ -432,12 +432,207 @@ export async function projectRead(
   };
 }
 
+interface LinearProjectStatusResult {
+  project: {
+    id: string;
+    name: string;
+    url: string;
+    projectMilestones: {
+      nodes: Array<{
+        id: string;
+        name: string;
+        sortOrder: number;
+        state: string | null;
+      }>;
+    };
+  } | null;
+  issues: {
+    nodes: Array<{
+      id: string;
+      identifier: string;
+      title: string;
+      url: string;
+      updatedAt: string;
+      state: {
+        name: string;
+        type: string;
+      };
+    }>;
+  };
+}
+
+const PROJECT_STATUS_QUERY = `
+  query LinearLoomProjectStatus($projectId: String!, $labelName: String!) {
+    project(id: $projectId) {
+      id
+      name
+      url
+      projectMilestones {
+        nodes {
+          id
+          name
+          sortOrder
+          state
+        }
+      }
+    }
+    issues(
+      filter: { labels: { name: { eq: $labelName } } }
+      first: 50
+      orderBy: updatedAt
+    ) {
+      nodes {
+        id
+        identifier
+        title
+        url
+        updatedAt
+        state {
+          name
+          type
+        }
+      }
+    }
+  }
+`;
+
+const ACTIVE_TASK_LIMIT = 20;
+
+export async function projectStatus(
+  rest: string[],
+  ctx: ProjectContext = {},
+): Promise<DispatchResult> {
+  const { values, positionals } = parseArgs({
+    args: rest,
+    options: {
+      pretty: { type: 'boolean' as const },
+    },
+    allowPositionals: true,
+    strict: false,
+  });
+
+  const slug = positionals[0];
+  if (typeof slug !== 'string' || slug.trim() === '') {
+    return errToResult(
+      new LinearLoomError(
+        'missing-slug',
+        'project status requires a positional <slug> argument.',
+        { namespace: 'project', verb: 'status' },
+      ),
+    );
+  }
+
+  const projectsRoot = ctx.projectsRoot ?? 'projects';
+  const target = markerPath(slug.trim(), projectsRoot);
+
+  let marker: LinearMarker;
+  try {
+    marker = readMarker(target, ctx.markerIO);
+  } catch (err) {
+    return errToResult(err);
+  }
+
+  let authResolution;
+  try {
+    authResolution = (ctx.resolveAuthFn ?? resolveAuth)();
+  } catch (err) {
+    return errToResult(err);
+  }
+
+  const client =
+    ctx.client ?? new LinearClient({ apiKey: authResolution.apiKey });
+
+  let queryResult: LinearProjectStatusResult;
+  try {
+    queryResult = await client.query<LinearProjectStatusResult>(
+      PROJECT_STATUS_QUERY,
+      {
+        projectId: marker.linear_project_id,
+        labelName: marker.label,
+      },
+    );
+  } catch (err) {
+    return errToResult(err);
+  }
+
+  if (queryResult.project === null) {
+    return errToResult(
+      new LinearLoomError(
+        'linear-project-not-found',
+        `No Linear Project with ID ${marker.linear_project_id}.`,
+        { namespace: 'project', verb: 'status' },
+      ),
+    );
+  }
+
+  const project = queryResult.project;
+
+  const phases = project.projectMilestones.nodes
+    .map((milestone) => {
+      const parsed = parsePhaseFromMilestoneName(milestone.name, marker.slug);
+      if (parsed === null) return null;
+      return {
+        number: parsed.number,
+        name: parsed.name,
+        status: mapMilestoneStateToPhaseStatus(milestone.state),
+        linear_milestone_id: milestone.id,
+      };
+    })
+    .filter((entry): entry is Exclude<typeof entry, null> => entry !== null)
+    .sort((a, b) => a.number - b.number);
+
+  // Current phase: prefer the earliest in-progress phase. If none, the
+  // earliest not-started phase (i.e. up next). If all phases are
+  // completed or canceled, current_phase is null.
+  const currentPhase =
+    phases.find((p) => p.status === 'in-progress') ??
+    phases.find((p) => p.status === 'not-started') ??
+    null;
+
+  const allTasks = queryResult.issues.nodes;
+  const activeTasks = allTasks
+    .filter(
+      (issue) =>
+        issue.state.type !== 'completed' && issue.state.type !== 'canceled',
+    )
+    .slice(0, ACTIVE_TASK_LIMIT)
+    .map((issue) => ({
+      identifier: issue.identifier,
+      title: issue.title,
+      state: issue.state.name,
+      url: issue.url,
+      updated_at: issue.updatedAt,
+    }));
+
+  const summary =
+    currentPhase !== null
+      ? `Phase ${currentPhase.number} — ${currentPhase.name} (${currentPhase.status}). ${activeTasks.length} active task${activeTasks.length === 1 ? '' : 's'}.`
+      : `No active or upcoming phase. ${activeTasks.length} active task${activeTasks.length === 1 ? '' : 's'}.`;
+
+  const output = {
+    schema_version: 1,
+    slug: marker.slug,
+    title: project.name,
+    linear_url: project.url,
+    current_phase: currentPhase,
+    active_tasks: activeTasks,
+    active_task_count: activeTasks.length,
+    summary,
+  };
+
+  return {
+    stdout: emit(output, values.pretty === true),
+    exitCode: 0,
+  };
+}
+
 export const PROJECT_VERBS: Record<
   string,
   (rest: string[], ctx?: ProjectContext) => Promise<DispatchResult>
 > = {
   create: projectCreate,
   read: projectRead,
+  status: projectStatus,
 };
 
 function emit(value: unknown, pretty: boolean): string {
