@@ -10,7 +10,43 @@
   "phases": [
     {
       "number": 1,
-      "name": "Phase 1",
+      "name": "DESIGN.md",
+      "status": "completed"
+    },
+    {
+      "number": 2,
+      "name": "Plugin scaffolding",
+      "status": "in-progress",
+      "branch": "ev-agent.linear-loom.scaffold"
+    },
+    {
+      "number": 3,
+      "name": "Project lifecycle verbs",
+      "status": "not-started"
+    },
+    {
+      "number": 4,
+      "name": "Substrate mirroring",
+      "status": "not-started"
+    },
+    {
+      "number": 5,
+      "name": "Plan-to-tasks generation",
+      "status": "not-started"
+    },
+    {
+      "number": 6,
+      "name": "Manual write-back verbs",
+      "status": "not-started"
+    },
+    {
+      "number": 7,
+      "name": "ev-linear plugin",
+      "status": "not-started"
+    },
+    {
+      "number": 8,
+      "name": "Dogfood",
       "status": "not-started"
     }
   ]
