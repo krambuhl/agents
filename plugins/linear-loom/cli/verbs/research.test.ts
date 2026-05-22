@@ -16,6 +16,8 @@ const SAMPLE_MARKER: LinearMarker = {
 const FAKE_GIT: GitRunner = {
   currentBranch: () => 'ev-agent.linear-loom.documents-research',
   githubRemote: () => ({ org: 'krambuhl', repo: 'agents' }),
+  isCommitted: () => false,
+  addAndCommit: () => {},
 };
 
 function stubAuth() {

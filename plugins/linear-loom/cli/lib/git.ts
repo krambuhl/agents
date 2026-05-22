@@ -26,6 +26,16 @@ export interface GitRunner {
   // (https://github.com/org/repo.git) URL shapes. Throws
   // remote-not-github when the remote isn't a GitHub URL.
   githubRemote(repoRoot: string): GitHubRemote;
+
+  // Returns true when `filePath` is tracked in HEAD (i.e. committed
+  // at least once on the current branch). Used by `plan` to refuse
+  // overwrite when PLAN.md is already committed.
+  isCommitted(repoRoot: string, filePath: string): boolean;
+
+  // Stages the named paths and commits with the given message.
+  // Throws git-commit-failed on non-zero exit from either step.
+  // Run from `repoRoot` so relative paths in `paths` resolve.
+  addAndCommit(repoRoot: string, paths: string[], message: string): void;
 }
 
 export const defaultGitRunner: GitRunner = {
@@ -64,6 +74,38 @@ export const defaultGitRunner: GitRunner = {
       );
     }
     return parseGitHubRemote(result.stdout.trim());
+  },
+
+  isCommitted(repoRoot: string, filePath: string): boolean {
+    const result = spawnSync(
+      'git',
+      ['ls-files', '--error-unmatch', filePath],
+      { cwd: repoRoot, encoding: 'utf8' },
+    );
+    return result.status === 0;
+  },
+
+  addAndCommit(repoRoot: string, paths: string[], message: string): void {
+    const addResult = spawnSync('git', ['add', ...paths], {
+      cwd: repoRoot,
+      encoding: 'utf8',
+    });
+    if (addResult.status !== 0) {
+      throw new LinearLoomError(
+        'git-commit-failed',
+        `git add failed: ${addResult.stderr ?? '(no stderr)'}`,
+      );
+    }
+    const commitResult = spawnSync('git', ['commit', '-m', message], {
+      cwd: repoRoot,
+      encoding: 'utf8',
+    });
+    if (commitResult.status !== 0) {
+      throw new LinearLoomError(
+        'git-commit-failed',
+        `git commit failed: ${commitResult.stderr ?? '(no stderr)'}`,
+      );
+    }
   },
 };
 
