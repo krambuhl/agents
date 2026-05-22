@@ -10,20 +10,34 @@
 `linear-loom` is a new substrate plugin at `plugins/linear-loom/`
 that turns a Linear workspace into the operator dashboard and
 flow router for agent work. The architectural primitive is the
-**status-transition hook**: when a Linear issue's workflow state
+**status transition**: when a Linear issue's workflow state
 changes — by operator action in whatever Linear view they prefer
 (Kanban, list, calendar, etc.), by a system-emitted event, or by
-GitHub PR lifecycle — linear-loom catches the transition via
-webhook and dispatches the matching agent flow. Issues carry a
-label or custom field declaring **what kind of agent flow** should
-run (`planning`, `iterative-confidence`, `whiteboarding`,
+GitHub PR lifecycle — linear-loom observes the transition and
+dispatches the matching agent flow. Issues carry a label or
+custom field declaring **what kind of agent flow** should run
+(`planning`, `iterative-confidence`, `whiteboarding`,
 `evaluator-panel`, etc.). The agent flow runs on an ephemeral
 machine spun up via Coder CLI (or equivalent) and reports back to
 Linear as work proceeds.
 
+**Transition observation in v1 is polling-based**, not webhook-
+based. A GitHub Actions scheduled workflow (cron, 5-minute
+nominal interval) polls Linear for issues in the dispatchable
+states, finds new transitions, and triggers Coder workspace
+spin-ups. This sidesteps the need for a publicly reachable
+webhook receiver, removes the "always-on server" infrastructure
+burden, and matches the architecture OpenAI Symphony itself uses
+(agents poll Linear rather than receive webhooks). The tradeoff is
+latency: up to ~5 minutes between a status change and a machine
+spinning up, with possible drift to 10-15 minutes during GitHub
+Actions high-load periods. Webhook-driven low-latency dispatch is
+named as a Phase N upgrade path once the polling pattern proves
+itself in dogfood use.
+
 Linear is not a secondary storage medium in this design. It is the
-**operator UI and the orchestration brain**. The status-transition
-hook is the orchestration primitive; the Linear view (whatever the
+**operator UI and the orchestration brain**. The status transition
+is the orchestration primitive; the Linear view (whatever the
 operator prefers) is the dashboard. Storage primitives (in git or
 in Linear) exist *because* the orchestration needs them, not as an
 independent concern.
@@ -36,7 +50,7 @@ The architectural foundation is documented in the
 which surveys: ADR community consensus on in-repo decision records;
 Linear's product surface (Documents, MCP server, agent model, no
 billable seats for agents); OpenAI Symphony's prior art for "Linear
-as agent control plane" (April 2026); and the
+as agent control plane" (April 2026, polling-based); and the
 **decision-vs-process axis** that drives storage placement:
 
 - **Decision artifacts** (PLAN.md, plan revisions, ADR log) → git
@@ -60,36 +74,41 @@ toolkit primitives are in service of that purpose**. See
 - **A complete upfront DESIGN.md** at
   `plugins/linear-loom/docs/DESIGN.md` covering:
   - **Orchestration model**: Linear workflow states; status-
-    transition hook semantics; transition triggers (operator
-    action in any Linear view, system-emitted events, GitHub PR
-    lifecycle); dispatch logic; agent-runtime model (ephemeral
-    Coder CLI machines).
+    transition observation via GitHub Actions polling (cadence,
+    query shape, idempotency); dispatch logic; agent-runtime model
+    (ephemeral Coder CLI machines). Webhook-driven dispatch is
+    explicitly out of v1 but the design should leave a clean seam
+    for adding it later.
   - **Agent flow taxonomy**: which flows are exposed as Linear-
     routable, how each is invoked, how each composes existing
     substrate plugins (`loom`, `guild`, `ev`, `griot`).
   - **Linear schema**: custom fields, workflow states, label
     taxonomy for flow-type encoding.
-  - **State transition triggers**: webhook vs polling tradeoffs;
-    PR linkage shape; agent self-reporting protocol.
+  - **Polling architecture**: query design against Linear's
+    complexity-points budget; cadence; idempotency keys to handle
+    repeated polling without duplicate spin-ups; reconciliation
+    behavior on missed iterations.
   - **Coder CLI integration**: machine lifecycle, auth distribution
     to ephemeral machines, cost monitoring, teardown reliability.
   - **Storage primitives**: per the decision-vs-process axis —
     what lives in git, what lives in Linear, addressing scheme.
   - **CLI surface and skill surface**: every linear-loom verb and
     slash command.
-  - **Failure modes**: missed webhook, race conditions in
+  - **Failure modes**: missed polling cycle, race conditions in
     multi-agent pickup, machine spin-up failure, agent flow
     failure, Coder CLI outage.
 - **Implementation of the full orchestration surface in v1**:
-  Linear project bootstrap, label-to-flow router, state-transition
-  handlers, agent flow adapters for each in-scope flow type,
-  Coder CLI machine harness, GitHub PR linkage.
+  Linear project bootstrap, label-to-flow router, GitHub Actions
+  polling workflow, Coder CLI machine harness, GitHub PR linkage.
 - **Dogfood deployment**: linear-loom used against a real project
   (likely linear-loom's own remaining development as the dogfood
   subject).
 
 ### Out of scope (explicitly deferred to follow-on plans)
 
+- **Webhook-driven dispatch**. v1 uses polling. Webhook reception
+  is named as a Phase N upgrade once polling latency becomes the
+  binding constraint. DESIGN.md leaves the seam clean.
 - **Multi-operator coordination at scale**: v1 assumes a single
   operator interacting with a single Linear workspace. Multi-
   operator concurrency edge cases are deferred.
@@ -116,7 +135,7 @@ toolkit primitives are in service of that purpose**. See
 
 **Goal**: Produce `plugins/linear-loom/docs/DESIGN.md` — the
 complete upfront design covering the full orchestration surface
-above.
+above, polling-based for v1.
 
 **Output**: One Markdown file at the path above. Doc-only PR.
 
@@ -160,10 +179,11 @@ At sketch level, expect roughly:
 - **Phase 3.x** — Linear project bootstrap (creates Linear project,
   custom fields, workflow states, label taxonomy; creates git
   PLAN.md skeleton).
-- **Phase 4.x** — State transition infrastructure (webhook handler
-  OR polling daemon, per DESIGN.md decision; PR lifecycle linkage
-  via Linear's native GitHub integration; agent self-report
-  protocol).
+- **Phase 4.x** — Polling infrastructure: a GitHub Actions
+  scheduled workflow that polls Linear, identifies new
+  dispatchable transitions, and triggers Coder workspace spin-up
+  via `repository_dispatch` or direct Coder CLI invocation. PR
+  lifecycle linkage via Linear's native GitHub integration.
 - **Phase 5.x** — Agent flow adapters, one phase per flow type.
   Expected flows: `planning` (composes `/loom-plan` /
   `/grill-me`), `iterative-confidence` (composes
@@ -198,16 +218,16 @@ plan stays in `revisions/` per the convention.
 - **Coder CLI** (or equivalent ephemeral-machine substrate). v1
   picks one; DESIGN.md compares alternatives and justifies the
   pick.
+- **GitHub Actions** for the polling workflow. The repo must allow
+  scheduled workflows (`schedule: cron`) and `repository_dispatch`
+  events. Nominal cadence is 5 minutes (GitHub's minimum); expect
+  occasional drift to 10-15 minutes during platform high-load
+  periods.
 - **Linear ↔ GitHub integration**: v1 plans to use Linear's native
   GitHub integration for issue↔PR linkage and PR-merge → issue
   transitions. Agent-side GitHub auth for PR *creation* (branch
   push, gh CLI invocation from inside the ephemeral machine) is a
   separate concern DESIGN.md addresses.
-- **Public HTTPS endpoint for Linear webhook delivery**. Linear's
-  webhook system requires a publicly reachable HTTPS URL. v1
-  picks one of: ngrok-style tunnel (dev-only), a hosted function
-  (cloud), or a persistent linear-loom service. DESIGN.md picks
-  and justifies.
 - **Anthropic API key distribution** to ephemeral machines. Each
   spun-up Coder machine needs a scoped Anthropic API key to run
   the agent flow. Storage at rest, narrow scope, expiration are
@@ -230,20 +250,31 @@ plan stays in `revisions/` per the convention.
 ## Risks
 
 - **Linear API rate limits at agent scale**. Now a PRIMARY risk
-  because orchestration is in v1, not deferred. Webhook-driven
-  state transitions (vs polling) and narrow-query patterns
-  mitigate this. DESIGN.md must address the steady-state query
-  budget against the 3M points/hour ceiling.
+  because orchestration is in v1, not deferred. The polling
+  pattern's query budget against the 3M points/hour ceiling
+  matters here: narrow filters (assignee + workflow state +
+  pagination limit), modest cadence (5+ minutes), and per-issue
+  idempotency keys are the mitigation. DESIGN.md sets the steady-
+  state query design.
   - Citation: [Linear Developers — Rate limiting](https://linear.app/developers/rate-limiting).
-- **Webhook delivery reliability**. Linear webhooks have at-least-
-  once delivery semantics with no guarantee on order or timing.
-  linear-loom must handle missed webhooks (reconciliation polling)
-  and duplicate webhooks (idempotency keys). DESIGN.md addresses.
-- **Race conditions in multi-agent task pickup**. If two agent
-  flows attempt to claim the same task simultaneously, who wins?
-  Linear's assignment field can serve as a claim mechanism, but
-  the race semantics around "set assignee atomically" need
-  testing. DESIGN.md decides claim protocol.
+- **Polling staleness window**. With GH Actions on 5-minute cron
+  and possible platform drift to 10-15 minutes, the operator-
+  perceived latency between dragging a task to In Progress and a
+  machine spinning up is ~5-15 minutes. For dogfood use this is
+  acceptable; for production-scale use it may not be. Mitigation:
+  document the latency profile clearly; if the bound becomes
+  binding, escalate to webhook-driven dispatch (out of v1).
+- **GH Actions schedule drift / failure**. GitHub's scheduled
+  workflows can be delayed or skipped during high-load periods.
+  Mitigation: each polling run is idempotent (uses a "last
+  observed transition" cursor in a Linear custom field or in the
+  repo); a missed cycle simply gets caught by the next one.
+  DESIGN.md defines the cursor model.
+- **Race conditions in multi-agent task pickup**. If two polling
+  runs (or a polling run + a manual trigger) race to claim the
+  same task, who wins? Linear's assignment field can serve as a
+  claim mechanism. The race semantics around "set assignee
+  atomically" need testing. DESIGN.md decides claim protocol.
 - **Coder CLI availability, cost, and teardown reliability**.
   Ephemeral machines that fail to tear down become expensive
   rapidly. v1 needs a hard budget cap, a max-machine-age timer,
@@ -262,26 +293,21 @@ plan stays in `revisions/` per the convention.
   naming, prominent README pointers, DESIGN.md explicitly states
   "use linear-loom for orchestrated work; loom for single-track
   pairing" or similar positioning.
-- **Webhook ingress availability** (distinct from Linear's delivery
-  reliability above). If the webhook receiver endpoint is down or
-  unreachable when Linear tries to deliver, the transition is
-  effectively lost from linear-loom's perspective even though
-  Linear's side believes it succeeded. Mitigation: reconciliation
-  polling fallback (already covered in the delivery-reliability
-  risk) catches this; DESIGN.md sets the polling cadence to bound
-  the staleness window. Hosting choice (operator-laptop tunnel vs
-  hosted function vs persistent service) is a Dependencies
-  decision that materially affects this risk.
 
 ## Open questions
 
 - **Custom field vs label** for flow-type encoding. Linear has
   both. Custom fields are more structured (typed values, query-
   friendly); labels are looser but more visually obvious in the
-  Kanban UI. DESIGN.md picks one.
-- **Webhook vs polling** for state transitions. Webhook lower-
-  latency, polling more resilient. DESIGN.md picks one (probably
-  webhook with polling as a reconciliation safety net).
+  Linear UI. DESIGN.md picks one. (Polling-friendliness leans
+  toward custom-field; visual clarity leans toward label.)
+- **Polling cursor model** for tracking "what we've already
+  dispatched": Linear custom field on the issue, a state file in
+  the repo, or a Coder-side ledger. DESIGN.md picks.
+- **Polling cadence vs upgrade threshold**: when is 5-15 minute
+  latency the binding constraint, and what's the trigger for
+  escalating to webhook-driven dispatch? DESIGN.md names the
+  upgrade criteria so the threshold isn't ad hoc later.
 - **Coder CLI ↔ alternatives** (Modal, dedicated Docker runner
   pool, GitHub Codespaces, fly.io machines). DESIGN.md compares
   and justifies the v1 pick.
@@ -290,14 +316,10 @@ plan stays in `revisions/` per the convention.
   trail) or do all machines share one identity (for simpler auth
   setup)? DESIGN.md decides.
 - **PR linkage shape**: Linear's native GitHub integration vs
-  custom integration via webhooks. DESIGN.md compares.
+  custom integration via PR-event polling. DESIGN.md compares.
 - **Cost monitoring + budget caps** for ephemeral machines: hard
   ceiling per task, per project, per day? Soft alerts? DESIGN.md
   defines policy.
-- **Coder CLI integration shape** with Linear (deeper question):
-  is it Linear webhook → linear-loom webhook handler → spawn
-  Coder machine? Or Linear webhook → Coder template invocation
-  directly? DESIGN.md decides.
 - **adr-log substrate integration** with linear-loom. The user's
   earlier vision of `adr-log` in git remains; linear-loom can
   reference it as an artifact category. Implementation is its own
@@ -321,10 +343,20 @@ plan stays in `revisions/` per the convention.
   not a follow-on concern. Storage primitives serve the
   orchestration.
 - 2026-05-21: **v1 includes the full orchestration surface**:
-  flow router, agent-flow adapters, status-transition hook
-  handlers, Coder CLI machine harness, PR linkage. Linear's UI
-  (any view — Kanban, list, calendar) is the operator surface;
-  the orchestration primitive is the status-transition hook, not
-  the visual.
+  flow router, agent-flow adapters, status-transition handlers,
+  Coder CLI machine harness, PR linkage. Linear's UI (any view —
+  Kanban, list, calendar) is the operator surface; the
+  orchestration primitive is the status transition, not the
+  visual.
 - 2026-05-21: **Agent runtime = ephemeral machines per task** via
   Coder CLI (or equivalent — DESIGN.md picks). Symphony-shape.
+- 2026-05-21: **Transition observation in v1 is polling-based via
+  GitHub Actions schedule**, not webhook-based. Matches Symphony's
+  documented architecture. Sidesteps the "always-on server"
+  infrastructure burden. Tradeoff is 5-15 minute latency between
+  status change and machine spin-up. Webhook-driven dispatch
+  named as a Phase N upgrade path.
+
+## Revision log
+
+- 2026-05-22 — Commit to polling-via-GitHub-Actions for v1 orchestration trigger; webhook-driven dispatch deferred to Phase N. Matches Symphony's documented architecture and removes the always-on server dependency.
