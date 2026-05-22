@@ -3,6 +3,8 @@ import { parseArgs } from 'node:util';
 import { configure, type DispatchResult } from './verbs/configure.ts';
 import { PROJECT_VERBS } from './verbs/project.ts';
 import { research } from './verbs/research.ts';
+import { plan } from './verbs/plan.ts';
+import { retro } from './verbs/retro.ts';
 
 // ---------- Namespace registry ----------
 //
@@ -35,6 +37,8 @@ type VerbHandler = (rest: string[]) => Promise<DispatchResult>;
 const VERBLESS_HANDLERS: Record<string, VerbHandler> = {
   configure: (rest) => configure(rest),
   research: (rest) => research(rest),
+  plan: (rest) => plan(rest),
+  retro: (rest) => retro(rest),
 };
 
 const VERB_HANDLERS: Record<string, Record<string, VerbHandler>> = {
