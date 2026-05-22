@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import { parseArgs } from 'node:util';
 import { configure, type DispatchResult } from './verbs/configure.ts';
+import { PROJECT_VERBS } from './verbs/project.ts';
 
 // ---------- Namespace registry ----------
 //
@@ -28,10 +29,14 @@ const NAMESPACES: Record<string, string> = {
 };
 
 // Namespaces with wired-up async handlers. Recognized namespaces NOT
-// in this map fall through to the `not-implemented` placeholder.
-type VerblessHandler = (rest: string[]) => Promise<DispatchResult>;
-const VERBLESS_HANDLERS: Record<string, VerblessHandler> = {
+// in either map fall through to the `not-implemented` placeholder.
+type VerbHandler = (rest: string[]) => Promise<DispatchResult>;
+const VERBLESS_HANDLERS: Record<string, VerbHandler> = {
   configure: (rest) => configure(rest),
+};
+
+const VERB_HANDLERS: Record<string, Record<string, VerbHandler>> = {
+  project: PROJECT_VERBS,
 };
 
 function printHelp(): void {
@@ -110,6 +115,35 @@ async function main(argv: string[]): Promise<void> {
   const verblessHandler = VERBLESS_HANDLERS[namespace];
   if (verblessHandler !== undefined) {
     const result = await verblessHandler(positionals.slice(1));
+    writeResult(result);
+  }
+
+  const namespaceHandlers = VERB_HANDLERS[namespace];
+  if (namespaceHandlers !== undefined) {
+    const verb = positionals[1];
+    if (verb === undefined) {
+      process.stderr.write(
+        `${JSON.stringify({
+          error: 'missing-verb',
+          namespace,
+          candidates: Object.keys(namespaceHandlers),
+        })}\n`,
+      );
+      process.exit(2);
+    }
+    const handler = namespaceHandlers[verb];
+    if (handler === undefined) {
+      process.stderr.write(
+        `${JSON.stringify({
+          error: 'unknown-verb',
+          namespace,
+          verb,
+          candidates: Object.keys(namespaceHandlers),
+        })}\n`,
+      );
+      process.exit(2);
+    }
+    const result = await handler(positionals.slice(2));
     writeResult(result);
   }
 
