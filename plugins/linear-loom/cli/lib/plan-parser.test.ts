@@ -257,6 +257,40 @@ test('flattenPlan: walks tree in document order with composed_key per node', () 
   expect(flat.length).toBe(12);
 });
 
+test('parsePlan: each parsed node carries its 1-based source line number', () => {
+  const parsed = parsePlan(HAPPY_PLAN);
+
+  // HAPPY_PLAN is a template literal where "# A Plan" is line 1.
+  // "### Phase 1 [design-1] — DESIGN.md" sits on line 11.
+  const phase1 = parsed.phases[0]!;
+  expect(phase1.line).toBe(11);
+
+  // "#### Batch 1 [skeleton-1] — Write skeleton" sits on line 15.
+  const batch1 = phase1.batches[0]!;
+  expect(batch1.line).toBe(15);
+
+  // "- [decisions-1] Decision register" sits on line 19.
+  const task1 = batch1.tasks[0]!;
+  expect(task1.line).toBe(19);
+
+  // Sanity: line numbers are strictly increasing in document order.
+  expect(phase1.line).toBeLessThan(batch1.line);
+  expect(batch1.line).toBeLessThan(task1.line);
+});
+
+test('flattenPlan: propagates line number onto FlatNode', () => {
+  const parsed = parsePlan(HAPPY_PLAN);
+  const flat = flattenPlan(parsed);
+  const phase1 = flat.find((n) => n.composed_key === 'design-1');
+  const batch1 = flat.find((n) => n.composed_key === 'design-1.skeleton-1');
+  const task1 = flat.find(
+    (n) => n.composed_key === 'design-1.skeleton-1.decisions-1',
+  );
+  expect(phase1?.line).toBe(11);
+  expect(batch1?.line).toBe(15);
+  expect(task1?.line).toBe(19);
+});
+
 test('parsePlan: LinearLoomError carries plan-parse-failed code', () => {
   expect.assertions(2);
   try {

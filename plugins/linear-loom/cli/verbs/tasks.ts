@@ -1,5 +1,5 @@
 import { parseArgs } from 'node:util';
-import { readFileSync } from 'node:fs';
+import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { LinearClient } from '../lib/linear-client.ts';
 import { resolveAuth } from '../lib/auth.ts';
@@ -28,6 +28,7 @@ import {
   type AppliedOp,
   type LabelHandle,
 } from '../lib/apply-diff.ts';
+import { applyLinearUrlsToPlan } from '../lib/plan-writeback.ts';
 
 // `linear-loom tasks generate <slug>` — the load-bearing verb.
 //
@@ -54,6 +55,7 @@ export interface TasksContext {
   gitRunner?: GitRunner;
   repoRoot?: string;
   readFileFn?: (path: string) => string;
+  writeFileFn?: (path: string, contents: string) => void;
   now?: () => string;
 }
 
@@ -201,7 +203,12 @@ export async function tasksGenerate(
     return errToResult(err);
   }
 
-  const sourceUrl = `github.com/${github.org}/${github.repo}/tree/${branch}/projects/${marker.slug}/PLAN.md`;
+  // § 13: the Sub-Issue `**Source**:` line points at the PLAN.md
+  // section that defined the Task. Each node carries its 1-based
+  // source line, so we compose a per-node anchored URL rather than
+  // a single file-root URL.
+  const planUrlBase = `github.com/${github.org}/${github.repo}/tree/${branch}/projects/${marker.slug}/PLAN.md`;
+  const sourceUrlFor = (node: FlatNode): string => `${planUrlBase}#L${node.line}`;
 
   const composeTitleFn = (node: FlatNode, planSlug: string): string => {
     if (node.kind === 'phase') {
@@ -217,7 +224,7 @@ export async function tasksGenerate(
     return composeLinearDescription(
       {
         composed_key: node.composed_key,
-        source_url: sourceUrl,
+        source_url: sourceUrlFor(node),
         synced_at: syncedAt,
       },
       body,
@@ -288,6 +295,35 @@ export async function tasksGenerate(
     return errToResult(err);
   }
 
+  // § 13 (PLAN.md side of the bidirectional cross-reference): build
+  // the composed_key → linear_url map from this run's applied ops.
+  // Only creates and updates carry a URL; archives do not (the
+  // PLAN.md line is gone in the source anyway). Milestones (Phases)
+  // have no Linear URL of their own — applyDiffOps reports an empty
+  // linear_url for those, and the writeback simply skips them.
+  const urlsByComposedKey = new Map<string, string>();
+  for (const op of applied) {
+    if (op.linear_url !== undefined && op.linear_url !== '') {
+      urlsByComposedKey.set(op.composed_key, op.linear_url);
+    }
+  }
+
+  const writeback = applyLinearUrlsToPlan(planMarkdown, urlsByComposedKey);
+  if (writeback.updated_lines > 0) {
+    const writer = ctx.writeFileFn ?? defaultWrite;
+    try {
+      writer(planFilePath, writeback.text);
+    } catch (err) {
+      return errToResult(
+        new LinearLoomError(
+          'plan-writeback-failed',
+          `Cannot write PLAN.md at ${planFilePath}: ${(err as Error).message}`,
+          { namespace: 'tasks', verb: 'generate' },
+        ),
+      );
+    }
+  }
+
   return {
     stdout: emit(
       {
@@ -307,6 +343,7 @@ export async function tasksGenerate(
               ? 0
               : archivePartition.in_flight.length,
         },
+        plan_writeback: { updated_lines: writeback.updated_lines },
       },
       values.pretty === true,
     ),
@@ -342,6 +379,10 @@ export const TASKS_VERBS: Record<
 
 function defaultRead(path: string): string {
   return readFileSync(path, 'utf8');
+}
+
+function defaultWrite(path: string, contents: string): void {
+  writeFileSync(path, contents, 'utf8');
 }
 
 function defaultNow(): string {

@@ -18,6 +18,10 @@ export interface ParsedTask {
   was: string | undefined;
   composed_key: string;
   prose: string;
+  // 1-based absolute line number of the task bullet in the source
+  // PLAN.md. Load-bearing for § 13 line-anchored source URLs and the
+  // PLAN.md writeback that annotates each line with its Linear URL.
+  line: number;
 }
 
 export interface ParsedBatch {
@@ -29,6 +33,7 @@ export interface ParsedBatch {
   prose: string;
   body: string;
   tasks: ParsedTask[];
+  line: number;
 }
 
 export interface ParsedPhase {
@@ -40,6 +45,7 @@ export interface ParsedPhase {
   prose: string;
   body: string;
   batches: ParsedBatch[];
+  line: number;
 }
 
 export interface ParsedPlan {
@@ -89,7 +95,10 @@ function extractPhasesSection(markdown: string): { startLine: number; lines: str
         );
       }
       inPhases = true;
-      startLine = i + 1;
+      // First line collected into `out` is allLines[i+1], which is
+      // 1-based source line (i+1)+1 = i+2. The parser loop's
+      // `absLine = startLine + idx_in_out` must equal that for idx=0.
+      startLine = i + 2;
       continue;
     }
     if (inPhases) {
@@ -160,6 +169,7 @@ export function parsePlan(markdown: string): ParsedPlan {
         prose: prose.trim(),
         body: '',
         batches: [],
+        line: absLine,
       };
       phases.push(phase);
       currentPhase = phase;
@@ -188,6 +198,7 @@ export function parsePlan(markdown: string): ParsedPlan {
         prose: prose.trim(),
         body: '',
         tasks: [],
+        line: absLine,
       };
       currentPhase.batches.push(batch);
       currentBatch = batch;
@@ -211,6 +222,7 @@ export function parsePlan(markdown: string): ParsedPlan {
         was,
         composed_key: `${currentBatch.composed_key}.${id}`,
         prose: prose.trim(),
+        line: absLine,
       };
       currentBatch.tasks.push(task);
       continue;
@@ -255,6 +267,10 @@ export interface FlatNode {
   prose: string;
   body?: string;
   number?: number;
+  // 1-based absolute line number of this node's heading or task
+  // bullet in PLAN.md. Load-bearing for § 13 line-anchored
+  // source URLs and the PLAN.md writeback.
+  line: number;
 }
 
 export function flattenPlan(plan: ParsedPlan): FlatNode[] {
@@ -268,6 +284,7 @@ export function flattenPlan(plan: ParsedPlan): FlatNode[] {
       prose: phase.prose,
       body: phase.body,
       number: phase.number,
+      line: phase.line,
     });
     for (const batch of phase.batches) {
       out.push({
@@ -278,6 +295,7 @@ export function flattenPlan(plan: ParsedPlan): FlatNode[] {
         prose: batch.prose,
         body: batch.body,
         number: batch.number,
+        line: batch.line,
       });
       for (const task of batch.tasks) {
         out.push({
@@ -286,6 +304,7 @@ export function flattenPlan(plan: ParsedPlan): FlatNode[] {
           id: task.id,
           was: task.was,
           prose: task.prose,
+          line: task.line,
         });
       }
     }

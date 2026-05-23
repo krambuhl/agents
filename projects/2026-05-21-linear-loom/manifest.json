@@ -34,8 +34,8 @@
     {
       "number": 5,
       "name": "Plan-to-tasks generation",
-      "status": "in-progress",
-      "branch": "ev-agent.linear-loom.tasks-parser"
+      "status": "completed",
+      "branch": "ev-agent.linear-loom.tasks-bidirectional"
     },
     {
       "number": 6,
