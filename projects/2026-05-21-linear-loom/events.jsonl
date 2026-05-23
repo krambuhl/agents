@@ -31,3 +31,5 @@
 {"at":"2026-05-23T17:29:35.844Z","event":"phase-started","detail":{"phase":5,"name":"Plan-to-tasks generation"}}
 {"at":"2026-05-23T17:30:29.907Z","event":"pr-opened","detail":{"pr":44,"url":"https://github.com/krambuhl/agents/pull/44"}}
 {"at":"2026-05-23T17:30:37.879Z","event":"phase-completed","detail":{"phase":5}}
+{"at":"2026-05-23T19:32:15.561Z","event":"checkin-created","detail":{"number":"01","branch":"ev-agent.linear-loom.task-comment"}}
+{"at":"2026-05-23T19:32:16.150Z","event":"phase-started","detail":{"phase":6,"name":"Manual write-back verbs"}}
