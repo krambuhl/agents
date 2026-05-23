@@ -27,3 +27,5 @@
 {"at":"2026-05-22T21:20:02.303Z","event":"pr-opened","detail":{"pr":41,"url":"https://github.com/krambuhl/agents/pull/41"}}
 {"at":"2026-05-22T21:39:16.854Z","event":"checkin-created","detail":{"number":"01","branch":"ev-agent.linear-loom.tasks-fetch-diff"}}
 {"at":"2026-05-22T21:54:19.548Z","event":"checkin-created","detail":{"number":"01","branch":"ev-agent.linear-loom.tasks-generate-verb"}}
+{"at":"2026-05-23T17:29:29.962Z","event":"checkin-created","detail":{"number":"01","branch":"ev-agent.linear-loom.tasks-bidirectional"}}
+{"at":"2026-05-23T17:29:35.844Z","event":"phase-started","detail":{"phase":5,"name":"Plan-to-tasks generation"}}

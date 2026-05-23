@@ -215,6 +215,7 @@ test('tasksGenerate: --apply applies create ops in tree order', async () => {
       markerIO: markerIOReturning(SAMPLE_MARKER),
       gitRunner: FAKE_GIT,
       readFileFn: () => SAMPLE_PLAN,
+      writeFileFn: () => {},
       repoRoot: '/repo',
       now: () => '2026-05-22T20:00:00.000Z',
     },
@@ -327,6 +328,7 @@ test('tasksGenerate: --apply without --prune skips archive ops; lists deferred',
       markerIO: markerIOReturning(SAMPLE_MARKER),
       gitRunner: FAKE_GIT,
       readFileFn: () => SAMPLE_PLAN,
+      writeFileFn: () => {},
       repoRoot: '/repo',
       now: () => '2026-05-22T20:00:00.000Z',
     },
@@ -336,6 +338,324 @@ test('tasksGenerate: --apply without --prune skips archive ops; lists deferred',
   expect(parsed.summary.archive).toBe(1);
   expect(parsed.deferred_archives.safe_to_archive).toBe(1);
   expect(parsed.applied.every((a: { op_kind: string }) => a.op_kind !== 'archive')).toBe(true);
+});
+
+test('tasksGenerate: dry-run does NOT write to PLAN.md', async () => {
+  const writeFileSpy = vi.fn();
+  const result = await tasksGenerate(
+    ['my-thing', '--team-id=team-1'],
+    {
+      client: clientWithResponses(bootstrapResponses()),
+      resolveAuthFn: stubAuth(),
+      projectsRoot: '/tmp/projects',
+      markerIO: markerIOReturning(SAMPLE_MARKER),
+      gitRunner: FAKE_GIT,
+      readFileFn: () => SAMPLE_PLAN,
+      writeFileFn: writeFileSpy,
+      repoRoot: '/repo',
+      now: () => '2026-05-22T20:00:00.000Z',
+    },
+  );
+  expect(result.exitCode).toBe(0);
+  expect(writeFileSpy).not.toHaveBeenCalled();
+});
+
+test('tasksGenerate: --apply writes PLAN.md with inline `([linear](URL))` annotations on created issue lines', async () => {
+  const writeFileSpy = vi.fn();
+  const result = await tasksGenerate(
+    ['my-thing', '--team-id=team-1', '--apply'],
+    {
+      client: clientWithResponses([
+        ...bootstrapResponses(),
+        {
+          data: {
+            projectMilestoneCreate: {
+              success: true,
+              projectMilestone: { id: 'm-1', name: '' },
+            },
+          },
+        },
+        {
+          data: {
+            issueCreate: {
+              success: true,
+              issue: {
+                id: 'i-1',
+                identifier: 'X-1',
+                url: 'https://linear.app/x/issue/X-1',
+                title: '',
+              },
+            },
+          },
+        },
+        {
+          data: {
+            issueCreate: {
+              success: true,
+              issue: {
+                id: 'i-2',
+                identifier: 'X-2',
+                url: 'https://linear.app/x/issue/X-2',
+                title: '',
+              },
+            },
+          },
+        },
+      ]),
+      resolveAuthFn: stubAuth(),
+      projectsRoot: '/tmp/projects',
+      markerIO: markerIOReturning(SAMPLE_MARKER),
+      gitRunner: FAKE_GIT,
+      readFileFn: () => SAMPLE_PLAN,
+      writeFileFn: writeFileSpy,
+      repoRoot: '/repo',
+      now: () => '2026-05-22T20:00:00.000Z',
+    },
+  );
+
+  expect(result.exitCode).toBe(0);
+  const parsed = JSON.parse(result.stdout ?? '');
+  // Phase has no URL (milestones don't expose one), so only Batch +
+  // Task get annotated. Two lines should change.
+  expect(parsed.plan_writeback.updated_lines).toBe(2);
+  expect(writeFileSpy).toHaveBeenCalledTimes(1);
+
+  const [writtenPath, writtenContents] = writeFileSpy.mock.calls[0]!;
+  expect(writtenPath).toBe('/tmp/projects/my-thing/PLAN.md');
+  expect(writtenContents).toContain(
+    '#### Batch 1 [skeleton-1] — Skeleton ([linear](https://linear.app/x/issue/X-1))',
+  );
+  expect(writtenContents).toContain(
+    '- [decisions-1] Decisions ([linear](https://linear.app/x/issue/X-2))',
+  );
+});
+
+test('tasksGenerate: --apply skips PLAN.md write when no creates / updates produce a URL', async () => {
+  const writeFileSpy = vi.fn();
+  // bootstrapResponses() emits empty Linear state. With SAMPLE_PLAN
+  // having 3 nodes, normally --apply would create them. But here
+  // we'll feed an empty plan (no `## Phases` block past parser
+  // tolerance) ... or simpler: pass a plan whose nodes already
+  // exist in Linear, so no creates fire. Easiest path is the
+  // "everything-in-Linear-already" stance from the earlier
+  // archive-deferral test; reuse a minimal version here.
+  const result = await tasksGenerate(
+    ['my-thing', '--team-id=team-1', '--apply'],
+    {
+      client: clientWithResponses([
+        {
+          data: {
+            project: {
+              id: 'lin-proj-1',
+              projectMilestones: {
+                nodes: [
+                  {
+                    id: 'm-1',
+                    name: 'my-thing · Phase 1 — Design',
+                    description:
+                      '**Composed key**: design-1\n**Source**: github.com/krambuhl/agents/tree/main/projects/my-thing/PLAN.md#L3\n**Last synced**: 2026-05-22T20:00:00.000Z\n\n---\n\nDesign',
+                  },
+                ],
+              },
+            },
+            issues: {
+              nodes: [
+                {
+                  id: 'i-batch',
+                  title: 'my-thing · Batch design-1.skeleton-1 — Skeleton',
+                  description:
+                    '**Composed key**: design-1.skeleton-1\n**Source**: github.com/krambuhl/agents/tree/main/projects/my-thing/PLAN.md#L5\n**Last synced**: 2026-05-22T20:00:00.000Z\n\n---\n\nSkeleton',
+                  parent: null,
+                  projectMilestone: { id: 'm-1' },
+                  state: { type: 'started' },
+                },
+                {
+                  id: 'i-task',
+                  title: 'Decisions',
+                  description:
+                    '**Composed key**: design-1.skeleton-1.decisions-1\n**Source**: github.com/krambuhl/agents/tree/main/projects/my-thing/PLAN.md#L7\n**Last synced**: 2026-05-22T20:00:00.000Z\n\n---\n\nDecisions',
+                  parent: { id: 'i-batch' },
+                  projectMilestone: null,
+                  state: { type: 'unstarted' },
+                },
+              ],
+            },
+          },
+        },
+        {
+          data: {
+            issueLabels: {
+              nodes: [{ id: 'lbl-1', name: 'loom-project:my-thing' }],
+            },
+          },
+        },
+      ]),
+      resolveAuthFn: stubAuth(),
+      projectsRoot: '/tmp/projects',
+      markerIO: markerIOReturning(SAMPLE_MARKER),
+      gitRunner: FAKE_GIT,
+      readFileFn: () => SAMPLE_PLAN,
+      writeFileFn: writeFileSpy,
+      repoRoot: '/repo',
+      now: () => '2026-05-22T20:00:00.000Z',
+    },
+  );
+
+  expect(result.exitCode).toBe(0);
+  const parsed = JSON.parse(result.stdout ?? '');
+  expect(parsed.plan_writeback.updated_lines).toBe(0);
+  expect(writeFileSpy).not.toHaveBeenCalled();
+});
+
+test('tasksGenerate: issueCreate request body carries the line-anchored source URL', async () => {
+  // Construct a LinearClient inline so we can inspect outgoing
+  // request bodies. The Phase line in SAMPLE_PLAN sits on line 3
+  // (line 1 is "## Phases", line 2 is blank, line 3 is the Phase
+  // heading). The Batch line is line 5; the Task bullet line 7.
+  const fetchFn = vi.fn();
+  for (const r of [
+    ...bootstrapResponses(),
+    {
+      data: {
+        projectMilestoneCreate: {
+          success: true,
+          projectMilestone: { id: 'm-1', name: '' },
+        },
+      },
+    },
+    {
+      data: {
+        issueCreate: {
+          success: true,
+          issue: {
+            id: 'i-1',
+            identifier: 'X-1',
+            url: 'https://linear.app/x/issue/X-1',
+            title: '',
+          },
+        },
+      },
+    },
+    {
+      data: {
+        issueCreate: {
+          success: true,
+          issue: {
+            id: 'i-2',
+            identifier: 'X-2',
+            url: 'https://linear.app/x/issue/X-2',
+            title: '',
+          },
+        },
+      },
+    },
+  ]) {
+    fetchFn.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      text: () => Promise.resolve(''),
+      json: () => Promise.resolve(r),
+    });
+  }
+
+  const result = await tasksGenerate(
+    ['my-thing', '--team-id=team-1', '--apply'],
+    {
+      client: new LinearClient({
+        apiKey: 'lin_api_test',
+        fetchFn,
+        sleepFn: () => Promise.resolve(),
+      }),
+      resolveAuthFn: stubAuth(),
+      projectsRoot: '/tmp/projects',
+      markerIO: markerIOReturning(SAMPLE_MARKER),
+      gitRunner: FAKE_GIT,
+      readFileFn: () => SAMPLE_PLAN,
+      writeFileFn: () => {},
+      repoRoot: '/repo',
+      now: () => '2026-05-22T20:00:00.000Z',
+    },
+  );
+  expect(result.exitCode).toBe(0);
+
+  // Five calls fired: TASKS_STATE_QUERY, LABEL_LOOKUP_QUERY,
+  // projectMilestoneCreate (Phase), issueCreate (Batch),
+  // issueCreate (Task). The last three carry node descriptions.
+  const callBodies = fetchFn.mock.calls.map(
+    (c) => JSON.parse(c[1].body) as { variables: { input: { description?: string; name?: string } } },
+  );
+  // Phase: projectMilestoneCreate carries `description` on the input.
+  expect(callBodies[2]!.variables.input.description).toContain(
+    '**Source**: github.com/krambuhl/agents/tree/main/projects/my-thing/PLAN.md#L3',
+  );
+  // Batch (line 5).
+  expect(callBodies[3]!.variables.input.description).toContain(
+    '**Source**: github.com/krambuhl/agents/tree/main/projects/my-thing/PLAN.md#L5',
+  );
+  // Task (line 7).
+  expect(callBodies[4]!.variables.input.description).toContain(
+    '**Source**: github.com/krambuhl/agents/tree/main/projects/my-thing/PLAN.md#L7',
+  );
+});
+
+test('tasksGenerate: --apply surfaces plan-writeback-failed when writeFileFn throws', async () => {
+  const result = await tasksGenerate(
+    ['my-thing', '--team-id=team-1', '--apply'],
+    {
+      client: clientWithResponses([
+        ...bootstrapResponses(),
+        {
+          data: {
+            projectMilestoneCreate: {
+              success: true,
+              projectMilestone: { id: 'm-1', name: '' },
+            },
+          },
+        },
+        {
+          data: {
+            issueCreate: {
+              success: true,
+              issue: {
+                id: 'i-1',
+                identifier: 'X-1',
+                url: 'https://linear.app/x/issue/X-1',
+                title: '',
+              },
+            },
+          },
+        },
+        {
+          data: {
+            issueCreate: {
+              success: true,
+              issue: {
+                id: 'i-2',
+                identifier: 'X-2',
+                url: 'https://linear.app/x/issue/X-2',
+                title: '',
+              },
+            },
+          },
+        },
+      ]),
+      resolveAuthFn: stubAuth(),
+      projectsRoot: '/tmp/projects',
+      markerIO: markerIOReturning(SAMPLE_MARKER),
+      gitRunner: FAKE_GIT,
+      readFileFn: () => SAMPLE_PLAN,
+      writeFileFn: () => {
+        throw new Error('EACCES: read-only file system');
+      },
+      repoRoot: '/repo',
+      now: () => '2026-05-22T20:00:00.000Z',
+    },
+  );
+
+  expect(result.exitCode).toBe(1);
+  const err = JSON.parse(result.stderr ?? '');
+  expect(err.error).toBe('plan-writeback-failed');
+  expect(err.message).toContain('EACCES');
 });
 
 test('tasksGenerate: --pretty pretty-prints', async () => {
