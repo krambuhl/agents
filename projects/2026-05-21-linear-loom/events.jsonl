@@ -33,3 +33,6 @@
 {"at":"2026-05-23T17:30:37.879Z","event":"phase-completed","detail":{"phase":5}}
 {"at":"2026-05-23T19:32:15.561Z","event":"checkin-created","detail":{"number":"01","branch":"ev-agent.linear-loom.task-comment"}}
 {"at":"2026-05-23T19:32:16.150Z","event":"phase-started","detail":{"phase":6,"name":"Manual write-back verbs"}}
+{"at":"2026-05-23T19:32:57.234Z","event":"pr-opened","detail":{"pr":45,"url":"https://github.com/krambuhl/agents/pull/45"}}
+{"at":"2026-05-24T00:20:46.270Z","event":"checkin-created","detail":{"number":"01","branch":"ev-agent.linear-loom.checkin-write"}}
+{"at":"2026-05-24T00:20:47.791Z","event":"phase-started","detail":{"phase":6,"name":"Manual write-back verbs"}}

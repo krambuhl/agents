@@ -1,0 +1,80 @@
+{
+  "schema_version": 1,
+  "number": "01",
+  "created": "2026-05-23T17:20:00.000Z",
+  "phase": {
+    "number": 6,
+    "name": "Manual write-back verbs"
+  },
+  "branch": "ev-agent.linear-loom.checkin-write",
+  "unit": "U2 — linear-loom checkin write (rendered checkin as Sub-Issue comment)",
+  "contract": {
+    "goal": "Ship linear-loom checkin write <slug> --task=<composed-key> --checkin-file=<path>. Reads a loom-shape Checkin JSON record from disk, renders it to markdown, posts as a comment on the Linear Sub-Issue whose composed_key matches --task. Composes on U1's createComment.",
+    "acceptance_criteria": [
+      "New plugins/linear-loom/cli/lib/render-checkin.ts: local Checkin TS type matching loom shape (declared standalone per DESIGN § 1's parallel-plugin framing); exports renderCheckinToMarkdown(checkin) and parseCheckinFile(raw). parseCheckinFile validates schema_version=1 + required top-level + nested-block keys; throws checkin-invalid-json / checkin-schema-invalid.",
+      "Markdown shape: H1 unit title, bold metadata block (Phase / Branch / Checkin number / Created / Verdict), then Goal / Acceptance criteria (numbered) / Rules applied / Disqualifiers / Inputs / Actions / Files touched / Corrections / Scope / Changes since previous / Notes for the PR / Verdict reasons (flagged only). Empty arrays are ELIDED rather than 'None' placeholder.",
+      "New plugins/linear-loom/cli/verbs/checkin.ts: checkinWrite + CHECKIN_VERBS map. Walks marker → auth → fetchLinearState → composed_key lookup → render → createComment. Emits {slug, task: {composed_key, linear_id}, checkin: {number, branch}, comment: {id, url}}.",
+      "Error codes: missing-slug, missing-task-id, missing-checkin-file, checkin-file-unreadable, checkin-invalid-json, checkin-schema-invalid, task-not-found, task-target-is-milestone, comment-create-failed.",
+      "Wired into plugins/linear-loom/cli/linear-loom.ts VERB_HANDLERS as checkin: CHECKIN_VERBS.",
+      "Tests: render-checkin +10 (header/metadata, elision, flagged-verdict reasons, scope non-empty, empty-changes elision, parse-valid, parse-invalid-JSON, parse-missing-top-level, parse-missing-nested, parse-unsupported-version); checkin verb +11 (all 9 error codes including comment-create-failed, success Task path emits expected JSON + outgoing request body carries rendered markdown, --pretty).",
+      "npm test → 859 passing (was 838 after Phase 6 U1; +21 net)."
+    ],
+    "rules_applied": [
+      "DESIGN.md § 7 (checkins post as comments; markdown rendered from JSON record; Issue's comment thread is the unit history).",
+      "DESIGN.md § 1 + § 19 (linear-loom is a parallel plugin to loom; Checkin shape coordinated via JSON Schema; declare a local TS type for v1, shared schema package is Phase 7+ work).",
+      "DESIGN.md § 12.7 (composed_key is the cross-substrate identity; --task accepts composed_key only)."
+    ],
+    "disqualifiers": [
+      "Auto-resolving the target Sub-Issue from the checkin JSON's branch or unit fields — those aren't structured enough to identify the Sub-Issue. Operator/agent passes --task=<composed_key> explicitly.",
+      "Mirror-writing the rendered markdown back to disk — markdown lives in Linear's comment thread; loom's checkins/<branch>/<NN>.json stays the on-disk canonical form.",
+      "Editing existing comments to update a checkin — re-running creates a new comment (matches U1's append-only stance).",
+      "Schema-version negotiation — accept schema_version: 1 only; surface checkin-schema-invalid on anything else (forward compatibility is a v2 problem).",
+      "Cross-plugin schema import from plugins/loom/cli/lib/types.ts — declare a local Checkin type to keep linear-loom standalone.",
+      "Posting Phase-level checkins on a Milestone — task-target-is-milestone rejects (Linear API limitation, same as U1)."
+    ],
+    "inputs": [
+      "plugins/linear-loom/docs/DESIGN.md § 7, § 12.7, § 1, § 19",
+      "plugins/loom/cli/lib/types.ts:420-459 (Checkin shape — copied as a local TS type, not imported)",
+      "plugins/linear-loom/cli/lib/comments.ts (U1's createComment)",
+      "plugins/linear-loom/cli/lib/linear-state.ts (fetchLinearState, by_composed_key)",
+      "plugins/linear-loom/cli/lib/marker.ts, auth.ts, linear-client.ts (substrate pattern)",
+      "plugins/linear-loom/cli/verbs/task.ts (U1 verb shape template)"
+    ]
+  },
+  "execution": {
+    "actions": [
+      "Wrote cli/lib/render-checkin.ts: local Checkin type family (CheckinPhaseRef / CheckinContract / CheckinExecution / CheckinVerdict / Checkin) mirroring the loom shape at plugins/loom/cli/lib/types.ts:420-459. parseCheckinFile validates schema_version=1 + required top-level keys + required nested keys in phase/contract/execution/verdict; throws checkin-invalid-json (JSON syntax error) or checkin-schema-invalid (missing keys or unsupported version).",
+      "Wrote renderCheckinToMarkdown(checkin): H1 unit title, bold metadata block (Phase, Branch, Checkin number, Created, Verdict), then Goal / Acceptance criteria (numbered) / Rules applied / Disqualifiers / Inputs / Actions / Files touched / Corrections / Scope / Changes since previous / Notes for the PR sections. Every array section gated on .length > 0 (elided when empty). Flagged-verdict reasons section gated on result === 'flagged' AND reasons.length > 0; appended at the end so reviewers see the unit's intent first and unresolved friction last.",
+      "Wrote cli/verbs/checkin.ts: checkinWrite async verb composing on U1's createComment. Walks the same marker → auth → fetchLinearState → composed_key lookup → action flow as task.ts. Posts the rendered markdown as a comment via createComment; emits {slug, task: {composed_key, linear_id}, checkin: {number, branch}, comment: {id, url}}.",
+      "Wired checkin namespace into linear-loom.ts VERB_HANDLERS as checkin: CHECKIN_VERBS. CLI dispatch now: checkin → missing-verb with candidates ['write']; checkin write → missing-slug; chained validation for --task / --checkin-file / file-reader / JSON-parse / schema-check / composed-key lookup.",
+      "Refined the PLAN.md surface: PLAN.md said `--unit=NN`. Implementation uses `--task=<composed-key>` because (a) the checkin JSON already carries `number` so `--unit` would be duplicate input, and (b) per § 12.7 the target Sub-Issue must be identified by composed_key (the cross-substrate identity layer). The verb's emitted JSON includes the checkin number under `checkin.number` for traceability.",
+      "Wrote 21 unit tests: render-checkin.test.ts (10) covers header/metadata render, empty-array elision, flagged-verdict reasons section, scope-non-empty rendering, whitespace-only changes_since_previous elision, parseCheckinFile valid/invalid-JSON/missing-top-level/missing-nested/unsupported-version. checkin.test.ts (11) covers all 9 error codes + success Task path (asserts JSON output shape AND outgoing request body contains rendered markdown fragments) + comment-create-failed bubble + --pretty.",
+      "Verified: npm test → 859 passing across 60 files (was 838 after Phase 6 U1; +21). Panel (contract-fit + naming + test-unit): all 3 approved on first run; zero findings."
+    ],
+    "files_touched": [
+      "plugins/linear-loom/cli/lib/render-checkin.ts",
+      "plugins/linear-loom/cli/lib/render-checkin.test.ts",
+      "plugins/linear-loom/cli/verbs/checkin.ts",
+      "plugins/linear-loom/cli/verbs/checkin.test.ts",
+      "plugins/linear-loom/cli/linear-loom.ts"
+    ],
+    "corrections": [
+      "Deliberate refinement of the PLAN.md surface: --unit=NN → --task=<composed-key>. Documented in actions[] and reflected in the panel packet's 'Original ask' notes; not a scope-shift since the verb behavior matches DESIGN § 7's intent (comment on the Sub-Issue), just with a cleaner argument shape."
+    ]
+  },
+  "scope": [],
+  "changes_since_previous": "Second unit of Phase 6 (Manual write-back verbs), composing on U1's createComment primitive. With this PR merged, the ev-linear loop body (Phase 7) can dispatch unit checkins to Linear via a clean CLI call. U3 (phase update) and U4 (events read) still to come.",
+  "verdict": {
+    "result": "approved",
+    "reasons": []
+  },
+  "notes_for_pr": [
+    "PLAN.md surface refined: --unit=NN became --task=<composed-key>. The checkin JSON already carries `number`, so `--unit` would be duplicate input. composed_key is the cross-substrate identity per § 12.7 — the target Sub-Issue must be named by composed_key, not by an internally-loom-shaped unit number. The emitted JSON includes checkin.number for traceability so log/audit consumers don't lose the loom-side identity.",
+    "Schema-version negotiation deferred: parseCheckinFile accepts schema_version=1 only. Anything else surfaces checkin-schema-invalid. Forward-compatibility is a v2 concern; v1 stays strict to catch drift early.",
+    "Local Checkin TS type is declared in render-checkin.ts rather than imported from plugins/loom/cli/lib/types.ts. Keeps linear-loom standalone per DESIGN § 1's parallel-plugin framing. The two type definitions are now linked-but-uncoupled — if either side changes its schema, the operator (or tests) need to surface the drift manually. A future Phase 7+ shared JSON-Schema package would resolve this; v1 accepts the manual coupling.",
+    "Comments are append-only on Linear's side, so re-running checkin write with the same JSON creates a duplicate comment. The substrate doesn't deduplicate (matches U1's stance) — legitimate use cases include intentionally re-posting (e.g. updated checkin after iteration).",
+    "Lagged event note: this unit's commit carries a pr-opened event for #45 (U1's PR) that loom emitted AFTER U1's commit landed. Per the substrate-known gap (memory: feedback_loom_pr_opened_orphan_and_guild_spec_path), pr-opened events lag the unit commit and carry into the next unit. Documented + standard.",
+    "scope-shift signals: zero — clean continuation of Phase 6. The PLAN.md → --task refinement isn't a scope shift; it's a localized argument-shape refinement within the verb's design surface.",
+    "Substrate follow-up still standing: bin/guild derive-panel returns 'panel-spec-unreadable (using fallback)' under the marketplace-installed CLI. Used node plugins/guild/cli/guild.ts locally throughout."
+  ]
+}
