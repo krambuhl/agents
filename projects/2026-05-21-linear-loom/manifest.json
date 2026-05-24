@@ -40,8 +40,8 @@
     {
       "number": 6,
       "name": "Manual write-back verbs",
-      "status": "in-progress",
-      "branch": "ev-agent.linear-loom.phase-update"
+      "status": "completed",
+      "branch": "ev-agent.linear-loom.events-read"
     },
     {
       "number": 7,

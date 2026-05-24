@@ -39,3 +39,8 @@
 {"at":"2026-05-24T00:21:37.027Z","event":"pr-opened","detail":{"pr":46,"url":"https://github.com/krambuhl/agents/pull/46"}}
 {"at":"2026-05-24T03:23:12.904Z","event":"checkin-created","detail":{"number":"01","branch":"ev-agent.linear-loom.phase-update"}}
 {"at":"2026-05-24T03:23:12.981Z","event":"phase-started","detail":{"phase":6,"name":"Manual write-back verbs"}}
+{"at":"2026-05-24T03:24:02.148Z","event":"pr-opened","detail":{"pr":47,"url":"https://github.com/krambuhl/agents/pull/47"}}
+{"at":"2026-05-24T15:13:27.100Z","event":"checkin-created","detail":{"number":"01","branch":"ev-agent.linear-loom.events-read"}}
+{"at":"2026-05-24T15:13:27.176Z","event":"phase-started","detail":{"phase":6,"name":"Manual write-back verbs"}}
+{"at":"2026-05-24T15:14:34.439Z","event":"pr-opened","detail":{"pr":48,"url":"https://github.com/krambuhl/agents/pull/48"}}
+{"at":"2026-05-24T15:14:43.619Z","event":"phase-completed","detail":{"phase":6}}
