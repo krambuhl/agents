@@ -46,7 +46,7 @@
     {
       "number": 7,
       "name": "ev-linear plugin",
-      "status": "in-progress",
+      "status": "completed",
       "branch": "ev-agent.linear-loom.ev-linear-confidence"
     },
     {
