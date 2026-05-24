@@ -41,7 +41,7 @@
       "number": 6,
       "name": "Manual write-back verbs",
       "status": "in-progress",
-      "branch": "ev-agent.linear-loom.checkin-write"
+      "branch": "ev-agent.linear-loom.phase-update"
     },
     {
       "number": 7,

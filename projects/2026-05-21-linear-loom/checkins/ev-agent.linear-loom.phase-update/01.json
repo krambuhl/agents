@@ -1,0 +1,80 @@
+{
+  "schema_version": 1,
+  "number": "01",
+  "created": "2026-05-23T20:25:00.000Z",
+  "phase": {
+    "number": 6,
+    "name": "Manual write-back verbs"
+  },
+  "branch": "ev-agent.linear-loom.phase-update",
+  "unit": "U3 — linear-loom phase update (Linear Milestone state transition)",
+  "contract": {
+    "goal": "Ship linear-loom phase update <slug> --phase=N --status=<loom-status>. Looks up the Linear ProjectMilestone whose name parses as `<slug> · Phase N — <prose>`, maps the loom-status to Linear's state enum, calls projectMilestoneUpdate with the new state. Returns {slug, phase: {number, name, milestone_id}, status: {before, after, requested_loom, requested_linear}} as JSON.",
+    "acceptance_criteria": [
+      "New plugins/linear-loom/cli/lib/milestones.ts: updateMilestoneState({client, milestoneId, state}) wraps projectMilestoneUpdate with a state-field input; throws milestone-update-failed on success=false. Returns {id, name, state}.",
+      "mapPhaseStatusToLinearState(status) in milestones.ts: not-started→planned, in-progress→started, completed→completed, canceled→canceled. Throws status-not-mappable on 'blocked' (no Linear analog) or unrecognized values.",
+      "New plugins/linear-loom/cli/verbs/phase.ts: phaseUpdate + PHASE_VERBS map ({update: phaseUpdate}). Parses slug + --phase=N + --status=<loom-status> + --pretty. Maps status FIRST (fail-fast, before Linear round-trip), resolves marker/auth, queries the project's milestones, finds the one matching <slug> · Phase N, calls updateMilestoneState.",
+      "Error codes: missing-slug, missing-phase-number, invalid-phase-number, missing-status, status-not-mappable, linear-project-not-found, phase-not-found, milestone-update-failed.",
+      "Wired into plugins/linear-loom/cli/linear-loom.ts VERB_HANDLERS as phase: PHASE_VERBS.",
+      "parsePhaseFromMilestoneName duplicated from verbs/project.ts:286-302 with leading comment naming the duplication + canonical composer in verbs/tasks.ts. Substrate-fix: extract to lib/phase-naming.ts when a third caller emerges.",
+      "Tests: milestones.test.ts +6 (success returns {id, name, state}; success=false throws; forwards mutation args; map 4 valid statuses; throws on blocked with remedy hint; throws on unrecognized); phase.test.ts +11 (all 8 error codes + 2 success paths Phase 1 / in-progress mapping + --pretty + milestone-update-failed bubble).",
+      "npm test → 876 passing (was 859 after U2; +17 net)."
+    ],
+    "rules_applied": [
+      "DESIGN.md § 11 (Phase status lives on Linear Milestone state; Linear is source-of-truth — this verb is the write surface for that authority).",
+      "DESIGN.md § 5 + § 6 (Milestone naming convention `<slug> · Phase N — <prose>` — used to find the target milestone by phase number).",
+      "Operator's grill-me choice this session: direct projectMilestoneUpdate with state field (one mutation, one milestone); no fallback. If Linear's schema rejects the field, surface the API error cleanly."
+    ],
+    "disqualifiers": [
+      "Iterating over underlying Issues to bulk-update workflow states — a different operation with larger blast radius; not what § 11 names.",
+      "Description-annotation fallback when Linear rejects the state write — single-path: try direct write, surface the API error if it fails.",
+      "Updating blocked phases — Linear's enum has no analog. Reject with status-not-mappable; operator uses a label or comment for 'blocked' semantics.",
+      "Cross-phase batch updates (--phase=1,2,3) — one phase per invocation.",
+      "Changing other Milestone fields (name, targetDate) alongside state — single-concern verb.",
+      "Reverse-mapping back to loom-status in the output — the JSON reports the Linear-side state literally so the operator sees what Linear holds."
+    ],
+    "inputs": [
+      "plugins/linear-loom/docs/DESIGN.md § 11, § 5, § 6",
+      "plugins/linear-loom/cli/verbs/project.ts:286-329 (parsePhaseFromMilestoneName + mapMilestoneStateToPhaseStatus — read-direction reference)",
+      "plugins/linear-loom/cli/lib/apply-diff.ts:59-66 (existing projectMilestoneUpdate mutation shape)",
+      "plugins/linear-loom/cli/lib/linear-client.ts (LinearClient)",
+      "plugins/linear-loom/cli/lib/marker.ts, auth.ts (substrate pattern)",
+      "plugins/linear-loom/cli/verbs/checkin.ts (U2 verb shape template)"
+    ]
+  },
+  "execution": {
+    "actions": [
+      "Wrote cli/lib/milestones.ts: updateMilestoneState wraps the projectMilestoneUpdate mutation with a state-field input; throws LinearLoomError('milestone-update-failed', ...) when success !== true OR projectMilestone === null. mapPhaseStatusToLinearState handles the four valid loom statuses via a switch; throws status-not-mappable for 'blocked' (with a remedy hint pointing at Linear labels/comments) and for any unrecognized value.",
+      "Wrote cli/verbs/phase.ts: phaseUpdate async verb. Argument validation (slug → phase → invalid-phase-number → status → status-not-mappable from the mapper). The status mapping happens BEFORE marker/auth resolution so an unrecognized status bails without any Linear round-trip — fail-fast over fail-late. Queries projectMilestones via a focused query, finds the milestone whose parsed name matches `<slug> · Phase N`, captures the before-state, calls updateMilestoneState, emits {slug, phase, status: {before, after, requested_loom, requested_linear}}.",
+      "Wired phase namespace into linear-loom.ts VERB_HANDLERS as phase: PHASE_VERBS. CLI dispatch: phase → missing-verb with candidates ['update']; phase update → missing-slug; chained validation for --phase / invalid-phase-number / --status / status-not-mappable.",
+      "Duplicated parsePhaseFromMilestoneName from verbs/project.ts:286-302 with a leading comment naming the duplication AND the canonical composer location (verbs/tasks.ts:206-214). Substrate-fix path (extract to lib/phase-naming.ts) noted in the comment for when a third caller emerges.",
+      "Wrote 17 unit tests: milestones.test.ts (6) covers updateMilestoneState success + success=false + forward-args + mapPhaseStatusToLinearState's four valid mappings + blocked-with-remedy-hint + unrecognized. phase.test.ts (11) covers all 8 error codes + Phase 1 success path (asserts JSON shape + outgoing mutation carries the mapped state) + in-progress → started mapping assertion + milestone-update-failed bubble + --pretty.",
+      "Verified: npm test → 876 passing across 62 files (was 859 after Phase 6 U2; +17). Panel (contract-fit + naming + test-unit): all 3 approved on first run; zero findings."
+    ],
+    "files_touched": [
+      "plugins/linear-loom/cli/lib/milestones.ts",
+      "plugins/linear-loom/cli/lib/milestones.test.ts",
+      "plugins/linear-loom/cli/verbs/phase.ts",
+      "plugins/linear-loom/cli/verbs/phase.test.ts",
+      "plugins/linear-loom/cli/linear-loom.ts"
+    ],
+    "corrections": [
+      "parsePhaseFromMilestoneName duplication is a known-and-documented architecture compromise: U3 keeps the surface tight by duplicating the 15-line parser rather than extracting + modifying verbs/project.ts at the same time. The leading comment in phase.ts names the duplication and the canonical composer for drift watch. Operator decided this was preferable to a 7-file diff during the contract negotiation."
+    ]
+  },
+  "scope": [],
+  "changes_since_previous": "Third unit of Phase 6 (Manual write-back verbs), stacked on U2 (#46). With this PR merged, ev-linear's loop body (Phase 7) can transition Linear Milestone state programmatically. U4 (events read — synthesizes loom-shape events from Linear's audit log) closes Phase 6.",
+  "verdict": {
+    "result": "approved",
+    "reasons": []
+  },
+  "notes_for_pr": [
+    "DESIGN § 11 says Linear is the source-of-truth for Phase status. This verb is the write-side primitive for that authority. Read-side already exists in `linear-loom project read` which surfaces the Linear-derived status (via mapMilestoneStateToPhaseStatus). Together U3 + project-read close the loom↔Linear bidirectional status loop.",
+    "Operator chose `blocked` rejection over silent degradation. The loom-side PhaseStatus has four values (not-started | in-progress | blocked | completed); Linear's ProjectMilestone state enum has no analog for blocked. Mapping blocked silently to something like `paused` would hide a real semantic mismatch — better to surface it and let the operator decide (Linear label, comment, or just leaving the milestone at its current Linear state).",
+    "Output JSON includes both `requested_loom` and `requested_linear` deliberately. The translation is a domain concept, not a transport detail — downstream consumers see what was asked for at the loom layer AND what was sent to Linear. The post-mutation `state` field carries Linear's authoritative response (may differ from `requested_linear` if Linear normalizes — though we haven't observed this in practice).",
+    "parsePhaseFromMilestoneName duplicated rather than extracted. The 15-line parser is the inverse of the composer in verbs/tasks.ts:206-214. If the format changes, both parsers AND the composer need updating. Drift risk is real but small; substrate-fix path (lib/phase-naming.ts) is captured in a leading comment.",
+    "Lagged event note: this commit carries U2's pr-opened event for #46 (substrate-known gap; pr-opened lags the unit commit and rides into the next unit). Same pattern as Phase 6 U2 carried U1's #45.",
+    "scope-shift signals: zero. Clean continuation of Phase 6. The status-mapping enum was a localized decision within U3's surface — not a scope shift.",
+    "Substrate follow-up still standing: bin/guild derive-panel returns 'panel-spec-unreadable (using fallback)' under the marketplace-installed CLI. Used node plugins/guild/cli/guild.ts locally throughout."
+  ]
+}
