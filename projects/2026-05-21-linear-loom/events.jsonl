@@ -49,3 +49,8 @@
 {"at":"2026-05-24T16:37:27.847Z","event":"pr-opened","detail":{"pr":49,"url":"https://github.com/krambuhl/agents/pull/49"}}
 {"at":"2026-05-24T17:39:11.110Z","event":"checkin-created","detail":{"number":"01","branch":"ev-agent.linear-loom.ev-linear-interactive"}}
 {"at":"2026-05-24T17:39:11.187Z","event":"phase-started","detail":{"phase":7,"name":"ev-linear plugin"}}
+{"at":"2026-05-24T17:40:29.923Z","event":"pr-opened","detail":{"pr":50,"url":"https://github.com/krambuhl/agents/pull/50"}}
+{"at":"2026-05-24T23:09:51.913Z","event":"checkin-created","detail":{"number":"01","branch":"ev-agent.linear-loom.ev-linear-confidence"}}
+{"at":"2026-05-24T23:09:51.990Z","event":"phase-started","detail":{"phase":7,"name":"ev-linear plugin"}}
+{"at":"2026-05-24T23:10:56.699Z","event":"pr-opened","detail":{"pr":51,"url":"https://github.com/krambuhl/agents/pull/51"}}
+{"at":"2026-05-24T23:11:02.669Z","event":"phase-completed","detail":{"phase":7}}

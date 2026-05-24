@@ -196,6 +196,49 @@ verbatim as the `agents=` argument to `/guild-validate`.
 **Used by**: `/ev-linear:ev-loop-interactive` (Step 2.3 evaluate),
 `/ev-linear:ev-loop-confidence` (Phase 7 U3).
 
+## § Retro write
+
+**Purpose**: Write a tactical retro between tiers (or a strategic
+session retro) into `projects/<slug>/retros/`. Linear-loom uploads
+the rendered markdown as a Linear Document with the standard
+provenance header (DESIGN.md § 13).
+
+**Wraps**:
+
+```bash
+bin/linear-loom retro <slug> --type=<session|strategic> \
+  --retro-file=<path> [--phase=<N>] [--tier=<M>]
+```
+
+(linear-loom's `retro` namespace was wired in Phase 4.) The verb
+reads the retro markdown, prepends the 3-line provenance header,
+uploads to Linear as a Document, and emits the resulting Document
+URL for inclusion in PR descriptions / archive bundles.
+
+**Used by**: `/ev-linear:ev-loop-confidence` (tactical retro between
+tiers).
+
+## § Revise PLAN.md
+
+**Purpose**: Trigger a PLAN.md revision via the linear-loom
+revise-plan skill when scope-shift detection fires.
+
+**Wraps** (via the Skill tool, not Bash):
+
+```
+Skill(skill: "linear-loom-revise-plan", args: "<slug> --flavor=<mechanical|research> --mode=auto")
+```
+
+The skill conducts the flavor-routed interview, runs the evaluator
+pass, and commits via `bin/linear-loom revise-plan` internally. See
+`plugins/linear-loom/skills/linear-loom-revise-plan/SKILL.md` for
+the full surface.
+
+**Used by**: `/ev-linear:ev-loop-confidence` (scope-shift step on
+two-signal concurrence + accept),
+`/ev-linear:ev-loop-interactive` (inner-RPI sub-sequence — spawns
+this skill via the Agent tool with `--mode=auto`).
+
 ## § Compose PR
 
 **Purpose**: Open or refresh the GitHub PR for the unit's branch.
