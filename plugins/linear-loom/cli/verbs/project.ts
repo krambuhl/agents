@@ -11,6 +11,7 @@ import {
   readMarker,
   writeMarker,
 } from '../lib/marker.ts';
+import { parsePhaseFromMilestoneName } from '../lib/phase-naming.ts';
 
 // `project` namespace verbs.
 //
@@ -277,29 +278,6 @@ const PROJECT_READ_QUERY = `
     }
   }
 `;
-
-// Phase parse: matches "<slug> · Phase N — <name>" or
-// "<slug> · Phase N - <name>" (different dash glyphs operators
-// might type). The slug prefix is enforced so loom-project's
-// milestones don't collide with other loom-projects under the same
-// Linear Project (DESIGN.md § 5 + § 6).
-function parsePhaseFromMilestoneName(
-  milestoneName: string,
-  slug: string,
-): { number: number; name: string } | null {
-  const prefix = `${slug} · `;
-  if (!milestoneName.startsWith(prefix)) return null;
-  const rest = milestoneName.slice(prefix.length);
-  const match = /^Phase\s+(\d+)\s*[—-]\s*(.+)$/.exec(rest);
-  if (match === null) return null;
-  const numberStr = match[1];
-  const namePart = match[2];
-  if (numberStr === undefined || namePart === undefined) return null;
-  return {
-    number: Number.parseInt(numberStr, 10),
-    name: namePart.trim(),
-  };
-}
 
 // Status mapping (DESIGN.md § 11: Linear Milestone state is the
 // source of truth). Linear's projectMilestone.state is a string

@@ -9,6 +9,7 @@ import { TASKS_VERBS } from './verbs/tasks.ts';
 import { TASK_VERBS } from './verbs/task.ts';
 import { CHECKIN_VERBS } from './verbs/checkin.ts';
 import { PHASE_VERBS } from './verbs/phase.ts';
+import { EVENTS_VERBS } from './verbs/events.ts';
 
 // ---------- Namespace registry ----------
 //
@@ -51,6 +52,7 @@ const VERB_HANDLERS: Record<string, Record<string, VerbHandler>> = {
   task: TASK_VERBS,
   checkin: CHECKIN_VERBS,
   phase: PHASE_VERBS,
+  events: EVENTS_VERBS,
 };
 
 function printHelp(): void {

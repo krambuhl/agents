@@ -1,0 +1,93 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/krambuhl/agents/plugins/linear-loom/contracts/events-read.schema.json",
+  "title": "linear-loom events read output",
+  "description": "Output contract for `linear-loom events read <slug>`. DESIGN.md § 8: linear-loom drops events.jsonl as a substrate concept; Linear's native audit data is the event trail. This verb synthesizes a loom-compatible events array from Project / Milestone / Sub-Issue-comment timestamps. v1 covers the load-bearing trio (project-initialized + phase-started + checkin-created); pr-opened / pr-merged (from GitHub-PR Issue attachments) and phase-completed (from Milestone state-change history) are documented follow-ups. ev-linear pins to schema_version=1 and refuses to parse on mismatch.",
+  "type": "object",
+  "required": ["schema_version", "slug", "events"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "type": "integer",
+      "const": 1,
+      "description": "Bumps on breaking changes to the output shape. ev-linear pins to a known schema_version."
+    },
+    "slug": {
+      "type": "string",
+      "minLength": 1,
+      "description": "The operator-chosen short name for the loom-project. Matches the marker file's slug field."
+    },
+    "events": {
+      "type": "array",
+      "description": "Loom-compatible events synthesized from Linear, sorted by `at` ascending. Filter flags --since / --event / --limit apply after synthesis and before emission.",
+      "items": {
+        "oneOf": [
+          { "$ref": "#/definitions/ProjectInitializedEvent" },
+          { "$ref": "#/definitions/PhaseStartedEvent" },
+          { "$ref": "#/definitions/CheckinCreatedEvent" }
+        ]
+      }
+    }
+  },
+  "definitions": {
+    "ProjectInitializedEvent": {
+      "type": "object",
+      "description": "Synthesized from Linear Project.createdAt. Exactly one per output.",
+      "required": ["at", "event", "detail"],
+      "additionalProperties": false,
+      "properties": {
+        "at": { "type": "string", "format": "date-time" },
+        "event": { "type": "string", "const": "project-initialized" },
+        "detail": {
+          "type": "object",
+          "additionalProperties": false
+        }
+      }
+    },
+    "PhaseStartedEvent": {
+      "type": "object",
+      "description": "Synthesized from each ProjectMilestone.createdAt whose name parses via the `<slug> · Phase N — <prose>` convention (DESIGN.md § 5 + § 6). Milestones with unparseable names are skipped.",
+      "required": ["at", "event", "detail"],
+      "additionalProperties": false,
+      "properties": {
+        "at": { "type": "string", "format": "date-time" },
+        "event": { "type": "string", "const": "phase-started" },
+        "detail": {
+          "type": "object",
+          "required": ["phase", "name"],
+          "additionalProperties": false,
+          "properties": {
+            "phase": { "type": "integer", "minimum": 1 },
+            "name": { "type": "string", "minLength": 1 }
+          }
+        }
+      }
+    },
+    "CheckinCreatedEvent": {
+      "type": "object",
+      "description": "Synthesized from each Sub-Issue comment whose body parses as a U2-rendered checkin (carries both `**Checkin number**:` and `**Branch**:` header lines). Free-form comments without that header pair are skipped.",
+      "required": ["at", "event", "detail"],
+      "additionalProperties": false,
+      "properties": {
+        "at": { "type": "string", "format": "date-time" },
+        "event": { "type": "string", "const": "checkin-created" },
+        "detail": {
+          "type": "object",
+          "required": ["number", "branch"],
+          "additionalProperties": false,
+          "properties": {
+            "number": {
+              "type": "string",
+              "description": "Loom-shaped checkin number (e.g. \"01\")."
+            },
+            "branch": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Branch name the checkin was written for."
+            }
+          }
+        }
+      }
+    }
+  }
+}

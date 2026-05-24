@@ -12,6 +12,7 @@ import {
   mapPhaseStatusToLinearState,
   updateMilestoneState,
 } from '../lib/milestones.ts';
+import { parsePhaseFromMilestoneName } from '../lib/phase-naming.ts';
 
 // `linear-loom phase update <slug> --phase=N --status=<loom-status>`
 // — DESIGN.md § 11.
@@ -65,29 +66,6 @@ const PROJECT_MILESTONES_QUERY = `
     }
   }
 `;
-
-// Duplicate of verbs/project.ts:286-302's parsePhaseFromMilestoneName.
-// Canonical composer lives in verbs/tasks.ts:206-214 — if the
-// "<slug> · Phase N — <prose>" naming convention changes there, both
-// parsers need a matching update. Substrate-fix: extract to a shared
-// lib/phase-naming.ts when a third caller emerges.
-function parsePhaseFromMilestoneName(
-  milestoneName: string,
-  slug: string,
-): { number: number; name: string } | null {
-  const prefix = `${slug} · `;
-  if (!milestoneName.startsWith(prefix)) return null;
-  const rest = milestoneName.slice(prefix.length);
-  const match = /^Phase\s+(\d+)\s*[—-]\s*(.+)$/.exec(rest);
-  if (match === null) return null;
-  const numberStr = match[1];
-  const namePart = match[2];
-  if (numberStr === undefined || namePart === undefined) return null;
-  return {
-    number: Number.parseInt(numberStr, 10),
-    name: namePart.trim(),
-  };
-}
 
 export async function phaseUpdate(
   rest: string[],
