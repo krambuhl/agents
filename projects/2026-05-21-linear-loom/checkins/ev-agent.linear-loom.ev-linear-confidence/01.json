@@ -1,0 +1,76 @@
+{
+  "schema_version": 1,
+  "number": "01",
+  "created": "2026-05-24T16:15:00.000Z",
+  "phase": {
+    "number": 7,
+    "name": "ev-linear plugin"
+  },
+  "branch": "ev-agent.linear-loom.ev-linear-confidence",
+  "unit": "U3 — ev-linear:ev-loop-confidence (closes Phase 7)",
+  "contract": {
+    "goal": "Ship the third and final ev-linear loop skill: /ev-linear:ev-loop-confidence. Parallel to ev:ev-loop-confidence (535 lines) per DESIGN § 17, with griot excised (§ 18) and substrate references swapped to linear-loom. Closes Phase 7 of the linear-loom project.",
+    "acceptance_criteria": [
+      "New plugins/ev-linear/skills/ev-loop-confidence/SKILL.md derived from ev's 535-line source. bin/loom → bin/linear-loom throughout; preflight drops loom + griot; Step 4 'No findings-append / recurring-threshold' disclaimer added (parallel to interactive loop); § Save session + § Capture finding references in Rules disclaim with operator-conversation-as-trace note; § Revise PLAN.md points at /linear-loom-revise-plan; § Retro write stays a real call site (linear-loom retro verb shipped in Phase 4); § Phase update / § Checkin write / § State refresh cite the linear-loom Phase 6 verbs; PANEL-COMPOSITION.md cross-referenced (not duplicated); /loom-archive → /linear-loom-archive; tier 4+ escalation → /ev-linear:ev-loop-interactive; cross-plugin loop dispatch rule added.",
+      "Updated plugins/ev-linear/docs/SUBSTRATE-COMPOSITIONS.md: added § Retro write + § Revise PLAN.md recipes (the two recipes ev-loop-confidence cites that weren't already in U2's 6-recipe set).",
+      "npm test → 930 passing across 67 files. Baseline 928 after Phase 7 U2.",
+      "Phase 7 marked completed in the manifest after this checkin lands."
+    ],
+    "rules_applied": [
+      "DESIGN.md § 17 (ev-linear is a parallel plugin to ev — derivative of ev's skill body with substrate references swapped).",
+      "DESIGN.md § 18 (ev-linear excises griot integration entirely).",
+      "DESIGN.md § 8 (no events.jsonl in linear-loom — auto-mode and scope-shift event emissions dropped).",
+      "DESIGN.md § 11 (Linear Milestone state is the source-of-truth for phase status; § Phase update writes to it).",
+      "DESIGN.md § 13 (provenance header for Linear Documents; § Retro write inherits the header).",
+      "Operator's grill-me posture across U1/U2/U3: care specifically about /linear-loom-revise-plan (U2). For session / pr-events / events.jsonl emissions, drop them from ev-linear if the concept doesn't make sense in a Linear-backed substrate."
+    ],
+    "disqualifiers": [
+      "Adding new TS code or test files (the unit is a markdown port + doc expansion only).",
+      "Building linear-loom session verb (operator dropped that surface).",
+      "Building linear-loom events append verb (DESIGN § 8).",
+      "Building linear-loom pr open/update/discover (Linear native GitHub integration owns the wiring; documented stub).",
+      "Restoring any griot reference (§ 18).",
+      "Porting docs/LOOM-CONVENTIONS.md or duplicating AGENT-CONVENTIONS / PANEL-COMPOSITION.",
+      "Re-evaluating Phase 7's slicing — operator chose 3 PRs at U1 start; this is the third and closes the phase."
+    ],
+    "inputs": [
+      "plugins/linear-loom/docs/DESIGN.md § 17, § 18, § 8, § 11, § 13",
+      "plugins/ev/skills/ev-loop-confidence/SKILL.md (535-line canonical source)",
+      "plugins/ev-linear/skills/ev-loop-interactive/SKILL.md (U2's skill — disclaimer-shape template for griot excision)",
+      "plugins/linear-loom/cli/verbs/retro.ts (existing retro verb from Phase 4 — keeps § Retro write a real call site)",
+      "plugins/linear-loom/skills/linear-loom-revise-plan/SKILL.md (U2 — the target § Revise PLAN.md resolves to)",
+      "plugins/ev-linear/docs/SUBSTRATE-COMPOSITIONS.md (U2's 6-recipe set, extended with 2 more in U3)"
+    ]
+  },
+  "execution": {
+    "actions": [
+      "Wrote ev-loop-confidence/SKILL.md derived from ev's 535-line source. The port is mostly mechanical: every bin/loom → bin/linear-loom, every /loom-* → /linear-loom-* (where the linear-loom-* skill exists), griot integration removed at every site (rollup load, capture-finding side blocks, recurring-threshold mechanism), § Save session referenced as NOT supported in Rules, § Revise PLAN.md points at the U2-shipped /linear-loom-revise-plan, tier 4+ escalation route uses /ev-linear:ev-loop-interactive (NOT bare).",
+      "§ Retro write stays a real call site (NOT disclaimed) because linear-loom shipped the retro namespace in Phase 4. The bin/linear-loom retro verb takes the same loom-shape argv (--type, --phase, --tier, --retro-file) and uploads to Linear as a Document per DESIGN § 13.",
+      "Step 4 (Iterate or commit) gained an explicit disclaimer paragraph mirroring the interactive loop's U2 shape: 'No findings-append / recurring-threshold step (§ 18). The ev plugin walks every approved finding through bin/griot capture's append + count subverbs to detect recurring patterns. ev-linear drops the entire mechanism — griot is excised.'",
+      "Step 5 (Scope-shift detection) explicitly notes that ev-linear's confidence loop matches the ev plugin's existing posture (no scope-shift event emission) — both the substrate-driven absence (no events append verb) AND the original ev shape (the interactive loop emitted scope-shift events; the confidence loop did not) align here.",
+      "Cross-plugin doc references: § Panel auto-derivation cites plugins/ev/docs/PANEL-COMPOSITION.md (not duplicated under ev-linear/docs). Future cleanup: extract to commons/docs/.",
+      "Updated docs/SUBSTRATE-COMPOSITIONS.md (from U2's 6-recipe set): added § Retro write (bin/linear-loom retro wrapper) and § Revise PLAN.md (Skill-tool wrapper around /linear-loom-revise-plan). Both inserted before § Compose PR for logical grouping.",
+      "Verified: npm test → 930 passing across 67 files (was 928 after Phase 7 U2; +2 incidental — no new tests added in U3, only markdown + doc work). Panel (contract-fit, single evaluator for markdown-only surface): approved on first run; zero findings."
+    ],
+    "files_touched": [
+      "plugins/ev-linear/skills/ev-loop-confidence/SKILL.md",
+      "plugins/ev-linear/docs/SUBSTRATE-COMPOSITIONS.md"
+    ],
+    "corrections": []
+  },
+  "scope": [],
+  "changes_since_previous": "Third and final unit of Phase 7. With this PR merged, Phase 7 closes: the ev-linear plugin ships with all three loop skills (ev-run + ev-loop-interactive + ev-loop-confidence) plus the operator-priority /linear-loom-revise-plan. Phase 8 (Dogfood) remains.",
+  "verdict": {
+    "result": "approved",
+    "reasons": []
+  },
+  "notes_for_pr": [
+    "Confidence loop is lighter to port than the interactive loop (619 → 533 lines in U2). The confidence loop has no Step 4.5 equivalent in source (no recurring-threshold mechanism — that lives only in the interactive loop) and a simpler scope-shift step (no inner-RPI sub-sequence — just a § Revise PLAN.md recipe call). Mostly mechanical substrate-reference swaps with U2's disclaimer shape as the template for the cases that DO need a disclaimer.",
+    "§ Retro write stays a REAL call site, not a disclaimer. Phase 4 shipped the linear-loom retro verb, so tactical retros between tiers use the real surface. This is the one place where parity-with-loom holds without modification.",
+    "Three different patterns surfaced across U1/U2/U3 for handling the ev → ev-linear port:\n  (a) Real call site swap (bin/loom → bin/linear-loom) — most things.\n  (b) Excision via disclaimer (griot / sessions / pr-events) — where Linear-native concept doesn't exist.\n  (c) Cross-plugin reference (AGENT-CONVENTIONS, PANEL-COMPOSITION) — where the doc is substrate-shared and duplication would create drift.\nThe pattern set is now stable enough that future ev-* plugin work (if any) can follow the precedent.",
+    "scope-shift signals: phase-boundary fires (this unit is the last in Phase 7). Single signal — no two-signal concurrence — so no inner-RPI offered. Phase 7 closes cleanly.",
+    "Lagged event note: this commit carries U2's pr-opened event for #50 (substrate-known gap). Same pattern throughout Phase 6 + Phase 7.",
+    "Substrate follow-up still standing: bin/guild derive-panel returns 'panel-spec-unreadable (using fallback)' under the marketplace-installed CLI. Used node plugins/guild/cli/guild.ts locally throughout Phase 7.",
+    "Phase 8 (Dogfood) starts after #51 merges. Per PLAN.md Phase 8 scope, the dogfood project exercises every linear-loom verb at least once + both ev-linear loops at least once. The substrate is v1-complete once dogfood completes without substrate-side blockers."
+  ]
+}
