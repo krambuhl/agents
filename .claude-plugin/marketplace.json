@@ -42,6 +42,12 @@
       "dependencies": ["commons", "loom", "guild", "griot"]
     },
     {
+      "name": "ev-linear",
+      "source": "./plugins/ev-linear",
+      "description": "Execution loops targeting linear-loom-backed projects: ev-loop-confidence (tiered transforms), ev-loop-interactive (paired units), ev-run (router). Parallel to ev; substrate references target linear-loom instead of loom (DESIGN.md § 17). Griot integration excised entirely (§ 18).",
+      "dependencies": ["commons", "linear-loom", "guild"]
+    },
+    {
       "name": "agent-loop-full",
       "source": "./plugins/agent-loop-full",
       "description": "Meta-bundle: zero-content plugin that cascade-installs the full agent-loop family (commons, griot, guild, loom, ev).",

@@ -46,7 +46,8 @@
     {
       "number": 7,
       "name": "ev-linear plugin",
-      "status": "not-started"
+      "status": "in-progress",
+      "branch": "ev-agent.linear-loom.ev-linear-scaffold"
     },
     {
       "number": 8,
