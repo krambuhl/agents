@@ -10,6 +10,7 @@ import { TASK_VERBS } from './verbs/task.ts';
 import { CHECKIN_VERBS } from './verbs/checkin.ts';
 import { PHASE_VERBS } from './verbs/phase.ts';
 import { EVENTS_VERBS } from './verbs/events.ts';
+import { revisePlan } from './verbs/revise-plan.ts';
 
 // ---------- Namespace registry ----------
 //
@@ -44,6 +45,7 @@ const VERBLESS_HANDLERS: Record<string, VerbHandler> = {
   research: (rest) => research(rest),
   plan: (rest) => plan(rest),
   retro: (rest) => retro(rest),
+  'revise-plan': (rest) => revisePlan(rest),
 };
 
 const VERB_HANDLERS: Record<string, Record<string, VerbHandler>> = {
