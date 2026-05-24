@@ -57,6 +57,7 @@ const EXPECTED_PLUGIN_NAMES = [
   'loom',
   'linear-loom',
   'ev',
+  'ev-linear',
   'agent-loop-full',
 ] as const;
 
@@ -96,7 +97,7 @@ describe('marketplace manifest: top-level shape', () => {
 describe('marketplace manifest: plugin entries', () => {
   const m = readMarketplace();
 
-  test('declares exactly the six expected plugins', () => {
+  test('declares exactly the eight expected plugins', () => {
     const declared = m.plugins.map((p) => p.name).sort();
     const expected = [...EXPECTED_PLUGIN_NAMES].sort();
     expect(declared).toEqual(expected);

@@ -1,0 +1,4 @@
+{
+  "name": "ev-linear",
+  "description": "Execution loops targeting linear-loom-backed projects: ev-loop-confidence (tiered transforms), ev-loop-interactive (paired units), ev-run (router). Parallel to ev with substrate references swapped (linear-loom not loom); griot integration excised entirely per DESIGN § 18."
+}
