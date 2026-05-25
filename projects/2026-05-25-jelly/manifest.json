@@ -11,13 +11,14 @@
     {
       "number": 1,
       "name": "Phase 1.1 — Verify empirical assumptions",
-      "status": "in-progress",
+      "status": "completed",
       "branch": "ev-agent.jelly.probe"
     },
     {
       "number": 2,
       "name": "Phase 1.2 — jelly-guild substrate",
-      "status": "not-started"
+      "status": "in-progress",
+      "branch": "ev-agent.jelly.guild"
     },
     {
       "number": 3,

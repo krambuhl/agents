@@ -3,3 +3,7 @@
 {"at":"2026-05-25T06:59:13.894Z","event":"research-completed","detail":{"slug":"2026-05-25-jelly","research_path":"RESEARCH.md","notes_path":"RESEARCH-NOTES.md"}}
 {"at":"2026-05-25T20:32:22.435Z","event":"checkin-created","detail":{"number":"01","branch":"ev-agent.jelly.probe"}}
 {"at":"2026-05-25T20:32:37.118Z","event":"phase-started","detail":{"phase":1,"name":"Phase 1.1 — Verify empirical assumptions"}}
+{"at":"2026-05-25T20:35:24.892Z","event":"pr-opened","detail":{"pr":53,"url":"https://github.com/krambuhl/agents/pull/53"}}
+{"at":"2026-05-25T20:48:23.349Z","event":"phase-completed","detail":{"phase":1}}
+{"at":"2026-05-25T20:56:03.106Z","event":"checkin-created","detail":{"number":"01","branch":"ev-agent.jelly.guild"}}
+{"at":"2026-05-25T20:56:04.897Z","event":"phase-started","detail":{"phase":2,"name":"Phase 1.2 — jelly-guild substrate"}}
