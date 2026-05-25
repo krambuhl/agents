@@ -36,6 +36,12 @@
       "dependencies": ["commons", "guild"]
     },
     {
+      "name": "jelly-guild",
+      "source": "./plugins/jelly-guild",
+      "description": "Subagent registry for /goal-shaped projects under the jelly substrate family. Three-axis decomposition (personality HOW + domain WHAT + phase WHEN): 5 personality subagents read 5 domain + 4 phase mode files at dispatch time. Paired domain rubrics expose the same content to Outcomes-callable graders. Project-scoped CLAUDE.md template carries substrate posture via @-import composition.",
+      "dependencies": ["commons"]
+    },
+    {
       "name": "ev",
       "source": "./plugins/ev",
       "description": "Execution loops: ev-loop-confidence (tiered transforms), ev-loop-interactive (paired units), ev-run (router).",

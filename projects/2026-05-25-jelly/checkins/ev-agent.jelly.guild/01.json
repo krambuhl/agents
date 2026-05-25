@@ -1,0 +1,79 @@
+{
+  "schema_version": 1,
+  "number": "01",
+  "created": "2026-05-25T20:55:16.000Z",
+  "phase": {
+    "number": 2,
+    "name": "Phase 1.2 — jelly-guild substrate"
+  },
+  "branch": "ev-agent.jelly.guild",
+  "unit": "U1 — jelly-guild plugin scaffold",
+  "contract": {
+    "goal": "Create the empty-but-loadable plugins/jelly-guild/ plugin so subsequent Phase 1.2 units (U2-U5) have a real target. U1 is scaffolding only — no agent bodies, mode contents, rubric contents, or template content.",
+    "acceptance_criteria": [
+      "plugins/jelly-guild/.claude-plugin/plugin.json exists with name 'jelly-guild' and a description capturing the three-axis (personality + domain + phase) subagent-propagation scope.",
+      "Directory skeletons present: agents/, modes/domains/, modes/phases/, rubrics/, templates/. Empty dirs preserved via .gitkeep. No cli/, bin/, or skills/ (jelly-guild is declarative content only — the CLI lives in jelly-loom, Phase 1.3).",
+      ".claude-plugin/marketplace.json registers jelly-guild with dependencies: ['commons'].",
+      "plugins/commons/cli/marketplace-manifest.test.ts's EXPECTED_PLUGIN_NAMES list includes 'jelly-guild'.",
+      "npm test passes (937 tests; +0 — jelly-guild adds no test surface in this unit, but the existing parametric for-loop in marketplace-manifest.test.ts now exercises jelly-guild's marketplace + plugin.json shape)."
+    ],
+    "rules_applied": [
+      "PLAN.md § Phase 1.2 Exit drives the directory shape + dependency declaration.",
+      "Marketplace.json convention: dependencies declared at marketplace level (not per-plugin plugin.json), matching all existing plugins.",
+      "Pattern A for checkin lifecycle (complete checkin written once at unit end) per feedback_loom_phase_and_checkin_gaps memory.",
+      "Substrate-only unit → panel auto-derivation includes evaluator-contract-fit (always) + evaluator-test-unit (because plugins/commons/cli/marketplace-manifest.test.ts changed)."
+    ],
+    "disqualifiers": [
+      "Adding any subagent files in plugins/jelly-guild/agents/ (U4 territory).",
+      "Adding any mode files in plugins/jelly-guild/modes/{domains,phases}/ (U2/U3 territory).",
+      "Adding any rubric files (U2 territory — they pair with domain modes).",
+      "Adding the CLAUDE.md template (U5 territory).",
+      "Introducing a cli/ or bin/ directory — jelly-guild has no CLI per PLAN.md decisions.",
+      "Wiring an MCP server (Phase 2.1 territory).",
+      "Touching plugins/loom/, plugins/guild/, etc."
+    ],
+    "inputs": [
+      "projects/2026-05-25-jelly/PLAN.md § Phase 1.2 (lines 57-77; the exit criteria)",
+      "projects/2026-05-25-jelly/RESEARCH.md § Phase 1.1 follow-up (just-shipped probe findings)",
+      "plugins/commons/.claude-plugin/plugin.json + plugins/guild/.claude-plugin/plugin.json (reference shape)",
+      ".claude-plugin/marketplace.json (current marketplace state to extend)",
+      "plugins/commons/cli/marketplace-manifest.test.ts lines 53-62 (EXPECTED_PLUGIN_NAMES array)",
+      "projects/2026-05-21-linear-loom/checkins/ev-agent.linear-loom.scaffold/02.json (linear-loom's scaffold precedent for shape)"
+    ]
+  },
+  "execution": {
+    "actions": [
+      "Surveyed plugins/commons/ + plugins/guild/ layouts: plugin.json carries name+description (minimal). Marketplace.json carries source + dependencies at the marketplace level (not per-plugin).",
+      "Wrote plugins/jelly-guild/.claude-plugin/plugin.json — name 'jelly-guild' + description capturing three-axis decomposition (personality HOW + domain WHAT + phase WHEN) + Outcomes-grader-paired rubrics + @-import-composition CLAUDE.md template.",
+      "Created directory skeletons via .gitkeep: agents/ (U4 target), modes/domains/ (U2 target), modes/phases/ (U3 target), rubrics/ (U2 target — paired with domains), templates/ (U5 target).",
+      "Inserted jelly-guild entry in .claude-plugin/marketplace.json between linear-loom and ev — dependencies: ['commons']. Position puts it adjacent to linear-loom (the existing parallel-substrate slot) where future jelly-loom + jelly-run + jelly meta-bundle will also land.",
+      "Updated plugins/commons/cli/marketplace-manifest.test.ts EXPECTED_PLUGIN_NAMES to include 'jelly-guild' (position 6, between 'linear-loom' and 'ev'). One-line addition; the existing parametric for-loop auto-generates +10 assertions for the new plugin.",
+      "Verified: find plugins/jelly-guild -type f returns 6 files (1 plugin.json + 5 .gitkeep). npm test → 937 passed across 67 files (marketplace-manifest.test.ts: 90 passed, was 80 — +10 matches per-plugin assertion count). Panel (contract-fit + test-unit): both approved on first run; one advisory observation about plugin.json description naming U2-U5 specifics (noted; consistent with guild's existing description convention)."
+    ],
+    "files_touched": [
+      "plugins/jelly-guild/.claude-plugin/plugin.json",
+      "plugins/jelly-guild/agents/.gitkeep",
+      "plugins/jelly-guild/modes/domains/.gitkeep",
+      "plugins/jelly-guild/modes/phases/.gitkeep",
+      "plugins/jelly-guild/rubrics/.gitkeep",
+      "plugins/jelly-guild/templates/.gitkeep",
+      ".claude-plugin/marketplace.json",
+      "plugins/commons/cli/marketplace-manifest.test.ts"
+    ],
+    "corrections": []
+  },
+  "scope": [],
+  "changes_since_previous": "First unit of Phase 1.2 (jelly-guild substrate). Phase 1.1 closed via PR #53 (project-subdir CLAUDE.md probe; findings in RESEARCH.md). This unit carries substrate-state carry-overs from Phase 1.1 close — projects/2026-05-25-jelly/events.jsonl (lagged pr-opened event from #53 + phase-completed event from `loom phase update jelly 1 --status=completed`) and projects/2026-05-25-jelly/manifest.json (Phase 1 → completed). These are substrate-state files, not artifacts — excluded from panel review.",
+  "verdict": {
+    "result": "approved",
+    "reasons": []
+  },
+  "notes_for_pr": [
+    "Foundation-only unit. Plugin loads via marketplace but has no behavior surface yet. U2 (domain modes + rubrics) lands next.",
+    "Marketplace position: jelly-guild slots between linear-loom and ev. This adjoins linear-loom (the existing parallel-substrate slot) where future jelly-loom + jelly-run + jelly meta-bundle will also land, keeping the jelly family contiguous in marketplace.json.",
+    "Advisory observation from contract-fit panel (not flagged): plugin.json description names specific personalities + mode counts which is technically U2-U5 territory. Kept the detail because (a) guild's existing description follows the same convention (naming whiteboard-* / evaluator-* / generator-*), (b) plugin descriptions are user-facing index entries where component naming is conventional.",
+    "Substrate-state carry-overs from Phase 1.1 close: lagged pr-opened event + phase-completed event in events.jsonl, manifest.json's Phase 1 status update. Standard pattern per memory feedback_loom_pr_opened_orphan_and_guild_spec_path (pr-opened events lag the unit commit; carry into next unit).",
+    "Substrate gap reconfirmed: bin/guild derive-panel still returns 'panel-spec-unreadable (using fallback)' under the marketplace-installed CLI. Used node plugins/guild/cli/guild.ts locally throughout.",
+    "Phase 1.3 follow-up: the @-line management responsibility for the project-scoped CLAUDE.md template (from Phase 1.1's findings) gets picked up when Phase 1.3 ships `jelly plan`. Captured here so Phase 1.3's contract-negotiation surfaces it."
+  ]
+}
