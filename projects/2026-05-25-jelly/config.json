@@ -4,5 +4,7 @@
   "reviewers": [],
   "labels": [],
   "verification": [],
-  "worker_bindings": {}
+  "worker_bindings": {
+    "default": "ev-loop-interactive"
+  }
 }

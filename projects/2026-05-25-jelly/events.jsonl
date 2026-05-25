@@ -1,3 +1,5 @@
 {"at":"2026-05-25T06:59:13.858Z","event":"project-initialized","detail":{}}
 {"at":"2026-05-25T06:59:13.858Z","event":"research-started","detail":{"slug":"2026-05-25-jelly","topic":"jelly"}}
 {"at":"2026-05-25T06:59:13.894Z","event":"research-completed","detail":{"slug":"2026-05-25-jelly","research_path":"RESEARCH.md","notes_path":"RESEARCH-NOTES.md"}}
+{"at":"2026-05-25T20:32:22.435Z","event":"checkin-created","detail":{"number":"01","branch":"ev-agent.jelly.probe"}}
+{"at":"2026-05-25T20:32:37.118Z","event":"phase-started","detail":{"phase":1,"name":"Phase 1.1 — Verify empirical assumptions"}}

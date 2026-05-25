@@ -1,0 +1,74 @@
+{
+  "schema_version": 1,
+  "number": "01",
+  "created": "2026-05-25T20:31:23.000Z",
+  "phase": {
+    "number": 1,
+    "name": "Phase 1.1 — Verify empirical assumptions"
+  },
+  "branch": "ev-agent.jelly.probe",
+  "unit": "U1 — Empirical probe of project-subdir CLAUDE.md inheritance + @-import under /goal",
+  "contract": {
+    "goal": "Empirically verify (or invalidate) whether project-subdir CLAUDE.md files compose under /goal via filesystem traversal, and whether @-import syntax in the parent CLAUDE.md provides an equivalent fallback. Record findings in projects/2026-05-25-jelly/RESEARCH.md so Phase 1.2 substrate posture can pick the right injection mechanism.",
+    "acceptance_criteria": [
+      "Scratch repo built at /tmp/jelly-claude-md-probe/ with: parent CLAUDE.md containing SENTINEL-PARENT-CLAUDE-MD and an @projects/test-slug/CLAUDE.md import directive; subdir projects/test-slug/CLAUDE.md containing SENTINEL-CHILD-VIA-IMPORT; subdir projects/test-slug-autodiscover/CLAUDE.md containing SENTINEL-CHILD-VIA-AUTODISCOVER (not @-imported); baseline subdir projects/baseline/ with no CLAUDE.md (control); .claude/agents/probe-reporter.md subagent that introspects which sentinels are visible; .claude/settings.json Stop + PostToolUse hooks; README documenting layout + how to run + how to read.",
+      "Operator ran /goal in the scratch repo; hook log + transcript captured which sentinels surfaced in lead agent + dispatched subagent contexts.",
+      "projects/2026-05-25-jelly/RESEARCH.md updated with a new dated section (§ Phase 1.1 follow-up: project-subdir CLAUDE.md probe (2026-05-25)) recording explicit CONFIRMED / INVALIDATED for each of (a) @-import injection, (b) filesystem-walk auto-discovery of subdir CLAUDE.md, (c) baseline control.",
+      "Findings section names the implication for Phase 1.2 substrate posture: which injection mechanism the jelly-guild CLAUDE.md template will rely on, and which fallback options are eliminated."
+    ],
+    "rules_applied": [
+      "Memory feedback_goal_substrate_probe_findings (May 2026): subagent return values are lossy at the parent boundary → hook log is the canonical side-channel for capturing what subagents emit.",
+      "PLAN.md § Phase 1.1 — Verify empirical assumptions (the literal task).",
+      "PLAN.md § Open questions — closes the project-subdir CLAUDE.md propagation question.",
+      "Global CLAUDE.md 'Don't over-engineer' — minimal scratch repo with three probe paths + one control; no extras."
+    ],
+    "disqualifiers": [
+      "Probe defined but /goal never actually runs against it (the work is the empirical verification, not the design).",
+      "/goal runs but the result isn't captured in a way the agent can read back (hook logs are the documented side-channel per goal-substrate-probe-findings).",
+      "RESEARCH.md updated without explicit CONFIRMED / INVALIDATED verdicts per probe path.",
+      "Scratch repo deleted before findings land in RESEARCH.md.",
+      "Substrate posture for Phase 1.2 left unstated — the whole point is to feed forward."
+    ],
+    "inputs": [
+      "projects/2026-05-25-jelly/PLAN.md § Phase 1.1 + § Open questions + § Decisions log",
+      "projects/2026-05-25-jelly/RESEARCH.md (the existing dossier — appended to, not rewritten)",
+      "/Users/krambuhl/Sites/goal-substrate-probe/ (prior probe pattern reference)",
+      "Memory feedback_goal_substrate_probe_findings (May 2026) — establishes hook-log as the side-channel pattern + confirms repo-root CLAUDE.md inheritance",
+      "Claude Code 2.1+ @-import + CLAUDE.md hierarchical discovery (documented but unverified for subdir-of-project shape)"
+    ]
+  },
+  "execution": {
+    "actions": [
+      "Built scratch repo at /tmp/jelly-claude-md-probe/ with: parent CLAUDE.md carrying SENTINEL-PARENT-CLAUDE-MD + @projects/test-slug/CLAUDE.md import directive + probe instructions for /goal; projects/test-slug/CLAUDE.md (sentinel: SENTINEL-CHILD-VIA-IMPORT); projects/test-slug-autodiscover/CLAUDE.md (sentinel: SENTINEL-CHILD-VIA-AUTODISCOVER, NOT referenced from parent); projects/baseline/.gitkeep (no CLAUDE.md — control); .claude/agents/probe-reporter.md (introspects context, emits SUBAGENT-SEES-/SUBAGENT-MISSING- lines per sentinel); .claude/hooks/{log-stop.sh,log-post-tool-use.sh,lead-report.sh}; .claude/settings.json (Stop + PostToolUse hooks registered); README.md (layout + how to run + how to read + verdict matrix).",
+      "Paused execution; operator ran /goal in the scratch repo. /goal dispatched probe-reporter (verified via agent_type=probe-reporter in PostToolUse hook payload) and then echoed the lead-agent-visible sentinels.",
+      "Read /tmp/jelly-claude-md-probe/hook-log/post-tool-use.log: subagent emitted SUBAGENT-SEES-SENTINEL-PARENT-CLAUDE-MD + SUBAGENT-SEES-SENTINEL-CHILD-VIA-IMPORT + SUBAGENT-MISSING-SENTINEL-CHILD-VIA-AUTODISCOVER. Lead agent echoed SENTINEL-PARENT-CLAUDE-MD + SENTINEL-CHILD-VIA-IMPORT (omitted the autodiscover sentinel).",
+      "Appended new section § Phase 1.1 follow-up: project-subdir CLAUDE.md probe (2026-05-25) to RESEARCH.md (lines 74-143) with: verdict table showing sentinel × agent matrix; explicit CONFIRMED label for @-import composition + INVALIDATED label for filesystem-walk auto-discovery + subagent CLAUDE.md visibility finding; four numbered implications for Phase 1.2 substrate posture; probe artifact references for reproducibility.",
+      "Updated § Open questions: struck through 'Per-project CLAUDE.md propagation under /goal' and marked CLOSED 2026-05-25 with reference to § Phase 1.1 follow-up.",
+      "Verified with evaluator-contract-fit panel: VERDICT approved, zero findings on first run."
+    ],
+    "files_touched": [
+      "projects/2026-05-25-jelly/RESEARCH.md",
+      "projects/2026-05-25-jelly/manifest.json",
+      "projects/2026-05-25-jelly/config.json"
+    ],
+    "corrections": [
+      "PLAN.md § Phase 1.1 Exit names 'jelly revise --target=research' as the commit mechanism for findings. That verb ships in Phase 1.3 (jelly-loom substrate) and does not exist yet. Findings were committed via direct file edit of RESEARCH.md. Substrate gap; not a scope deviation."
+    ]
+  },
+  "scope": [],
+  "changes_since_previous": "First unit of the jelly substrate project. With this unit committed, the project-subdir CLAUDE.md propagation question (PLAN.md § Open questions) is closed: @-import is the canonical mechanism under /goal; filesystem-walk auto-discovery does NOT work. Substrate viability for jelly's substrate-posture-via-CLAUDE.md-composition path survives; Phase 1.2 proceeds with one mechanism detail refined (filesystem-walk → @-import).",
+  "verdict": {
+    "result": "approved",
+    "reasons": []
+  },
+  "notes_for_pr": [
+    "Probe outcome: @-import composition under /goal is CONFIRMED (lead + subagent both see SENTINEL-CHILD-VIA-IMPORT); filesystem-walk auto-discovery is INVALIDATED (neither agent saw SENTINEL-CHILD-VIA-AUTODISCOVER). Subagents see the same CLAUDE.md context as the lead agent — CLAUDE.md is session-wide in CC 2.1, not per-agent.",
+    "Substrate implication for Phase 1.2: jelly-guild's templates/CLAUDE.md propagates ONLY via explicit @projects/<slug>/CLAUDE.md from the repo-root CLAUDE.md. Phase 1.3's `jelly plan` verb needs to manage that @-line (insert on project birth, remove/swap on archive/session-switch).",
+    "Substrate gap surfaced: PLAN.md references `jelly revise --target=research` for committing findings, but that verb is being shipped in Phase 1.3. For Phase 1.1, findings committed via direct file edit. Once Phase 1.3 lands, future research revisions go through the verb.",
+    "Substrate gap: ev-loop-interactive § Whiteboard's engineer-resolution glob (.claude/agents/whiteboard-*.md) is naive — it doesn't see plugin-installed engineers under ~/.claude/plugins/. Hit the bootstrapping clause (skip whiteboard) for Phase 1.1. Plugin-namespaced engineers (guild:whiteboard-*) ARE available; the skill would need PLAN.md `**Whiteboard**: engineers=...` block to use them. Worth a substrate-fix follow-up to extend the glob to plugin-cache locations.",
+    "Manifest refresh: the initial scaffold's placeholder 'Phase 1' was replaced with six entries mirroring PLAN.md's M1-M3 sub-phases (1.1, 1.2, 1.3, 2.1, 2.2, 3.1) at router-dispatch time. config.json's worker_bindings.default was set to ev-loop-interactive to honor the manifest's strategy: interactive. Both are substrate-state, not artifact files; carried on this branch as setup-for-Phase-1.1.",
+    "signal: phase-boundary: this unit closes the single-deliverable Phase 1.1; Phase 1.2 starts next (single signal; no scope-shift inner-RPI offered).",
+    "Pattern A used for checkin lifecycle (full checkin written once at unit end; no intermediate contract-only write). Matches the cleaner of the two patterns documented in memory feedback_loom_phase_and_checkin_gaps.",
+    "Probe scratch repo at /tmp/jelly-claude-md-probe/ is intentionally out-of-tree; safe to delete once this checkin lands. RESEARCH.md § Probe artifacts subsection enumerates the artifacts for reproducibility."
+  ]
+}

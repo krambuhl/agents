@@ -10,7 +10,33 @@
   "phases": [
     {
       "number": 1,
-      "name": "Phase 1",
+      "name": "Phase 1.1 — Verify empirical assumptions",
+      "status": "in-progress",
+      "branch": "ev-agent.jelly.probe"
+    },
+    {
+      "number": 2,
+      "name": "Phase 1.2 — jelly-guild substrate",
+      "status": "not-started"
+    },
+    {
+      "number": 3,
+      "name": "Phase 1.3 — jelly-loom substrate",
+      "status": "not-started"
+    },
+    {
+      "number": 4,
+      "name": "Phase 2.1 — jelly-run substrate",
+      "status": "not-started"
+    },
+    {
+      "number": 5,
+      "name": "Phase 2.2 — jelly meta-bundle",
+      "status": "not-started"
+    },
+    {
+      "number": 6,
+      "name": "Phase 3.1 — Dogfood against a real workstream",
       "status": "not-started"
     }
   ]
