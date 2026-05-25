@@ -58,16 +58,23 @@ Ship four marketplace plugins (`jelly-guild`, `jelly-loom`, `jelly-run`, plus a 
 
 **Goal**: Ship the subagent-propagation layer of jelly.
 
+**Goal (updated)**: Ship the subagent-propagation layer of jelly under a three-axis decomposition — personality (HOW the agent operates) + domain (WHAT it knows) + phase (WHEN in lifecycle).
+
 **Exit**:
 - `plugins/jelly-guild/` exists with `.claude-plugin/plugin.json` + marketplace entry.
-- Subagent registry under `plugins/jelly-guild/agents/` defines `evaluator-jelly-*` / `whiteboard-jelly-*` / `generator-jelly-*` specialists. Each specialist's `tools:` list explicitly includes the `mcp__jelly__*` and other substrate-relevant tools, baking the propagation into the agent definition rather than relying on inherited posture.
-- **Paired rubrics**: each `evaluator-jelly-*` specialist ships TWO artifacts: the subagent body at `agents/<name>.md` (Skill-callable via `/guild-validate` dispatch) AND a rubric at `rubrics/<name>.md` (markdown per-criterion scoring; Outcomes-callable via the Anthropic API's auto-provisioned grader). Same conceptual content, two consumer surfaces, manually kept in sync for v1.
-- Project-scoped `CLAUDE.md` template at `plugins/jelly-guild/templates/CLAUDE.md` (consumed by `jelly plan` on project birth + by `jelly revise --target=plan` when the substrate posture itself changes).
+- **Subagent registry**: 5 personality files at `plugins/jelly-guild/agents/<personality>.md` — `skeptic`, `methodical`, `generative`, `pragmatist`, `synthesizer`. Each agent's `tools:` list includes Read (to load mode files at run-time) + `mcp__jelly__*` substrate tools.
+- **Mode files** at `plugins/jelly-guild/modes/`:
+  - `modes/domains/` (5 files): `composition`, `naming`, `abstraction`, `testing`, `a11y`. Architecture-shaped (portable across languages); language-specificity rides in the per-task brief.
+  - `modes/phases/` (4 files): `researcher`, `planner`, `implementer`, `reviewer`. Phase mode shapes what the subagent does (implementer-phase declares Write + Edit; reviewer-phase declares verdict-format output).
+  - Mode files are READ by personality subagents at dispatch time; they are NOT themselves registered as subagents.
+- **Composition mechanism**: reference-based. Dispatcher passes the three mode names in the brief; subagent reads the three corresponding mode files at run-time to construct its identity for the task.
+- **Paired rubrics**: each domain has a companion rubric at `plugins/jelly-guild/rubrics/<domain>.md` (markdown per-criterion scoring; Outcomes-callable via the auto-provisioned grader). Same conceptual content as the domain mode file, formatted for grader consumption. Manually synced in v1.
+- **Project-scoped CLAUDE.md template** at `plugins/jelly-guild/templates/CLAUDE.md` (consumed by `jelly plan` on project birth + by `jelly revise --target=plan` when substrate posture changes).
 - Plugin dependency declared: `[commons]`.
 
 **Depends on**: Phase 1.1.
 
-**Risks**: subagent registry diverges from the existing `guild` plugin's over time — mitigated by keeping the two registries explicit forks rather than implicit shared code. Paired-rubric synchronization drift — mitigated for v1 by manual coupling; v2 could derive both from a single source if drift becomes a real cost.
+**Risks**: architecture-shaped domain set may be too abstract to catch concrete language-specific antipatterns — mitigated by per-task brief carrying language context; revisit in M3 dogfood if real misses surface. Mode-file resolution at run-time depends on subagents having Read in their `tools:` list — verified during Phase 1.1's empirical probe (subagent tool access under `/goal`). Paired domain/rubric synchronization drift — mitigated for v1 by manual coupling; v2 could derive both from a single source.
 
 #### Phase 1.3 — `jelly-loom` substrate
 
@@ -144,6 +151,14 @@ Ship four marketplace plugins (`jelly-guild`, `jelly-loom`, `jelly-run`, plus a 
 - 2026-05-25 — **Outcomes composability**: per `platform.claude.com/docs/en/managed-agents/define-outcomes`, Outcomes uses an **auto-provisioned grader** reading a rubric markdown document; it does NOT dispatch to custom subagents. jelly-guild specialists therefore ship as **paired files**: subagent body for Skill-callable dispatch via `/guild-validate`, and a rubric markdown for Outcomes-callable grading. Same content, two surfaces.
 - 2026-05-25 — **Feedback round-trip trigger**: explicit operator re-invocation — `/jelly-run <slug> "address feedback on #N"` — after the operator leaves PR comments. No polling, no webhook. Operator drives cadence; the substrate stays out of background-process territory.
 - 2026-05-25 — **Migration tooling**: out of scope. Existing loom-backed projects stay on loom; both families coexist indefinitely. jelly is opt-in at project-birth time. Explicit migration tooling lands only if dogfood (Phase 3.1) surfaces a real need.
+- 2026-05-25 — **Agent decomposition axes**: three orthogonal axes — Personality (HOW the agent operates) + Domain (WHAT it knows) + Phase (WHEN in lifecycle). 5 + 5 + 4 = 14 mode files; N+M+P additive scaling avoids the N*M*P cross-product agent explosion.
+- 2026-05-25 — **Composition mechanism**: reference-based. Dispatcher names the three modes in the brief; subagent reads its three mode files at run-time to construct identity. Subagents need Read in their `tools:` list.
+- 2026-05-25 — **Subagent structural mapping**: personalities are the registered subagents (callable via `subagent_type=<personality>`); domains + phases are mode files under `plugins/jelly-guild/modes/` (read by subagents at dispatch time; not themselves registered). Rubrics pair with domains under `plugins/jelly-guild/rubrics/` for the Outcomes-callable surface.
+- 2026-05-25 — **Personalities v1 (5 files)**: `skeptic`, `methodical`, `generative`, `pragmatist`, `synthesizer`. Two critical postures (sharp + slow), one generative, one decisional, one synthetic.
+- 2026-05-25 — **Domains v1 (5 files)**: `composition`, `naming`, `abstraction`, `testing`, `a11y`. Architecture-shaped rather than language-shaped — portable across languages, language-specificity rides in the per-task brief.
+- 2026-05-25 — **Phases v1 (4 files)**: `researcher`, `planner`, `implementer`, `reviewer`. Phase mode shapes whether the subagent reads, proposes, writes, or audits.
+- 2026-05-25 — **Generators absorbed into the 3-axis model**: today's `generator-css-codemod`-shaped write-capable specialists become `(personality + domain + implementer-phase)` with Write + Edit declared in the implementer-phase mode file. No fourth axis.
+- 2026-05-25 — **Whiteboard + evaluator collapse to dispatch patterns**: today's `whiteboard-*` agents = "multiple personalities dispatched in parallel against a shared artifact, research/planner phase, no-verdict mode". Today's `evaluator-*` agents = "single personality dispatched with reviewer phase + verdict-format output". The agent files don't carry whiteboard-ness or evaluator-ness; the dispatch pattern + phase mode does.
 
 ## Open questions
 
