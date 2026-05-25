@@ -96,18 +96,21 @@ Ship four marketplace plugins (`jelly-guild`, `jelly-loom`, `jelly-run`, plus a 
 
 #### Phase 2.1 — `jelly-run` substrate
 
-**Goal**: Ship the thin batch-cadence wrapper around `/goal`.
+**Goal**: Ship the orchestration layer of jelly — three skills that wrap `/goal` with operator-paired grill-gates at the PR boundary.
 
 **Exit**:
 - `plugins/jelly-run/` exists with `.claude-plugin/plugin.json` + marketplace entry.
-- Operator invokes `/jelly-run <slug>` (slash command); skill body reads `PLAN.md` + current git state, picks next not-completed phase, composes a `/goal` preamble describing the phase's goal + exit + relevant RESEARCH.md citations, invokes `/goal`.
-- PR-only review gate: `/goal` exits after the PR opens; operator reviews + comments + merges; re-invokes `jelly-run` for the next task.
-- "Address feedback on #N" pattern ported from `ev-linear`: when the redirect message names an open PR, the skill triages comments and dispatches sub-tasks per blocker.
+- Three skills shipped inside the plugin:
+  - **`/jelly-run`** (operator-invoked, top-level): composes `/goal` preamble from PLAN.md + git state; invokes `/goal` (without "open PR" in goal text); on yield, auto-chains `/jelly-pr` in the same session.
+  - **`/jelly-pr`** (auto-chained from `/jelly-run`; rarely operator-invoked directly): autonomously runs evaluator panel on the diff; composes a draft PR body from PLAN.md + diff + archetype template with confidence scores per field; grills operator only on low-confidence fields; final preview gates PR-open.
+  - **`/jelly-pr-feedback <PR#>`** (operator-invoked after leaving review comments): auto-classifies comments (fixed-intent / ambiguous / stale / discussion-only); runs evaluator panel on diff + comments to propose remedies; surfaces aggregated remedies to operator; grills only on low-confidence remedies + truly ambiguous comments; dispatches implementer agents with fixed-intent tasks.
+- **Turn-based feedback protocol**: explicit, visible turns — operator turn (review + comment) → substrate turn (auto-classify + evaluator pass) → agent turn (dispatch fixed-intent fixes) → loop back to operator. No scoreboards or mechanics; the structure IS the game.
+- **Yield-to-operator constraint**: `/jelly-pr-feedback` is interactive-only; substrate NEVER auto-resolves ambiguous comments. Substrate does its pass first (auto-classify + evaluator panel) then yields to operator for final judgment.
 - Plugin dependencies: `[commons, jelly-guild, jelly-loom]`.
 
 **Depends on**: Phase 1.2, Phase 1.3.
 
-**Risks**: `/goal` API may evolve; preamble shape may break under future Claude Code versions. Mitigated via version-pinning notes in the skill body + an explicit `claude --version` check in preflight.
+**Risks**: `/goal` API may evolve; preamble shape may break under future Claude Code versions — mitigated via version-pinning notes + explicit `claude --version` check in preflight. Confidence-scoring derivation for draft-then-grill is heuristic; over-confident classifications could skip needed grills — mitigated by always showing final preview before PR opens. Evaluator panel cost adds 30-60s per PR-open + per feedback round; accepted as quality-for-cost trade-off; revisit if friction becomes real during M3 dogfood.
 
 #### Phase 2.2 — `jelly` meta-bundle
 
@@ -159,6 +162,13 @@ Ship four marketplace plugins (`jelly-guild`, `jelly-loom`, `jelly-run`, plus a 
 - 2026-05-25 — **Phases v1 (4 files)**: `researcher`, `planner`, `implementer`, `reviewer`. Phase mode shapes whether the subagent reads, proposes, writes, or audits.
 - 2026-05-25 — **Generators absorbed into the 3-axis model**: today's `generator-css-codemod`-shaped write-capable specialists become `(personality + domain + implementer-phase)` with Write + Edit declared in the implementer-phase mode file. No fourth axis.
 - 2026-05-25 — **Whiteboard + evaluator collapse to dispatch patterns**: today's `whiteboard-*` agents = "multiple personalities dispatched in parallel against a shared artifact, research/planner phase, no-verdict mode". Today's `evaluator-*` agents = "single personality dispatched with reviewer phase + verdict-format output". The agent files don't carry whiteboard-ness or evaluator-ness; the dispatch pattern + phase mode does.
+- 2026-05-25 — **PR-boundary skills inside `jelly-run`**: `/jelly-pr` (auto-chained after `/goal`) and `/jelly-pr-feedback` (operator-invoked) ship as skills inside the existing `jelly-run` plugin. No 5th plugin; the PR boundary IS part of orchestration.
+- 2026-05-25 — **Chained PR-open flow**: `/jelly-run` invokes `/goal` without "open PR" in goal text; on `/goal` yield, auto-invokes `/jelly-pr` in the same session. `/jelly-pr` grills on shape, opens PR. Single operator invocation for the whole work-to-PR-open arc.
+- 2026-05-25 — **Draft-then-grill at PR-open**: substrate composes full PR body from PLAN.md + diff + archetype template with per-field confidence scores. High-confidence fields fill silently; low-confidence fields fire grill-me. Final preview gates PR-open. Grill only on uncertainty — matches the substrate's load-bearing principle.
+- 2026-05-25 — **Evaluator panel at PR-open**: panel runs autonomously after `/goal` yields, before draft body composition. Findings feed the preview as risk signals. Blocking findings surface options (address before opening / open with caveat in body / re-dispatch `/goal`); approved findings silently inform the preview.
+- 2026-05-25 — **PR feedback flow (auto-classify → panel → grill)**: `/jelly-pr-feedback` auto-classifies comments (fixed-intent / ambiguous / stale / discussion-only); evaluator panel proposes remedies for diff + comments; aggregated remedies surface to operator; operator grills only on low-confidence remedies + truly ambiguous comments. Bias toward agent autonomy — operator yield is the FINAL judgment, not the first.
+- 2026-05-25 — **Yield-to-operator on feedback**: `/jelly-pr-feedback` is interactive-only; substrate NEVER auto-resolves ambiguous comments. The yield point is the load-bearing principle of the PR-feedback substrate.
+- 2026-05-25 — **Structural gamification**: turn-based protocol (operator turn / substrate turn / agent turn) makes the feedback loop's structure explicit and visible. No scoreboards, no quantification, no critique-the-operator. The grill IS the game.
 
 ## Open questions
 
