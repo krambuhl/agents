@@ -7,3 +7,6 @@
 {"at":"2026-05-25T20:48:23.349Z","event":"phase-completed","detail":{"phase":1}}
 {"at":"2026-05-25T20:56:03.106Z","event":"checkin-created","detail":{"number":"01","branch":"ev-agent.jelly.guild"}}
 {"at":"2026-05-25T20:56:04.897Z","event":"phase-started","detail":{"phase":2,"name":"Phase 1.2 — jelly-guild substrate"}}
+{"at":"2026-05-25T20:57:12.760Z","event":"pr-opened","detail":{"pr":54,"url":"https://github.com/krambuhl/agents/pull/54"}}
+{"at":"2026-05-25T22:02:20.560Z","event":"checkin-created","detail":{"number":"01","branch":"ev-agent.jelly.guild-modes"}}
+{"at":"2026-05-25T22:02:33.190Z","event":"phase-started","detail":{"phase":2,"name":"Phase 1.2 — jelly-guild substrate"}}
