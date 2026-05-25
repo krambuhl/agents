@@ -62,12 +62,84 @@ fiddly. CLAUDE.md propagates naturally to the fleet.
 
 Trade-off: CLAUDE.md applies to ALL Claude Code work in the repo
 (unwanted scope creep). The middle ground is **project-scoped
-CLAUDE.md inheritance** — `projects/<slug>/CLAUDE.md` is loaded
-ONLY when cwd is inside that subdir, but is still inherited by all
-sub-agents in the session via the standard CLAUDE.md stacking.
+CLAUDE.md composition** — `projects/<slug>/CLAUDE.md` is composed
+into the parent session's context via explicit `@`-import from
+repo-root CLAUDE.md, then inherited by all sub-agents in the
+session via the standard CLAUDE.md stacking.
 
 This is the strongest single injection-point insight for the
-jelly rebuild.
+jelly rebuild. See § Phase 1.1 follow-up below for the empirical
+verification of which subdir-CLAUDE.md mechanism actually works.
+
+### Phase 1.1 follow-up: project-subdir CLAUDE.md probe (2026-05-25)
+
+The repo-root probe (2026-05-24) confirmed CLAUDE.md inheritance
+when the session cwd contains the CLAUDE.md directly. A second probe
+ran 2026-05-25 to close the remaining open question: under `/goal`,
+how does a `projects/<slug>/CLAUDE.md` (a *subdirectory* of the
+session cwd) reach the lead agent and dispatched subagents?
+
+The probe lives at `/tmp/jelly-claude-md-probe/` (scratch; safe to
+delete after these findings are committed). It tests three sentinels
+under one `/goal` invocation from the repo root:
+
+| Sentinel | Source | Mechanism tested | Result (lead) | Result (subagent) |
+|----------|--------|------------------|---------------|-------------------|
+| `SENTINEL-PARENT-CLAUDE-MD` | `./CLAUDE.md` at session cwd | Sanity — repo-root CLAUDE.md loads | ✓ visible | ✓ visible |
+| `SENTINEL-CHILD-VIA-IMPORT` | `projects/test-slug/CLAUDE.md`, referenced by `@projects/test-slug/CLAUDE.md` in parent | `@`-import composition | ✓ visible | ✓ visible |
+| `SENTINEL-CHILD-VIA-AUTODISCOVER` | `projects/test-slug-autodiscover/CLAUDE.md`, NOT referenced | Filesystem-walk auto-discovery into subdirs | ✗ NOT visible | ✗ NOT visible |
+
+**Verdicts**:
+
+- **`@`-import composition** under `/goal`: **CONFIRMED**. Both the
+  lead agent and the dispatched subagent (`probe-reporter`, verified
+  via `agent_type` in the PostToolUse hook payload) saw
+  `SENTINEL-CHILD-VIA-IMPORT` from the @-imported subdir file.
+- **Filesystem-walk auto-discovery into subdirs** under `/goal`:
+  **INVALIDATED**. Neither the lead agent nor the subagent saw
+  `SENTINEL-CHILD-VIA-AUTODISCOVER`. Claude Code's CLAUDE.md
+  discovery walks UP from cwd to root; it does not walk DOWN into
+  child directories.
+- **Subagent CLAUDE.md visibility**: the dispatched subagent sees
+  the **same** CLAUDE.md context the lead agent sees. CLAUDE.md is
+  session-wide in CC 2.1, not per-agent. Substrate posture
+  propagated via parent CLAUDE.md (with or without `@`-import)
+  reaches the entire fleet automatically.
+
+**Implications for Phase 1.2 substrate posture** (jelly-guild):
+
+1. The `jelly-guild/templates/CLAUDE.md` is **the project-scoped
+   substrate-posture file**, but it reaches the lead agent + fleet
+   ONLY when the repo-root CLAUDE.md explicitly references it via
+   `@projects/<slug>/CLAUDE.md`. There is no auto-discovery to lean
+   on. PLAN.md's original "subdir CLAUDE.md propagates by
+   filesystem-walk" assumption is invalidated; the @-import fallback
+   IS the canonical mechanism.
+2. `jelly plan` (the verb that scaffolds a new project, shipped in
+   Phase 1.3) MUST also update the repo-root `CLAUDE.md` to insert
+   the `@projects/<slug>/CLAUDE.md` line when a new project is
+   created. Project archival (or session-switching between projects)
+   should remove/swap the @-line so only the active project's
+   posture is loaded.
+3. **No fallback reshape needed** — `@`-import works under `/goal`
+   uniformly for lead and subagent. The risk flagged in PLAN.md §
+   Phase 1.1 Risks ("subdir injection invalidated → revise PLAN.md")
+   does not fire; Phase 1.2 proceeds as planned with the @-import
+   detail substituted for filesystem-walk.
+4. Substrate-posture propagation to dispatched specialists
+   (`subagent_type=jelly-guild-skeptic` etc.) is **automatic** once
+   the lead agent's CLAUDE.md context includes the posture. No
+   per-dispatch brief threading required. This matches and confirms
+   the "CLAUDE.md propagates naturally to the fleet" insight above.
+
+**Probe artifacts** (for reproducibility):
+
+- `/tmp/jelly-claude-md-probe/CLAUDE.md` — parent file with parent sentinel + @-import directive.
+- `/tmp/jelly-claude-md-probe/projects/test-slug/CLAUDE.md` — file pulled in via @-import.
+- `/tmp/jelly-claude-md-probe/projects/test-slug-autodiscover/CLAUDE.md` — file NOT referenced (autodiscover test).
+- `/tmp/jelly-claude-md-probe/projects/baseline/` — empty subdir (control; never emitted any sentinel, as expected).
+- `/tmp/jelly-claude-md-probe/.claude/agents/probe-reporter.md` — subagent that introspected its own context and emitted SUBAGENT-SEES-* / SUBAGENT-MISSING-* lines.
+- `/tmp/jelly-claude-md-probe/hook-log/post-tool-use.log` — captured the subagent's `agent_type` envelope + sentinel echo lines.
 
 ## Alternative substrates considered
 
@@ -123,10 +195,12 @@ that informed the plan target:
 
 ## Open questions (carry into PLAN.md)
 
-- **Per-project CLAUDE.md propagation under /goal**: documented to
-  inherit; not yet probe-verified for `/goal` specifically (the
-  probe used repo-root CLAUDE.md). Worth a Phase 1 verification
-  step.
+- ~~**Per-project CLAUDE.md propagation under /goal**~~: **CLOSED
+  2026-05-25** by the Phase 1.1 probe above. Mechanism: explicit
+  `@projects/<slug>/CLAUDE.md` in the repo-root CLAUDE.md (not
+  filesystem-walk auto-discovery). Lead + subagent both see the
+  imported file; substrate posture reaches the whole fleet via
+  one @-line. See § Phase 1.1 follow-up.
 - **Outcomes-with-custom-rubrics** (Anthropic Managed Agents API
   side): can rubrics reference jelly's specialist agents? Or are
   they purely auto-provisioned graders? The Outcomes loop's
