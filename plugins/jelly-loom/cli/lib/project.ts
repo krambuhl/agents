@@ -13,6 +13,16 @@ export const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 // as-is) or a topic to slugify.
 export const SLUG_RE = /^\d{4}-\d{2}-\d{2}-[a-z0-9][a-z0-9-]*[a-z0-9]$/;
 
+// Lowercase + collapse non-alphanumerics to single hyphens + trim
+// leading/trailing hyphens. The shared slug-from-text transform used by
+// createSlug (project slugs) and the adr verb (ADR filename slugs).
+export function kebabCase(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
 export function createSlug(topic: string, today: string): string {
   if (!DATE_RE.test(today)) {
     throw new JellyError(
@@ -20,10 +30,7 @@ export function createSlug(topic: string, today: string): string {
       `today '${today}' does not match YYYY-MM-DD`,
     );
   }
-  const slug = topic
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '');
+  const slug = kebabCase(topic);
   if (slug.length < 2) {
     throw new JellyError(
       'invalid-topic',

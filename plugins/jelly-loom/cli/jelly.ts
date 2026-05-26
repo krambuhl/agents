@@ -7,6 +7,7 @@ import type { CliContext, DispatchResult } from './lib/types.ts';
 import { RESEARCH_VERBS } from './verbs/research.ts';
 import { PLAN_VERBS } from './verbs/plan.ts';
 import { REVISE_VERBS } from './verbs/revise.ts';
+import { ADR_VERBS } from './verbs/adr.ts';
 
 // Shared CLI types live in lib/types.ts (so the entry + verbs import
 // them without a cycle). Re-exported here for callers/tests that
@@ -37,13 +38,16 @@ const VERBLESS_NAMESPACES: ReadonlySet<string> = new Set([
   'adr',
 ]);
 
-// Namespaces with wired-up verb handlers. research (U3) + plan (U4) +
-// revise (U5) are wired; adr (U6) remains unwired and returns the
-// `not-implemented` placeholder until its verb lands.
+// Every jelly namespace is now wired to a verb (research U3, plan U4,
+// revise U5, adr U6). The `not-implemented` branch in dispatch is
+// retained defensively — it fires only if a future namespace is added
+// to NAMESPACES before its verb is wired here (the jelly.test.ts
+// no-gaps tripwire guards against that landing silently).
 const VERBS_BY_NAMESPACE: Record<string, Record<string, VerbHandler>> = {
   research: RESEARCH_VERBS,
   plan: PLAN_VERBS,
   revise: REVISE_VERBS,
+  adr: ADR_VERBS,
 };
 
 // ---------- Pure helpers (exported for direct unit tests) ----------
