@@ -1,0 +1,66 @@
+{
+  "schema_version": 1,
+  "number": "01",
+  "created": "2026-05-26T09:30:00.000Z",
+  "phase": {
+    "number": 4,
+    "name": "Phase 2.1 — jelly-run substrate"
+  },
+  "branch": "ev-agent.jelly.run",
+  "unit": "U1 — jelly-run plugin scaffold (the gate)",
+  "contract": {
+    "goal": "Register the jelly-run plugin in the marketplace and stand up its OWN CLI + test foundation (a bin/jelly-run shim + a cli/jelly-run.ts dispatcher skeleton), so units 2-3 add verbs additively. Backward-compatible gate: nothing depends on jelly-run yet, so registration alone cannot break the family. No skills, no verbs, no /goal logic this unit.",
+    "acceptance_criteria": [
+      "plugins/jelly-run/.claude-plugin/plugin.json — {name, description}; NO version field (every-commit auto-versioning, per the family convention + the marketplace-manifest tripwire).",
+      ".claude-plugin/marketplace.json — a jelly-run entry with source ./plugins/jelly-run and dependencies [commons, jelly-guild, jelly-loom] (commons first).",
+      "plugins/commons/cli/marketplace-manifest.test.ts — 'jelly-run' added to EXPECTED_PLUGIN_NAMES so the registry-vs-reality tripwire covers it.",
+      "plugins/jelly-run/bin/jelly-run — a shim mirroring jelly-loom/bin/jelly (symlink-safe resolution, Node>=24 guard, jelly-run-shim-error messages, execs ../cli/jelly-run.ts).",
+      "plugins/jelly-run/cli/jelly-run.ts — dispatcher skeleton: usage/help, namespace/verb routing over an EMPTY verb map, JSON-on-stdout + structured-error-on-stderr; unknown verb -> structured error + exit 1. No parameter-property constructors; no JSDoc star-slash sequences.",
+      "plugins/jelly-run/cli/jelly-run.test.ts — vitest pure-helper tests (help->exit 0; unknown verb->structured error) PLUS a real-node child_process smoke (node entry + bin shim) that asserts the strip-only entry loads."
+    ],
+    "rules_applied": [
+      "PLAN.md § Phase 2.1 Exit (plugins/jelly-run/ with plugin.json + marketplace entry; deps [commons, jelly-guild, jelly-loom]).",
+      "Whiteboard decision (whiteboards/4-jelly-run-substrate.md, round 1): jelly-run ships its OWN testable TS core (its own CLI, NOT jelly-loom's); skills are thin glue. This unit stands up that CLI; units 2-3 extend it additively.",
+      "Three-phase pattern: this is the setup/gate — small, backward-compatible, carefully reviewed.",
+      "Node strip-only constraints: no parameter-property constructors, no JSDoc star-slash sequences (the cli runs via `node *.ts`); the real-node smoke is the guard vitest's full transform masks.",
+      "Family-shape: minimal plugin.json (no version), commons-first deps, mirror jelly-loom/cli/jelly.ts identifier vocabulary 1:1.",
+      "Panel: dropped the auto-derived evaluator-react-api (documented Node-.ts mis-derivation; no React/JSX). Ran contract-fit + test-unit + naming.",
+      "Pattern A for checkin lifecycle (write-once at unit close)."
+    ],
+    "disqualifiers": [
+      "Any skills/* files, /goal logic, or verbs that do real work (those are units 2-3).",
+      "A version field in plugin.json (breaks the every-commit auto-versioning convention).",
+      "Editing plugins other than jelly-run + the two registration surfaces (marketplace.json, marketplace-manifest.test.ts).",
+      "Parameter-property constructors or JSDoc star-slash sequences in the .ts (Node strip-only rejects them; vitest masks it).",
+      "Shipping a live .mcp.json or any registration jelly-loom already owns."
+    ],
+    "inputs": [
+      "projects/2026-05-25-jelly/PLAN.md § Phase 2.1 (exit criteria, deps).",
+      "projects/2026-05-25-jelly/whiteboards/4-jelly-run-substrate.md (the testable-core decision; family-shape consistency).",
+      "plugins/jelly-loom/{.claude-plugin/plugin.json, bin/jelly, cli/jelly.ts, cli/lib/errors.ts, cli/jelly.test.ts} — the shape to mirror.",
+      ".claude-plugin/marketplace.json + plugins/commons/cli/marketplace-manifest.test.ts (registration surfaces)."
+    ]
+  },
+  "execution": {
+    "actions": [
+      "Wrote plugins/jelly-run/.claude-plugin/plugin.json: {name: 'jelly-run', description} naming the orchestration role + the three skills + the own-CLI testable-core posture. No version field.",
+      "Added the jelly-run entry to .claude-plugin/marketplace.json (placed after jelly-loom to group the jelly family): source ./plugins/jelly-run, dependencies [commons, jelly-guild, jelly-loom] (commons first per the substrate-first ordering convention).",
+      "Added 'jelly-run' to EXPECTED_PLUGIN_NAMES in plugins/commons/cli/marketplace-manifest.test.ts so the registry tripwire's per-entry assertions (source resolves, plugin.json exists + name matches, deps resolve within marketplace) now cover jelly-run.",
+      "Wrote plugins/jelly-run/bin/jelly-run: a shim mirroring jelly-loom/bin/jelly — symlink-safe SOURCE resolution, Node>=24 guard with jelly-run-shim-error: messages, execs ../cli/jelly-run.ts. chmod +x.",
+      "Wrote plugins/jelly-run/cli/jelly-run.ts: the dispatcher skeleton mirroring jelly.ts. CliContext/DispatchResult inlined (no lib/types.ts yet — migrates to lib/types.ts in U2 when verbs need to import without a cycle). NAMESPACES={} and VERBS_BY_NAMESPACE={} (the gate ships zero verbs). parseInvocation/formatHelp/formatUnknownVerbError/dispatch are pure + exported. formatHelp renders an honest '(no verbs yet ...)' line. The verb-routing branch in dispatch is present but unreachable while the registries are empty — the additive target U2 populates. No parameter properties, // line comments only.",
+      "Wrote plugins/jelly-run/cli/jelly-run.test.ts: pure-helper tests (parseInvocation help/unknown, formatHelp names the CLI + flags the empty verb set, formatUnknownVerbError structured JSON, dispatch help/unknown), a NAMESPACES-empty tripwire (lockstep with the registry as verbs land), and 4 subprocess smoke tests via spawnSync (node entry --help/no-args/unknown-verb + the bin shim) — the real-node strip-only guard. Each ctx is mkdtempSync-isolated.",
+      "Verified: npx vitest run (full suite) -> 76 files, 1133 passed (was 1111; +22), 0 failures. Real-node strip-only smoke: node cli/jelly-run.ts --help -> exit 0 renders usage; unknown verb -> {\"error\":\"unknown-verb\",...} exit 1; bin/jelly-run --help -> exit 0. Confirms no parameter-property/JSDoc strip-only footguns. No lint/build scripts exist (vitest-only repo).",
+      "Panel (contract-fit + test-unit + naming) -> all three approved on first run. Observations (non-blocking): the discarded parseArgs in main is intentional U2 forward-compat; types inline now, migrate to lib/types.ts at U2; watch that the subprocess-smoke file doesn't become an integration suite as U2-3 add coverage."
+    ],
+    "files_touched": [
+      "plugins/jelly-run/.claude-plugin/plugin.json",
+      "plugins/jelly-run/bin/jelly-run",
+      "plugins/jelly-run/cli/jelly-run.ts",
+      "plugins/jelly-run/cli/jelly-run.test.ts",
+      ".claude-plugin/marketplace.json",
+      "plugins/commons/cli/marketplace-manifest.test.ts"
+    ],
+    "corrections": []
+  },
+  "notes_for_pr": []
+}

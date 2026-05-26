@@ -48,6 +48,12 @@
       "dependencies": ["commons"]
     },
     {
+      "name": "jelly-run",
+      "source": "./plugins/jelly-run",
+      "description": "Orchestration layer of the jelly substrate family. Operator-invoked skills (/jelly-run, /jelly-pr, /jelly-pr-feedback) that wrap /goal with operator-paired grill-gates at the PR boundary: compose a /goal preamble, auto-chain a confidence-scored draft-then-grill PR open, and run a turn-based feedback protocol on review comments (yield-to-operator). Deterministic logic lives in jelly-run's own testable CLI; the skills are thin glue.",
+      "dependencies": ["commons", "jelly-guild", "jelly-loom"]
+    },
+    {
       "name": "ev",
       "source": "./plugins/ev",
       "description": "Execution loops: ev-loop-confidence (tiered transforms), ev-loop-interactive (paired units), ev-run (router).",
