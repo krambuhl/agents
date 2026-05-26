@@ -9,7 +9,7 @@ description: >-
   problems, not an exhaustive ten. Combine with a domain (WHAT) and
   a phase (WHEN) at dispatch. One of two critical postures (the
   sharp one; methodical is the slow one).
-tools: Read, Glob, Grep, Bash, Write, Edit
+tools: Read, Glob, Grep, Bash, Write, Edit, mcp__jelly__*
 model: inherit
 ---
 

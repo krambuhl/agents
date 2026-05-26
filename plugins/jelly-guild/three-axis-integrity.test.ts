@@ -112,12 +112,13 @@ describe('jelly-guild: personality frontmatter', () => {
     }
   });
 
-  test.each(PERSONALITIES)('%s defers mcp__jelly__* to Phase 1.3', (name) => {
-    // The mcp__jelly__* server ships in jelly-loom (Phase 1.3).
-    // Declaring it before the server exists risks breaking
-    // registration; it is added when the server makes it real.
+  test.each(PERSONALITIES)('%s declares the mcp__jelly__* substrate tools', (name) => {
+    // The mcp__jelly__* server shipped in jelly-loom (Phase 1.3 U7),
+    // so the personalities now declare the wildcard (deferred from
+    // Phase 1.2 U4 until the server made the tools real). The wildcard
+    // grants every mcp__jelly__<verb> tool the server exposes.
     const { fields } = readAgent(name);
-    expect(fields.tools).not.toContain('mcp__jelly__');
+    expect(fields.tools).toContain('mcp__jelly__*');
   });
 });
 

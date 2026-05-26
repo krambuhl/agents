@@ -9,7 +9,7 @@ description: >-
   is thorough and slow. Combine with a domain (WHAT) and a phase
   (WHEN) at dispatch. One of two critical postures (the slow one;
   skeptic is the sharp one).
-tools: Read, Glob, Grep, Bash, Write, Edit
+tools: Read, Glob, Grep, Bash, Write, Edit, mcp__jelly__*
 model: inherit
 ---
 
