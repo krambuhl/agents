@@ -94,7 +94,7 @@ test('dispatch: unknown → stderr + exit 1', () => {
 // until their verbs land (U4 plan, U5 revise, U6 adr). As each verb is
 // wired, its namespace moves out of this list and into a routes-to-verb
 // test like the `research` one below.
-const UNWIRED_NAMESPACES = ['plan', 'revise', 'adr'];
+const UNWIRED_NAMESPACES = ['revise', 'adr'];
 
 test.each(UNWIRED_NAMESPACES)(
   'dispatch: namespace %s is recognized but not-implemented in the shell',
@@ -109,23 +109,28 @@ test.each(UNWIRED_NAMESPACES)(
   },
 );
 
-test('dispatch: research routes to the verb (missing-args, not not-implemented)', () => {
-  const ctx = makeCtx();
-  // `research` is wired (U3). Dispatching it with no topic should reach
-  // researchVerb (which returns a structured missing-args), NOT the
-  // shell's not-implemented placeholder. Proves the verbless-namespace
-  // routing wires `research` to RESEARCH_VERBS.research.
-  const result = dispatch({ kind: 'verb', namespace: 'research', rest: [] }, ctx);
-  expect(result.exitCode).toBe(1);
-  const parsed = JSON.parse(result.stderr as string);
-  expect(parsed.error).toBe('missing-args');
-  rmSync(ctx.projectsRoot, { recursive: true, force: true });
-});
+// Namespaces wired to a real verb handler (research U3, plan U4). Each
+// routes to its verb (returning the verb's own missing-args), NOT the
+// shell's not-implemented placeholder.
+const WIRED_NAMESPACES = ['research', 'plan'];
 
-test('UNWIRED_NAMESPACES + wired research covers every namespace (no gaps)', () => {
-  // Tripwire: if a namespace is added/removed, this forces the test
-  // bookkeeping above to be updated rather than silently under-covering.
-  expect([...UNWIRED_NAMESPACES, 'research'].sort()).toEqual(
+test.each(WIRED_NAMESPACES)(
+  'dispatch: %s routes to the verb (missing-args, not not-implemented)',
+  (namespace) => {
+    const ctx = makeCtx();
+    const result = dispatch({ kind: 'verb', namespace, rest: [] }, ctx);
+    expect(result.exitCode).toBe(1);
+    const parsed = JSON.parse(result.stderr as string);
+    expect(parsed.error).toBe('missing-args');
+    rmSync(ctx.projectsRoot, { recursive: true, force: true });
+  },
+);
+
+test('UNWIRED + WIRED namespaces cover every namespace exactly (no gaps)', () => {
+  // Tripwire: if a namespace is added, or a verb is wired without moving
+  // it from UNWIRED to WIRED here, this fails — forcing the bookkeeping
+  // to stay in sync with the registry rather than silently under-covering.
+  expect([...UNWIRED_NAMESPACES, ...WIRED_NAMESPACES].sort()).toEqual(
     Object.keys(NAMESPACES).sort(),
   );
 });
@@ -154,14 +159,16 @@ test('node entry: unknown verb prints structured error and exits 1', () => {
   expect(parsed.error).toBe('unknown-verb');
 });
 
-test('node entry: recognized namespace surfaces not-implemented and exits 1', () => {
-  const result = spawnSync('node', [JELLY_ENTRY, 'plan', 'some-topic'], {
+test('node entry: an unwired namespace surfaces not-implemented and exits 1', () => {
+  // `revise` is still unwired (U5). A wired namespace like `plan` would
+  // route to its verb instead, so use an unwired one here.
+  const result = spawnSync('node', [JELLY_ENTRY, 'revise', 'some-slug'], {
     encoding: 'utf8',
   });
   expect(result.status).toBe(1);
   const parsed = JSON.parse(result.stderr.trim());
   expect(parsed.error).toBe('not-implemented');
-  expect(parsed.namespace).toBe('plan');
+  expect(parsed.namespace).toBe('revise');
 });
 
 test('bin/jelly shim invokes the entry identically', () => {
