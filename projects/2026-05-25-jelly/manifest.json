@@ -24,7 +24,7 @@
       "number": 3,
       "name": "Phase 1.3 — jelly-loom substrate",
       "status": "in-progress",
-      "branch": "ev-agent.jelly.loom-scaffold"
+      "branch": "ev-agent.jelly.loom-manifest"
     },
     {
       "number": 4,
