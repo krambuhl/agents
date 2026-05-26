@@ -1,3 +1,5 @@
+import { existsSync, readdirSync, statSync } from 'node:fs';
+import { isAbsolute, join, resolve } from 'node:path';
 import { JellyError } from './errors.ts';
 
 // Slug helpers shared by the jelly-loom verbs. A project slug is
@@ -29,4 +31,65 @@ export function createSlug(topic: string, today: string): string {
     );
   }
   return `${today}-${slug}`;
+}
+
+// A date-less project reference: a kebab name with no date prefix
+// (e.g. "jelly"). Resolved by suffix-matching against project dirs.
+const DATELESS_RE = /^[a-z0-9][a-z0-9-]*[a-z0-9]$/;
+
+function listProjectSlugs(projectsRoot: string): string[] {
+  if (!existsSync(projectsRoot)) return [];
+  return readdirSync(projectsRoot).filter((name: string) => {
+    try {
+      return statSync(join(projectsRoot, name)).isDirectory();
+    } catch {
+      return false;
+    }
+  });
+}
+
+// Resolves a <slug-or-dateless-or-path> reference to an existing
+// project directory. Leaner than loom's resolveProjectByPlan: jelly
+// has no archive concept yet, so only the active projectsRoot is
+// scanned. Mirrors loom's resolution order: path → full slug →
+// date-less suffix match.
+export function resolveProject(slugOrPath: string, projectsRoot: string): string {
+  // Absolute or relative path.
+  if (slugOrPath.startsWith('/') || slugOrPath.startsWith('.')) {
+    const abs = isAbsolute(slugOrPath) ? slugOrPath : resolve(slugOrPath);
+    if (!existsSync(abs)) {
+      throw new JellyError('project-not-found', `no project at path ${abs}`);
+    }
+    return abs;
+  }
+
+  // Full slug → direct existence check.
+  if (SLUG_RE.test(slugOrPath)) {
+    const dir = join(projectsRoot, slugOrPath);
+    if (!existsSync(dir)) {
+      throw new JellyError('project-not-found', `no project with slug ${slugOrPath}`);
+    }
+    return dir;
+  }
+
+  if (!DATELESS_RE.test(slugOrPath)) {
+    throw new JellyError(
+      'project-not-found',
+      `'${slugOrPath}' is not a slug, date-less name, or path`,
+    );
+  }
+
+  // Date-less suffix match across active projects.
+  const matches = listProjectSlugs(projectsRoot).filter((s) => s.endsWith(`-${slugOrPath}`));
+  if (matches.length === 1) {
+    return join(projectsRoot, matches[0] as string);
+  }
+  if (matches.length > 1) {
+    throw new JellyError(
+      'slug-ambiguous',
+      `'${slugOrPath}' matches multiple projects`,
+      matches,
+    );
+  }
+  throw new JellyError('project-not-found', `no project matching '${slugOrPath}'`);
 }

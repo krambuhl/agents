@@ -94,7 +94,7 @@ test('dispatch: unknown → stderr + exit 1', () => {
 // until their verbs land (U4 plan, U5 revise, U6 adr). As each verb is
 // wired, its namespace moves out of this list and into a routes-to-verb
 // test like the `research` one below.
-const UNWIRED_NAMESPACES = ['revise', 'adr'];
+const UNWIRED_NAMESPACES = ['adr'];
 
 test.each(UNWIRED_NAMESPACES)(
   'dispatch: namespace %s is recognized but not-implemented in the shell',
@@ -112,7 +112,7 @@ test.each(UNWIRED_NAMESPACES)(
 // Namespaces wired to a real verb handler (research U3, plan U4). Each
 // routes to its verb (returning the verb's own missing-args), NOT the
 // shell's not-implemented placeholder.
-const WIRED_NAMESPACES = ['research', 'plan'];
+const WIRED_NAMESPACES = ['research', 'plan', 'revise'];
 
 test.each(WIRED_NAMESPACES)(
   'dispatch: %s routes to the verb (missing-args, not not-implemented)',
@@ -160,15 +160,15 @@ test('node entry: unknown verb prints structured error and exits 1', () => {
 });
 
 test('node entry: an unwired namespace surfaces not-implemented and exits 1', () => {
-  // `revise` is still unwired (U5). A wired namespace like `plan` would
-  // route to its verb instead, so use an unwired one here.
-  const result = spawnSync('node', [JELLY_ENTRY, 'revise', 'some-slug'], {
+  // `adr` is the last unwired namespace (U6). A wired namespace would
+  // route to its verb instead, so use the unwired one here.
+  const result = spawnSync('node', [JELLY_ENTRY, 'adr', 'some-title'], {
     encoding: 'utf8',
   });
   expect(result.status).toBe(1);
   const parsed = JSON.parse(result.stderr.trim());
   expect(parsed.error).toBe('not-implemented');
-  expect(parsed.namespace).toBe('revise');
+  expect(parsed.namespace).toBe('adr');
 });
 
 test('bin/jelly shim invokes the entry identically', () => {
