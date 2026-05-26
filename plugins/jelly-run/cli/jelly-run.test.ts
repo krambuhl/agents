@@ -36,32 +36,54 @@ test('parseInvocation: -h → help', () => {
   expect(parseInvocation(['-h'])).toEqual({ kind: 'help' });
 });
 
-test('parseInvocation: any token is unknown in the gate (no namespaces wired)', () => {
-  expect(parseInvocation(['compose-preamble'])).toEqual({
-    kind: 'unknown',
-    verb: 'compose-preamble',
+test('parseInvocation: a registered command routes to a verb', () => {
+  expect(parseInvocation(['compose-preamble', '--plan=x'])).toEqual({
+    kind: 'verb',
+    namespace: 'compose-preamble',
+    rest: ['--plan=x'],
   });
 });
 
-test('NAMESPACES is empty in the U1 gate', () => {
-  // Tripwire: the gate ships zero verbs. When U2 wires the first verb,
-  // this assertion is updated alongside it — keeping the registry and
-  // the test in lockstep rather than letting a verb land silently.
-  expect(Object.keys(NAMESPACES)).toEqual([]);
+test('parseInvocation: an unregistered token is unknown', () => {
+  expect(parseInvocation(['frobnicate'])).toEqual({ kind: 'unknown', verb: 'frobnicate' });
 });
 
-test('formatHelp names the CLI and flags the empty verb set', () => {
+test('NAMESPACES registers exactly the U2 verb set', () => {
+  // Tripwire: U2 wires compose-preamble / preflight / compose-pr-body.
+  // /jelly-pr-feedback's verbs land in U4 — update this alongside them so
+  // the registry and the test stay in lockstep.
+  expect(Object.keys(NAMESPACES).sort()).toEqual([
+    'compose-pr-body',
+    'compose-preamble',
+    'preflight',
+  ]);
+});
+
+test('formatHelp names the CLI and lists every registered verb', () => {
   const help = formatHelp();
   expect(help).toContain('jelly-run');
   expect(help).toContain('Usage:');
-  expect(help).toContain('no verbs yet');
+  for (const name of Object.keys(NAMESPACES)) {
+    expect(help).toContain(name);
+  }
 });
 
-test('formatUnknownVerbError emits structured JSON with (empty) candidates', () => {
-  const stderr = formatUnknownVerbError('compose-preamble');
+test('formatUnknownVerbError emits structured JSON with the verbs as candidates', () => {
+  const stderr = formatUnknownVerbError('frobnicate');
   const parsed = JSON.parse(stderr);
   expect(parsed.error).toBe('unknown-verb');
   expect(parsed.candidates).toEqual(Object.keys(NAMESPACES));
+});
+
+test('dispatch routes a verbless command to its handler (compose-preamble -> missing-args)', () => {
+  // Routing tripwire: the command reaches its verb (which returns its own
+  // missing-args), NOT the shell's not-implemented placeholder.
+  const ctx = makeCtx();
+  const result = dispatch({ kind: 'verb', namespace: 'compose-preamble', rest: [] }, ctx);
+  expect(result.exitCode).toBe(1);
+  const parsed = JSON.parse(result.stderr as string);
+  expect(parsed.error).toBe('missing-args');
+  rmSync(ctx.projectsRoot, { recursive: true, force: true });
 });
 
 test('dispatch: help → stdout + exit 0', () => {
@@ -102,7 +124,7 @@ test('node entry: no args prints help and exits 0', () => {
 });
 
 test('node entry: unknown verb prints structured error and exits 1', () => {
-  const result = spawnSync('node', [ENTRY, 'compose-preamble'], { encoding: 'utf8' });
+  const result = spawnSync('node', [ENTRY, 'frobnicate'], { encoding: 'utf8' });
   expect(result.status).toBe(1);
   const parsed = JSON.parse(result.stderr.trim());
   expect(parsed.error).toBe('unknown-verb');

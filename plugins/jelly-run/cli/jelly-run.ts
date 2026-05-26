@@ -3,43 +3,52 @@ import { parseArgs } from 'node:util';
 import { fileURLToPath } from 'node:url';
 import { realpathSync } from 'node:fs';
 import { join } from 'node:path';
+import type { CliContext, DispatchResult } from './lib/types.ts';
+import { composePreambleVerb } from './verbs/compose-preamble.ts';
+import { preflightVerb } from './verbs/preflight.ts';
+import { composePrBodyVerb } from './verbs/compose-pr-body.ts';
 
-// ---------- Shared CLI types ----------
-//
-// Inlined in the entry for the U1 gate (the plugin has no verbs yet, so
-// there is nothing to import them from without a cycle). When the first
-// verbs land (U2), these move to cli/lib/types.ts so verb modules can
-// import them — mirroring jelly-loom's cli/lib/types.ts split.
-
-export interface CliContext {
-  // Absolute path to the projects root (jelly-loom-managed projects).
-  projectsRoot: string;
-  // Absolute path to the repo root the run targets (git + PLAN.md live here).
-  repoRoot: string;
-}
-
-export interface DispatchResult {
-  stdout?: string;
-  stderr?: string;
-  exitCode: number;
-}
+// Shared CLI types live in lib/types.ts (so the entry + verbs import them
+// without a cycle: jelly-run.ts imports the verbs for its registry; the
+// verbs import these types). Re-exported here for callers/tests that
+// import them from the entrypoint. The U1 gate inlined them; U2 migrated
+// them to lib/ now that real verbs need to import them.
+export type { CliContext, DispatchResult } from './lib/types.ts';
 
 type VerbHandler = (rest: string[], ctx: CliContext) => DispatchResult;
 
 // ---------- Namespace registry ----------
 //
-// EMPTY in the U1 gate. jelly-run ships its own testable CLI (the
-// whiteboard decision: deterministic logic — preamble composition,
-// comment classification, PR-field confidence scoring — lives here as
-// pure functions the thin skills shell out to). The verbs land in
-// U2 (/jelly-run + /jelly-pr) and U3 (/jelly-pr-feedback). Until then
-// the dispatcher only resolves --help and unknown-verb, and the
-// jelly-run.test.ts no-gaps tripwire guards against a namespace being
-// added here before its verb is wired into VERBS_BY_NAMESPACE.
+// jelly-run's commands are flat (verbless): `jelly-run compose-preamble`,
+// `jelly-run preflight`, `jelly-run compose-pr-body`. Each is the only
+// handler in its namespace, so the namespace IS the command (mirrors
+// jelly-loom's verbless namespaces). These verbs expose jelly-run's
+// testable core (lib/goal.ts, lib/pr.ts, lib/plan.ts) — the deterministic
+// derivations the thin /jelly-run + /jelly-pr skills shell out to.
+// /jelly-pr-feedback's verbs (comment classification) land in U4.
 
-export const NAMESPACES: Record<string, string> = {};
+export const NAMESPACES: Record<string, string> = {
+  'compose-preamble':
+    'Compose the /goal preamble for a phase from PLAN.md + git state (carries no "open PR" instruction)',
+  preflight:
+    'Gate on the running Claude Code version being new enough for /goal (refuses, does not warn)',
+  'compose-pr-body':
+    'Draft a PR body from PLAN.md + the diff, with per-field confidence scores (JSON)',
+};
 
-const VERBS_BY_NAMESPACE: Record<string, Record<string, VerbHandler>> = {};
+// All jelly-run commands are verbless: the whole rest goes to the
+// namespace's single handler, not a sub-verb.
+const VERBLESS_NAMESPACES: ReadonlySet<string> = new Set([
+  'compose-preamble',
+  'preflight',
+  'compose-pr-body',
+]);
+
+const VERBS_BY_NAMESPACE: Record<string, Record<string, VerbHandler>> = {
+  'compose-preamble': { 'compose-preamble': composePreambleVerb },
+  preflight: { preflight: preflightVerb },
+  'compose-pr-body': { 'compose-pr-body': composePrBodyVerb },
+};
 
 // ---------- Pure helpers (exported for direct unit tests) ----------
 
@@ -103,9 +112,10 @@ export function dispatch(invocation: Invocation, ctx: CliContext): DispatchResul
     return { stderr: formatUnknownVerbError(invocation.verb), exitCode: 1 };
   }
   // invocation.kind === 'verb': namespace is in NAMESPACES (parseInvocation
-  // gates this), but it may not be wired to a handler yet. Unreachable in
-  // the U1 gate (NAMESPACES is empty); the structure is here so U2 only
-  // populates the two registries above. ctx is threaded to handlers.
+  // gates this). The not-implemented branch is retained defensively — it
+  // fires only if a future namespace is added to NAMESPACES before its
+  // verb is wired into VERBS_BY_NAMESPACE (the jelly-run.test.ts no-gaps
+  // tripwire guards against that landing silently).
   const verbs = VERBS_BY_NAMESPACE[invocation.namespace];
   if (verbs === undefined) {
     const payload = {
@@ -114,6 +124,14 @@ export function dispatch(invocation: Invocation, ctx: CliContext): DispatchResul
       namespace: invocation.namespace,
     };
     return { stderr: JSON.stringify(payload), exitCode: 1 };
+  }
+  // Verbless namespace: the namespace IS the only handler. Route the
+  // entire rest to it (all jelly-run commands are verbless).
+  if (VERBLESS_NAMESPACES.has(invocation.namespace)) {
+    const handler = verbs[invocation.namespace];
+    if (handler !== undefined) {
+      return handler(invocation.rest, ctx);
+    }
   }
   const verbName = invocation.rest[0];
   if (verbName === undefined) {

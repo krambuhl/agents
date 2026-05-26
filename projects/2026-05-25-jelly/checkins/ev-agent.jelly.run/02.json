@@ -1,0 +1,87 @@
+{
+  "schema_version": 1,
+  "number": "02",
+  "created": "2026-05-26T09:00:00.000Z",
+  "phase": {
+    "number": 4,
+    "name": "Phase 2.1 — jelly-run substrate"
+  },
+  "branch": "ev-agent.jelly.run",
+  "unit": "U2 — /jelly-run + /jelly-pr (the chained pair)",
+  "contract": {
+    "goal": "Ship the operator entry point (/jelly-run) and its auto-chained PR composer (/jelly-pr), backed by jelly-run's OWN testable CLI core. /jelly-run composes a /goal preamble and invokes /goal (no 'open PR'); on yield it auto-chains /jelly-pr, which runs the evaluator panel on the diff, composes a confidence-scored draft PR body, grills only low-confidence fields, and gates PR-open on a preview showing ALL fields.",
+    "acceptance_criteria": [
+      "cli/lib/types.ts — CliContext/DispatchResult migrated out of jelly-run.ts (re-exported for back-compat) + shared GitState/PhaseContext/ScoredField/PrBodyDraft.",
+      "cli/lib/goal.ts — centralizes ALL /goal coupling: composePreamble (pure; carries no affirmative 'open a PR' instruction), MIN_GOAL_CLAUDE_VERSION constant, assertGoalVersion (REFUSES below floor / unparseable, does not warn). GitState supplied by the verb via the read-focused GitRunner (cli/lib/git.ts).",
+      "cli/lib/pr.ts — scoreField (pure, signal-counting), classifyArchetype (itself a scored field), composePrBody, deriveDiffSignals, named GRILL_THRESHOLD + discrete CONFIDENCE bands with false-negative bias (borderline -> medium -> grilled).",
+      "cli/lib/plan.ts — parsePhase (pure: extract a phase's goal + exit criteria from PLAN.md by heading match).",
+      "cli/jelly-run.ts — wired NAMESPACES/VERBLESS_NAMESPACES/VERBS_BY_NAMESPACE for the verbless verbs compose-preamble / preflight / compose-pr-body; types migrated to lib/types.ts.",
+      "Tests: goal.test.ts (no-affirmative-PR invariant + version-gate refuse), pr.test.ts (the asymmetry — designed-ambiguous fields land below the imported threshold), plan.test.ts (parsePhase), jelly-run.test.ts (registry + routing tripwires, real-node smokes). Full suite green.",
+      "skills/jelly-run/SKILL.md — THIN glue: preflight gate -> compose-preamble -> invoke /goal (no PR) -> on yield auto-chain /jelly-pr.",
+      "skills/jelly-pr/SKILL.md — THIN glue: idempotency precheck (one PR per branch) -> jelly-guild panel on the diff (verdicts via side-channel files) -> compose-pr-body -> preview ALL fields -> grill ONLY low-confidence -> operator-gated open."
+    ],
+    "rules_applied": [
+      "Whiteboard decision: jelly-run ships its own testable TS core; the skills are thin glue that shell out to the CLI verbs. All deterministic logic (preamble, scoring, classification, PLAN parsing, version gate) is pure + unit-tested; no logic in skill prose.",
+      "Confidence (whiteboard): make the skip VISIBLE (preview ALL fields + derivation receipts), not the classifier smarter; bias toward false negatives (borderline -> grill). Named GRILL_THRESHOLD + discrete bands.",
+      "/goal coupling (whiteboard): one adapter module (lib/goal.ts) owns the preamble shape + version gate; the gate REFUSES on too-old/unrecognized rather than warning.",
+      "Operator fork F1: sequential skill composition — invoking /goal is a blocking Skill call; its return to the skill body IS the yield, then auto-chain /jelly-pr. Flagged in-skill as an assumption to verify in the M3 dogfood (with the Stop-hook-marker fallback named).",
+      "Operator fork F2: jelly-guild personalities dispatched in reviewer phase against the diff; verdicts written to side-channel files (the lossy-subagent-boundary-safe pattern, per RESEARCH § Phase 1.1), aggregated by /jelly-pr.",
+      "Operator fork F3: archetype classified from diff signals (CLAUDE.md archetypes); classification is itself a scored field (grills when uncertain).",
+      "Node strip-only constraints honored: JellyRunError uses explicit field + assignment (no parameter property); // line comments only; all 10 modules verified to load under real `node *.ts`.",
+      "Family-shape: mirrors jelly-loom (JellyError->JellyRunError, defaultGitRunner, CliContext.gitRunner injection, verbless-namespace dispatch). GitRunner is read-focused here (currentBranch/changedFiles/diffStat) vs jelly-loom's write-focused — documented in-file.",
+      "Panel: contract-fit + test-unit + naming (dropped the auto-derived react-api; pure-Node .ts, no JSX). All three approved on first run.",
+      "Pattern A for checkin lifecycle (write-once at unit close). Phase already in-progress from U1, so no redundant phase-update (would double-emit phase-started)."
+    ],
+    "disqualifiers": [
+      "Logic in skill prose instead of CLI verbs (the testable-core decision).",
+      "An affirmative 'open a PR' instruction in the /goal preamble (jelly owns the PR boundary).",
+      "A confidence preview that shows only flagged fields (must show ALL — visible skip).",
+      "A version gate that warns-and-proceeds instead of refusing.",
+      "Confidence logic without a named threshold + tie-break direction.",
+      "jelly-run owning a durable state file (idempotency reads GitHub PR state, not a local ledger).",
+      "Shipping /jelly-pr-feedback (that is U4; a forward-reference in prose is fine)."
+    ],
+    "inputs": [
+      "projects/2026-05-25-jelly/PLAN.md § Phase 2.1; projects/2026-05-25-jelly/whiteboards/4-jelly-run-substrate.md.",
+      "projects/2026-05-25-jelly/RESEARCH.md § Phase 1.1 (validated injection points; lossy-subagent-boundary; /goal version floor 2.1.139).",
+      "plugins/jelly-loom/cli/lib/{types,git,errors}.ts + cli/jelly.ts (the shapes mirrored).",
+      "plugins/jelly-guild/templates/CLAUDE.md + modes/phases/reviewer.md (the personality x domain x reviewer-phase panel model for F2)."
+    ]
+  },
+  "execution": {
+    "actions": [
+      "CLI-core foundation: cli/lib/types.ts (CliContext/DispatchResult migrated from the U1 inline + GitState/PhaseContext/ScoredField/PrBodyDraft; dropped PhaseContext.number — the name carries the PLAN heading label), cli/lib/errors.ts (JellyRunError, explicit-field constructor), cli/lib/git.ts (read-focused GitRunner: currentBranch/changedFiles/diffStat via three-dot merge-base diff, injectable).",
+      "cli/lib/goal.ts: MIN_GOAL_CLAUDE_VERSION='2.1.139'; assertGoalVersion (parse + gte compare; refuses too-old/unrecognized with structured stderr + exit 1); composePreamble (phase goal + exit criteria + git state; prohibition phrased 'Do not create or submit a pull request' so the affirmative 'open a pull request' never appears even negated). 11 tests.",
+      "cli/lib/pr.ts: CONFIDENCE bands (high .9 / medium .6 / low .3), GRILL_THRESHOLD .7, isGrilled predicate; classifyArchetype (deps-only->dependency high; >=10 files->migration medium-grill; else architectural medium-grill — signal counting cannot tell bug-fix/refactor, so it grills); scoreField (Title/Checklist/clean-Risk/tests-Verification auto-fill high; Motivation/Summary/Problem medium even with a PLAN pointer; Solution/Fix/etc low; unknown field low); deriveDiffSignals (hasNewDeps/hasTests/planMentionsChangedFiles); composePrBody (archetype sections + universal Rollout + Checklist; takes only fields — dropped the unused archetype param). 18 tests.",
+      "cli/lib/plan.ts: parsePhase (heading-substring match, section bounded by next heading, **Goal**: text + **Exit**: bullets until the next ** field). 6 tests.",
+      "cli/verbs/{compose-preamble,preflight,compose-pr-body}.ts: thin IO wrappers — read PLAN.md, gather git via the runner, call the pure functions, emit text/JSON; structured-error stderr on JellyRunError. preflight reads `claude --version` when --version omitted.",
+      "Wired cli/jelly-run.ts: imports types from lib/types.ts (re-exported), registers the 3 verbless verbs, added the verbless dispatch branch (mirrors jelly.ts); formatHelp now lists the verbs. Updated jelly-run.test.ts: registry tripwire (exactly the 3 U2 verbs), routing tripwire (verbless command -> handler missing-args), fixed the unknown-verb smoke to use a genuinely-unknown token.",
+      "skills/jelly-run/SKILL.md + skills/jelly-pr/SKILL.md: thin-glue bodies (frontmatter + process sections) shelling out to the jelly-run verbs, /goal (Skill), and the jelly-guild panel (Agent, side-channel verdicts). jelly-pr: idempotency precheck, preview-ALL + grill-LOW-only, operator-gated gh pr create.",
+      "Caught + fixed two self-inflicted test bugs during execution: (1) goal.test.ts asserted absence of 'submit a pull request' which contradicted the correct prohibition wording — re-scoped the invariant to affirmative 'open a PR' phrasings + presence of the prohibition; (2) jelly-run.test.ts unknown-verb smoke used 'compose-preamble' which is now a real verb -> switched to 'frobnicate'.",
+      "Verified: npx vitest run -> 79 files, 1174 passed (was 1133; +41), 0 failures. Real-node strip-only load of all 10 modules: all load. Live smoke: preflight gates (accepts 2.1.139, refuses 2.0.0); compose-preamble against the real PLAN emits a no-affirmative-PR preamble; compose-pr-body emits the false-negative-biased confidence bands (archetype migration@0.6 grilled, Title@0.9 auto, prose fields grilled). Panel (contract-fit + test-unit + naming) all approved first run."
+    ],
+    "files_touched": [
+      "plugins/jelly-run/cli/lib/types.ts",
+      "plugins/jelly-run/cli/lib/errors.ts",
+      "plugins/jelly-run/cli/lib/git.ts",
+      "plugins/jelly-run/cli/lib/goal.ts",
+      "plugins/jelly-run/cli/lib/goal.test.ts",
+      "plugins/jelly-run/cli/lib/pr.ts",
+      "plugins/jelly-run/cli/lib/pr.test.ts",
+      "plugins/jelly-run/cli/lib/plan.ts",
+      "plugins/jelly-run/cli/lib/plan.test.ts",
+      "plugins/jelly-run/cli/verbs/compose-preamble.ts",
+      "plugins/jelly-run/cli/verbs/preflight.ts",
+      "plugins/jelly-run/cli/verbs/compose-pr-body.ts",
+      "plugins/jelly-run/cli/jelly-run.ts",
+      "plugins/jelly-run/cli/jelly-run.test.ts",
+      "plugins/jelly-run/skills/jelly-run/SKILL.md",
+      "plugins/jelly-run/skills/jelly-pr/SKILL.md"
+    ],
+    "corrections": []
+  },
+  "notes_for_pr": [
+    "F1 (sequential skill composition: /goal returns control = yield) is an assumption flagged in skills/jelly-run/SKILL.md to verify in the M3 dogfood (Phase 3.1); the Stop-hook-marker fallback is named if /goal yields to the operator instead of returning to the caller.",
+    "The two skills are markdown — exercised end-to-end only in the M3 dogfood; the testable core is fully unit-tested. No automated test spawns /goal (deliberately — flaky)."
+  ]
+}
