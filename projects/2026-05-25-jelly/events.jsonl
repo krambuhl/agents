@@ -49,3 +49,4 @@
 {"at":"2026-05-26T16:16:52.570Z","event":"checkin-created","detail":{"number":"03","branch":"ev-agent.jelly.run"}}
 {"at":"2026-05-26T16:16:52.648Z","event":"phase-completed","detail":{"phase":4}}
 {"at":"2026-05-26T16:19:58.750Z","event":"pr-opened","detail":{"pr":66,"url":"https://github.com/krambuhl/agents/pull/66"}}
+{"at":"2026-05-26T16:33:54.583Z","event":"pr-merged","detail":{"pr":66,"phase":4}}

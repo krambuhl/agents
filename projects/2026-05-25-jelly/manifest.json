@@ -40,7 +40,8 @@
     {
       "number": 5,
       "name": "Phase 2.2 — jelly meta-bundle",
-      "status": "not-started"
+      "status": "not-started",
+      "branch": "ev-agent.jelly.bundle"
     },
     {
       "number": 6,
