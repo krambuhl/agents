@@ -90,11 +90,13 @@ test('dispatch: unknown → stderr + exit 1', () => {
   rmSync(ctx.projectsRoot, { recursive: true, force: true });
 });
 
-// Every recognized namespace is unwired in the U1 shell — each returns
-// the `not-implemented` placeholder until its verb lands (U3 research,
-// U3/U4 plan, U5 revise, U6 adr). When a verb is wired, its namespace's
-// not-implemented test here flips to a missing-args/missing-verb test.
-test.each(Object.keys(NAMESPACES))(
+// The still-unwired namespaces return the `not-implemented` placeholder
+// until their verbs land (U4 plan, U5 revise, U6 adr). As each verb is
+// wired, its namespace moves out of this list and into a routes-to-verb
+// test like the `research` one below.
+const UNWIRED_NAMESPACES = ['plan', 'revise', 'adr'];
+
+test.each(UNWIRED_NAMESPACES)(
   'dispatch: namespace %s is recognized but not-implemented in the shell',
   (namespace) => {
     const ctx = makeCtx();
@@ -106,6 +108,27 @@ test.each(Object.keys(NAMESPACES))(
     rmSync(ctx.projectsRoot, { recursive: true, force: true });
   },
 );
+
+test('dispatch: research routes to the verb (missing-args, not not-implemented)', () => {
+  const ctx = makeCtx();
+  // `research` is wired (U3). Dispatching it with no topic should reach
+  // researchVerb (which returns a structured missing-args), NOT the
+  // shell's not-implemented placeholder. Proves the verbless-namespace
+  // routing wires `research` to RESEARCH_VERBS.research.
+  const result = dispatch({ kind: 'verb', namespace: 'research', rest: [] }, ctx);
+  expect(result.exitCode).toBe(1);
+  const parsed = JSON.parse(result.stderr as string);
+  expect(parsed.error).toBe('missing-args');
+  rmSync(ctx.projectsRoot, { recursive: true, force: true });
+});
+
+test('UNWIRED_NAMESPACES + wired research covers every namespace (no gaps)', () => {
+  // Tripwire: if a namespace is added/removed, this forces the test
+  // bookkeeping above to be updated rather than silently under-covering.
+  expect([...UNWIRED_NAMESPACES, 'research'].sort()).toEqual(
+    Object.keys(NAMESPACES).sort(),
+  );
+});
 
 // ---------- Smoke tests via subprocess (entry-point integration) ----------
 

@@ -3,32 +3,13 @@ import { parseArgs } from 'node:util';
 import { fileURLToPath } from 'node:url';
 import { realpathSync } from 'node:fs';
 import { join } from 'node:path';
+import type { CliContext, DispatchResult } from './lib/types.ts';
+import { RESEARCH_VERBS } from './verbs/research.ts';
 
-// ---------- Shared types ----------
-//
-// Mirrors loom's CliContext / DispatchResult shape so verb handlers
-// (wired in U3-U6) read the same way as loom's. jelly-loom is a
-// parallel plugin to loom — same patterns, different metadata
-// discipline (TOML manifest, no events.jsonl).
-
-export type CliContext = {
-  /** Root under which projects live; defaults to <cwd>/projects. */
-  projectsRoot: string;
-  /** Repo root — the `jelly plan` verb (U3) needs it to manage the
-   *  @projects/<slug>/CLAUDE.md import line in the repo-root CLAUDE.md.
-   *  Defaults to cwd. */
-  repoRoot?: string;
-  /** ISO date override for deterministic tests. */
-  today?: string;
-  /** cwd override for deterministic tests. */
-  cwdOverride?: string;
-};
-
-export type DispatchResult = {
-  stdout?: string;
-  stderr?: string;
-  exitCode: number;
-};
+// Shared CLI types live in lib/types.ts (so the entry + verbs import
+// them without a cycle). Re-exported here for callers/tests that
+// import them from the entrypoint.
+export type { CliContext, DispatchResult } from './lib/types.ts';
 
 type VerbHandler = (rest: string[], ctx: CliContext) => DispatchResult;
 
@@ -54,10 +35,12 @@ const VERBLESS_NAMESPACES: ReadonlySet<string> = new Set([
   'adr',
 ]);
 
-// Namespaces with wired-up verb handlers. Empty in U1 (the shell):
-// every recognized namespace returns the `not-implemented` placeholder
-// until its verb lands (U3 research, U3/U4 plan, U5 revise, U6 adr).
-const VERBS_BY_NAMESPACE: Record<string, Record<string, VerbHandler>> = {};
+// Namespaces with wired-up verb handlers. `research` landed in U3;
+// plan (U4), revise (U5), and adr (U6) remain unwired and return the
+// `not-implemented` placeholder until their verbs land.
+const VERBS_BY_NAMESPACE: Record<string, Record<string, VerbHandler>> = {
+  research: RESEARCH_VERBS,
+};
 
 // ---------- Pure helpers (exported for direct unit tests) ----------
 
