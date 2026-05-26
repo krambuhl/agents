@@ -48,11 +48,14 @@ test('parseInvocation: an unregistered token is unknown', () => {
   expect(parseInvocation(['frobnicate'])).toEqual({ kind: 'unknown', verb: 'frobnicate' });
 });
 
-test('NAMESPACES registers exactly the U2 verb set', () => {
-  // Tripwire: U2 wires compose-preamble / preflight / compose-pr-body.
-  // /jelly-pr-feedback's verbs land in U4 — update this alongside them so
-  // the registry and the test stay in lockstep.
+test('NAMESPACES registers exactly the phase-2.1 verb set', () => {
+  // Tripwire: U2 wired compose-preamble / preflight / compose-pr-body;
+  // U3 adds classify-comments / build-dispatch-tasks (for
+  // /jelly-pr-feedback). Update this alongside any new verb so the
+  // registry and the test stay in lockstep.
   expect(Object.keys(NAMESPACES).sort()).toEqual([
+    'build-dispatch-tasks',
+    'classify-comments',
     'compose-pr-body',
     'compose-preamble',
     'preflight',

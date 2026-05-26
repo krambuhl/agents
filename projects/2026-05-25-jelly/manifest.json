@@ -34,7 +34,7 @@
     {
       "number": 4,
       "name": "Phase 2.1 — jelly-run substrate",
-      "status": "in-progress",
+      "status": "completed",
       "branch": "ev-agent.jelly.run"
     },
     {

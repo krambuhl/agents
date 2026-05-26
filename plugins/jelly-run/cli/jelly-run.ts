@@ -7,6 +7,8 @@ import type { CliContext, DispatchResult } from './lib/types.ts';
 import { composePreambleVerb } from './verbs/compose-preamble.ts';
 import { preflightVerb } from './verbs/preflight.ts';
 import { composePrBodyVerb } from './verbs/compose-pr-body.ts';
+import { classifyCommentsVerb } from './verbs/classify-comments.ts';
+import { buildDispatchTasksVerb } from './verbs/build-dispatch-tasks.ts';
 
 // Shared CLI types live in lib/types.ts (so the entry + verbs import them
 // without a cycle: jelly-run.ts imports the verbs for its registry; the
@@ -20,12 +22,11 @@ type VerbHandler = (rest: string[], ctx: CliContext) => DispatchResult;
 // ---------- Namespace registry ----------
 //
 // jelly-run's commands are flat (verbless): `jelly-run compose-preamble`,
-// `jelly-run preflight`, `jelly-run compose-pr-body`. Each is the only
-// handler in its namespace, so the namespace IS the command (mirrors
-// jelly-loom's verbless namespaces). These verbs expose jelly-run's
-// testable core (lib/goal.ts, lib/pr.ts, lib/plan.ts) — the deterministic
-// derivations the thin /jelly-run + /jelly-pr skills shell out to.
-// /jelly-pr-feedback's verbs (comment classification) land in U4.
+// etc. Each is the only handler in its namespace, so the namespace IS the
+// command (mirrors jelly-loom's verbless namespaces). These verbs expose
+// jelly-run's testable core (lib/goal.ts, lib/pr.ts, lib/plan.ts,
+// lib/feedback.ts) — the deterministic derivations the thin /jelly-run,
+// /jelly-pr, and /jelly-pr-feedback skills shell out to.
 
 export const NAMESPACES: Record<string, string> = {
   'compose-preamble':
@@ -34,6 +35,10 @@ export const NAMESPACES: Record<string, string> = {
     'Gate on the running Claude Code version being new enough for /goal (refuses, does not warn)',
   'compose-pr-body':
     'Draft a PR body from PLAN.md + the diff, with per-field confidence scores (JSON)',
+  'classify-comments':
+    'Classify PR review comments (fixed-intent / ambiguous / stale / discussion-only) with confidence (JSON)',
+  'build-dispatch-tasks':
+    'Build implementer tasks from classified comments — only high-confidence fixed-intent yields a task (JSON)',
 };
 
 // All jelly-run commands are verbless: the whole rest goes to the
@@ -42,12 +47,16 @@ const VERBLESS_NAMESPACES: ReadonlySet<string> = new Set([
   'compose-preamble',
   'preflight',
   'compose-pr-body',
+  'classify-comments',
+  'build-dispatch-tasks',
 ]);
 
 const VERBS_BY_NAMESPACE: Record<string, Record<string, VerbHandler>> = {
   'compose-preamble': { 'compose-preamble': composePreambleVerb },
   preflight: { preflight: preflightVerb },
   'compose-pr-body': { 'compose-pr-body': composePrBodyVerb },
+  'classify-comments': { 'classify-comments': classifyCommentsVerb },
+  'build-dispatch-tasks': { 'build-dispatch-tasks': buildDispatchTasksVerb },
 };
 
 // ---------- Pure helpers (exported for direct unit tests) ----------

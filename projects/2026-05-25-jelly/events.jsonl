@@ -46,3 +46,5 @@
 {"at":"2026-05-26T09:52:12.451Z","event":"checkin-created","detail":{"number":"01","branch":"ev-agent.jelly.run"}}
 {"at":"2026-05-26T09:52:12.531Z","event":"phase-started","detail":{"phase":4,"name":"Phase 2.1 — jelly-run substrate"}}
 {"at":"2026-05-26T15:56:09.784Z","event":"checkin-created","detail":{"number":"02","branch":"ev-agent.jelly.run"}}
+{"at":"2026-05-26T16:16:52.570Z","event":"checkin-created","detail":{"number":"03","branch":"ev-agent.jelly.run"}}
+{"at":"2026-05-26T16:16:52.648Z","event":"phase-completed","detail":{"phase":4}}
