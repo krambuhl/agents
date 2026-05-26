@@ -54,6 +54,12 @@
       "dependencies": ["commons", "jelly-guild", "jelly-loom"]
     },
     {
+      "name": "jelly",
+      "source": "./plugins/jelly",
+      "description": "Meta-bundle: zero-content plugin that cascade-installs the full jelly substrate family (commons, jelly-guild, jelly-loom, jelly-run).",
+      "dependencies": ["commons", "jelly-guild", "jelly-loom", "jelly-run"]
+    },
+    {
       "name": "ev",
       "source": "./plugins/ev",
       "description": "Execution loops: ev-loop-confidence (tiered transforms), ev-loop-interactive (paired units), ev-run (router).",

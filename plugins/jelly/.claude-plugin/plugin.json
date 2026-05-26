@@ -1,0 +1,4 @@
+{
+  "name": "jelly",
+  "description": "Meta-bundle: zero-content plugin that cascade-installs the full jelly substrate family (commons, jelly-guild, jelly-loom, jelly-run)."
+}
