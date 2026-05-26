@@ -8,7 +8,7 @@ description: >-
   personality diverges into options, the synthesizer converges them
   into a unified shape. Combine with a domain (WHAT) and a phase
   (WHEN) at dispatch.
-tools: Read, Glob, Grep, Bash, Write, Edit
+tools: Read, Glob, Grep, Bash, Write, Edit, mcp__jelly__*
 model: inherit
 ---
 

@@ -8,7 +8,7 @@ description: >-
   toward what's wrong, the generative personality widens toward
   what's possible. Combine with a domain (WHAT) and a phase (WHEN)
   at dispatch.
-tools: Read, Glob, Grep, Bash, Write, Edit
+tools: Read, Glob, Grep, Bash, Write, Edit, mcp__jelly__*
 model: inherit
 ---
 

@@ -8,7 +8,7 @@ description: >-
   personality widens the space, the pragmatist collapses it to a
   decision. Combine with a domain (WHAT) and a phase (WHEN) at
   dispatch.
-tools: Read, Glob, Grep, Bash, Write, Edit
+tools: Read, Glob, Grep, Bash, Write, Edit, mcp__jelly__*
 model: inherit
 ---
 

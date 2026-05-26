@@ -1,0 +1,83 @@
+{
+  "schema_version": 1,
+  "number": "01",
+  "created": "2026-05-26T07:36:10.000Z",
+  "phase": {
+    "number": 3,
+    "name": "Phase 1.3 — jelly-loom substrate"
+  },
+  "branch": "ev-agent.jelly.loom-mcp",
+  "unit": "U7 — MCP server + wire personalities (closes Phase 1.3)",
+  "contract": {
+    "goal": "Ship the hand-rolled MCP server exposing mcp__jelly__{research,plan,revise,adr} over stdio (JSON-RPC 2.0, no SDK — the Phase 1.1-proven pattern), wire mcp__jelly__* into the 5 jelly-guild personalities' tools: frontmatter (the deferred Phase 1.2 U4 work), flip the integrity test's deferral assertion, and ship a .mcp.json registration doc. Closes Phase 1.3.",
+    "acceptance_criteria": [
+      "plugins/jelly-loom/mcp/server.ts — hand-rolled JSON-RPC-over-stdio server (no dependency). Handles initialize, notifications/initialized, tools/list, tools/call, ping. 4 tools (research/plan/revise/adr) each with an inputSchema. tools/call direct-imports the verb, maps structured args → the verb's rest array + a CliContext (from cwd/JELLY_* env), invokes it, returns the verb's stdout as MCP text content (or MCP error on non-zero exit).",
+      "plugins/jelly-loom/mcp/server.test.ts — protocol handling + the structured-args→verb mapping. npm test passes.",
+      "The 5 jelly-guild personalities get mcp__jelly__* appended to their tools: line.",
+      "plugins/jelly-guild/three-axis-integrity.test.ts — the defers-mcp__jelly__* assertion (not.toContain) flips to assert each personality's tools now includes mcp__jelly__*.",
+      "plugins/jelly-loom/docs/MCP-REGISTRATION.md — a registration doc (the .mcp.json shape + path resolution + the project-scoped-MCP-in-.mcp.json-not-.claude/settings.json rule per Phase 1.1 + trust-dialog caveat). No live .mcp.json shipped."
+    ],
+    "rules_applied": [
+      "PLAN.md § Phase 1.3 Exit (MCP server at mcp/server.{js,ts} exposing mcp__jelly__*) + § Decisions.",
+      "RESEARCH.md § Phase 1.1 (hand-rolled MCP works under /goal; project-scoped MCP in .mcp.json; trust-dialog caveat).",
+      "goal-substrate-probe/mcp-probe/server.js (the proven JSON-RPC-over-stdio shape).",
+      "Resolves the Phase 1.2 U4 deferral of mcp__jelly__* in the personalities (server now exists).",
+      "Operator decisions this unit: doc/template-only .mcp.json (no live registration); wildcard mcp__jelly__* in the personalities (matches PLAN.md, maintainable, the defer-reason is now resolved); direct-import the verbs (not shell-out).",
+      "Panel: dropped the auto-derived evaluator-react-api (documented Node-.ts mis-derivation). Ran contract-fit + test-unit + naming.",
+      "Pattern A for checkin lifecycle."
+    ],
+    "disqualifiers": [
+      "An MCP SDK dependency (hand-roll; zero-dep — the Phase 1.1 probe proved it works).",
+      "Shipping a live .mcp.json at the agents repo root (doc/template only per operator decision).",
+      "Re-implementing verb logic in the server (direct-import + map args; the verbs are the single source).",
+      "Auto-writing the .mcp.json (deferred to jelly-run, Phase 2.1).",
+      "Editing other plugins beyond jelly-guild's personalities + integrity test (the cross-plugin span is scoped to the MCP wiring)."
+    ],
+    "inputs": [
+      "projects/2026-05-25-jelly/PLAN.md § Phase 1.3 + § Decisions; RESEARCH.md § Phase 1.1.",
+      "/Users/krambuhl/Sites/goal-substrate-probe/mcp-probe/server.js (reference).",
+      "plugins/jelly-loom/cli/verbs/{research,plan,revise,adr}.ts (the verbs the server wraps) + cli/lib/types.ts.",
+      "plugins/jelly-guild/agents/*.md + plugins/jelly-guild/three-axis-integrity.test.ts."
+    ]
+  },
+  "execution": {
+    "actions": [
+      "Wrote plugins/jelly-loom/mcp/server.ts: a hand-rolled JSON-RPC-over-stdio MCP server (no dependency; imports only node: builtins + the 4 verb modules + lib/types). TOOLS = 4 tool defs (research/plan/revise/adr) each {name, description, inputSchema, verb, toRest}. handleMessage(msg, ctx) dispatches initialize / notifications-initialized (→null) / tools-list / tools-call / ping / unknown (-32601) — extracted as a pure, testable function (the stdio readline loop is the only impure part). callTool(name, args, ctx) direct-imports the verb, builds the rest array via the tool's toRest (structured args → --kebab-flags, array-based to avoid shell-quoting), invokes verb(rest, ctx); exit 0 → {content:[text]}, non-zero → {content:[stderr], isError:true}; unknown tool → throws UnknownToolError → -32601. deriveContext reads JELLY_PROJECTS_ROOT/JELLY_REPO_ROOT/cwd.",
+      "Wrote plugins/jelly-loom/mcp/server.test.ts (16 tests): protocol handling (initialize handshake, notifications/initialized→null, tools/list returns the 4 tools + schemas, ping, unknown method → -32601, unknown tool → -32601) + callTool dispatch/arg-mapping (research/adr create files; revise threads --target + a rationale-with-spaces; a verb error → isError content NOT a thrown protocol error; unknown tool → throws UnknownToolError) + the TOOLS registry shape.",
+      "Appended mcp__jelly__* to the tools: line of all 5 jelly-guild personalities (skeptic/methodical/generative/pragmatist/synthesizer) — resolving the Phase 1.2 U4 deferral now that the server exists. Used the wildcard (matches PLAN.md; future jelly tools auto-included).",
+      "Flipped plugins/jelly-guild/three-axis-integrity.test.ts: the per-personality 'defers mcp__jelly__*' assertion (not.toContain) became 'declares the mcp__jelly__* substrate tools' (toContain) — the test that ENCODED the deferral now verifies the deferral is resolved.",
+      "Wrote plugins/jelly-loom/docs/MCP-REGISTRATION.md: the .mcp.json registration shape (server name 'jelly' → mcp__jelly__* prefix), <JELLY_LOOM_DIR> path resolution (agents-repo plugins/ path vs marketplace-cache path), the JELLY_PROJECTS_ROOT/JELLY_REPO_ROOT env, the project-scoped-MCP-in-.mcp.json-NOT-.claude/settings.json rule (Phase 1.1 finding), and the trust-dialog caveat. No live .mcp.json shipped (jelly-run, Phase 2.1, writes the live one).",
+      "Caught + fixed a Node strip-only-mode bug via the e2e: the UnknownToolError class used a parameter property (constructor(public toolName)), which Node's strip-only TS mode (how the server runs via `node server.ts`) REJECTS with ERR_UNSUPPORTED_TYPESCRIPT_SYNTAX. vitest (full transform) masked it — all 1111 tests passed while the real server failed to load. Fixed to an explicit field + assignment (matching JellyError). Wrote memory feedback_node_strip_only_no_parameter_properties.",
+      "Verified: npm test → 1111 passed across 75 files (was 1099; +12). E2E via REAL node (echo JSON-RPC | node mcp/server.ts): initialize → correct handshake; tools/list → all 4 tools with full inputSchemas; tools/call adr → dispatched the verb, created projects/adr-log/0001-mcp-smoke-test.md, returned the verb's JSON as MCP text content. Panel (contract-fit + test-unit + naming): all three approved on first run. Dropped evaluator-react-api (documented Node-.ts mis-derivation)."
+    ],
+    "files_touched": [
+      "plugins/jelly-loom/mcp/server.ts",
+      "plugins/jelly-loom/mcp/server.test.ts",
+      "plugins/jelly-loom/docs/MCP-REGISTRATION.md",
+      "plugins/jelly-guild/agents/skeptic.md",
+      "plugins/jelly-guild/agents/methodical.md",
+      "plugins/jelly-guild/agents/generative.md",
+      "plugins/jelly-guild/agents/pragmatist.md",
+      "plugins/jelly-guild/agents/synthesizer.md",
+      "plugins/jelly-guild/three-axis-integrity.test.ts"
+    ],
+    "corrections": [
+      "Caught by the real-node e2e (NOT the vitest suite): UnknownToolError used a TypeScript parameter property (constructor(public toolName: string)), which Node's strip-only TS mode rejects with ERR_UNSUPPORTED_TYPESCRIPT_SYNTAX. The server failed to load under `node server.ts` while all 1111 vitest tests passed (vitest uses a full transform that supports parameter properties). Fixed to an explicit field declaration + constructor assignment. This is the load-bearing lesson of the unit: executable .ts (servers/shims/entrypoints) needs a real-node smoke, because vitest masks strip-only-mode incompatibilities. Memory written."
+    ]
+  },
+  "scope": [],
+  "changes_since_previous": "Seventh and FINAL unit of Phase 1.3 — closes the phase. The MCP server is the seam that ties the two jelly plugins together: jelly-guild's personalities (the HOW) gain access to jelly-loom's verbs (the substrate operations) as first-class mcp__jelly__* tools under /goal. With this merged, Phase 1.3 (jelly-loom) is complete, and so is Milestone M1 (Phase 1.1 probe + Phase 1.2 jelly-guild + Phase 1.3 jelly-loom). Next: M2 (Phase 2.1 jelly-run orchestration + Phase 2.2 jelly meta-bundle), then M3 (dogfood). Carries lagged pr-opened event for PR #64 in events.jsonl.",
+  "verdict": {
+    "result": "approved",
+    "reasons": []
+  },
+  "notes_for_pr": [
+    "Closes Phase 1.3 and Milestone M1. The MCP server is the integration seam between the two jelly plugins: jelly-guild personalities declare mcp__jelly__* in their tools allowlist; jelly-loom's server exposes the verbs as those tools. Under /goal (with the .mcp.json registered), a dispatched personality can call mcp__jelly__plan / mcp__jelly__adr / etc. directly — the substrate becomes self-operating.",
+    "The headline lesson (a correction): the real-node e2e caught a Node strip-only-mode bug that the 1111-green vitest suite MASKED. UnknownToolError used a parameter property (constructor(public toolName)), which `node server.ts` rejects (ERR_UNSUPPORTED_TYPESCRIPT_SYNTAX) but vitest's full transform accepts. Executable .ts (MCP servers, bin shims, CLI entrypoints) MUST get a real-node smoke — the vitest suite is necessary but not sufficient for runtime-loadability. Memory written (node-strip-only-no-parameter-properties); sibling of the JSDoc-star-slash stripper memory.",
+    "Three operator decisions (grilled): doc/template-only .mcp.json (no live registration shipped — jelly-run writes it in Phase 2.1; avoids a trust-dialog + always-on server in every agents-repo /goal session); wildcard mcp__jelly__* in the personalities (matches PLAN.md, maintainable, and the Phase 1.2 U4 defer-reason — 'server doesn't exist yet' — is exactly what this unit resolves); direct-import the verbs (in-process, reuses the tested verb logic, returns structured results, no subprocess/PATH concerns).",
+    "Cross-plugin span (cohesive, not mixed-intent): this unit touches both jelly-loom (the server + doc) and jelly-guild (the 5 personality tool-grants + the integrity-test assertion flip). It's one conceptual change — wiring the substrate together via MCP — that necessarily spans both plugins. The integrity-test flip is the same discipline as the U4 tripwire: the Phase 1.2 U5 test ENCODED the deferral (not.toContain mcp__jelly__), so the unit that lands the deferred work owns updating it (now toContain).",
+    "Verb errors surface as MCP isError content, not JSON-RPC protocol errors — the model calling the tool sees the verb's structured error payload (e.g. {error: 'missing-args'}) and can react, rather than getting an opaque -32xxx. Unknown-tool is the one protocol-level error (-32601). Tested.",
+    "Substrate-state carry-over: lagged pr-opened event for PR #64 in events.jsonl.",
+    "After this merges: mark Phase 1.3 completed → Milestone M1 complete. M2 is next: Phase 2.1 (jelly-run — the three /goal-wrapping skills, where jelly-run writes the live .mcp.json this unit deferred) + Phase 2.2 (jelly meta-bundle). Then M3 dogfood. The Phase 3.1 dogfood is also where mcp__jelly__* tool RESOLUTION under a live /goal + .mcp.json gets its true end-to-end verification (this unit verified the server in isolation via the stdin e2e; the personality-allowlist-resolution is verified-by-dogfood)."
+  ]
+}
