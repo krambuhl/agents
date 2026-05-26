@@ -17,13 +17,14 @@
     {
       "number": 2,
       "name": "Phase 1.2 — jelly-guild substrate",
-      "status": "in-progress",
+      "status": "completed",
       "branch": "ev-agent.jelly.guild-template"
     },
     {
       "number": 3,
       "name": "Phase 1.3 — jelly-loom substrate",
-      "status": "not-started"
+      "status": "in-progress",
+      "branch": "ev-agent.jelly.loom-scaffold"
     },
     {
       "number": 4,

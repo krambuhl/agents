@@ -57,6 +57,7 @@ const EXPECTED_PLUGIN_NAMES = [
   'loom',
   'linear-loom',
   'jelly-guild',
+  'jelly-loom',
   'ev',
   'ev-linear',
   'agent-loop-full',
