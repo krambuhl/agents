@@ -53,3 +53,4 @@
 {"at":"2026-05-26T16:43:23.179Z","event":"checkin-created","detail":{"number":"01","branch":"ev-agent.jelly.bundle"}}
 {"at":"2026-05-26T16:43:23.256Z","event":"phase-started","detail":{"phase":5,"name":"Phase 2.2 — jelly meta-bundle"}}
 {"at":"2026-05-26T16:43:23.334Z","event":"phase-completed","detail":{"phase":5}}
+{"at":"2026-05-26T16:44:34.381Z","event":"pr-opened","detail":{"pr":67,"url":"https://github.com/krambuhl/agents/pull/67"}}
