@@ -29,3 +29,6 @@
 {"at":"2026-05-26T03:50:01.276Z","event":"pr-opened","detail":{"pr":60,"url":"https://github.com/krambuhl/agents/pull/60"}}
 {"at":"2026-05-26T04:12:56.481Z","event":"checkin-created","detail":{"number":"01","branch":"ev-agent.jelly.loom-research"}}
 {"at":"2026-05-26T04:12:56.558Z","event":"phase-started","detail":{"phase":3,"name":"Phase 1.3 — jelly-loom substrate"}}
+{"at":"2026-05-26T04:13:52.693Z","event":"pr-opened","detail":{"pr":61,"url":"https://github.com/krambuhl/agents/pull/61"}}
+{"at":"2026-05-26T06:10:11.326Z","event":"checkin-created","detail":{"number":"01","branch":"ev-agent.jelly.loom-plan"}}
+{"at":"2026-05-26T06:10:11.403Z","event":"phase-started","detail":{"phase":3,"name":"Phase 1.3 — jelly-loom substrate"}}

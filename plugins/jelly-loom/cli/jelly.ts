@@ -5,6 +5,7 @@ import { realpathSync } from 'node:fs';
 import { join } from 'node:path';
 import type { CliContext, DispatchResult } from './lib/types.ts';
 import { RESEARCH_VERBS } from './verbs/research.ts';
+import { PLAN_VERBS } from './verbs/plan.ts';
 
 // Shared CLI types live in lib/types.ts (so the entry + verbs import
 // them without a cycle). Re-exported here for callers/tests that
@@ -35,11 +36,12 @@ const VERBLESS_NAMESPACES: ReadonlySet<string> = new Set([
   'adr',
 ]);
 
-// Namespaces with wired-up verb handlers. `research` landed in U3;
-// plan (U4), revise (U5), and adr (U6) remain unwired and return the
+// Namespaces with wired-up verb handlers. `research` (U3) + `plan` (U4)
+// are wired; revise (U5) and adr (U6) remain unwired and return the
 // `not-implemented` placeholder until their verbs land.
 const VERBS_BY_NAMESPACE: Record<string, Record<string, VerbHandler>> = {
   research: RESEARCH_VERBS,
+  plan: PLAN_VERBS,
 };
 
 // ---------- Pure helpers (exported for direct unit tests) ----------
