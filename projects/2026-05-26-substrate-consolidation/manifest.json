@@ -10,7 +10,37 @@
   "phases": [
     {
       "number": 1,
-      "name": "Phase 1",
+      "name": "Shared plan-parser lib",
+      "status": "not-started"
+    },
+    {
+      "number": 2,
+      "name": "Single-file TOML state",
+      "status": "not-started"
+    },
+    {
+      "number": 3,
+      "name": "Revision split",
+      "status": "not-started"
+    },
+    {
+      "number": 4,
+      "name": "Author the 3-axis source",
+      "status": "not-started"
+    },
+    {
+      "number": 5,
+      "name": "Codegen + panel migration",
+      "status": "not-started"
+    },
+    {
+      "number": 6,
+      "name": "Commit-discipline, recipes, preflight",
+      "status": "not-started"
+    },
+    {
+      "number": 7,
+      "name": "Delete the forks",
       "status": "not-started"
     }
   ]
