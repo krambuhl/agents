@@ -1,0 +1,68 @@
+{
+  "schema_version": 1,
+  "number": "01",
+  "created": "2026-05-26T06:28:55.000Z",
+  "phase": {
+    "number": 3,
+    "name": "Phase 1.3 — jelly-loom substrate"
+  },
+  "branch": "ev-agent.jelly.loom-revise",
+  "unit": "U5 — jelly revise verb",
+  "contract": {
+    "goal": "jelly revise <slug-or-dateless> --target=plan|research --revision-file=<path> --rationale=<str> [--no-commit] replaces PLAN.md (target=plan) or RESEARCH.md (target=research) with new content, appends a `## Revision log` entry (newest-first), and commits. Generalizes loom's revise-plan to a --target-selected file. Lighter unit; reuses the git/slug libs.",
+    "acceptance_criteria": [
+      "cli/lib/project.ts gains resolveProject(slugOrPath, projectsRoot): full slug → projects/<slug>/ exists-check; date-less → single-suffix match (ambiguous → slug-ambiguous with candidates); path → resolve+exists; project-not-found otherwise. Leaner than loom's (no archived/active split — jelly has no archive yet).",
+      "cli/verbs/revise.ts — reviseVerb + REVISE_VERBS + an exported appendRevisionLogEntry. Validates slug + --target ∈ {plan,research} (invalid-target) + --revision-file + non-empty --rationale. Resolves project; selects PLAN.md/RESEARCH.md; target-not-found if absent; reads revision file, appends the log entry, writes the target; commits [jelly revise] <slug> (<target>): <rationale> unless --no-commit. Emits {slug, path, target, committed, rationale}.",
+      "Wired into jelly.ts (revise out of not-implemented); jelly.test.ts moves revise to WIRED.",
+      "cli/verbs/revise.test.ts covers both targets, revision-log append (fresh + existing), invalid-target, missing-args, target-not-found, slug resolution (full + date-less + ambiguous), --no-commit, + direct unit tests for appendRevisionLogEntry + resolveProject. npm test passes."
+    ],
+    "rules_applied": [
+      "PLAN.md § Phase 1.3 (jelly revise with --target=plan|research).",
+      "plugins/loom/cli/verbs/loom/plan.ts reviseVerb + appendRevisionLogEntry (structural ref, generalized to --target); loom's resolveProjectByPlan (leaner port as resolveProject).",
+      "U3's lib/{git,project,types,errors}.ts; react-api drop (documented Node-.ts mis-derivation); Pattern A."
+    ],
+    "disqualifiers": [
+      "Touching the manifest (revise edits PLAN.md/RESEARCH.md prose, not manifest.toml — the manifest is write-once; phase changes are a separate, deferred concern).",
+      "Re-managing the repo-root @-line (that's plan's job at birth; revise doesn't touch propagation).",
+      "The adr/MCP verbs (U6-U7); a dependency; editing other plugins."
+    ],
+    "inputs": [
+      "projects/2026-05-25-jelly/PLAN.md § Phase 1.3.",
+      "plugins/loom/cli/verbs/loom/plan.ts (reviseVerb + appendRevisionLogEntry), plugins/loom/cli/lib/project.ts (resolveProjectByPlan).",
+      "plugins/jelly-loom/cli/lib/{project,git,types,errors}.ts + cli/jelly.ts."
+    ]
+  },
+  "execution": {
+    "actions": [
+      "Added resolveProject(slugOrPath, projectsRoot) to cli/lib/project.ts (+ DATELESS_RE + listProjectSlugs helper): path (/ or .) → resolve+exists; full slug (SLUG_RE) → projects/<slug>/ exists-check; date-less (DATELESS_RE) → suffix match across project dirs (1 → return, >1 → slug-ambiguous with candidates, 0 → project-not-found). Leaner than loom's resolveProjectByPlan — no archived/active split since jelly has no archive concept yet.",
+      "Wrote cli/verbs/revise.ts: reviseVerb (validate slug/target/revision-file/non-empty-rationale; resolveProject; TARGET_FILES maps plan→PLAN.md, research→RESEARCH.md; target-not-found if the file is absent; read revision file → appendRevisionLogEntry → write target; commit [jelly revise] <resolvedSlug> (<target>): <rationale> unless --no-commit; emit {slug,path,target,committed,rationale}) + appendRevisionLogEntry (ported verbatim from loom — insert under ## Revision log newest-first, or append a fresh section) + REVISE_VERBS.",
+      "Wired jelly.ts: imported REVISE_VERBS; VERBS_BY_NAMESPACE now has research + plan + revise.",
+      "Updated jelly.test.ts: UNWIRED_NAMESPACES = [adr] (only adr left); WIRED_NAMESPACES = [research, plan, revise]; switched the node-entry not-implemented smoke from revise (now wired) to adr (the last unwired namespace). The no-gaps tripwire stays green.",
+      "Wrote cli/verbs/revise.test.ts (17 tests): target selection (plan replaces PLAN.md + revision log + commit message; research replaces RESEARCH.md + asserts PLAN.md untouched; --no-commit), validation (missing slug/target → missing-args, invalid-target, empty-rationale → missing-args, target-not-found, project-not-found), slug resolution (date-less resolves, ambiguous → slug-ambiguous with 2 candidates), + direct unit tests for appendRevisionLogEntry (fresh + newest-first ordering via index assertion) and resolveProject (full/date-less/unknown/ambiguous).",
+      "Verified: npm test → 1084 passed across 73 files (was 1067; +17). E2E smoke via the bin (jelly revise rev --target=plan ... --no-commit) resolved the date-less 'rev' → 2026-05-26-rev, replaced PLAN.md, and appended the ## Revision log entry. Panel (contract-fit + test-unit + naming): all three approved on first run. Dropped evaluator-react-api (documented Node-.ts mis-derivation)."
+    ],
+    "files_touched": [
+      "plugins/jelly-loom/cli/lib/project.ts",
+      "plugins/jelly-loom/cli/verbs/revise.ts",
+      "plugins/jelly-loom/cli/verbs/revise.test.ts",
+      "plugins/jelly-loom/cli/jelly.ts",
+      "plugins/jelly-loom/cli/jelly.test.ts"
+    ],
+    "corrections": []
+  },
+  "scope": [],
+  "changes_since_previous": "Fifth unit of Phase 1.3. Lighter than U4 — generalizes loom's revise-plan to a --target-selected file (PLAN.md or RESEARCH.md). Adds the resolveProject helper (reused by any future verb needing project-dir resolution). Composes on U3's git/slug/types libs. Only U6 (adr) + U7 (MCP) remain to close Phase 1.3. Carries lagged pr-opened event for PR #62 in events.jsonl.",
+  "verdict": {
+    "result": "approved",
+    "reasons": []
+  },
+  "notes_for_pr": [
+    "The --target generalization is the headline divergence from loom: loom has a plan-only revise-plan; jelly's revise takes --target=plan|research and edits the corresponding file. The generalization is named consistently end-to-end (--target flag, target JSON key, invalid-target + target-not-found codes, TARGET_FILES lookup). appendRevisionLogEntry is ported verbatim from loom (newest-first under ## Revision log, or fresh section).",
+    "resolveProject is leaner than loom's resolveProjectByPlan: jelly has no archive concept yet, so only the active projectsRoot is scanned (no active/archived split). Same resolution order (path → full slug → date-less suffix match). Reusable by any future verb needing project-dir resolution.",
+    "Scope discipline: revise edits PROSE only (PLAN.md/RESEARCH.md). It does NOT touch manifest.toml (the manifest is write-once; changing the declared phases is a separate, deferred concern) and does NOT re-manage the repo-root @-line (that's plan's birth-time job). TARGET_FILES has no manifest entry — the disqualifier is structurally enforced, not just by convention.",
+    "Bookkeeping: wiring revise moved it from UNWIRED to WIRED in jelly.test.ts and switched the node-entry not-implemented smoke to adr (the only remaining unwired namespace). The no-gaps tripwire stayed green throughout (this time I updated the bookkeeping proactively rather than letting the tripwire catch it as in U4).",
+    "Substrate-state carry-over: lagged pr-opened event for PR #62 in events.jsonl.",
+    "U6 (jelly adr + adr-log) is next — appends a workspace-level ADR at projects/adr-log/NNNN-<slug>.md with sequential global numbering. Then U7 (MCP server + wiring mcp__jelly__* into the jelly-guild personalities) closes Phase 1.3.",
+    "Substrate observation (out of scope, noted by a panel evaluator): the guild evaluator agent definitions reference evaluator-base.md at .claude/agents/evaluator-base.md, but it actually lives at plugins/guild/agents/evaluator-base.md — a stale path in the guild agent bodies. Not a jelly concern; flagging for a future guild-substrate touch-up."
+  ]
+}
