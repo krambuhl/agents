@@ -1,0 +1,4 @@
+{
+  "name": "jelly-loom",
+  "description": "Record-keeping + plan-lifecycle layer of the jelly substrate family. Ships the jelly CLI (research, plan, revise, adr verbs) + a hand-rolled TOML project manifest + a workspace-level ADR log + an MCP server exposing the verbs as mcp__jelly__* tools. Tighter metadata discipline than loom: single manifest.toml per project (write-once), no events.jsonl, no per-checkin JSON. Parallel to loom; both coexist."
+}

@@ -1,0 +1,82 @@
+{
+  "schema_version": 1,
+  "number": "01",
+  "created": "2026-05-26T03:29:40.000Z",
+  "phase": {
+    "number": 3,
+    "name": "Phase 1.3 — jelly-loom substrate"
+  },
+  "branch": "ev-agent.jelly.loom-scaffold",
+  "unit": "U1 — jelly-loom loadable shell",
+  "contract": {
+    "goal": "Create the empty-but-loadable plugins/jelly-loom/ plugin with a working CLI shell — bin/jelly shim + cli/jelly.ts entrypoint whose namespace registry knows the 4 jelly verbs (research, plan, revise, adr) and dispatches to not-implemented placeholders. No verb logic, no manifest lib, no MCP — just the shell, so U2-U7 have a real target. Mirrors linear-loom's loadable-shell unit.",
+    "acceptance_criteria": [
+      "plugins/jelly-loom/.claude-plugin/plugin.json exists (name: jelly-loom, description capturing record-keeping + plan-lifecycle scope).",
+      "plugins/jelly-loom/bin/jelly — executable bash shim mirroring loom's (symlink-safe SHIM_DIR, Node >= 24 enforcement, error prefix jelly-shim-error:, entry cli/jelly.ts).",
+      "plugins/jelly-loom/cli/jelly.ts — NAMESPACES registry (research/plan/revise/adr), all verbless; dispatch returns not-implemented for recognized-but-unwired namespaces; --help lists the 4; unknown namespace → unknown-verb with candidates. Exports parseInvocation/formatHelp/dispatch + CliContext/DispatchResult (mirrors loom.ts).",
+      ".claude-plugin/marketplace.json registers jelly-loom with dependencies: [commons], positioned adjacent to jelly-guild.",
+      "plugins/commons/cli/marketplace-manifest.test.ts EXPECTED_PLUGIN_NAMES includes 'jelly-loom'.",
+      "plugins/jelly-loom/cli/jelly.test.ts — tests parseInvocation/formatHelp/dispatch incl not-implemented per namespace + subprocess smoke tests.",
+      "jelly --help runs; npm test passes (rises by jelly.test.ts count; marketplace test stays green)."
+    ],
+    "rules_applied": [
+      "PLAN.md § Phase 1.3 Exit (plugin + CLI verbs research/plan/revise/adr; [commons] dep) + § Decisions log (no events log).",
+      "loom's bin/loom + cli/loom.ts as the structural reference (verbless-namespace dispatch, exported pure helpers for tests).",
+      "linear-loom's loadable-shell unit precedent (ev-agent.linear-loom.scaffold U2).",
+      "Operator decisions this phase: hand-roll TOML (U2) + MCP (U7); zero-dep posture preserved (package.json untouched).",
+      "Pattern A for checkin lifecycle.",
+      "Panel: dropped the auto-derived evaluator-react-api (mis-derivation — jelly-loom is a pure-Node CLI, no React/JSX; react-api's domain is .tsx/.jsx). Ran contract-fit + test-unit + naming."
+    ],
+    "disqualifiers": [
+      "Any verb logic (research/plan/revise/adr implementations) — U3-U6.",
+      "The TOML manifest lib — U2.",
+      "The MCP server / mcp__jelly__* — U7.",
+      "The ADR log — U6.",
+      "A project namespace — jelly-loom has no project read/scaffold verb; the lead agent reads manifest.toml directly.",
+      "Introducing a runtime dependency (hand-roll posture; zero-dep substrate).",
+      "A tsconfig.json (no plugin has one; Node TS-stripping handles .ts).",
+      "Editing loom / jelly-guild / other existing plugins."
+    ],
+    "inputs": [
+      "projects/2026-05-25-jelly/PLAN.md § Phase 1.3 + § Decisions log.",
+      "plugins/loom/bin/loom + plugins/loom/cli/loom.ts (structural reference — dispatch, verbless namespaces, exported helpers).",
+      "plugins/loom/cli/verbs/loom/project.ts (CliContext / DispatchResult type source to mirror).",
+      "plugins/loom/cli/loom.test.ts (test shape to mirror).",
+      ".claude-plugin/marketplace.json + plugins/commons/cli/marketplace-manifest.test.ts."
+    ]
+  },
+  "execution": {
+    "actions": [
+      "Wrote plugins/jelly-loom/.claude-plugin/plugin.json (name jelly-loom + description of the record-keeping/plan-lifecycle scope, TOML manifest, no events.jsonl, MCP server, parallel-to-loom framing).",
+      "Wrote plugins/jelly-loom/bin/jelly — a verbatim structural mirror of plugins/loom/bin/loom with loom→jelly substitutions: symlink-safe SHIM_DIR, Node>=24 check, jelly-shim-error: prefix, ENTRY=../cli/jelly.ts. chmod +x.",
+      "Wrote plugins/jelly-loom/cli/jelly.ts (~200 lines) mirroring loom.ts: CliContext (projectsRoot + repoRoot for the plan verb's @-line management + today/cwdOverride for tests) + DispatchResult types; NAMESPACES = research/plan/revise/adr (all in VERBLESS_NAMESPACES); VERBS_BY_NAMESPACE = {} (empty → every recognized namespace returns not-implemented); exported parseInvocation/formatHelp/formatUnknownVerbError/dispatch; main() entry deriving JELLY_PROJECTS_ROOT + JELLY_REPO_ROOT from env with cwd fallbacks.",
+      "Wrote plugins/jelly-loom/cli/jelly.test.ts (27 tests) mirroring loom.test.ts: pure-helper tests (parseInvocation, formatHelp incl an exact-four-verbs assertion, formatUnknownVerbError, dispatch help/unknown), a test.each over Object.keys(NAMESPACES) asserting each is not-implemented in the shell, and subprocess smoke tests (node entry + bin/jelly shim).",
+      "Registered jelly-loom in .claude-plugin/marketplace.json between jelly-guild and ev with dependencies: [commons] (jelly family stays contiguous). Added 'jelly-loom' to plugins/commons/cli/marketplace-manifest.test.ts EXPECTED_PLUGIN_NAMES.",
+      "Verified: jelly --help prints + lists the 4 namespaces + exit 0. npm test → 1006 passed across 69 files (was 979; +27 from jelly.test.ts). Panel (contract-fit + test-unit + naming): all three approved on first run. Dropped the auto-derived evaluator-react-api as a mis-derivation (Node CLI, no React)."
+    ],
+    "files_touched": [
+      "plugins/jelly-loom/.claude-plugin/plugin.json",
+      "plugins/jelly-loom/bin/jelly",
+      "plugins/jelly-loom/cli/jelly.ts",
+      "plugins/jelly-loom/cli/jelly.test.ts",
+      ".claude-plugin/marketplace.json",
+      "plugins/commons/cli/marketplace-manifest.test.ts"
+    ],
+    "corrections": []
+  },
+  "scope": [],
+  "changes_since_previous": "First unit of Phase 1.3 (jelly-loom substrate) — the record-keeping + plan-lifecycle layer, and the first jelly phase that ships actual CLI code (TypeScript). Phase 1.2 (jelly-guild) closed via PR #58. This unit ships the loadable CLI shell so U2 (TOML manifest lib) + U3-U6 (the four verbs) + U7 (MCP server) have a real target. Carries lagged pr-opened event for PR #58 + the phase-completed event for Phase 1.2 in events.jsonl, plus the manifest.json Phase-1.2-completed update.",
+  "verdict": {
+    "result": "approved",
+    "reasons": []
+  },
+  "notes_for_pr": [
+    "First jelly phase with real CLI code. The shell is a deliberate 1:1 structural mirror of loom's bin/loom + cli/loom.ts (verbless-namespace dispatch, exported pure helpers for tests) — jelly-loom is a parallel plugin to loom per PLAN.md, so naming + structure mirror rather than reinvent. Verb logic is deferred: VERBS_BY_NAMESPACE is empty, so every recognized namespace returns a structured not-implemented until its verb lands (U3 research, U3/U4 plan, U5 revise, U6 adr).",
+    "Dependency posture (operator decisions, settled before any code): hand-roll TOML (U2) and hand-roll MCP (U7) — the Phase 1.1 probe already proved a hand-rolled JSON-RPC-over-stdio MCP server works under /goal, and the manifest TOML shape is constrained. The entire substrate (now 9 plugins) holds zero runtime dependencies; this unit keeps package.json untouched.",
+    "Substrate observation — derive-panel mis-derivation: bin/guild derive-panel included evaluator-react-api for this Node CLI .ts artifact. react-api's domain is .tsx/.jsx React antipatterns; a pure-Node CLI has none. The heuristic appears to map .ts → react-api too broadly. Dropped react-api from the panel manually (ran contract-fit + test-unit + naming, all approved). Substrate-fix candidate: derive-panel should gate react-api on JSX/React-import presence, not bare .ts extension.",
+    "Advisory from contract-fit + naming panels (non-gating): the VERBLESS_NAMESPACES set + the verbless-routing branch in dispatch are unreachable in U1 (VERBS_BY_NAMESPACE is empty). This is deliberate forward-scaffolding mirroring loom.ts, flagged in code comments. U3 (which wires the first verb) is where the verbless routing first executes — worth a confirming glance there that the routing shape matches what the research verb needs.",
+    "Advisory from test-unit panel (non-gating): jelly.test.ts's temp-dir cleanup (rmSync) is the last statement in each test body rather than an afterEach, so a temp dir leaks if an assertion throws before cleanup. Low impact (mkdtempSync names are unique; suite is green). Mirrors the proven loom.test.ts sibling, so it's a convention-level note. A future test-hygiene pass could move all substrate CLI tests to afterEach-registered cleanup.",
+    "Substrate-state carry-over: this commit carries the lagged pr-opened event for PR #58, the phase-completed event for Phase 1.2, and the manifest.json Phase-1.2-completed status update (the reconciliation done at this session's Phase 1.2→1.3 boundary). Standard lagged-event pattern.",
+    "U2 (hand-rolled TOML manifest lib) is next — the foundation the plan verb (U3/U4) needs. It is isolated into its own unit because a hand-rolled parser/serializer is the highest-risk piece of Phase 1.3 and deserves focused review."
+  ]
+}
