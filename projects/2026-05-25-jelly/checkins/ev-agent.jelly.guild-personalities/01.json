@@ -1,0 +1,84 @@
+{
+  "schema_version": 1,
+  "number": "01",
+  "created": "2026-05-26T02:22:51.000Z",
+  "phase": {
+    "number": 2,
+    "name": "Phase 1.2 — jelly-guild substrate"
+  },
+  "branch": "ev-agent.jelly.guild-personalities",
+  "unit": "U4 — Personality subagents (keystone)",
+  "contract": {
+    "goal": "Ship the 5 personality subagent files at plugins/jelly-guild/agents/ (skeptic, methodical, generative, pragmatist, synthesizer) plus a shared personality-base.md. These are the only registered subagents in jelly-guild (callable via subagent_type=<personality>). Each carries the composition mechanism: at dispatch, read the domain + phase mode files named in the brief and construct a combined three-axis identity.",
+    "acceptance_criteria": [
+      "plugins/jelly-guild/agents/{skeptic,methodical,generative,pragmatist,synthesizer}.md exist with YAML frontmatter: name, role: personality, description, tools: Read, Glob, Grep, Bash, Write, Edit, model: inherit.",
+      "plugins/jelly-guild/agents/personality-base.md exists (role: personality-base, tools: Read, Glob, Grep) holding the shared composition mechanism + cross-axis combination framing. Mirrors whiteboard-base.md / evaluator-base.md convention.",
+      "Each personality body opens by instructing the agent to read personality-base.md and apply it, then layers its own disposition (the HOW).",
+      "The composition mechanism (in personality-base.md) instructs: the dispatch brief names one domain + one phase; read plugins/jelly-guild/modes/domains/<domain>.md and plugins/jelly-guild/modes/phases/<phase>.md; construct identity from personality (HOW) + domain (WHAT) + phase (WHEN).",
+      "Each personality's disposition is distinct and matches PLAN.md's two-critical-postures-sharp-and-slow, one generative, one decisional, one synthetic: skeptic (sharp critical), methodical (slow critical), generative (generative), pragmatist (decisional), synthesizer (synthetic).",
+      "tools: defers mcp__jelly__* to Phase 1.3 (documented operator decision); declares Write/Edit per the U3 tool-superset model.",
+      "npm test passes."
+    ],
+    "rules_applied": [
+      "PLAN.md § Phase 1.2 Exit (5 personality files; tools include Read; composition mechanism reference-based).",
+      "PLAN.md § Decisions log 2026-05-25 (Personalities v1; Composition mechanism reference-based; Subagent structural mapping — personalities are the registered subagents).",
+      "U3 tool-superset model (operator-approved): personalities declare Write/Edit so the implementer phase functions.",
+      "Operator decision this unit: defer mcp__jelly__* to Phase 1.3 (declaring a wildcard for a non-existent MCP server risks breaking agent registration; can't be tested this session since newly-authored agents register next session).",
+      "Existing guild base-file convention (whiteboard-base.md, evaluator-base.md, generator-base.md) → personality-base.md as shared infrastructure (operator-approved at U4 negotiation).",
+      "Pattern A for checkin lifecycle.",
+      "Substrate-only unit → panel auto-derivation returns evaluator-contract-fit only (agent definition files; no domain evaluator applies)."
+    ],
+    "disqualifiers": [
+      "Domain or phase mode files (U2/U3, already shipped).",
+      "CLAUDE.md template (U5).",
+      "Declaring mcp__jelly__* in tools (deferred to Phase 1.3 per operator decision).",
+      "Baking domain-specific or phase-specific content into a personality body (personalities are the HOW only; WHAT lives in domain modes, WHEN in phase modes).",
+      "Making any personality whiteboard-specific / evaluator-specific / generator-specific (the dispatch pattern + phase mode carries that, not the personality — per PLAN.md collapse).",
+      "Editing existing guild agents."
+    ],
+    "inputs": [
+      "projects/2026-05-25-jelly/PLAN.md § Phase 1.2 + § Decisions log (personalities, composition mechanism, structural mapping).",
+      "plugins/guild/agents/whiteboard-base.md + whiteboard-skeptic.md (reference shape for base + personality frontmatter/body).",
+      "plugins/jelly-guild/modes/domains/*.md + modes/phases/*.md (the axes the personalities compose with — the mechanism references these paths).",
+      "User's global CLAUDE.md (collaboration voice informs the personality dispositions — skeptic ≈ pressure-test-don't-validate; pragmatist ≈ good-enough-for-now-is-a-real-answer)."
+    ]
+  },
+  "execution": {
+    "actions": [
+      "Wrote personality-base.md (117 lines): the shared three-axis composition mechanism. Names the two mode-file reads (domain + phase) at dispatch + three-axis identity construction. Documents that tool posture AND output contract are governed by the phase mode, NOT the disposition (the disposition shapes the character/breadth/coherence of the output, not its format). Isolation framing for parallel dispatch. A 'What every personality does NOT do' section guards against disposition leakage + improvising missing mode-file content. role: personality-base; tools: Read, Glob, Grep (read-only, like whiteboard-base.md).",
+      "Wrote skeptic.md (71 lines): sharp critical posture. 'Sharp over exhaustive — surface the three sharpest problems, not ten mushy ones.' Explicitly cross-references methodical as the slow critical posture. Modulation section shows how sharpness expresses across reviewer/researcher/planner/implementer phases.",
+      "Wrote methodical.md (67 lines): slow critical posture. 'Exhaustive over sharp — walk every catalog entry, every criterion, every sibling.' Cross-references skeptic as the sharp posture. The completeness complement to skeptic's sharpness.",
+      "Wrote generative.md (72 lines): generative posture. 'Options over a single answer — expand the design space before anyone collapses it.' The divergent complement to synthesizer's convergence and pragmatist's decisiveness.",
+      "Wrote pragmatist.md (74 lines): decisional posture. 'Simplest thing that works and reads well; load-bearing vs cosmetic; make the call.' Draws on the user's good-enough-for-now + incrementalism + simple-over-clever framing. The convergent-to-a-decision complement to generative's divergence.",
+      "Wrote synthesizer.md (81 lines): synthetic posture. 'Reconcile, don't average — find the frame in which the conflict dissolves.' Connects across axes and across units; seeks cohesion always (echoing the user's naming-is-architecture / find-cohesion framing). The integrative complement to generative's expansion.",
+      "Removed plugins/jelly-guild/agents/.gitkeep via git rm — now-redundant placeholder for a dir that has real content. The unit that populates agents/ removes its placeholder (the modes/domains, modes/phases, rubrics .gitkeeps from U1 stay — touching them would be cross-unit scope creep).",
+      "Verified: find plugins/jelly-guild/agents returns 6 .md files (482 lines total). npm test → 937 passed across 67 files (unchanged; agent definitions are declarative, no agent-count test gates jelly-guild). Panel (evaluator-contract-fit, auto-derived): approved on first run; spot-checked personality-base.md (keystone-of-the-keystone) + skeptic.md; zero findings."
+    ],
+    "files_touched": [
+      "plugins/jelly-guild/agents/personality-base.md",
+      "plugins/jelly-guild/agents/skeptic.md",
+      "plugins/jelly-guild/agents/methodical.md",
+      "plugins/jelly-guild/agents/generative.md",
+      "plugins/jelly-guild/agents/pragmatist.md",
+      "plugins/jelly-guild/agents/synthesizer.md",
+      "plugins/jelly-guild/agents/.gitkeep (deleted)"
+    ],
+    "corrections": []
+  },
+  "scope": [],
+  "changes_since_previous": "Fourth unit of Phase 1.2 (jelly-guild substrate); the keystone. Composes on U1 (scaffold) + U2 (domain modes — WHAT) + U3 (phase modes — WHEN). With this unit committed, all three axes combine into runnable, registered subagents: 5 personalities (HOW) that read one domain mode + one phase mode at dispatch. Only U5 (CLAUDE.md template + composition verification) remains to close Phase 1.2. Carries lagged pr-opened event for PR #56 in events.jsonl.",
+  "verdict": {
+    "result": "approved",
+    "reasons": []
+  },
+  "notes_for_pr": [
+    "Keystone unit: this is where the three orthogonal axes (personality HOW + domain WHAT + phase WHEN) finally combine into registered, dispatchable subagents. The 5 personalities are the ONLY registered subagents in jelly-guild (callable via subagent_type=<personality>); domains + phases remain mode files read at dispatch. This realizes PLAN.md § Decisions 2026-05-25 'Subagent structural mapping'.",
+    "Operator deviation #1 (mcp__jelly__* deferred to Phase 1.3): the mcp__jelly__* MCP server ships in jelly-loom (Phase 1.3); declaring a wildcard for a non-existent server risked breaking agent registration, and newly-authored agents can't be dispatch-tested in the authoring session (L-004 session-boundary). tools: declares Read/Glob/Grep/Bash/Write/Edit now; the mcp__jelly__* addition is a trivial 5-file edit co-located with the Phase 1.3 server that makes the tools real. Documented PLAN.md deviation.",
+    "Operator deviation #2 (personality-base.md added): the composition mechanism is identical across all 5 personalities (past the rule-of-three). Extracted into personality-base.md as shared infrastructure, mirroring the guild base-file convention (whiteboard-base.md / evaluator-base.md / generator-base.md). 'Find cohesion always.' PLAN.md's '5 personality files' is satisfied — the base is infrastructure alongside them, not a 6th personality. Operator-approved at U4 negotiation.",
+    "Tool-posture safety (carried from U3, re-flagged): personalities declare Write/Edit in frontmatter so the implementer phase works. A reviewer-phase personality therefore has write tools available and is read-only by INSTRUCTION (personality-base.md + the reviewer phase mode), NOT by frontmatter exclusion (unlike today's evaluator-* agents). This is the load-bearing safety-posture difference of the jelly-guild substrate. The dogfood (Phase 3.1) should stress-test whether instruction-level read-only discipline holds under real dispatch.",
+    "Disposition complementarity: the 5 personalities form a deliberate set — skeptic (sharp critical) + methodical (slow critical) are the two critical postures; generative (diverge) + synthesizer (converge) are an expansion/integration pair; pragmatist (decide) closes the space. skeptic/methodical and generative/synthesizer cross-reference each other as complements in their bodies.",
+    ".gitkeep housekeeping: removed agents/.gitkeep (dir now has content). The modes/domains, modes/phases, and rubrics .gitkeeps from U1 remain — removing them would be cross-unit scope creep; they're harmless residue. templates/.gitkeep stays until U5 populates it.",
+    "Substrate-state carry-over: lagged pr-opened event for PR #56 in events.jsonl rides with this commit per the standard pattern.",
+    "U5 (CLAUDE.md template + composition verification) closes Phase 1.2. It ships plugins/jelly-guild/templates/CLAUDE.md (the project-scoped substrate-posture file consumed by jelly plan in Phase 1.3) and verifies the three-axis composition mechanism end-to-end."
+  ]
+}
