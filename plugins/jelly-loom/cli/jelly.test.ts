@@ -90,11 +90,12 @@ test('dispatch: unknown → stderr + exit 1', () => {
   rmSync(ctx.projectsRoot, { recursive: true, force: true });
 });
 
-// The still-unwired namespaces return the `not-implemented` placeholder
-// until their verbs land (U4 plan, U5 revise, U6 adr). As each verb is
-// wired, its namespace moves out of this list and into a routes-to-verb
-// test like the `research` one below.
-const UNWIRED_NAMESPACES = ['adr'];
+// Namespaces recognized but NOT yet wired to a verb — they return the
+// `not-implemented` placeholder. As of U6 every namespace is wired, so
+// this list is empty; the test.each below registers no cases. It stays
+// (alongside the not-implemented dispatch branch) so that a future
+// namespace added before its verb lands re-activates this coverage.
+const UNWIRED_NAMESPACES: string[] = [];
 
 test.each(UNWIRED_NAMESPACES)(
   'dispatch: namespace %s is recognized but not-implemented in the shell',
@@ -109,10 +110,10 @@ test.each(UNWIRED_NAMESPACES)(
   },
 );
 
-// Namespaces wired to a real verb handler (research U3, plan U4). Each
-// routes to its verb (returning the verb's own missing-args), NOT the
-// shell's not-implemented placeholder.
-const WIRED_NAMESPACES = ['research', 'plan', 'revise'];
+// Namespaces wired to a real verb handler (research U3, plan U4,
+// revise U5, adr U6). Each routes to its verb (returning the verb's
+// own missing-args), NOT the shell's not-implemented placeholder.
+const WIRED_NAMESPACES = ['research', 'plan', 'revise', 'adr'];
 
 test.each(WIRED_NAMESPACES)(
   'dispatch: %s routes to the verb (missing-args, not not-implemented)',
@@ -157,18 +158,6 @@ test('node entry: unknown verb prints structured error and exits 1', () => {
   expect(result.status).toBe(1);
   const parsed = JSON.parse(result.stderr.trim());
   expect(parsed.error).toBe('unknown-verb');
-});
-
-test('node entry: an unwired namespace surfaces not-implemented and exits 1', () => {
-  // `adr` is the last unwired namespace (U6). A wired namespace would
-  // route to its verb instead, so use the unwired one here.
-  const result = spawnSync('node', [JELLY_ENTRY, 'adr', 'some-title'], {
-    encoding: 'utf8',
-  });
-  expect(result.status).toBe(1);
-  const parsed = JSON.parse(result.stderr.trim());
-  expect(parsed.error).toBe('not-implemented');
-  expect(parsed.namespace).toBe('adr');
 });
 
 test('bin/jelly shim invokes the entry identically', () => {
