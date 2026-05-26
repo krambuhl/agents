@@ -1,0 +1,4 @@
+{
+  "name": "jelly-run",
+  "description": "Orchestration layer of the jelly substrate family. Operator-invoked skills (/jelly-run, /jelly-pr, /jelly-pr-feedback) that wrap Claude Code's /goal with operator-paired grill-gates at the PR boundary: compose a /goal preamble from PLAN.md + git state, auto-chain a confidence-scored draft-then-grill PR open, and run a turn-based feedback protocol on review comments (yield-to-operator; the substrate never auto-resolves ambiguous comments). Deterministic logic (preamble composition, comment classification, PR-field confidence scoring) lives in jelly-run's own testable CLI; the skills are thin glue. Depends on jelly-guild (subagents) + jelly-loom (project lifecycle)."
+}
