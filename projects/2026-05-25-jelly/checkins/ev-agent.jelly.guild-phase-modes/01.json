@@ -1,0 +1,73 @@
+{
+  "schema_version": 1,
+  "number": "01",
+  "created": "2026-05-26T00:44:57.000Z",
+  "phase": {
+    "number": 2,
+    "name": "Phase 1.2 — jelly-guild substrate"
+  },
+  "branch": "ev-agent.jelly.guild-phase-modes",
+  "unit": "U3 — Phase mode files",
+  "contract": {
+    "goal": "Ship the 4 phase mode files (researcher, planner, implementer, reviewer) at plugins/jelly-guild/modes/phases/. The phase mode is read by a personality subagent at dispatch time alongside a domain mode to construct the WHEN-in-lifecycle axis. Per PLAN.md decisions: whiteboard = personalities x researcher/planner phase; evaluator = personality x reviewer phase; generator = personality x implementer phase.",
+    "acceptance_criteria": [
+      "plugins/jelly-guild/modes/phases/{researcher,planner,implementer,reviewer}.md exist — plain markdown (no YAML frontmatter), sections: # Phase: <name>, ## Lifecycle position, ## Mandate, ## Tool posture, ## Output contract, ## Combining with domain + personality.",
+      "reviewer carries a portable version of evaluator-base.md's read-only stance + verdict format (VERDICT: approved / VERDICT: flagged with Reasons + Suggested remedies) + the shared flag-code starter set.",
+      "implementer declares active Write + Edit use + the artifact-plus-description output shape (the generator dispatch shape).",
+      "researcher and planner declare read-only-to-source posture + their respective output contracts (findings/evidence for researcher; decomposition/sequencing for planner) — the whiteboard dispatch shapes.",
+      "Each phase mode's ## Tool posture section states the behavioral-contract-not-tool-grant model: the personality declares the tool superset (U4); the phase mode governs which tools to actually use.",
+      "npm test passes."
+    ],
+    "rules_applied": [
+      "PLAN.md § Phase 1.2 Exit (4 phase mode files; implementer declares Write+Edit; reviewer declares verdict-format output).",
+      "PLAN.md § Decisions log 2026-05-25 (Phases v1, Generators absorbed, Whiteboard + evaluator collapse to dispatch patterns).",
+      "evaluator-base.md verdict format + flag taxonomy (the reviewer phase ports this; does not modify the original).",
+      "Operator-approved at U3 contract negotiation: the behavioral-contract tool model (personality declares superset; phase mode governs usage) over the implementer-variant-personalities alternative.",
+      "Pattern A for checkin lifecycle.",
+      "Substrate-only unit → panel auto-derivation returns evaluator-contract-fit only."
+    ],
+    "disqualifiers": [
+      "Personality subagent files (U4) including their tools: frontmatter — U3 only describes the expected superset.",
+      "Domain mode files (already shipped in U2).",
+      "CLAUDE.md template (U5).",
+      "YAML frontmatter on phase mode files (they are content, not subagents).",
+      "Editing evaluator-base.md or other existing guild agents (the reviewer phase ports its contract, does not modify the original)."
+    ],
+    "inputs": [
+      "projects/2026-05-25-jelly/PLAN.md § Phase 1.2 + § Decisions log (phase decisions, generator-absorption, whiteboard/evaluator collapse).",
+      "plugins/guild/agents/evaluator-base.md (verdict format + read-only stance to port into the reviewer phase).",
+      "plugins/jelly-guild/modes/domains/*.md (the U2 domain modes — phase modes reference how the two axes combine)."
+    ]
+  },
+  "execution": {
+    "actions": [
+      "Read plugins/guild/agents/evaluator-base.md to align the reviewer phase's verdict format + flag taxonomy + read-only stance with the substrate's existing evaluator contract.",
+      "Wrote researcher.md (94 lines): lifecycle = before-plan-exists; mandate = gather evidence, don't propose solutions, surface unknowns, cite evidence, resist premature convergence; tool posture = read-only-to-source with findings-document exception; output = findings + unknowns + viable-directions-without-recommendation + surprises, no verdict. Names the parallel-dispatch = whiteboard pattern.",
+      "Wrote planner.md (88 lines): lifecycle = after-research-before-implementation; mandate = decompose/sequence/justify, one-unit-one-thing, name tradeoffs, sequence by risk, propose-don't-implement; tool posture = read-only-to-source with plan-document exception; output = units + sequence + tradeoffs + open-decisions, no verdict. Names the parallel-dispatch = whiteboard pattern.",
+      "Wrote implementer.md (94 lines): lifecycle = executing-a-unit; mandate = produce the artifact, honor scope, match surrounding code, leave it verifiable, pause at forks; tool posture = THE write-capable phase ('Write + Edit are the point'); output = artifact + description + verification evidence + corrections, explicitly no self-verdict. Names the single-dispatch = generator pattern.",
+      "Wrote reviewer.md (142 lines): lifecycle = after-artifact-exists; ported evaluator-base.md's Stance (skeptical/terse/no-praise/no-scope-creep/isolated), Mandate (evaluate-don't-fix, walk-the-contract, apply-domain-rubric, cite-evidence), strict read-only Tool posture, and the full verdict format (Approved block with Summary+Checks; Flagged block with Reasons+Suggested remedies) + the 9-row flag-code starter table. Names the single-dispatch = evaluator pattern.",
+      "All 4 Tool posture sections carry the behavioral-contract framing verbatim: the personality declares the tool superset in frontmatter (U4); the phase mode governs which tools are actually used. Reviewer/researcher/planner instruct read-only discipline even though Write/Edit are technically available; implementer is the one phase that exercises them.",
+      "Verified: find plugins/jelly-guild/modes/phases returns 4 .md files (418 lines total). npm test → 937 passed across 67 files (unchanged). Panel (evaluator-contract-fit, auto-derived): approved on first run; spot-checked reviewer.md (highest-risk, ports evaluator-base.md); zero findings."
+    ],
+    "files_touched": [
+      "plugins/jelly-guild/modes/phases/researcher.md",
+      "plugins/jelly-guild/modes/phases/planner.md",
+      "plugins/jelly-guild/modes/phases/implementer.md",
+      "plugins/jelly-guild/modes/phases/reviewer.md"
+    ],
+    "corrections": []
+  },
+  "scope": [],
+  "changes_since_previous": "Third unit of Phase 1.2 (jelly-guild substrate); composes on U1's scaffold + U2's domain modes. With this unit committed, both the WHAT axis (U2 domains) and the WHEN axis (U3 phases) of the three-axis decomposition are complete. U4 (personality subagents — the HOW axis, and the only registered subagents) follows; U5 (CLAUDE.md template + composition verification) caps the phase. Carries lagged pr-opened event for PR #55 in events.jsonl.",
+  "verdict": {
+    "result": "approved",
+    "reasons": []
+  },
+  "notes_for_pr": [
+    "Tool-posture model (operator-approved at U3 negotiation): modes are content and cannot grant tools, so the personality subagents (U4) declare the tool superset (Read, Grep, Glob, Bash, Write, Edit, mcp__jelly__*) and each phase mode is a BEHAVIORAL CONTRACT over that superset. Reviewer/researcher/planner instruct read-only discipline; implementer actively uses Write/Edit. Forward-dependency for U4: the personality frontmatter must declare the full superset for the implementer phase to function — this is the one place the additive N+M+P model trades tool-restriction-safety for behavioral-discipline. The reviewer phase's read-only-ness is enforced by instruction, NOT by tool exclusion (unlike today's evaluator-* agents whose frontmatter omits Write/Edit). Flagging this as a safety-posture difference from the existing guild substrate worth the operator's attention.",
+    "Dispatch-pattern collapse realized: researcher/planner phases name the 'parallel personalities = whiteboard' pattern; implementer phase names the 'single personality = generator' pattern; reviewer phase names the 'single personality = evaluator' pattern. The agent files (U4 personalities) carry no whiteboard-ness/evaluator-ness/generator-ness; the dispatch pattern (which phase mode, how many personalities in parallel) does. This is the PLAN.md § Decisions 2026-05-25 collapse made concrete.",
+    "reviewer.md ports evaluator-base.md rather than referencing it. Rationale: jelly-guild is a parallel substrate to guild (per PLAN.md parallel-coexistence framing); a cross-plugin path reference to plugins/guild/agents/evaluator-base.md would couple jelly-guild to guild's internal layout. Ported content is standalone. Manual-sync drift risk between the two verdict formats is accepted for v1 (same shape as the U2 domain/rubric manual-sync tradeoff).",
+    "Substrate-state carry-over: lagged pr-opened event for PR #55 in events.jsonl rides with this commit per the standard pattern (memory feedback_loom_pr_opened_orphan_and_guild_spec_path).",
+    "U4 (personality subagents) is next and is the keystone unit — it ships the 5 registered subagents (skeptic, methodical, generative, pragmatist, synthesizer) whose tools: frontmatter declares the superset and whose bodies carry the composition mechanism (read the three named mode files at dispatch). U4 is where the three axes finally combine into runnable agents."
+  ]
+}
