@@ -268,6 +268,11 @@ at = "2026-05-27T16:06:17.880Z"
 event = "phase-completed"
 detail = { phase = 3 }
 
+[[events]]
+at = "2026-05-27T16:07:18.677Z"
+event = "pr-opened"
+detail = { pr = 77, url = "https://github.com/krambuhl/agents/pull/77" }
+
 [[checkins]]
 schema_version = 1
 number = "08"
