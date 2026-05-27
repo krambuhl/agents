@@ -173,7 +173,12 @@ With no message, pick the phase using this policy:
 
 1. If any phase is `in-progress`, that's the next phase.
 2. Otherwise, pick the lowest-numbered `not-started` phase whose
-   dependencies are all satisfied (all named prior PRs merged).
+   dependencies are all satisfied. Read each phase's dependencies from
+   `loom parse-plan <slug>` (`plan.phasesById[<n>].dependsOn`, a list of
+   phase-id strings) rather than parsing PLAN.md prose; a dependency is
+   satisfied when that phase's manifest status is `completed` (its PR
+   merged). `loom parse-plan` is the single source for dependencies — do
+   not re-derive them from the plan text.
 3. If no phase qualifies, surface the blocker: "waiting on PR #X to
    merge" or "all phases completed — run `/loom-archive`."
 

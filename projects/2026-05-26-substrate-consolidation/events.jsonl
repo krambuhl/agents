@@ -11,3 +11,7 @@
 {"at": "2026-05-27T00:45:37.952Z", "event": "pr-merged", "detail": {"pr": 69}}
 {"at":"2026-05-27T00:58:37.538Z","event":"checkin-created","detail":{"number":"03","branch":"ev-agent.substrate-consolidation.plan-verb"}}
 {"at":"2026-05-27T00:58:37.619Z","event":"phase-started","detail":{"phase":1,"name":"Shared plan-parser lib"}}
+{"at": "2026-05-27T01:14:20.319Z", "event": "pr-opened", "detail": {"pr": 70, "url": "https://github.com/krambuhl/agents/pull/70"}}
+{"at": "2026-05-27T01:14:20.320Z", "event": "pr-merged", "detail": {"pr": 70}}
+{"at":"2026-05-27T01:20:33.702Z","event":"checkin-created","detail":{"number":"04","branch":"ev-agent.substrate-consolidation.consumer-migration"}}
+{"at":"2026-05-27T01:20:33.783Z","event":"phase-completed","detail":{"phase":1}}

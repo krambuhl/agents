@@ -11,8 +11,8 @@
     {
       "number": 1,
       "name": "Shared plan-parser lib",
-      "status": "in-progress",
-      "branch": "ev-agent.substrate-consolidation.plan-verb"
+      "status": "completed",
+      "branch": "ev-agent.substrate-consolidation.consumer-migration"
     },
     {
       "number": 2,
