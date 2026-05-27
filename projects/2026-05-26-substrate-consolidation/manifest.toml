@@ -37,7 +37,7 @@ branch = "ev-agent.substrate-consolidation.revision-split"
 number = 4
 name = "Author the 3-axis source"
 status = "in-progress"
-branch = "ev-agent.substrate-consolidation.domains-testing"
+branch = "ev-agent.substrate-consolidation.domains-design"
 
 [[phases]]
 number = 5
@@ -334,6 +334,16 @@ at = "2026-05-27T17:50:36.870Z"
 event = "pr-opened"
 detail = { pr = 81, url = "https://github.com/krambuhl/agents/pull/81" }
 
+[[events]]
+at = "2026-05-27T17:56:40.280Z"
+event = "pr-merged"
+detail = { pr = 81 }
+
+[[events]]
+at = "2026-05-27T18:03:09.250Z"
+event = "checkin-created"
+detail = { number = "15", branch = "ev-agent.substrate-consolidation.domains-design" }
+
 [[checkins]]
 schema_version = 1
 number = "08"
@@ -529,6 +539,20 @@ scope = ["plugins/guild/modes/domains/ (2 test-tier domain modes + drift-test ex
 changes_since_previous = "Fourth unit of Phase 4 (M2). U1-U3 merged (#78-80). This unit completes 10 of the 12 domains; only the design-phase domains (performance, substrate) remain in U5, then the U6 wiring. The testing split is the one domain that is a SPLIT rather than a 1:1 adapt -- jelly's single testing.md is the tier-agnostic layer for both, the two baked evaluators supply the tier-specific catalogs."
 verdict = { result = "approved", reasons = [] }
 notes_for_pr = ["The split sources from the TWO baked evaluators (test-unit<-evaluator-test-unit 15 codes; test-integration<-evaluator-test-integration 15 codes) for the tier-specific catalogs, and jelly's single testing.md for the shared tier-agnostic principles. jelly's testing.md is NOT halved -- its 6 concerns are the source for a byte-identical ## Shared testing concerns block present in BOTH modes (Phase 5 inlining can't cross-reference, so the shared content is duplicated, not referenced).", "Drift test extended two ways: (a) 2 new flag-code pairs; (b) a sharedSection() assertion that the ## Shared testing concerns block is character-identical across test-unit.md and test-integration.md -- the whiteboard's duplication-plus-test choice over a cross-file reference. Boundary logic: extracts header-to-next-h2; h3 subheaders are retained inside the block (verified by the test-unit evaluator).", "10/12 domains now authored (a11y, composition, abstraction, naming, react, tokens, css-architecture, nextjs, test-unit, test-integration). U5 adds the last two: performance + substrate, whiteboard-sourced design-phase-only domains with NO flag codes -- they need the different drift invariant (concern-heading presence) noted in the test comment, and panel.manifest.toml (U6) must give them no reviewer cell.", "DEFERRED (carried from U3, still open): the drift test's exclude mechanism doesn't assert excluded codes still exist in the baked source. Low priority; fold a presence-assertion into U5 if convenient. (No exclusions were needed for the two test domains -- all 30 codes are domain knowledge.)"]
+
+[[checkins]]
+schema_version = 1
+number = "15"
+created = "2026-05-27T18:03:09.172019Z"
+phase = { number = 4, name = "Author the 3-axis source" }
+branch = "ev-agent.substrate-consolidation.domains-design"
+unit = "U5 — Design domains (performance, substrate) + concern-presence drift check"
+contract = { goal = "Adapt the two design-phase whiteboard agents (whiteboard-performance, whiteboard-substrate-engineer) into phase-neutral domain modes performance.md + substrate.md, completing the 12-domain set. Extend the drift test with a concern-presence invariant (these domains carry no flag codes).", acceptance_criteria = ["modes/domains/ gains performance.md and substrate.md", "each matches the established domain-mode shape (Scope, Concerns, Good patterns, Vocabulary, Cross-domain notes)", "both marked design-phase-only (planner/researcher) with NO reviewer cell (performance defers to nextjs reviewer; substrate states there is no substrate evaluator)", "drift test extended with concern-presence check: each pinned concern in BOTH baked source AND mode; 9 cases green", "whiteboard-orchestration framing stripped; zero jelly/mcp refs"], rules_applied = ["Adaptation rule, inverted direction (design-conversation voice -> phase-neutral): keep concerns + leanings (Good patterns) + sibling boundaries (Cross-domain notes) + the explicit phase note; strip dispatch-read, 'your section'/'orchestrator' framing, Multi-round dynamic, Example perspective; derive Vocabulary, don't invent", "Harvest-first: jelly-guild + baked whiteboard agents untouched", "Node strip-only-clean test"], disqualifiers = ["inventing domain knowledge beyond the source", "leaving whiteboard-orchestration framing in a mode", "giving these domains a reviewer cell", "straying into U6 (tools-map/manifest); modifying jelly-guild or the baked whiteboard agents"], inputs = ["plugins/guild/agents/{whiteboard-performance,whiteboard-substrate-engineer,whiteboard-base}.md", "plugins/guild/modes/domains/* (U2-U4 target shape)", "projects/2026-05-26-substrate-consolidation/whiteboards/4-author-3-axis-source.md", "PLAN.md Phase 4"] }
+execution = { actions = ["Read both whiteboard agents + whiteboard-base; mapped 'Your perspective' -> Concerns, 'What you lean toward' -> Good patterns, sibling/carve-out sections -> Cross-domain notes, and the explicit 'no evaluator-substrate' note -> the design-phase-only/no-reviewer-cell phase scoping", "Authored performance.md (6 concerns) and substrate.md (7 concerns), both design-phase-only; stripped whiteboard-orchestration framing (dispatch-read, your-section, Example perspective, Multi-round)", "Extended flag-code-drift.test.ts with CONCERN_PAIRS + a two-sided concern-presence describe (each concern in BOTH source and mode; guard-the-guard length check)", "Addressed a test-unit advisory inline: strengthened the 3 short concern keywords (crud->crud-vs-orchestration, bundle->bundle size, idempoten->idempotency) so unanchored includes is unlikely to match incidental prose", "Full suite 88 files / 1295 tests green; drift test 9 cases (6 flag-code pairs + 1 shared-block + 2 concern-presence)", "guild-validate panel (contract-fit + test-unit) returned approved, zero blocking/advisory findings after the keyword hardening"], files_touched = ["plugins/guild/modes/domains/performance.md", "plugins/guild/modes/domains/substrate.md", "plugins/guild/modes/domains/flag-code-drift.test.ts"], corrections = ["test-unit advisory (concern-presence unanchored includes on short keywords could match incidental prose) addressed in-unit by making the 3 short keywords distinctive multi-word phrases; re-ran green. Not deferred."] }
+scope = ["plugins/guild/modes/domains/ (2 design-phase domain modes + drift-test concern-presence extension)"]
+changes_since_previous = "Fifth unit of Phase 4 (M2). U1-U4 merged (#78-81). This completes ALL 12 domains (a11y, composition, abstraction, naming, react, tokens, css-architecture, nextjs, test-unit, test-integration, performance, substrate). Only U6 (the TOML wiring: tools-map + panel.manifest + design-systems recipe + contract-fit retention) remains in Phase 4."
+verdict = { result = "approved", reasons = [] }
+notes_for_pr = ["performance + substrate are the two whiteboard-sourced domains: design-phase-only (planner/researcher), NO reviewer cell. performance defers framework-cost-on-shipped-code to the nextjs reviewer; substrate's baked agent states outright there is no evaluator-substrate (contract-fit covers after-the-fact). This per-domain valid-phase-set is what U6's panel.manifest.toml must encode -- do NOT emit a reviewer combination for performance or substrate.", "Adaptation direction was INVERTED vs U3/U4: design-conversation voice -> phase-neutral (rather than reviewer-verdict voice -> phase-neutral). Stripped the whiteboard-orchestration framing (dispatch-read, 'your section', 'the orchestrator writes', Example perspective, Multi-round dynamic); kept the concerns + leanings + sibling boundaries.", "Drift invariant for these two is concern-PRESENCE (no flag codes exist): CONCERN_PAIRS pins concern keywords checked in BOTH the baked whiteboard source (keeps the list honest) AND the mode (catches a dropped concern). Weaker than flag-code identity -- acknowledged in the test comment. test-unit's advisory about unanchored short-keyword matching was addressed by using distinctive multi-word keywords.", "ALL 12 DOMAINS NOW AUTHORED. U6 wiring needs: tools-map.toml (phase base posture + additive domain grants, with the no-permissive-default header contract); panel.manifest.toml (needed combinations with per-domain valid-phase sets -- performance/substrate planner/researcher-only, no reviewer); the design-systems recipe (composition+abstraction+tokens+naming @ planner); explicit retention of hand-authored evaluator-contract-fit as the one principled exception.", "DEFERRED (carried, low priority): the drift test's exclude mechanism (css-arch-out-of-scope-files) doesn't assert excluded codes still exist in the baked source. Optional hardening for whoever touches the test next; no new exclusions added in U4/U5."]
 
 [[sessions]]
 schema_version = 1

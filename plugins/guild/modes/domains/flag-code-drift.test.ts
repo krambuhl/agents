@@ -17,12 +17,10 @@ import { fileURLToPath } from 'node:url';
 // their presence is the load-bearing invariant to pin (the prose is
 // legitimately reshaped, so a full string diff would be wrong).
 //
-// Extend PAIRS as later units adapt more domains:
-//   U4 -> test-unit, test-integration (added below)
-//   U5 -> performance (whiteboard-performance), substrate (whiteboard-substrate-engineer)
-// The whiteboard-sourced domains in U5 carry no flag codes, so they
-// will need a different invariant (concern-heading presence) rather
-// than this flag-code check.
+// PAIRS covers the flag-coded domains (adapted from `evaluator-*`).
+// The whiteboard-sourced domains (performance, substrate) carry no flag
+// codes, so they use a separate concern-presence invariant — see
+// CONCERN_PAIRS and its describe block at the bottom of this file.
 
 // `exclude` lists flag codes that intentionally do NOT harvest into the
 // domain mode because they are not phase-neutral domain knowledge.
@@ -126,4 +124,69 @@ describe('shared testing concerns block', () => {
     expect(unit.length).toBeGreaterThan(0);
     expect(unit).toEqual(integration);
   });
+});
+
+// Whiteboard-sourced domains (performance, substrate) are adapted from
+// design-phase `whiteboard-*` agents, which carry no flag codes. The
+// drift invariant is therefore concern PRESENCE: each load-bearing
+// concern (drawn from the source's enumerated perspective) must appear
+// in BOTH the baked source and the harvested mode. The source-side
+// check keeps the keyword list honest — if the source drops a concern,
+// the list is stale and fails loud rather than guarding nothing.
+// Weaker than flag-code identity (these keywords are author-chosen, not
+// stable identifiers), but it catches a mode that loses a whole concern.
+const CONCERN_PAIRS = [
+  {
+    mode: 'performance.md',
+    baked: 'whiteboard-performance.md',
+    concerns: [
+      'bundle size',
+      'hydration',
+      'client boundary',
+      'render cost',
+      'data flow',
+      'asset weight',
+    ],
+  },
+  {
+    mode: 'substrate.md',
+    baked: 'whiteboard-substrate-engineer.md',
+    // Keywords are kept distinctive (multi-word where possible) so the
+    // unanchored .includes() match is unlikely to be satisfied by
+    // incidental prose rather than the genuine concern section.
+    concerns: [
+      'crud-vs-orchestration',
+      'append-only',
+      'parallel-session',
+      'family-shape',
+      'schema-version',
+      'idempotency',
+      'cost-of-substrate',
+    ],
+  },
+];
+
+describe('domain-mode concern-presence (whiteboard-sourced)', () => {
+  for (const pair of CONCERN_PAIRS) {
+    it(`${pair.mode} covers every concern harvested from ${pair.baked}`, () => {
+      const baked = readFileSync(join(agentsDir, pair.baked), 'utf8').toLowerCase();
+      const mode = readFileSync(join(here, pair.mode), 'utf8').toLowerCase();
+
+      // Guard the guard: an empty concern list would pass vacuously.
+      expect(pair.concerns.length).toBeGreaterThan(0);
+
+      // Source-side: the listed concerns must be real concerns of the
+      // baked source, or the list has gone stale.
+      const missingFromSource = pair.concerns.filter(
+        (concern) => !baked.includes(concern),
+      );
+      expect(missingFromSource).toEqual([]);
+
+      // Mode-side: the harvested mode must cover each concern.
+      const missingFromMode = pair.concerns.filter(
+        (concern) => !mode.includes(concern),
+      );
+      expect(missingFromMode).toEqual([]);
+    });
+  }
 });
