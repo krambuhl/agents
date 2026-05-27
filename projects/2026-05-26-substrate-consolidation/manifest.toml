@@ -37,7 +37,7 @@ branch = "ev-agent.substrate-consolidation.revision-split"
 number = 4
 name = "Author the 3-axis source"
 status = "in-progress"
-branch = "ev-agent.substrate-consolidation.domains-reviewer"
+branch = "ev-agent.substrate-consolidation.domains-testing"
 
 [[phases]]
 number = 5
@@ -319,6 +319,16 @@ at = "2026-05-27T17:39:27.878Z"
 event = "pr-opened"
 detail = { pr = 80, url = "https://github.com/krambuhl/agents/pull/80" }
 
+[[events]]
+at = "2026-05-27T17:42:13.001Z"
+event = "pr-merged"
+detail = { pr = 80 }
+
+[[events]]
+at = "2026-05-27T17:49:52.064Z"
+event = "checkin-created"
+detail = { number = "14", branch = "ev-agent.substrate-consolidation.domains-testing" }
+
 [[checkins]]
 schema_version = 1
 number = "08"
@@ -500,6 +510,20 @@ scope = ["plugins/guild/modes/domains/ (4 adapted domain modes + 1 drift test)"]
 changes_since_previous = "Third unit of Phase 4 (M2 guild agent collapse). U1 (phase+personality axes, #78) and U2 (4 clean domains, #79) merged into .plan. This unit adds the first ADAPTED domains -- harvested from the baked reviewer evaluators with their catalogs preserved -- plus the drift guard that keeps them honest against the still-live baked agents until Phase 7."
 verdict = { result = "approved", reasons = [] }
 notes_for_pr = ["Adaptation rule applied uniformly: keep the antipattern catalog + flag codes + detection heuristics + carve-outs + cross-domain notes + severities; strip the evaluator-base dispatch-read, the antagonist-panel framing, the verdict-assembly Process, precedence/dedup, the no-signal-applies clause, the ESLint/stylelint-not-adopted rationale, css-arch's codemod-evaluation rubric + elevated-precedence, and the Bash/maxTurns frontmatter (codegen synthesizes it in Phase 5). Good patterns + Vocabulary are derived from catalog content (antipattern inverses, terms used) -- not invented.", "DOMAIN-VS-REVIEWER BOUNDARY (decided here, relevant to U5 + Phase 5): a baked evaluator's flag codes are not all phase-neutral domain knowledge. css-arch-out-of-scope-files (scope discipline) is contract-fit/reviewer's lane and is excluded from the domain mode with a documented test exclusion. css-arch-missing-resolved-diff / css-arch-silent-value-change generalize as CSS visual-change discipline and were kept. The line: structural/knowledge concerns -> domain; contract-scope/panel-mechanics -> reviewer phase or contract-fit.", "Drift test (flag-code-drift.test.ts) is parameterized over a {domain-mode, baked-evaluator, prefix, exclude} map. U4 extends it with test-unit<-evaluator-test-unit and test-integration<-evaluator-test-integration. U5's performance/substrate are whiteboard-sourced and carry NO flag codes, so they need a different invariant (concern-heading presence), per the comment in the test.", "DEFERRED future-hardening (test-unit evaluator, advisory, non-gating): the exclude mechanism does not assert that an excluded code STILL EXISTS in the baked source, so a stale exclusion could pass silently once PAIRS grows. Out of scope for U3 (one current exclusion, real); fold a presence-assertion for excluded codes into U4/U5 when PAIRS expands.", "Panel augmented manually: derive-panel returned contract-fit only (it treats plugins/guild/modes/** as substrate); added evaluator-test-unit to scrutinize the new test (the inverse of the documented derive-panel react-api over-derivation). No react-api -- the test imports no React/JSX."]
+
+[[checkins]]
+schema_version = 1
+number = "14"
+created = "2026-05-27T17:49:51.980280Z"
+phase = { number = 4, name = "Author the 3-axis source" }
+branch = "ev-agent.substrate-consolidation.domains-testing"
+unit = "U4 — Testing split (test-unit + test-integration) + drift-test extension"
+contract = { goal = "Split the testing concern into two phase-neutral domain modes (test-unit, test-integration), each carrying its tier-specific antipattern catalog from the baked evaluator plus a byte-identical shared tier-agnostic concerns block sourced from jelly's testing.md (NOT halved). Extend the flag-code drift test with the two new pairs + a shared-block byte-identical assertion.", acceptance_criteria = ["modes/domains/ gains test-unit.md (15 test-unit-* codes) and test-integration.md (15 test-integration-* codes)", "each matches the established domain-mode shape (Scope, Shared testing concerns, Antipattern catalog, Detection, Good patterns, Vocabulary, Cross-domain notes)", "every baked flag code survives, enforced by flag-code-drift.test.ts (6 pairs, green)", "the ## Shared testing concerns block is byte-identical across both modes, enforced by a new test", "reviewer/panel framing stripped; zero jelly/mcp refs"], rules_applied = ["Adaptation rule (same as U3)", "jelly testing.md is the SOURCE for the shared block (copied, not halved/moved); jelly-guild + baked evaluators untouched", "shared block duplicated in both modes (inlining can't cross-reference) + byte-identical test -- the whiteboard's duplication-plus-test choice", "Node strip-only-clean test"], disqualifiers = ["halving jelly's testing.md", "dropping/renaming a flag code", "leaving reviewer framing in a mode", "the shared block drifting between the two files", "straying into U5/U6; modifying jelly-guild or the baked evaluators"], inputs = ["plugins/guild/agents/{evaluator-test-unit,evaluator-test-integration,evaluator-base}.md", "plugins/jelly-guild/modes/domains/testing.md", "plugins/guild/modes/domains/{a11y,react,...}.md (U2/U3 target shape)", "projects/2026-05-26-substrate-consolidation/whiteboards/4-author-3-axis-source.md", "PLAN.md Phase 4"] }
+execution = { actions = ["Read both baked test evaluators + jelly testing.md; confirmed the split is real (15 distinct vitest codes vs 15 distinct playwright codes, distinct test:* vs test:e2e:* grants)", "Authored test-unit.md (15 codes) and test-integration.md (15 codes), each with a byte-identical ## Shared testing concerns block (6 tier-agnostic principles from jelly testing.md) + tier-specific catalog + Detection + Good patterns + Vocabulary + Cross-domain notes", "Extended flag-code-drift.test.ts: 2 new flag-code pairs (test-unit-, test-integration-) + a sharedSection() byte-identical assertion across the two modes, both guard-the-guarded", "Full suite 88 files / 1293 tests green (drift test now 7 cases); shared-block test confirms character-identical block", "guild-validate panel (contract-fit + test-unit) returned approved, zero findings; test-unit traced the sharedSection boundary logic as sound"], files_touched = ["plugins/guild/modes/domains/test-unit.md", "plugins/guild/modes/domains/test-integration.md", "plugins/guild/modes/domains/flag-code-drift.test.ts"], corrections = [] }
+scope = ["plugins/guild/modes/domains/ (2 test-tier domain modes + drift-test extension)"]
+changes_since_previous = "Fourth unit of Phase 4 (M2). U1-U3 merged (#78-80). This unit completes 10 of the 12 domains; only the design-phase domains (performance, substrate) remain in U5, then the U6 wiring. The testing split is the one domain that is a SPLIT rather than a 1:1 adapt -- jelly's single testing.md is the tier-agnostic layer for both, the two baked evaluators supply the tier-specific catalogs."
+verdict = { result = "approved", reasons = [] }
+notes_for_pr = ["The split sources from the TWO baked evaluators (test-unit<-evaluator-test-unit 15 codes; test-integration<-evaluator-test-integration 15 codes) for the tier-specific catalogs, and jelly's single testing.md for the shared tier-agnostic principles. jelly's testing.md is NOT halved -- its 6 concerns are the source for a byte-identical ## Shared testing concerns block present in BOTH modes (Phase 5 inlining can't cross-reference, so the shared content is duplicated, not referenced).", "Drift test extended two ways: (a) 2 new flag-code pairs; (b) a sharedSection() assertion that the ## Shared testing concerns block is character-identical across test-unit.md and test-integration.md -- the whiteboard's duplication-plus-test choice over a cross-file reference. Boundary logic: extracts header-to-next-h2; h3 subheaders are retained inside the block (verified by the test-unit evaluator).", "10/12 domains now authored (a11y, composition, abstraction, naming, react, tokens, css-architecture, nextjs, test-unit, test-integration). U5 adds the last two: performance + substrate, whiteboard-sourced design-phase-only domains with NO flag codes -- they need the different drift invariant (concern-heading presence) noted in the test comment, and panel.manifest.toml (U6) must give them no reviewer cell.", "DEFERRED (carried from U3, still open): the drift test's exclude mechanism doesn't assert excluded codes still exist in the baked source. Low priority; fold a presence-assertion into U5 if convenient. (No exclusions were needed for the two test domains -- all 30 codes are domain knowledge.)"]
 
 [[sessions]]
 schema_version = 1
