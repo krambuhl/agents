@@ -37,7 +37,7 @@ branch = "ev-agent.substrate-consolidation.revision-split"
 number = 4
 name = "Author the 3-axis source"
 status = "in-progress"
-branch = "ev-agent.substrate-consolidation.domains-clean"
+branch = "ev-agent.substrate-consolidation.domains-reviewer"
 
 [[phases]]
 number = 5
@@ -304,6 +304,16 @@ at = "2026-05-27T17:09:09.204Z"
 event = "pr-opened"
 detail = { pr = 79, url = "https://github.com/krambuhl/agents/pull/79" }
 
+[[events]]
+at = "2026-05-27T17:24:12.674Z"
+event = "pr-merged"
+detail = { pr = 79 }
+
+[[events]]
+at = "2026-05-27T17:38:34.584Z"
+event = "checkin-created"
+detail = { number = "13", branch = "ev-agent.substrate-consolidation.domains-reviewer" }
+
 [[checkins]]
 schema_version = 1
 number = "08"
@@ -471,6 +481,20 @@ scope = ["plugins/guild/modes/domains/ (4 clean-harvest files)"]
 changes_since_previous = "Second unit of Phase 4, on the M2 (guild agent collapse) milestone. U1 (phase + personality axes) merged as PR #78. This unit adds the first 4 of the 12 domain-mode fragments -- the clean jelly-native ones that establish the domain file shape U3-U5 conform to."
 verdict = { result = "approved", reasons = [] }
 notes_for_pr = ["Clean harvest: the 4 files are byte-identical to jelly-guild's domains/{a11y,composition,abstraction,naming}.md except one Cross-domain-notes bullet each (the old single 'testing' domain became the test-unit/test-integration split). Verified by per-file diff.", "These 4 domains were already phase-neutral in jelly (Scope/Concerns/Antipattern catalog/Good patterns/Vocabulary/Cross-domain notes) -- no reshaping needed, unlike the U3/U5 domains adapted from baked evaluator/whiteboard agents.", "PR-event-recording papercut (carried, NOT a blocker): the per-unit reconciliation recipe says to re-record #78's pr-opened/pr-merged riding this commit, but there is NO clean CLI path -- `loom pr open` CREATES a PR (would duplicate), `pr merged` has no verb, and `loom events` has only read/latest (no append). The events trail therefore lags by design (only Phase 1 PRs recorded); manifest phase states + checkins are authoritative. Substrate-fix candidate: a `loom events append` or `loom pr record --pr=N --merged` verb so externally-created stacked PRs (gh pr create --base) can be reflected in the trail without a duplicate PR."]
+
+[[checkins]]
+schema_version = 1
+number = "13"
+created = "2026-05-27T17:38:34.500952Z"
+phase = { number = 4, name = "Author the 3-axis source" }
+branch = "ev-agent.substrate-consolidation.domains-reviewer"
+unit = "U3 — Reviewer domains (react, tokens, css-architecture, nextjs) + flag-code drift test"
+contract = { goal = "Adapt the 4 baked reviewer-coupled evaluators into phase-neutral domain modes in plugins/guild/modes/domains/, preserving each domain's antipattern catalog + flag codes while stripping reviewer/panel/generator framing; guard the harvest with a flag-code drift test.", acceptance_criteria = ["modes/domains/ gains react.md, tokens.md, css-architecture.md, nextjs.md", "each matches the established domain-mode shape (Scope, [Project context/Carve-outs where sourced], Concerns, Antipattern catalog, Good patterns, Vocabulary, Cross-domain notes)", "every baked-source flag code appears verbatim in its domain mode, enforced by flag-code-drift.test.ts (one documented exclusion: css-arch-out-of-scope-files, a scope-discipline concern owned by contract-fit/reviewer)", "reviewer/panel/generator framing stripped", "zero jelly/mcp refs; severities retained"], rules_applied = ["Adaptation rule: keep Scope+catalog+flag-codes+detection-heuristics+carve-outs+cross-domain-notes+severities; strip dispatch-read/panel-framing/Process/precedence/no-signal-clause/lint-rationale/codemod-rubric/frontmatter; derive Good-patterns+Vocabulary from catalog (no invention)", "Harvest-first: jelly-guild AND the baked evaluator-*.md left unmodified (deleted Phase 7)", "Node strip-only-clean test (no param props, // comments, no */); repo dirname(fileURLToPath) pattern"], disqualifiers = ["inventing domain knowledge beyond the source", "dropping/renaming a flag code (beyond the one documented scope-discipline exclusion)", "leaving reviewer/panel/generator framing in a domain mode", "straying into U4/U5/U6 domains; modifying jelly-guild or the baked evaluators"], inputs = ["plugins/guild/agents/{evaluator-react-api,evaluator-tokens,evaluator-css-architecture,evaluator-nextjs,evaluator-base}.md", "plugins/guild/modes/domains/{a11y,composition,abstraction,naming}.md (U2 target shape)", "projects/2026-05-26-substrate-consolidation/whiteboards/4-author-3-axis-source.md", "PLAN.md Phase 4"] }
+execution = { actions = ["Read the 4 baked evaluators + evaluator-base to separate phase-neutral domain knowledge from reviewer/panel/generator framing", "Authored react.md (8 codes), tokens.md (7 codes + project-context + carve-outs), css-architecture.md (8 codes, codemod-rubric generalized into CSS visual-change discipline), nextjs.md (15 codes + check-nextjs.ts detection note)", "Wrote flag-code-drift.test.ts: per {domain-mode, baked-evaluator} pair, extract backtick-wrapped flag codes by prefix and assert each appears in the mode; parameterized for U4/U5 extension; guard-the-guard length check", "Drift test caught css-arch-out-of-scope-files (a 9th css-arch code from the stripped codemod section); classified it as a scope-discipline concern (contract-fit's lane, not structural-CSS) and added it as a documented test exclusion rather than forcing it into the domain", "Switched the test to dirname(fileURLToPath(import.meta.url)) to match the repo pattern; full suite 88 files / 1290 tests green", "guild-validate panel (contract-fit + test-unit) returned approved, zero findings"], files_touched = ["plugins/guild/modes/domains/react.md", "plugins/guild/modes/domains/tokens.md", "plugins/guild/modes/domains/css-architecture.md", "plugins/guild/modes/domains/nextjs.md", "plugins/guild/modes/domains/flag-code-drift.test.ts"], corrections = ["css-arch-out-of-scope-files: the drift test forced an explicit domain-vs-reviewer boundary call. It is NOT harvested into css-architecture.md (scope discipline belongs to contract-fit/reviewer) and is recorded as a documented exclusion in the drift test. Distinct from css-arch-missing-resolved-diff / css-arch-silent-value-change, which DID generalize cleanly as CSS visual-change discipline and were kept."] }
+scope = ["plugins/guild/modes/domains/ (4 adapted domain modes + 1 drift test)"]
+changes_since_previous = "Third unit of Phase 4 (M2 guild agent collapse). U1 (phase+personality axes, #78) and U2 (4 clean domains, #79) merged into .plan. This unit adds the first ADAPTED domains -- harvested from the baked reviewer evaluators with their catalogs preserved -- plus the drift guard that keeps them honest against the still-live baked agents until Phase 7."
+verdict = { result = "approved", reasons = [] }
+notes_for_pr = ["Adaptation rule applied uniformly: keep the antipattern catalog + flag codes + detection heuristics + carve-outs + cross-domain notes + severities; strip the evaluator-base dispatch-read, the antagonist-panel framing, the verdict-assembly Process, precedence/dedup, the no-signal-applies clause, the ESLint/stylelint-not-adopted rationale, css-arch's codemod-evaluation rubric + elevated-precedence, and the Bash/maxTurns frontmatter (codegen synthesizes it in Phase 5). Good patterns + Vocabulary are derived from catalog content (antipattern inverses, terms used) -- not invented.", "DOMAIN-VS-REVIEWER BOUNDARY (decided here, relevant to U5 + Phase 5): a baked evaluator's flag codes are not all phase-neutral domain knowledge. css-arch-out-of-scope-files (scope discipline) is contract-fit/reviewer's lane and is excluded from the domain mode with a documented test exclusion. css-arch-missing-resolved-diff / css-arch-silent-value-change generalize as CSS visual-change discipline and were kept. The line: structural/knowledge concerns -> domain; contract-scope/panel-mechanics -> reviewer phase or contract-fit.", "Drift test (flag-code-drift.test.ts) is parameterized over a {domain-mode, baked-evaluator, prefix, exclude} map. U4 extends it with test-unit<-evaluator-test-unit and test-integration<-evaluator-test-integration. U5's performance/substrate are whiteboard-sourced and carry NO flag codes, so they need a different invariant (concern-heading presence), per the comment in the test.", "DEFERRED future-hardening (test-unit evaluator, advisory, non-gating): the exclude mechanism does not assert that an excluded code STILL EXISTS in the baked source, so a stale exclusion could pass silently once PAIRS grows. Out of scope for U3 (one current exclusion, real); fold a presence-assertion for excluded codes into U4/U5 when PAIRS expands.", "Panel augmented manually: derive-panel returned contract-fit only (it treats plugins/guild/modes/** as substrate); added evaluator-test-unit to scrutinize the new test (the inverse of the documented derive-panel react-api over-derivation). No react-api -- the test imports no React/JSX."]
 
 [[sessions]]
 schema_version = 1
