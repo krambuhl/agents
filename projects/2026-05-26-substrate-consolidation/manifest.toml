@@ -1,3 +1,5 @@
+revisions = []
+
 [meta]
 schema_version = 1
 title = "Substrate Consolidation"
@@ -28,7 +30,8 @@ branch = "ev-agent.substrate-consolidation.toml-cutover"
 [[phases]]
 number = 3
 name = "Revision split"
-status = "not-started"
+status = "completed"
+branch = "ev-agent.substrate-consolidation.revision-split"
 
 [[phases]]
 number = 4
@@ -245,6 +248,26 @@ at = "2026-05-27T06:09:11.063Z"
 event = "phase-completed"
 detail = { phase = 2 }
 
+[[events]]
+at = "2026-05-27T06:13:38.981Z"
+event = "pr-opened"
+detail = { pr = 76, url = "https://github.com/krambuhl/agents/pull/76" }
+
+[[events]]
+at = "2026-05-27T06:13:39.981Z"
+event = "pr-merged"
+detail = { pr = 76 }
+
+[[events]]
+at = "2026-05-27T16:06:17.808Z"
+event = "checkin-created"
+detail = { number = "10", branch = "ev-agent.substrate-consolidation.revision-split" }
+
+[[events]]
+at = "2026-05-27T16:06:17.880Z"
+event = "phase-completed"
+detail = { phase = 3 }
+
 [[checkins]]
 schema_version = 1
 number = "08"
@@ -370,6 +393,20 @@ scope = ["plugins/loom/cli/lib/manifest-toml.ts", "plugins/loom/cli/lib/project.
 changes_since_previous = "Fifth and final unit of Phase 2 — the cutover. loom's machine state now lives in one manifest.toml; the per-file JSON stores and their reader/writer libs are gone. Closes Phase 2's exit criteria: single sectioned manifest.toml, hand-rolled parser, atomic writes, append-only discipline, old stores removed, real-artifact regression."
 verdict = { result = "approved", reasons = [] }
 notes_for_pr = ["Operator decisions this unit: (1) ALL-IN-U5 — rewire + convert + marker + dead-code removal in one atomic commit; (2) PRESERVE read-verb output shapes (Phase 6 owns output-contract evolution); (3) DOGFOOD — convert this project first, write checkin 09 into its own manifest.toml; (4) SKIP jelly (fork-shaped checkins; keep loom's Checkin schema strict).", "FOLLOW-UP (advisory from the panel): jelly is stranded on manifest.json post-cutover — the repo now carries two state formats. After the marker flip + dead JSON-reader removal, jelly is inert/unlisted by loom. This is fine for a fork being sunset, but it is a loose end a later unit (or jelly's deletion in the consolidation plan) must close so dual-format doesn't ossify. Candidate: fold jelly's conversion into the fork-deletion work, or drop jelly's project dir entirely.", "Real-artifact discovery: the strict reconstructCheckin (verdict required) is correct for loom but rejected jelly's fork checkins. The converter's verify-before-rename caught it before any removal — collect -> writeManifest(verify) -> remove ordering guarantees no half-convert and no history loss.", "Panel = contract-fit + test-unit + naming, all approved. Same react-api drop (pure-Node .ts).", "Phase 2 COMPLETE after this unit. The .plan -> main cadence question (carried since Phase 1) is now ripe: .plan will be ~15 commits ahead of main once #76 merges.", "#75 (Phase 2 U4) pr-opened + pr-merged were folded into manifest.toml [[events]] by the conversion (they were in events.jsonl at branch-cut)."]
+
+[[checkins]]
+schema_version = 1
+number = "10"
+created = "2026-05-27T09:10:00Z"
+phase = { number = 3, name = "Revision split" }
+branch = "ev-agent.substrate-consolidation.revision-split"
+unit = "Revision split: dual-write [[revisions]] + PLAN.md ## Revision log"
+contract = { goal = "Extend loom revise-plan so a revision records in both layers — a [[revisions]] entry {timestamp, target, seq} in manifest.toml AND the existing dated ## Revision log line in PLAN.md — written manifest-first/best-effort-atomic, graceful when the project isn't loom-adopted.", acceptance_criteria = ["types.ts: Revision = {timestamp, target, seq} + revisions: Revision[] on ManifestToml", "manifest-toml.ts: readManifest reconstructs [[revisions]] (absent -> []); stringifyManifest emits it; pure appendRevision(m, revision) mutator", "reviseVerb dual-write: when manifest.toml exists, writeManifest FIRST (verify+atomic) with the appended revision (seq=revisions.length+1, target 'PLAN.md', timestamp ISO), THEN PLAN.md via temp+rename; plan-only project -> PLAN.md only (graceful)", "Test (no-drift gate): one revision -> exactly one [[revisions]] entry + one ## Revision log line (per-operation atomicity); seq increments across revisions (manifest is the append-only ledger); plan-only revise writes the PLAN.md line, no [[revisions]]; manifest round-trip for [[revisions]]", "Full suite green"], rules_applied = ["Manifest-first best-effort atomicity: manifest is the validated/atomic write; if it fails, PLAN.md is untouched (no drift)", "Graceful on un-adopted projects: PLAN.md always, [[revisions]] only when manifest.toml exists", "appendRevision is a pure immutable mutator like the U4 append*/update* family", "target = 'PLAN.md' is the revised artifact (held semantic for future non-PLAN.md targets); seq is the 1-based append-only sequence", "'never drift' is PER-OPERATION (one entry + one line per revise); the manifest [[revisions]] is the durable append-only ledger, PLAN.md is replaced per revise"], disqualifiers = ["happy-path per-operation drift between the [[revisions]] entry and the ## Revision log line", "writing PLAN.md before the manifest", "requiring manifest.toml (must stay graceful)", "a non-atomic PLAN.md write (temp+rename)", "changing revise-plan's output shape or commit behavior beyond adding the manifest write"], inputs = ["plugins/loom/cli/verbs/loom/plan.ts reviseVerb + appendRevisionLogEntry (current)", "plugins/loom/cli/lib/manifest-toml.ts (read/write/mutate layer)", "plugins/loom/cli/lib/types.ts", "PLAN.md Phase 3 exit criteria"] }
+execution = { actions = ["types.ts: added Revision {timestamp, target, seq} + revisions: Revision[] on ManifestToml", "manifest-toml.ts: reconstructRevision; readManifest reads [[revisions]] (absent->[]); stringifyManifest emits revisions; appendRevision mutator (mirrors appendSession)", "plan.ts reviseVerb: dual-write — manifest-first (existsSync gate; readManifestFile -> appendRevision(seq, target='PLAN.md', timestamp) -> writeManifest verify+atomic {expect:token}); then PLAN.md via writeFileSync(tmp)+renameSync; graceful (PLAN.md only) when no manifest.toml", "Updated the ManifestToml literals (harness baseManifest, adopt.ts writeLoomSubstrate, converter, write-test syntheticManifest) + harness SECTIONS with revisions", "Tests: 3 dual-write tests in plan.test.ts (single-revise no-drift, append-only seq ledger, plan-only graceful) + a [[revisions]] round-trip in manifest-toml-write.test.ts; existing revise tests unchanged (run on plan-only projects)", "Verified: npx vitest run plugins/loom scripts = 19 files / 264 passed. Panel (contract-fit + test-unit + naming) approved.", "Dogfood: this checkin (10) written into substrate-consolidation's own manifest.toml [[checkins]] via the rewired checkin write"], files_touched = ["plugins/loom/cli/lib/types.ts", "plugins/loom/cli/lib/manifest-toml.ts", "plugins/loom/cli/lib/manifest-toml.harness.ts", "plugins/loom/cli/lib/adopt.ts", "plugins/loom/cli/verbs/loom/plan.ts", "plugins/loom/cli/verbs/loom/plan.test.ts", "plugins/loom/cli/lib/manifest-toml-write.test.ts", "scripts/convert-loom-state-to-toml.ts"], corrections = ["Initial seq-increments test wrongly assumed PLAN.md ## Revision log accumulates cumulatively across revises. It does NOT — revise-plan REPLACES PLAN.md with the revision file, so the human log only grows when the operator carries it forward. The manifest [[revisions]] is the append-only machine ledger (seq source of truth). Reframed the test: assert manifest seq [1,2] (ledger) + per-operation one-entry-one-line (single-revise test). The 'never drift' invariant is per-operation, not cumulative."] }
+scope = ["plugins/loom/cli/lib/types.ts", "plugins/loom/cli/lib/manifest-toml.ts", "plugins/loom/cli/lib/manifest-toml.harness.ts", "plugins/loom/cli/lib/adopt.ts", "plugins/loom/cli/verbs/loom/plan.ts", "plugins/loom/cli/verbs/loom/plan.test.ts", "plugins/loom/cli/lib/manifest-toml-write.test.ts", "scripts/convert-loom-state-to-toml.ts"]
+changes_since_previous = "Phase 3 (Revision split), single unit. revise-plan now records revisions in both layers — the append-only [[revisions]] machine ledger in manifest.toml and the human ## Revision log in PLAN.md — dual-written manifest-first, graceful on un-adopted projects. Closes Phase 3's exit criteria. M1 (loom state model, Phases 1-3) is complete."
+verdict = { result = "approved", reasons = [] }
+notes_for_pr = ["Operator decisions: (1) manifest-first best-effort atomicity (manifest validated/atomic first; PLAN.md untouched on manifest failure); (2) graceful on plan-only projects (PLAN.md log line always; [[revisions]] only when manifest.toml exists).", "Semantic clarified during the unit: 'never drift' is PER-OPERATION (one [[revisions]] entry + one ## Revision log line per revise, atomically), NOT cumulative count equality. revise-plan replaces PLAN.md with the revision file, so the human log accumulates only when the operator carries it forward; the manifest [[revisions]] is the durable append-only ledger (the seq source of truth).", "Workflow change adopted this session (operator-flagged): no dangling post-PR updates — pr-opened is committed INTO the current PR (push to update it), not left as a working-tree orphan; only pr-merged rides the next unit. See memory project-substrate-consolidation-pr-cadence.", "Panel = contract-fit + test-unit + naming, all approved (contract-fit re-spawned after a turn-budget overrun; same react-api drop for pure-Node .ts).", "Phase 3 COMPLETE -> M1 (loom state model) done. The .plan -> main cadence question is fully ripe now; M1 is a clean landing point. #76 (Phase 2 U5) pr-opened + pr-merged reconciled into this commit."]
 
 [[sessions]]
 schema_version = 1

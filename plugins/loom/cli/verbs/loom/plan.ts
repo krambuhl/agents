@@ -4,6 +4,7 @@ import {
   existsSync,
   mkdirSync,
   readFileSync,
+  renameSync,
   writeFileSync,
 } from 'node:fs';
 import { join } from 'node:path';
@@ -17,7 +18,12 @@ import {
   synthesizeManifestInit,
   synthesizeConfig,
 } from '../../lib/adopt.ts';
-import { manifestPath as manifestPathFor } from '../../lib/manifest-toml.ts';
+import {
+  appendRevision,
+  manifestPath as manifestPathFor,
+  readManifestFile,
+  writeManifest,
+} from '../../lib/manifest-toml.ts';
 
 // Shared context for the plan/revise verbs. Tests inject
 // `projectsRoot` (a temp dir), `today` (deterministic slug
@@ -313,8 +319,37 @@ export function reviseVerb(
   const date = todayString(ctx);
   const composed = appendRevisionLogEntry(revisionContent, date, rationale);
 
+  // Manifest-first dual-write. When the project is loom-adopted, append the
+  // machine-side [[revisions]] entry to manifest.toml FIRST — writeManifest
+  // verifies-before-rename and writes atomically, so a failure here leaves
+  // PLAN.md untouched (no drift). A plan-only project (no manifest.toml, e.g.
+  // pre-adoption) gets the PLAN.md ## Revision log line only. PLAN.md is then
+  // written via temp+rename so its commit is near-atomic too.
+  const manifestFilePath = manifestPathFor(targetDir);
+  if (existsSync(manifestFilePath)) {
+    try {
+      const { manifest, token } = readManifestFile(manifestFilePath);
+      const next = appendRevision(manifest, {
+        timestamp: new Date().toISOString(),
+        target: 'PLAN.md',
+        seq: manifest.revisions.length + 1,
+      });
+      writeManifest(manifestFilePath, next, { expect: token });
+    } catch (err: unknown) {
+      if (err instanceof LoomError) return errToResult(err);
+      return errToResult(
+        new LoomError(
+          'revise-manifest-write-failed',
+          `writing manifest.toml [[revisions]] failed: ${(err as Error).message}`,
+        ),
+      );
+    }
+  }
+
   try {
-    writeFileSync(planMdPath, composed);
+    const planTmp = `${planMdPath}.tmp`;
+    writeFileSync(planTmp, composed);
+    renameSync(planTmp, planMdPath);
   } catch (err: unknown) {
     return errToResult(
       new LoomError(

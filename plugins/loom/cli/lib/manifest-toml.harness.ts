@@ -25,7 +25,7 @@ import type { ManifestToml } from './types.ts';
 
 export type Project = { dir: string; path: string };
 
-const SECTIONS = ['meta', 'config', 'phases', 'events', 'checkins', 'sessions'] as const;
+const SECTIONS = ['meta', 'config', 'phases', 'events', 'checkins', 'sessions', 'revisions'] as const;
 
 // The section names, as a union — so assertSectionsUnchanged's `changed`
 // argument rejects a typo ('event' vs 'events') at compile time rather than
@@ -58,6 +58,7 @@ export function baseManifest(): ManifestToml {
     events: [],
     checkins: [],
     sessions: [],
+    revisions: [],
   };
 }
 

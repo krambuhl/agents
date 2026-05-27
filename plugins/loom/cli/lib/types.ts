@@ -500,6 +500,17 @@ export type ManifestMeta = {
   strategy: string;
 };
 
+// A plan revision's machine record (Phase 3). The human rationale lives in
+// PLAN.md's `## Revision log`; this is its manifest-side counterpart, written
+// in the same revise-plan operation so the two never drift. `seq` is the
+// 1-based revision number; `target` is the revised artifact (currently always
+// "PLAN.md", kept as a field so future revisions can target other artifacts).
+export type Revision = {
+  timestamp: string;
+  target: string;
+  seq: number;
+};
+
 export type ManifestToml = {
   meta: ManifestMeta;
   config: Config;
@@ -507,6 +518,7 @@ export type ManifestToml = {
   events: Event[];
   checkins: Checkin[];
   sessions: Session[];
+  revisions: Revision[];
 };
 
 // ---------- Retro ----------
