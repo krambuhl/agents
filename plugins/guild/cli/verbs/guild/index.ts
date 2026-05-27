@@ -6,6 +6,7 @@
 
 import { derivePanelVerb } from './derive-panel.ts';
 import { findingsVerb } from './findings.ts';
+import { generateVerb } from './generate.ts';
 import { parseAndAggregateVerb } from './parse-and-aggregate.ts';
 import { whiteboardVerb } from './whiteboard.ts';
 
@@ -37,6 +38,7 @@ export type GuildVerbHandler = (
 export const GUILD_VERBS: Record<string, GuildVerbHandler> = {
   'derive-panel': derivePanelVerb,
   findings: findingsVerb,
+  generate: generateVerb,
   'parse-and-aggregate': parseAndAggregateVerb,
   whiteboard: whiteboardVerb,
 };

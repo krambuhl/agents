@@ -20,6 +20,8 @@ export const VERBS: Record<string, string> = {
     'Compute the evaluator panel for a file list (--files=<csv> or newline-stdin)',
   findings:
     'Append or count panel findings (.guild-findings.jsonl). Subverbs: append, count',
+  generate:
+    'Compile the 3-axis source into scoped agent files (--source-dir, --out)',
   'parse-and-aggregate':
     'Aggregate evaluator outputs into a structured verdict (JSON stdin → JSON stdout)',
   whiteboard:
