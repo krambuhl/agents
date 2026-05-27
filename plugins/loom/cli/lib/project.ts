@@ -4,7 +4,7 @@ import { LoomError } from './errors.ts';
 
 // Two project-filter markers. The substrate has two views of a project
 // directory:
-//   - LOOM_MARKER: the project has a manifest.json (loom has adopted it).
+//   - LOOM_MARKER: the project has a manifest.toml (loom has adopted it).
 //   - PLAN_MARKER: the project has a PLAN.md (planning artifacts exist;
 //     loom may or may not have adopted it yet — a plan can be written
 //     before adoption).
@@ -12,7 +12,7 @@ import { LoomError } from './errors.ts';
 // parallel module; PR6 dissolved that file and merged its filter
 // alongside the loom-marker filter here. See `resolveProjectByPlan` +
 // `listProjectsByPlan` below.
-const LOOM_MARKER = 'manifest.json';
+const LOOM_MARKER = 'manifest.toml';
 const PLAN_MARKER = 'PLAN.md';
 
 export const ARCHIVE_DIRNAME = 'archive';

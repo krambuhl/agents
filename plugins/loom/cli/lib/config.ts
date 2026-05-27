@@ -1,6 +1,11 @@
-import { readFileSync, writeFileSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import type { Config } from './types.ts';
 import { LoomError } from './errors.ts';
+
+// readConfig stays after the manifest.toml cutover: scaffold / adopt read an
+// EXTERNAL --config-file (operator-supplied JSON) through it, then fold it
+// into the manifest's [config] section. The internal config.json store is
+// gone, so the matching writeConfig was removed.
 
 export function readConfig(path: string): Config {
   let raw: string;
@@ -28,15 +33,4 @@ export function readConfig(path: string): Config {
   }
 
   return parsed as Config;
-}
-
-export function writeConfig(path: string, config: Config): void {
-  try {
-    writeFileSync(path, `${JSON.stringify(config, null, 2)}\n`, 'utf8');
-  } catch (err: unknown) {
-    throw new LoomError(
-      'config-write-failed',
-      `config write failed at ${path}: ${(err as Error).message}`,
-    );
-  }
 }

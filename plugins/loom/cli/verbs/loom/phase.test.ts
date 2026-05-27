@@ -1,9 +1,10 @@
 import { test, expect, beforeEach, afterEach } from 'vitest';
-import { mkdtempSync, mkdirSync, rmSync, copyFileSync, readFileSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, rmSync, copyFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { phaseRead, phaseList, phaseUpdate } from './phase.ts';
+import { manifestPath, readManifestFile } from '../../lib/manifest-toml.ts';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const FIXTURES = join(__dirname, '..', '..', 'fixtures');
@@ -15,8 +16,8 @@ beforeEach(() => {
   const projectPath = join(projectsRoot, '2026-05-15-test-loom');
   mkdirSync(projectPath);
   copyFileSync(
-    join(FIXTURES, 'manifest-basic.json'),
-    join(projectPath, 'manifest.json'),
+    join(FIXTURES, 'manifest-basic.toml'),
+    join(projectPath, 'manifest.toml'),
   );
 });
 
@@ -62,15 +63,9 @@ test('phaseList: returns all four phases', () => {
 });
 
 function readEventsJsonl(projectPath: string): Array<{ event: string; detail: Record<string, unknown> }> {
-  try {
-    const raw = readFileSync(join(projectPath, 'events.jsonl'), 'utf8');
-    return raw
-      .split('\n')
-      .filter((l) => l.length > 0)
-      .map((l) => JSON.parse(l));
-  } catch {
-    return [];
-  }
+  // Post-cutover, events live in manifest.toml's [[events]] section.
+  const { manifest } = readManifestFile(manifestPath(projectPath));
+  return manifest.events as Array<{ event: string; detail: Record<string, unknown> }>;
 }
 
 test('phaseUpdate: transition not-started → in-progress emits phase-started', () => {

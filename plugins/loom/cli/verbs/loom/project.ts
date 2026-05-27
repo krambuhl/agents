@@ -12,12 +12,17 @@ import {
   listProjects,
   ARCHIVE_DIRNAME,
 } from '../../lib/project.ts';
-import { readManifest, writeManifest } from '../../lib/manifest.ts';
+import {
+  appendEvent,
+  manifestPath,
+  readManifestFile,
+  toLegacyManifest,
+  updateMeta,
+  writeManifest,
+} from '../../lib/manifest-toml.ts';
 import { readConfig } from '../../lib/config.ts';
-import { appendEvent } from '../../lib/events.ts';
 import { LoomError } from '../../lib/errors.ts';
 import { writeLoomSubstrate, type ManifestInit } from '../../lib/adopt.ts';
-import type { Manifest } from '../../lib/types.ts';
 
 // Shared CLI context. Tests inject `projectsRoot` directly and may
 // override `cwdOverride` to simulate `process.cwd()` for `status`,
@@ -67,8 +72,8 @@ export function projectRead(rest: string[], ctx: CliContext): DispatchResult {
   }
   try {
     const path = resolveProject(slug, ctx.projectsRoot);
-    const manifest = readManifest(join(path, 'manifest.json'));
-    return { stdout: emit(manifest, values.pretty === true), exitCode: 0 };
+    const { manifest } = readManifestFile(manifestPath(path));
+    return { stdout: emit(toLegacyManifest(manifest), values.pretty === true), exitCode: 0 };
   } catch (err) {
     return errToResult(err);
   }
@@ -110,13 +115,13 @@ export function projectStatus(rest: string[], ctx: CliContext): DispatchResult {
     );
   }
   try {
-    const manifest = readManifest(join(match.path, 'manifest.json'));
+    const { manifest } = readManifestFile(manifestPath(match.path));
     const summary = {
       slug: match.slug,
-      status: manifest.status,
-      current_branch: manifest.current_branch,
-      latest_checkin: manifest.latest_checkin,
-      title: manifest.title,
+      status: manifest.meta.status,
+      current_branch: manifest.meta.current_branch,
+      latest_checkin: manifest.meta.latest_checkin,
+      title: manifest.meta.title,
     };
     return { stdout: emit(summary, values.pretty === true), exitCode: 0 };
   } catch (err) {
@@ -284,12 +289,12 @@ export function projectAdopt(rest: string[], ctx: CliContext): DispatchResult {
       ),
     );
   }
-  const manifestPath = join(projectDir, 'manifest.json');
-  if (existsSync(manifestPath)) {
+  const existingManifest = manifestPath(projectDir);
+  if (existsSync(existingManifest)) {
     return errToResult(
       new LoomError(
         'already-adopted',
-        `project ${slug} already has manifest.json at ${manifestPath} (loom is already adopted)`,
+        `project ${slug} already has manifest.toml at ${existingManifest} (loom is already adopted)`,
       ),
     );
   }
@@ -357,17 +362,18 @@ export function projectArchive(rest: string[], ctx: CliContext): DispatchResult 
   const archiveRoot = join(ctx.projectsRoot, ARCHIVE_DIRNAME);
   const destination = join(archiveRoot, slug);
   try {
-    // Flip manifest status, write back
-    const manifestPath = join(projectPath, 'manifest.json');
-    const manifest = readManifest(manifestPath);
-    const updated: Manifest = { ...manifest, status: 'archived' };
-    writeManifest(manifestPath, updated);
-    // Append archived event (still in source location)
-    appendEvent(join(projectPath, 'events.jsonl'), {
+    // Flip manifest status + record the archived event, write back, then
+    // relocate. The mutation goes through the manifest.toml layer; the dir
+    // move stays the same.
+    const mp = manifestPath(projectPath);
+    const { manifest, token } = readManifestFile(mp);
+    let next = updateMeta(manifest, { status: 'archived' });
+    next = appendEvent(next, {
       at: new Date().toISOString(),
       event: 'archived',
       detail: { destination },
     });
+    writeManifest(mp, next, { expect: token });
     // Relocate. Non-atomic — if this throws, doctor sees the drift.
     mkdirSync(archiveRoot, { recursive: true });
     renameSync(projectPath, destination);

@@ -31,6 +31,7 @@ import { existsSync, readFileSync, renameSync, statSync, writeFileSync } from 'n
 import { LoomError } from './errors.ts';
 import { parseToml, stringifyToml } from './toml.ts';
 import type { TomlTable, TomlValue } from './toml.ts';
+import { join } from 'node:path';
 import type {
   Config,
   Event,
@@ -41,6 +42,7 @@ import type {
   CheckinVerdict,
   CheckinPhaseRef,
   CheckinVerdictResult,
+  Manifest,
   Session,
   ManifestMeta,
   ManifestPhase,
@@ -51,6 +53,24 @@ import type {
   PhaseStatus,
   SchemaVersion,
 } from './types.ts';
+
+// The single state file every project carries post-cutover. The verbs
+// route all reads/writes through manifestPath(projectPath) — no verb
+// constructs a manifest.json / config.json / events.jsonl path anymore.
+export const MANIFEST_FILENAME = 'manifest.toml';
+
+export function manifestPath(projectPath: string): string {
+  return join(projectPath, MANIFEST_FILENAME);
+}
+
+// Project the consolidated ManifestToml back to the legacy flat Manifest
+// shape that `project read` / `phase` verbs emit. Phase 2 changes WHERE
+// state lives, not WHAT the read verbs output — Phase 6 owns evolving the
+// output contracts. [config], [[events]], [[checkins]], [[sessions]] are
+// reachable via their own verbs; the flat Manifest is meta + phases.
+export function toLegacyManifest(m: ManifestToml): Manifest {
+  return { ...m.meta, phases: m.phases };
+}
 
 const SCHEMA_VERSION = 1;
 

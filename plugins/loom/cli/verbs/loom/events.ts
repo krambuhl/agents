@@ -1,10 +1,29 @@
 import { parseArgs } from 'node:util';
-import { join } from 'node:path';
 import { resolveProject } from '../../lib/project.ts';
-import { readEvents } from '../../lib/events.ts';
+import { manifestPath, readManifestFile } from '../../lib/manifest-toml.ts';
 import { LoomError } from '../../lib/errors.ts';
+import type { Event, EventName } from '../../lib/types.ts';
 import type { CliContext, DispatchResult } from './project.ts';
-import type { EventName } from '../../lib/types.ts';
+
+// Read + filter the project's events from manifest.toml's [[events]],
+// reproducing the legacy readEvents() filter semantics (event name, since
+// timestamp, leading-N limit) so the verbs' output is unchanged by the
+// storage move.
+function readEvents(
+  projectPath: string,
+  opts: { since?: string; event?: EventName; limit?: number } = {},
+): Event[] {
+  const { manifest } = readManifestFile(manifestPath(projectPath));
+  const filtered = manifest.events.filter((e) => {
+    if (opts.event !== undefined && e.event !== opts.event) return false;
+    if (opts.since !== undefined && e.at < opts.since) return false;
+    return true;
+  });
+  if (opts.limit !== undefined && opts.limit >= 0) {
+    return filtered.slice(0, opts.limit);
+  }
+  return filtered;
+}
 
 function emit(value: unknown, pretty: boolean): string {
   return pretty ? JSON.stringify(value, null, 2) : JSON.stringify(value);
@@ -49,7 +68,7 @@ export function eventsRead(rest: string[], ctx: CliContext): DispatchResult {
   }
   try {
     const path = resolveProject(slug, ctx.projectsRoot);
-    const events = readEvents(join(path, 'events.jsonl'), {
+    const events = readEvents(path, {
       since: values.since,
       event: values.event as EventName | undefined,
       limit,
@@ -75,7 +94,7 @@ export function eventsLatest(rest: string[], ctx: CliContext): DispatchResult {
   }
   try {
     const path = resolveProject(slug, ctx.projectsRoot);
-    const events = readEvents(join(path, 'events.jsonl'), {
+    const events = readEvents(path, {
       event: values.event as EventName | undefined,
     });
     if (events.length === 0) {

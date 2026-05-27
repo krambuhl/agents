@@ -1,12 +1,5 @@
 import { test, expect, beforeEach, afterEach } from 'vitest';
-import {
-  mkdtempSync,
-  mkdirSync,
-  rmSync,
-  copyFileSync,
-  readFileSync,
-  writeFileSync,
-} from 'node:fs';
+import { mkdtempSync, mkdirSync, rmSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -16,34 +9,33 @@ import {
   sessionCorrections,
   sessionWrite,
 } from './session.ts';
+import { manifestPath, readManifestFile, writeManifest } from '../../lib/manifest-toml.ts';
+import type { Checkin, Session } from '../../lib/types.ts';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const FIXTURES = join(__dirname, '..', '..', 'fixtures');
 
 let projectsRoot: string;
 
+function fromFixture<T>(fixture: string, overrides: Partial<T>): T {
+  return { ...JSON.parse(readFileSync(join(FIXTURES, fixture), 'utf8')), ...overrides } as T;
+}
+
 beforeEach(() => {
   projectsRoot = mkdtempSync(join(tmpdir(), 'loom-verbs-session-'));
   const projectPath = join(projectsRoot, '2026-05-15-test-loom');
   mkdirSync(projectPath);
-  copyFileSync(
-    join(FIXTURES, 'manifest-basic.json'),
-    join(projectPath, 'manifest.json'),
-  );
-  const sessionsDir = join(projectPath, 'sessions');
-  mkdirSync(sessionsDir);
-  copyFileSync(
-    join(FIXTURES, 'session-basic.json'),
-    join(sessionsDir, '2026-05-15-a.json'),
-  );
-  // Add a checkin with corrections for sessionCorrections testing
-  const branchDir = join(projectPath, 'checkins', 'loom-cli', 'phase-1');
-  mkdirSync(branchDir, { recursive: true });
-  copyFileSync(join(FIXTURES, 'checkin-basic.json'), join(branchDir, '04.json'));
-  copyFileSync(
-    join(FIXTURES, 'checkin-flagged.json'),
-    join(branchDir, '07.json'),
-  );
+  // Seed manifest.toml with one session + two checkins (one carrying a
+  // correction, for the sessionCorrections test) in their sections.
+  const base = readManifestFile(join(FIXTURES, 'manifest-basic.toml')).manifest;
+  writeManifest(manifestPath(projectPath), {
+    ...base,
+    sessions: [fromFixture<Session>('session-basic.json', { date: '2026-05-15', letter: 'a' })],
+    checkins: [
+      fromFixture<Checkin>('checkin-basic.json', { number: '04', branch: 'loom-cli/phase-1' }),
+      fromFixture<Checkin>('checkin-flagged.json', { number: '07', branch: 'loom-cli/phase-1' }),
+    ],
+  });
 });
 
 afterEach(() => {
@@ -90,14 +82,12 @@ test('sessionWrite: writes session and appends session-saved event', () => {
   const written = JSON.parse(result.stdout as string);
   expect(written.filename).toBe('2026-07-01-a.json');
 
-  const eventsRaw = readFileSync(
-    join(projectsRoot, '2026-05-15-test-loom', 'events.jsonl'),
-    'utf8',
+  const { manifest } = readManifestFile(
+    manifestPath(join(projectsRoot, '2026-05-15-test-loom')),
   );
-  const lastLine = eventsRaw.trim().split('\n').pop() as string;
-  const event = JSON.parse(lastLine);
-  expect(event.event).toBe('session-saved');
-  expect(event.detail.filename).toBe('2026-07-01-a.json');
+  const event = manifest.events[manifest.events.length - 1];
+  expect(event?.event).toBe('session-saved');
+  expect((event?.detail as { filename: string }).filename).toBe('2026-07-01-a.json');
 });
 
 test('sessionWrite: missing --session-file returns missing-args', () => {

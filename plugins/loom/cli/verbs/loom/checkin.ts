@@ -1,17 +1,16 @@
 import { parseArgs } from 'node:util';
 import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { resolveProject } from '../../lib/project.ts';
 import {
-  readCheckin,
-  listCheckins,
-  latestCheckin,
-  writeCheckin,
-} from '../../lib/checkin.ts';
-import { appendEvent } from '../../lib/events.ts';
+  appendCheckin,
+  appendEvent,
+  manifestPath,
+  readManifestFile,
+  writeManifest,
+} from '../../lib/manifest-toml.ts';
 import { LoomError } from '../../lib/errors.ts';
+import type { Checkin, ManifestToml } from '../../lib/types.ts';
 import type { CliContext, DispatchResult } from './project.ts';
-import type { Checkin } from '../../lib/types.ts';
 
 function emit(value: unknown, pretty: boolean): string {
   return pretty ? JSON.stringify(value, null, 2) : JSON.stringify(value);
@@ -22,6 +21,25 @@ function errToResult(err: unknown): DispatchResult {
     return { stderr: JSON.stringify(err.toPayload()), exitCode: 1 };
   }
   throw err;
+}
+
+// Checkins live in manifest.toml's [[checkins]] now. The list/read shape is
+// unchanged ({number, branch, path}); `path` points at the one manifest the
+// checkin lives in, since there is no per-checkin file anymore.
+type CheckinSummary = { number: string; branch: string; path: string };
+
+function listFromManifest(
+  manifest: ManifestToml,
+  mp: string,
+  branch?: string,
+): CheckinSummary[] {
+  return manifest.checkins
+    .filter((c) => branch === undefined || c.branch === branch)
+    .map((c) => ({ number: c.number, branch: c.branch, path: mp }))
+    .sort((a, b) => {
+      if (a.branch !== b.branch) return a.branch < b.branch ? -1 : 1;
+      return Number.parseInt(a.number, 10) - Number.parseInt(b.number, 10);
+    });
 }
 
 const CHECKIN_OPTIONS = {
@@ -43,7 +61,9 @@ export function checkinList(rest: string[], ctx: CliContext): DispatchResult {
   }
   try {
     const path = resolveProject(slug, ctx.projectsRoot);
-    const list = listCheckins(path, { branch: values.branch });
+    const mp = manifestPath(path);
+    const { manifest } = readManifestFile(mp);
+    const list = listFromManifest(manifest, mp, values.branch);
     return { stdout: emit(list, values.pretty === true), exitCode: 0 };
   } catch (err) {
     return errToResult(err);
@@ -71,8 +91,18 @@ export function checkinRead(rest: string[], ctx: CliContext): DispatchResult {
   }
   try {
     const path = resolveProject(slug, ctx.projectsRoot);
-    const filePath = `${path}/checkins/${values.branch}/${values.number}.json`;
-    const checkin = readCheckin(filePath);
+    const { manifest } = readManifestFile(manifestPath(path));
+    const checkin = manifest.checkins.find(
+      (c) => c.branch === values.branch && c.number === values.number,
+    );
+    if (checkin === undefined) {
+      return errToResult(
+        new LoomError(
+          'checkin-not-found',
+          `checkin ${values.number} on ${values.branch} not found in ${slug}`,
+        ),
+      );
+    }
     return { stdout: emit(checkin, values.pretty === true), exitCode: 0 };
   } catch (err) {
     return errToResult(err);
@@ -92,13 +122,17 @@ export function checkinLatest(rest: string[], ctx: CliContext): DispatchResult {
   }
   try {
     const path = resolveProject(slug, ctx.projectsRoot);
-    const latest = latestCheckin(path, { branch: values.branch });
-    if (latest === null) {
+    const { manifest } = readManifestFile(manifestPath(path));
+    const list = listFromManifest(manifest, manifestPath(path), values.branch);
+    const latest = list[list.length - 1];
+    if (latest === undefined) {
       return errToResult(
         new LoomError('no-checkins', 'no checkins for the given filter'),
       );
     }
-    const checkin = readCheckin(latest.path);
+    const checkin = manifest.checkins.find(
+      (c) => c.branch === latest.branch && c.number === latest.number,
+    );
     return { stdout: emit(checkin, values.pretty === true), exitCode: 0 };
   } catch (err) {
     return errToResult(err);
@@ -159,12 +193,19 @@ export function checkinWrite(rest: string[], ctx: CliContext): DispatchResult {
   }
   try {
     const path = resolveProject(slug, ctx.projectsRoot);
-    const written = writeCheckin(path, parsed);
-    appendEvent(join(path, 'events.jsonl'), {
+    const mp = manifestPath(path);
+    const { manifest, token } = readManifestFile(mp);
+    // appendCheckin throws checkin-already-exists on a duplicate
+    // (branch, number) — the create-once guarantee the per-file store
+    // enforced at the filesystem.
+    let next = appendCheckin(manifest, parsed);
+    next = appendEvent(next, {
       at: new Date().toISOString(),
       event: 'checkin-created',
-      detail: { number: written.number, branch: written.branch },
+      detail: { number: parsed.number, branch: parsed.branch },
     });
+    writeManifest(mp, next, { expect: token });
+    const written = { path: mp, number: parsed.number, branch: parsed.branch };
     return { stdout: emit(written, values.pretty === true), exitCode: 0 };
   } catch (err) {
     return errToResult(err);

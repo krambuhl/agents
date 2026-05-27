@@ -8,12 +8,16 @@ import {
 } from 'node:fs';
 import { join } from 'node:path';
 import { resolveProject } from '../../lib/project.ts';
-import { listCheckins } from '../../lib/checkin.ts';
+import {
+  appendEvent,
+  manifestPath,
+  readManifestFile,
+  writeManifest,
+} from '../../lib/manifest-toml.ts';
 import {
   parseCheckinMarker,
   computeMarkerState,
 } from '../../lib/pr-marker.ts';
-import { appendEvent } from '../../lib/events.ts';
 import { LoomError } from '../../lib/errors.ts';
 import { defaultGhRunner } from '../../lib/gh.ts';
 import type { GhRunner } from '../../lib/gh.ts';
@@ -82,8 +86,9 @@ export function prDiscover(rest: string[], ctx: CliContext): DispatchResult {
   }
   try {
     const projectPath = resolveProject(slug, ctx.projectsRoot);
-    const diskCheckins = listCheckins(projectPath, { branch: values.branch });
-    const diskNumbers = diskCheckins
+    const { manifest } = readManifestFile(manifestPath(projectPath));
+    const diskNumbers = manifest.checkins
+      .filter((c) => c.branch === values.branch)
       .map((c) => Number.parseInt(c.number, 10))
       .filter((n) => !Number.isNaN(n))
       .sort((a, b) => a - b);
@@ -157,11 +162,14 @@ export function prOpen(rest: string[], ctx: CliContext): DispatchResult {
   }
   const prNum = Number.parseInt(match[1] as string, 10);
   const url = match[0] as string;
-  appendEvent(join(projectPath, 'events.jsonl'), {
+  const mp = manifestPath(projectPath);
+  const { manifest, token } = readManifestFile(mp);
+  const next = appendEvent(manifest, {
     at: new Date().toISOString(),
     event: 'pr-opened',
     detail: { pr: prNum, url },
   });
+  writeManifest(mp, next, { expect: token });
   return {
     stdout: emit({ pr: prNum, url }, values.pretty === true),
     exitCode: 0,
@@ -210,11 +218,14 @@ export function prUpdate(rest: string[], ctx: CliContext): DispatchResult {
       new LoomError('gh-failed', `gh pr edit failed: ${(err as Error).message}`),
     );
   }
-  appendEvent(join(projectPath, 'events.jsonl'), {
+  const mp = manifestPath(projectPath);
+  const { manifest, token } = readManifestFile(mp);
+  const next = appendEvent(manifest, {
     at: new Date().toISOString(),
     event: 'pr-updated',
     detail: { pr: prNum },
   });
+  writeManifest(mp, next, { expect: token });
   return {
     stdout: emit({ pr: prNum }, values.pretty === true),
     exitCode: 0,

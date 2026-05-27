@@ -4,12 +4,27 @@ import { join, relative } from 'node:path';
 import { LoomError } from '../../lib/errors.ts';
 import { createSlug } from '../../lib/project.ts';
 import { type GitRunner, defaultGitRunner } from '../../lib/git.ts';
-import { appendEvent } from '../../lib/events.ts';
+import {
+  appendEvent,
+  manifestPath as manifestPathFor,
+  readManifestFile,
+  writeManifest,
+} from '../../lib/manifest-toml.ts';
 import {
   writeLoomSubstrate,
   synthesizeManifestInit,
   synthesizeConfig,
 } from '../../lib/adopt.ts';
+import type { Event } from '../../lib/types.ts';
+
+// Append one event into the project's manifest.toml [[events]] (load →
+// append → write). The research verb records research-started before its
+// commit and research-completed after, so each is its own read-modify-write.
+function recordEvent(targetDir: string, event: Event): void {
+  const mp = manifestPathFor(targetDir);
+  const { manifest, token } = readManifestFile(mp);
+  writeManifest(mp, appendEvent(manifest, event), { expect: token });
+}
 
 // `loom research` shares its context shape with plan/revise (today,
 // gitRunner, repoRoot). Loom's umbrella `CliContext` (cli/verbs/project.ts)
@@ -182,8 +197,7 @@ export function researchVerb(
   // below covers both fresh-adopt and the "manifest already there"
   // recovery path, which is what we key event emission on.
   const filesToCommit = [researchMdPath, notesMdPath];
-  const manifestPath = join(targetDir, 'manifest.json');
-  const eventsPath = join(targetDir, 'events.jsonl');
+  const manifestPath = manifestPathFor(targetDir);
   const manifestPreexisted = existsSync(manifestPath);
   const adoptLoom = !noLoom && !manifestPreexisted;
   if (adoptLoom) {
@@ -194,11 +208,9 @@ export function researchVerb(
         config: synthesizeConfig(),
         manifestInit: synthesizeManifestInit(slug, todayString(ctx)),
       });
-      filesToCommit.push(
-        manifestPath,
-        join(targetDir, 'config.json'),
-        eventsPath,
-      );
+      // All state lives in the single manifest.toml now (config.json /
+      // events.jsonl folded in), so it is the only state file to commit.
+      filesToCommit.push(manifestPath);
     } catch (err: unknown) {
       return errToResult(
         new LoomError(
@@ -218,7 +230,7 @@ export function researchVerb(
   const loomPresent = adoptLoom || manifestPreexisted;
   if (loomPresent) {
     try {
-      appendEvent(eventsPath, {
+      recordEvent(targetDir, {
         at: nowIso(),
         event: 'research-started',
         detail: { slug, topic: topicWasSlug ? null : slugOrTopic },
@@ -249,7 +261,7 @@ export function researchVerb(
   // forensics.
   if (loomPresent) {
     try {
-      appendEvent(eventsPath, {
+      recordEvent(targetDir, {
         at: nowIso(),
         event: 'research-completed',
         detail: {

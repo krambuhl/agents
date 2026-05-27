@@ -1,9 +1,11 @@
 import { test, expect, beforeEach, afterEach } from 'vitest';
-import { mkdtempSync, mkdirSync, rmSync, copyFileSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, rmSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { eventsRead, eventsLatest } from './events.ts';
+import { manifestPath, readManifestFile, writeManifest } from '../../lib/manifest-toml.ts';
+import type { Event } from '../../lib/types.ts';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const FIXTURES = join(__dirname, '..', '..', 'fixtures');
@@ -14,15 +16,14 @@ beforeEach(() => {
   projectsRoot = mkdtempSync(join(tmpdir(), 'loom-verbs-events-'));
   const projectPath = join(projectsRoot, '2026-05-15-test-loom');
   mkdirSync(projectPath);
-  // listProjects/resolveProject filter by manifest.json existence
-  copyFileSync(
-    join(FIXTURES, 'manifest-basic.json'),
-    join(projectPath, 'manifest.json'),
-  );
-  copyFileSync(
-    join(FIXTURES, 'events-all-types.jsonl'),
-    join(projectPath, 'events.jsonl'),
-  );
+  // Seed manifest.toml = the basic meta/phases + the all-types event corpus
+  // folded into [[events]] (the .jsonl fixture stays the source of truth).
+  const base = readManifestFile(join(FIXTURES, 'manifest-basic.toml')).manifest;
+  const events = readFileSync(join(FIXTURES, 'events-all-types.jsonl'), 'utf8')
+    .split('\n')
+    .filter((l) => l.length > 0)
+    .map((l) => JSON.parse(l) as Event);
+  writeManifest(manifestPath(projectPath), { ...base, events });
 });
 
 afterEach(() => {

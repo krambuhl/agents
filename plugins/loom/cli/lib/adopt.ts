@@ -1,9 +1,5 @@
-import { mkdirSync } from 'node:fs';
-import { join } from 'node:path';
-import { writeManifest } from './manifest.ts';
-import { writeConfig } from './config.ts';
-import { appendEvent } from './events.ts';
-import type { Config, Manifest, ManifestPhase } from './types.ts';
+import { manifestPath, writeManifest } from './manifest-toml.ts';
+import type { Config, ManifestPhase, ManifestToml } from './types.ts';
 
 // Inputs the loom CLI's `project adopt` verb collects from --manifest-
 // init-file. Also produced by `synthesizeManifestInit` for the auto-
@@ -15,10 +11,13 @@ export type ManifestInit = {
   phases: ManifestPhase[];
 };
 
-// Write the loom substrate (manifest.json, config.json, events.jsonl,
-// checkins/, sessions/) into an existing project directory. Does not
-// touch PLAN.md or INTERVIEW.md. Does not check for prior adoption —
-// callers are responsible for refusing or skipping when appropriate.
+// Write the loom substrate — a single manifest.toml carrying [meta],
+// [config], [[phases]] and the (initially empty bar one event) append-only
+// sections — into an existing project directory. Does not touch PLAN.md or
+// INTERVIEW.md. Does not check for prior adoption — callers refuse or skip
+// when appropriate. (Pre-cutover this wrote manifest.json + config.json +
+// events.jsonl + checkins/ + sessions/; those stores now live in the one
+// file, so there are no per-record directories to seed.)
 export function writeLoomSubstrate(opts: {
   projectDir: string;
   slug: string;
@@ -27,27 +26,26 @@ export function writeLoomSubstrate(opts: {
 }): void {
   const { projectDir, slug, config, manifestInit } = opts;
 
-  mkdirSync(join(projectDir, 'checkins'), { recursive: true });
-  mkdirSync(join(projectDir, 'sessions'), { recursive: true });
-
-  const manifest: Manifest = {
-    schema_version: 1,
-    title: manifestInit.title,
-    slug,
-    started: manifestInit.started,
-    status: 'active',
-    current_branch: null,
-    latest_checkin: null,
-    strategy: manifestInit.strategy,
+  const state: ManifestToml = {
+    meta: {
+      schema_version: 1,
+      title: manifestInit.title,
+      slug,
+      started: manifestInit.started,
+      status: 'active',
+      current_branch: null,
+      latest_checkin: null,
+      strategy: manifestInit.strategy,
+    },
+    config,
     phases: manifestInit.phases,
+    events: [
+      { at: new Date().toISOString(), event: 'project-initialized', detail: {} },
+    ],
+    checkins: [],
+    sessions: [],
   };
-  writeManifest(join(projectDir, 'manifest.json'), manifest);
-  writeConfig(join(projectDir, 'config.json'), config);
-  appendEvent(join(projectDir, 'events.jsonl'), {
-    at: new Date().toISOString(),
-    event: 'project-initialized',
-    detail: {},
-  });
+  writeManifest(manifestPath(projectDir), state);
 }
 
 // Default ManifestInit synthesized from a slug + today. Used by the

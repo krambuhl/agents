@@ -29,16 +29,8 @@ afterEach(() => {
 
 test('doctor: healthy project returns ok=true with empty issues', () => {
   copyFileSync(
-    join(FIXTURES, 'manifest-basic.json'),
-    join(projectPath, 'manifest.json'),
-  );
-  copyFileSync(
-    join(FIXTURES, 'events-all-types.jsonl'),
-    join(projectPath, 'events.jsonl'),
-  );
-  copyFileSync(
-    join(FIXTURES, 'config-basic.json'),
-    join(projectPath, 'config.json'),
+    join(FIXTURES, 'manifest-basic.toml'),
+    join(projectPath, 'manifest.toml'),
   );
   const result = doctor(['test-loom'], { projectsRoot });
   expect(result.exitCode).toBe(0);
@@ -47,42 +39,45 @@ test('doctor: healthy project returns ok=true with empty issues', () => {
   expect(report.issues).toEqual([]);
 });
 
-test('doctor: missing manifest is reported as an issue and ok=false', () => {
-  // No files at all under projectPath
-  copyFileSync(
-    join(FIXTURES, 'manifest-basic.json'),
-    join(projectPath, 'manifest.json'),
-  );
-  // Required-but-missing: events.jsonl and config.json
-  const result = doctor(['test-loom'], { projectsRoot });
+test('doctor: missing manifest.toml is reported as an issue and ok=false', () => {
+  // Resolve by explicit path (the slug filter requires manifest.toml to
+  // even see the project; an explicit path reaches a dir that lacks it).
+  const result = doctor([projectPath], { projectsRoot });
   expect(result.exitCode).toBe(0);
   const report = JSON.parse(result.stdout as string);
   expect(report.ok).toBe(false);
-  expect(report.issues.length).toBeGreaterThan(0);
   const codes = report.issues.map((i: { code: string }) => i.code);
-  expect(codes).toContain('events-missing');
-  expect(codes).toContain('config-missing');
+  expect(codes).toContain('manifest-missing');
 });
 
-test('doctor: bad schema_version is reported', () => {
-  // Write a manifest with schema_version: 999
+test('doctor: an unparseable / unsupported-version manifest is reported', () => {
+  // schema_version 999 — readManifest rejects it on parse, surfacing as
+  // manifest-unreadable through doctor.
   writeFileSync(
-    join(projectPath, 'manifest.json'),
-    JSON.stringify({ schema_version: 999, title: 'x', slug: 'x', started: '', status: 'active', current_branch: null, latest_checkin: null, strategy: '', phases: [] }),
-  );
-  copyFileSync(
-    join(FIXTURES, 'events-all-types.jsonl'),
-    join(projectPath, 'events.jsonl'),
-  );
-  copyFileSync(
-    join(FIXTURES, 'config-basic.json'),
-    join(projectPath, 'config.json'),
+    join(projectPath, 'manifest.toml'),
+    [
+      '[meta]',
+      'schema_version = 999',
+      'title = "x"',
+      'slug = "x"',
+      'started = "2026-05-15"',
+      'status = "active"',
+      'strategy = "x"',
+      '',
+      '[config]',
+      'base_branch = "main"',
+      'reviewers = []',
+      'labels = []',
+      'verification = []',
+      'worker_bindings = {}',
+      '',
+    ].join('\n'),
   );
   const result = doctor(['test-loom'], { projectsRoot });
   const report = JSON.parse(result.stdout as string);
   expect(report.ok).toBe(false);
   const codes = report.issues.map((i: { code: string }) => i.code);
-  expect(codes).toContain('schema-version-mismatch');
+  expect(codes).toContain('manifest-unreadable');
 });
 
 test('doctor: no slug arg → uses cwd discovery (not-in-project error if absent)', () => {
