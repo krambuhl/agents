@@ -18,7 +18,7 @@ import { fileURLToPath } from 'node:url';
 // legitimately reshaped, so a full string diff would be wrong).
 //
 // Extend PAIRS as later units adapt more domains:
-//   U4 -> test-unit (evaluator-test-unit), test-integration (evaluator-test-integration)
+//   U4 -> test-unit, test-integration (added below)
 //   U5 -> performance (whiteboard-performance), substrate (whiteboard-substrate-engineer)
 // The whiteboard-sourced domains in U5 carry no flag codes, so they
 // will need a different invariant (concern-heading presence) rather
@@ -41,6 +41,18 @@ const PAIRS = [
     exclude: ['css-arch-out-of-scope-files'],
   },
   { mode: 'nextjs.md', baked: 'evaluator-nextjs.md', prefix: 'nextjs-', exclude: [] as string[] },
+  {
+    mode: 'test-unit.md',
+    baked: 'evaluator-test-unit.md',
+    prefix: 'test-unit-',
+    exclude: [] as string[],
+  },
+  {
+    mode: 'test-integration.md',
+    baked: 'evaluator-test-integration.md',
+    prefix: 'test-integration-',
+    exclude: [] as string[],
+  },
 ];
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -78,4 +90,40 @@ describe('domain-mode flag-code drift', () => {
       expect(missing).toEqual([]);
     });
   }
+});
+
+// The tier-agnostic testing principles live in BOTH test-unit and
+// test-integration as a verbatim-shared section, because Phase 5 inlines
+// mode content and cannot cross-reference one mode from another. This
+// test pins that the shared block does not drift between the two. (The
+// "duplication-plus-test" the Phase 4 whiteboard chose over a cross-file
+// reference.)
+function sharedSection(text: string): string {
+  const lines = text.split('\n');
+  const start = lines.findIndex(
+    (line) => line.trim() === '## Shared testing concerns',
+  );
+  if (start === -1) return '';
+  let end = lines.length;
+  for (let i = start + 1; i < lines.length; i += 1) {
+    if (lines[i].startsWith('## ')) {
+      end = i;
+      break;
+    }
+  }
+  return lines.slice(start, end).join('\n').trim();
+}
+
+describe('shared testing concerns block', () => {
+  it('is byte-identical across test-unit and test-integration', () => {
+    const unit = sharedSection(readFileSync(join(here, 'test-unit.md'), 'utf8'));
+    const integration = sharedSection(
+      readFileSync(join(here, 'test-integration.md'), 'utf8'),
+    );
+
+    // Fail loud if the section heading was renamed or dropped, rather
+    // than pass vacuously on two empty strings.
+    expect(unit.length).toBeGreaterThan(0);
+    expect(unit).toEqual(integration);
+  });
 });
