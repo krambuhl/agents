@@ -37,7 +37,7 @@ branch = "ev-agent.substrate-consolidation.revision-split"
 number = 4
 name = "Author the 3-axis source"
 status = "in-progress"
-branch = "ev-agent.substrate-consolidation.axes-phase-personality"
+branch = "ev-agent.substrate-consolidation.domains-clean"
 
 [[phases]]
 number = 5
@@ -284,6 +284,26 @@ at = "2026-05-27T16:54:53.516Z"
 event = "phase-started"
 detail = { phase = 4, name = "Author the 3-axis source" }
 
+[[events]]
+at = "2026-05-27T17:06:22.804Z"
+event = "checkin-created"
+detail = { number = "12", branch = "ev-agent.substrate-consolidation.domains-clean" }
+
+[[events]]
+at = "2026-05-27T17:09:09.203Z"
+event = "pr-opened"
+detail = { pr = 78, url = "https://github.com/krambuhl/agents/pull/78" }
+
+[[events]]
+at = "2026-05-27T17:09:09.204Z"
+event = "pr-merged"
+detail = { pr = 78 }
+
+[[events]]
+at = "2026-05-27T17:09:09.204Z"
+event = "pr-opened"
+detail = { pr = 79, url = "https://github.com/krambuhl/agents/pull/79" }
+
 [[checkins]]
 schema_version = 1
 number = "08"
@@ -437,6 +457,20 @@ scope = ["plugins/guild/agents/personalities/ (6 files)", "plugins/guild/modes/p
 changes_since_previous = "First unit of Phase 4. Phases 1-3 (loom state model) complete and merged into .plan. This unit opens M2 (guild agent collapse) by laying down the phase + personality axes of the 3-axis source."
 verdict = { result = "approved", reasons = [] }
 notes_for_pr = ["Three operator-confirmed design calls carried into the phase: (1) personality-base dispatch-read section DELETED in-source (not marked-excisable) -- guild's new agents are inline-only; jelly-guild keeps its own copy until Phase 7. (2) Composition/inlining order = base -> phase -> domain -> personality (personality last, as the modulating voice). (3) tools-map schema will document a no-permissive-default contract (skeptic's fail-loud/manifest-total over substrate's permissive-default) -- enforcement is Phase 5, the contract-comment lands in U6.", "Source-fragment frontmatter decision: personalities carry tools: Read, Glob, Grep (safe read-only floor) rather than dropping tools. If Claude Code auto-registers files under agents/, read-only is the safe failure mode; codegen synthesizes real per-(domain,phase) grants in Phase 5. The definitive 'are source fragments registered / committed vs gitignored' question is the explicit Phase 5 open question (PLAN line 143).", "Whiteboard decisions for LATER units (not in scope here): U4 testing-split should source from the TWO baked evaluators (distinct catalogs + test:* vs test:e2e:* grants), using jelly's single testing.md only for the shared tier-choice preamble -- do NOT halve testing.md. U6 panel.manifest.toml needs PER-DOMAIN valid-phase sets (substrate + performance are design-phase-only; substrate's baked agent states there is no evaluator-substrate). U4+ should add a drift-detection test asserting harvested mode prose carries the baked evaluators' stable flag codes, so the 4->7 coexistence window can't silently diverge.", "L-004: whiteboard engineers were guild: plugin agents (not session-authored), so no session-boundary exclusion applied.", "Substrate papercut (not a finding against this unit): evaluator-contract-fit's own instructions point at .claude/agents/evaluator-base.md, but the base lives at plugins/guild/agents/evaluator-base.md. Stale path burns an evaluator turn relocating it; worth a substrate fix."]
+
+[[checkins]]
+schema_version = 1
+number = "12"
+created = "2026-05-27T17:06:22.720543Z"
+phase = { number = 4, name = "Author the 3-axis source" }
+branch = "ev-agent.substrate-consolidation.domains-clean"
+unit = "U2 — Clean domains (a11y, composition, abstraction, naming)"
+contract = { goal = "Harvest the 4 phase-neutral clean domains (a11y, composition, abstraction, naming) from jelly-guild into plugins/guild/modes/domains/, establishing the domain-mode file shape for the later domain units (U3-U5).", acceptance_criteria = ["modes/domains/ contains exactly a11y.md, composition.md, abstraction.md, naming.md", "jelly's phase-neutral structure preserved verbatim (Scope, Concerns, Antipattern catalog, Good patterns, Vocabulary, Cross-domain notes)", "the single stale Cross-domain-notes 'testing' reference per file updated to the test-unit/test-integration split; nothing else changed from jelly", "no phase output-contract framing leaked (severities blocking/advisory are domain-catalog content and remain)", "zero jelly/mcp__ references"], rules_applied = ["Hard-wrap ~70 col matching jelly source", "Harvest-first: jelly-guild untouched; cp for byte-fidelity then targeted edits", "No .ts authored"], disqualifiers = ["authoring test-unit/test-integration (U4) or non-clean domains (U3/U5)", "expanding domain knowledge beyond jelly's content (harvest, not invention)", "modifying/deleting any jelly-guild file"], inputs = ["plugins/jelly-guild/modes/domains/{a11y,composition,abstraction,naming}.md", "projects/2026-05-26-substrate-consolidation/whiteboards/4-author-3-axis-source.md (round 1)", "PLAN.md Phase 4"] }
+execution = { actions = ["cp'd the 4 jelly clean-domain files into plugins/guild/modes/domains/ for byte-fidelity", "Applied one targeted edit per file: Cross-domain-notes 'Less overlap with **testing**' -> '**test-unit** / **test-integration**'", "Verified per-file diff vs jelly: only the testing-split bullet differs in each; grep clean for jelly/mcp/phase-framing; jelly source untouched; full repo vitest 1286/1286 pass", "guild-validate panel (evaluator-contract-fit) returned approved, zero findings"], files_touched = ["plugins/guild/modes/domains/a11y.md", "plugins/guild/modes/domains/composition.md", "plugins/guild/modes/domains/abstraction.md", "plugins/guild/modes/domains/naming.md"], corrections = [] }
+scope = ["plugins/guild/modes/domains/ (4 clean-harvest files)"]
+changes_since_previous = "Second unit of Phase 4, on the M2 (guild agent collapse) milestone. U1 (phase + personality axes) merged as PR #78. This unit adds the first 4 of the 12 domain-mode fragments -- the clean jelly-native ones that establish the domain file shape U3-U5 conform to."
+verdict = { result = "approved", reasons = [] }
+notes_for_pr = ["Clean harvest: the 4 files are byte-identical to jelly-guild's domains/{a11y,composition,abstraction,naming}.md except one Cross-domain-notes bullet each (the old single 'testing' domain became the test-unit/test-integration split). Verified by per-file diff.", "These 4 domains were already phase-neutral in jelly (Scope/Concerns/Antipattern catalog/Good patterns/Vocabulary/Cross-domain notes) -- no reshaping needed, unlike the U3/U5 domains adapted from baked evaluator/whiteboard agents.", "PR-event-recording papercut (carried, NOT a blocker): the per-unit reconciliation recipe says to re-record #78's pr-opened/pr-merged riding this commit, but there is NO clean CLI path -- `loom pr open` CREATES a PR (would duplicate), `pr merged` has no verb, and `loom events` has only read/latest (no append). The events trail therefore lags by design (only Phase 1 PRs recorded); manifest phase states + checkins are authoritative. Substrate-fix candidate: a `loom events append` or `loom pr record --pr=N --merged` verb so externally-created stacked PRs (gh pr create --base) can be reflected in the trail without a duplicate PR."]
 
 [[sessions]]
 schema_version = 1
