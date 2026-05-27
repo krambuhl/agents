@@ -27,8 +27,9 @@
 // literal. An absent nullable scalar reads back as null; an absent
 // optional reads back as undefined (the key is simply omitted).
 
+import { existsSync, readFileSync, renameSync, statSync, writeFileSync } from 'node:fs';
 import { LoomError } from './errors.ts';
-import { parseToml } from './toml.ts';
+import { parseToml, stringifyToml } from './toml.ts';
 import type { TomlTable, TomlValue } from './toml.ts';
 import type {
   Config,
@@ -375,4 +376,147 @@ export function readManifest(raw: string): ManifestToml {
       reconstructSession(t, `[[sessions]] #${i + 1}`),
     ),
   };
+}
+
+// ---------- Write path (Phase 2 U3) ----------
+//
+// stringifyManifest is the inverse of readManifest: ManifestToml → the
+// sectioned TOML string, via the generic stringifyToml. writeManifest adds
+// the durability layer the verbs will eventually use (U5): a corruption
+// guard (verify-before-rename) and an optimistic-concurrency guard
+// (mtime/size re-check). This is the write LIB only — no verb is rewired
+// here, and no real project's on-disk state is converted; both happen
+// atomically in U5. Tested against temp-dir fixtures.
+//
+// null-by-absence (write side): TOML has no null literal, so the
+// serializer OMITS any key whose value is null or undefined — meta's
+// nullable scalars, the optional phase fields, and any null inside a
+// lenient Event.detail (e.g. a research event's `topic: string | null`).
+// [config] additionally omits schema_version (it lives once in [meta]).
+// readManifest re-injects null for the KNOWN nullable meta fields, so they
+// round-trip; an unknown null buried in a detail record round-trips as
+// absence, which is why verify-before-rename compares null-STRIPPED trees.
+
+export type WriteToken = { mtimeMs: number; size: number };
+
+// Recursively drop keys whose value is null or undefined. Arrays recurse
+// into elements (our arrays never hold null elements). The result is a
+// clean TomlValue tree safe to hand to stringifyToml (which has no null
+// encoding) and to compare for the round-trip verify.
+function stripNullish(value: unknown): unknown {
+  if (Array.isArray(value)) {
+    return value.map(stripNullish);
+  }
+  if (typeof value === 'object' && value !== null) {
+    const out: Record<string, unknown> = {};
+    const bag = value as Record<string, unknown>;
+    for (const key of Object.keys(bag)) {
+      const v = bag[key];
+      if (v === null || v === undefined) continue;
+      out[key] = stripNullish(v);
+    }
+    return out;
+  }
+  return value;
+}
+
+// Structural, order-independent deep-equal over the null-stripped trees.
+function deepEqual(a: unknown, b: unknown): boolean {
+  if (Array.isArray(a) || Array.isArray(b)) {
+    if (!Array.isArray(a) || !Array.isArray(b) || a.length !== b.length) return false;
+    return a.every((el, i) => deepEqual(el, b[i]));
+  }
+  if (typeof a === 'object' && a !== null && typeof b === 'object' && b !== null) {
+    const ab = a as Record<string, unknown>;
+    const bb = b as Record<string, unknown>;
+    const ak = Object.keys(ab);
+    const bk = Object.keys(bb);
+    if (ak.length !== bk.length) return false;
+    return ak.every(
+      (k) => Object.prototype.hasOwnProperty.call(bb, k) && deepEqual(ab[k], bb[k]),
+    );
+  }
+  return a === b;
+}
+
+// [config] without schema_version (deduped to [meta]).
+function configToSection(config: Config): Record<string, unknown> {
+  return {
+    base_branch: config.base_branch,
+    reviewers: config.reviewers,
+    labels: config.labels,
+    verification: config.verification,
+    worker_bindings: config.worker_bindings,
+  };
+}
+
+export function stringifyManifest(m: ManifestToml): string {
+  // Build the root section structure, then strip null/undefined so the
+  // generic serializer never sees a value it cannot encode. The typed
+  // section records pass through structurally — they are plain objects of
+  // strings / numbers / booleans / arrays / nested objects.
+  const root = {
+    meta: { ...m.meta },
+    config: configToSection(m.config),
+    phases: m.phases,
+    events: m.events,
+    checkins: m.checkins,
+    sessions: m.sessions,
+  };
+  return stringifyToml(stripNullish(root) as TomlTable);
+}
+
+export function readManifestFile(path: string): {
+  manifest: ManifestToml;
+  token: WriteToken;
+} {
+  const raw = readFileSync(path, 'utf8');
+  const stat = statSync(path);
+  return {
+    manifest: readManifest(raw),
+    token: { mtimeMs: stat.mtimeMs, size: stat.size },
+  };
+}
+
+// Write a manifest atomically. Two guards before the rename:
+//   1. verify-before-rename — re-parse the serialized string and confirm it
+//      round-trips back to `m` (null-stripped); throw rather than rename if
+//      a serializer bug dropped/mangled a field. Atomic rename otherwise
+//      guarantees we cleanly overwrite good state with corrupt state.
+//   2. optimistic concurrency — when the caller passes the `expect` token it
+//      read the file with, re-stat the target and abort loudly if it changed
+//      under us (single-writer-per-project; deliberate best-effort guard,
+//      the regression from events.jsonl's OS-serialized append).
+// Returns the post-write token so a caller can chain another write.
+export function writeManifest(
+  path: string,
+  m: ManifestToml,
+  opts?: { expect?: WriteToken },
+): WriteToken {
+  const serialized = stringifyManifest(m);
+
+  if (!deepEqual(stripNullish(readManifest(serialized)), stripNullish(m))) {
+    throw new LoomError(
+      'manifest-write-verify-failed',
+      `refusing to write ${path}: serialized manifest does not round-trip back to the in-memory value`,
+    );
+  }
+
+  if (opts?.expect !== undefined && existsSync(path)) {
+    const current = statSync(path);
+    if (current.mtimeMs !== opts.expect.mtimeMs || current.size !== opts.expect.size) {
+      throw new LoomError(
+        'manifest-changed-under-write',
+        `refusing to write ${path}: it changed under write ` +
+          `(expected size ${opts.expect.size}, found ${current.size}) — ` +
+          `single-writer-per-project is assumed`,
+      );
+    }
+  }
+
+  const tmp = `${path}.tmp`;
+  writeFileSync(tmp, serialized, 'utf8');
+  renameSync(tmp, path);
+  const stat = statSync(path);
+  return { mtimeMs: stat.mtimeMs, size: stat.size };
 }
