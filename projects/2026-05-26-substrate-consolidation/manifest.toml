@@ -289,6 +289,21 @@ at = "2026-05-27T17:06:22.804Z"
 event = "checkin-created"
 detail = { number = "12", branch = "ev-agent.substrate-consolidation.domains-clean" }
 
+[[events]]
+at = "2026-05-27T17:09:09.203Z"
+event = "pr-opened"
+detail = { pr = 78, url = "https://github.com/krambuhl/agents/pull/78" }
+
+[[events]]
+at = "2026-05-27T17:09:09.204Z"
+event = "pr-merged"
+detail = { pr = 78 }
+
+[[events]]
+at = "2026-05-27T17:09:09.204Z"
+event = "pr-opened"
+detail = { pr = 79, url = "https://github.com/krambuhl/agents/pull/79" }
+
 [[checkins]]
 schema_version = 1
 number = "08"
