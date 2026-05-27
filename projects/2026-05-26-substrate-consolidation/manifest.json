@@ -18,7 +18,7 @@
       "number": 2,
       "name": "Single-file TOML state",
       "status": "in-progress",
-      "branch": "ev-agent.substrate-consolidation.toml-parser"
+      "branch": "ev-agent.substrate-consolidation.manifest-toml-read"
     },
     {
       "number": 3,
