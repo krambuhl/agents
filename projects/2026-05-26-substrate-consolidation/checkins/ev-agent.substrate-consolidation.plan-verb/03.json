@@ -1,0 +1,74 @@
+{
+  "schema_version": 1,
+  "number": "03",
+  "created": "2026-05-27T00:58:37Z",
+  "phase": {
+    "number": 1,
+    "name": "Shared plan-parser lib"
+  },
+  "branch": "ev-agent.substrate-consolidation.plan-verb",
+  "unit": "loom parse-plan verb (JSON bridge)",
+  "contract": {
+    "goal": "Add a loom parse-plan <slug> verb that wraps the pure parsePlan lib and emits its tree + diagnostics as JSON, so skills (ev-loop, ev-run) can shell to it instead of parsing PLAN.md prose. The CLI bridge that makes Unit 4's migration possible.",
+    "acceptance_criteria": [
+      "loom parse-plan <slug> resolves the project, reads its PLAN.md, runs parsePlan, emits { plan, diagnostics } JSON (default) / --pretty; wired as a verbless namespace parallel to revise-plan/research",
+      "Errors via errToResult: missing slug -> missing-args; unknown/PLAN-less slug -> project-not-found (resolveProjectByPlan); PLAN.md unreadable -> plan-not-found/plan-unreadable race-guard; parsePlan plan-no-headings forwarded",
+      "Thin wrapper: owns the readFileSync (caller-owns-read split), delegates all parsing to the pure parsePlan() — no re-implementation",
+      "Verb tests: parsed-JSON shape, --pretty indented, missing-args, project-not-found, PLAN-less dir -> project-not-found",
+      "End-to-end against the real substrate-consolidation project works",
+      "Full loom suite green; strip-only safe"
+    ],
+    "rules_applied": [
+      "Operator-chosen verb shape: loom parse-plan (new verbless namespace) over loom plan parse (breaks plan-create) or loom project plan",
+      "resolveProjectByPlan (PLAN-bearing resolver) matching sibling plan/revise verbs",
+      "Verb is a thin wrapper; parsePlan stays pure",
+      "Identifiers parallel the plan family: parsePlanVerb / PARSE_PLAN_VERBS / PARSE_PLAN_OPTIONS"
+    ],
+    "disqualifiers": [
+      "re-implementing PLAN.md parsing in the verb",
+      "making parse-plan verbed or altering the plan-create interface",
+      "parameter properties or */-in-JSDoc",
+      "non-JSON default output"
+    ],
+    "inputs": [
+      "plugins/loom/cli/lib/plan.ts (parsePlan)",
+      "plugins/loom/cli/verbs/loom/plan.ts (planVerb pattern, emit, errToResult, resolveProjectByPlan)",
+      "plugins/loom/cli/loom.ts (namespace wiring)",
+      "projects/2026-05-26-substrate-consolidation/whiteboards/1-shared-plan-parser-lib.md"
+    ]
+  },
+  "execution": {
+    "actions": [
+      "Added parsePlanVerb + PARSE_PLAN_OPTIONS + PARSE_PLAN_VERBS to verbs/loom/plan.ts (co-located with the plan family); imports parsePlan + resolveProjectByPlan",
+      "Wired parse-plan into loom.ts: NAMESPACES help map, VERBS_BY_NAMESPACE, VERBLESS_NAMESPACES, and the PARSE_PLAN_VERBS import",
+      "Surfaced + resolved an API-shape decision via grill: operator chose `loom parse-plan` (verbless namespace) over verbing the plan namespace",
+      "Corrected resolver mid-unit: first used resolveProject (manifest-bearing) which failed to resolve PLAN-only test projects; switched to resolveProjectByPlan (PLAN-bearing, matching plan/revise verbs); reframed the PLAN-less-dir test to assert project-not-found",
+      "Authored 5 verb tests (JSON shape, --pretty, missing-args, project-not-found, PLAN-less dir)",
+      "Verified: vitest 25/25 (verb), full loom suite 168/168 (no regression), real e2e via local loom entry (7 phases, phase 7 deps [1..6], 4 milestones, 0 diagnostics)"
+    ],
+    "files_touched": [
+      "plugins/loom/cli/verbs/loom/plan.ts",
+      "plugins/loom/cli/loom.ts",
+      "plugins/loom/cli/verbs/loom/plan.test.ts"
+    ],
+    "corrections": [
+      "Initial resolveProject (manifest-bearing resolver) didn't resolve PLAN-only test projects; switched to resolveProjectByPlan to match the sibling plan/revise verbs. The PLAN-less-dir test now asserts project-not-found (resolveProjectByPlan excludes non-plan dirs), and the verb's plan-not-found branch is a documented race-guard."
+    ]
+  },
+  "scope": [
+    "plugins/loom/cli/verbs/loom/plan.ts",
+    "plugins/loom/cli/loom.ts",
+    "plugins/loom/cli/verbs/loom/plan.test.ts"
+  ],
+  "changes_since_previous": "Third unit of Phase 1. Adds the loom parse-plan CLI verb wrapping the parsePlan lib, the bridge skills shell to. Unit 4 migrates ev-loop-interactive + ev-run to call it.",
+  "verdict": {
+    "result": "approved",
+    "reasons": []
+  },
+  "notes_for_pr": [
+    "API-shape decision (operator grill): the parse operation lives at `loom parse-plan <slug>` — a new verbless namespace parallel to plan/revise-plan/research — NOT `loom plan parse` (which would have broken the verbless `loom plan <slug>` create interface and rippled into the /loom-plan skill + tests).",
+    "Resolver: parse-plan uses resolveProjectByPlan (PLAN-bearing), matching the sibling plan/revise verbs. A PLAN-less directory resolves to project-not-found (it is not a plan project); the verb's plan-not-found branch is a race-guard (PLAN.md deleted between resolve and read), correct but not unit-testable.",
+    "Installed-vs-source: the global `loom` on PATH is the marketplace-installed copy and does NOT have this verb yet; the e2e was run via `node plugins/loom/cli/loom.ts parse-plan ...`. The verb reaches consumers only after the loom plugin is re-installed.",
+    "#69 lifecycle (pr-opened + pr-merged) reconciled in this commit (rode from the prior unit per the pr-event-lags-next-unit pattern)."
+  ]
+}

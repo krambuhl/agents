@@ -12,7 +12,7 @@
       "number": 1,
       "name": "Shared plan-parser lib",
       "status": "in-progress",
-      "branch": "ev-agent.substrate-consolidation.parser-verify"
+      "branch": "ev-agent.substrate-consolidation.plan-verb"
     },
     {
       "number": 2,
