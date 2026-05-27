@@ -1,0 +1,8 @@
+# Agent files under agents/generated/ are emitted by `guild generate`
+# from panel.manifest.toml + tools-map.toml + the source fragments.
+# Marking them linguist-generated collapses them in GitHub diffs and
+# excludes them from language stats — they are output, not source.
+# Regenerate with `guild generate`; do not hand-edit. The freshness
+# test (generated-panel.test.ts) fails if the committed tree drifts
+# from a fresh regen.
+agents/generated/** linguist-generated=true
