@@ -36,7 +36,8 @@ branch = "ev-agent.substrate-consolidation.revision-split"
 [[phases]]
 number = 4
 name = "Author the 3-axis source"
-status = "not-started"
+status = "in-progress"
+branch = "ev-agent.substrate-consolidation.axes-phase-personality"
 
 [[phases]]
 number = 5
@@ -273,6 +274,16 @@ at = "2026-05-27T16:07:18.677Z"
 event = "pr-opened"
 detail = { pr = 77, url = "https://github.com/krambuhl/agents/pull/77" }
 
+[[events]]
+at = "2026-05-27T16:54:43.559Z"
+event = "checkin-created"
+detail = { number = "11", branch = "ev-agent.substrate-consolidation.axes-phase-personality" }
+
+[[events]]
+at = "2026-05-27T16:54:53.516Z"
+event = "phase-started"
+detail = { phase = 4, name = "Author the 3-axis source" }
+
 [[checkins]]
 schema_version = 1
 number = "08"
@@ -412,6 +423,20 @@ scope = ["plugins/loom/cli/lib/types.ts", "plugins/loom/cli/lib/manifest-toml.ts
 changes_since_previous = "Phase 3 (Revision split), single unit. revise-plan now records revisions in both layers — the append-only [[revisions]] machine ledger in manifest.toml and the human ## Revision log in PLAN.md — dual-written manifest-first, graceful on un-adopted projects. Closes Phase 3's exit criteria. M1 (loom state model, Phases 1-3) is complete."
 verdict = { result = "approved", reasons = [] }
 notes_for_pr = ["Operator decisions: (1) manifest-first best-effort atomicity (manifest validated/atomic first; PLAN.md untouched on manifest failure); (2) graceful on plan-only projects (PLAN.md log line always; [[revisions]] only when manifest.toml exists).", "Semantic clarified during the unit: 'never drift' is PER-OPERATION (one [[revisions]] entry + one ## Revision log line per revise, atomically), NOT cumulative count equality. revise-plan replaces PLAN.md with the revision file, so the human log accumulates only when the operator carries it forward; the manifest [[revisions]] is the durable append-only ledger (the seq source of truth).", "Workflow change adopted this session (operator-flagged): no dangling post-PR updates — pr-opened is committed INTO the current PR (push to update it), not left as a working-tree orphan; only pr-merged rides the next unit. See memory project-substrate-consolidation-pr-cadence.", "Panel = contract-fit + test-unit + naming, all approved (contract-fit re-spawned after a turn-budget overrun; same react-api drop for pure-Node .ts).", "Phase 3 COMPLETE -> M1 (loom state model) done. The .plan -> main cadence question is fully ripe now; M1 is a clean landing point. #76 (Phase 2 U5) pr-opened + pr-merged reconciled into this commit."]
+
+[[checkins]]
+schema_version = 1
+number = "11"
+created = "2026-05-27T16:54:43.477576Z"
+phase = { number = 4, name = "Author the 3-axis source" }
+branch = "ev-agent.substrate-consolidation.axes-phase-personality"
+unit = "U1 — Phase axis + personality axis"
+contract = { goal = "Establish guild's phase axis (4 phase modes) + personality axis (5 personalities + personality-base) by harvesting from jelly-guild into plugins/guild/agents/personalities/ and plugins/guild/modes/phases/, authored inline-ready (zero dispatch-time reads) and least-privilege posture, so Phase 5 guild generate can concatenate fragments without excision.", acceptance_criteria = ["personalities/ contains 5 personalities (skeptic, methodical, generative, pragmatist, synthesizer) + personality-base.md", "personality-base.md deletes the '## Composition mechanism (do this first, every dispatch)' section; three-axis-identity + does-NOT-do reframed inline-only; isolation + output-contract-is-phase's-call retained", "Tool-posture rewritten from superset-governed-behaviorally to least-privilege (tools fixed at generate time; reviewer carries no Write); zero mcp__jelly__* and zero jelly refs in any new guild source file", "modes/phases/ contains 4 phase modes (researcher, planner, implementer, reviewer), each with Tool posture rewritten to least-privilege prose and read-mode-files framing reframed for inlining", "5 personality bodies authored reference-free (no literal 'read personality-base' instruction)", "No separate phase-base.md (phase modes self-contained, mirrors jelly's shape)", "Reviewer phase keeps VERDICT: approved/VERDICT: flagged format so guild-validate's aggregator parses generated reviewers"], rules_applied = ["Hard-wrap ~70 col matching jelly/guild source to keep diffs clean", "Harvest-first/delete-last: jelly-guild source untouched (deleted in Phase 7)", "No .ts authored (Node strip-only risk N/A this unit)"], disqualifiers = ["mcp__jelly__* or jelly-path reference surviving in a guild source file", "dispatch-time read-the-mode-file instruction surviving (defeats inlining)", "modifying/deleting any jelly-guild file", "authoring domain modes (U2-U5) or tools-map/manifest (U6) -- scope creep", "changing the verdict format so guild-validate cannot parse it"], inputs = ["projects/2026-05-26-substrate-consolidation/whiteboards/4-author-3-axis-source.md (round 1)", "plugins/jelly-guild/agents/{personality-base,skeptic,methodical,generative,pragmatist,synthesizer}.md", "plugins/jelly-guild/modes/phases/{researcher,planner,implementer,reviewer}.md", "plugins/guild/agents/{evaluator-base,whiteboard-base}.md (reference only)", "PLAN.md Phase 4; docs/PANEL-COMPOSITION.md"] }
+execution = { actions = ["Ran the phase-start whiteboard (guild:whiteboard-substrate-engineer + design-systems + skeptic, round 1) on tools-map schema + harvest mapping + composition order + unit breakdown", "Operator chose source layout = mirror jelly-guild shape; unit breakdown = 6 units (design-systems proposal)", "Harvested personality-base + 5 personalities into plugins/guild/agents/personalities/, deleting the dispatch-read mechanism and rewriting tool-posture to least-privilege", "Harvested 4 phase modes into plugins/guild/modes/phases/, rewriting each Tool posture section and reframing the read-mode-files combining framing for inlining", "Stripped all mcp__jelly__* and jelly references; reframed personality openers reference-free", "Verified: grep clean (no jelly/mcp, no dispatch-read), jelly-guild untouched, all tools lines read-only floor, full repo vitest 1286/1286 pass", "guild-validate panel (evaluator-contract-fit) returned approved, zero findings"], files_touched = ["plugins/guild/agents/personalities/personality-base.md", "plugins/guild/agents/personalities/skeptic.md", "plugins/guild/agents/personalities/methodical.md", "plugins/guild/agents/personalities/generative.md", "plugins/guild/agents/personalities/pragmatist.md", "plugins/guild/agents/personalities/synthesizer.md", "plugins/guild/modes/phases/researcher.md", "plugins/guild/modes/phases/planner.md", "plugins/guild/modes/phases/implementer.md", "plugins/guild/modes/phases/reviewer.md", "projects/2026-05-26-substrate-consolidation/whiteboards/4-author-3-axis-source.md"], corrections = [] }
+scope = ["plugins/guild/agents/personalities/ (6 files)", "plugins/guild/modes/phases/ (4 files)", "whiteboard artifact (round 1)"]
+changes_since_previous = "First unit of Phase 4. Phases 1-3 (loom state model) complete and merged into .plan. This unit opens M2 (guild agent collapse) by laying down the phase + personality axes of the 3-axis source."
+verdict = { result = "approved", reasons = [] }
+notes_for_pr = ["Three operator-confirmed design calls carried into the phase: (1) personality-base dispatch-read section DELETED in-source (not marked-excisable) -- guild's new agents are inline-only; jelly-guild keeps its own copy until Phase 7. (2) Composition/inlining order = base -> phase -> domain -> personality (personality last, as the modulating voice). (3) tools-map schema will document a no-permissive-default contract (skeptic's fail-loud/manifest-total over substrate's permissive-default) -- enforcement is Phase 5, the contract-comment lands in U6.", "Source-fragment frontmatter decision: personalities carry tools: Read, Glob, Grep (safe read-only floor) rather than dropping tools. If Claude Code auto-registers files under agents/, read-only is the safe failure mode; codegen synthesizes real per-(domain,phase) grants in Phase 5. The definitive 'are source fragments registered / committed vs gitignored' question is the explicit Phase 5 open question (PLAN line 143).", "Whiteboard decisions for LATER units (not in scope here): U4 testing-split should source from the TWO baked evaluators (distinct catalogs + test:* vs test:e2e:* grants), using jelly's single testing.md only for the shared tier-choice preamble -- do NOT halve testing.md. U6 panel.manifest.toml needs PER-DOMAIN valid-phase sets (substrate + performance are design-phase-only; substrate's baked agent states there is no evaluator-substrate). U4+ should add a drift-detection test asserting harvested mode prose carries the baked evaluators' stable flag codes, so the 4->7 coexistence window can't silently diverge.", "L-004: whiteboard engineers were guild: plugin agents (not session-authored), so no session-boundary exclusion applied.", "Substrate papercut (not a finding against this unit): evaluator-contract-fit's own instructions point at .claude/agents/evaluator-base.md, but the base lives at plugins/guild/agents/evaluator-base.md. Stale path burns an evaluator turn relocating it; worth a substrate fix."]
 
 [[sessions]]
 schema_version = 1
