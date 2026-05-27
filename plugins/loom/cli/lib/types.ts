@@ -472,6 +472,43 @@ export type Session = {
   notes: string[];
 };
 
+// ---------- Consolidated manifest.toml (Phase 2) ----------
+//
+// Phase 2 collapses manifest.json + config.json + events.jsonl +
+// checkins/ + sessions/ into one sectioned manifest.toml. ManifestToml is
+// the typed view of that file: a [meta] table of scalars, the [config]
+// table, and the [[phases]] / [[events]] / [[checkins]] / [[sessions]]
+// array-of-table sections. It COMPOSES the existing per-record types
+// rather than redefining them — the records did not change shape, only
+// their storage location. The legacy single-file Manifest/Config types
+// above stay in place until the U5 dogfood migration removes the old read
+// paths; this is purely additive.
+
+// The scalar identity + mutable-status fields that live in [meta] —
+// exactly today's Manifest fields minus `phases` (which becomes the
+// [[phases]] section). schema_version lives here once for the whole file;
+// [config] does not repeat it (readManifest synthesizes
+// Config.schema_version from meta).
+export type ManifestMeta = {
+  schema_version: SchemaVersion;
+  title: string;
+  slug: string;
+  started: string;
+  status: ManifestStatus;
+  current_branch: string | null;
+  latest_checkin: string | null;
+  strategy: string;
+};
+
+export type ManifestToml = {
+  meta: ManifestMeta;
+  config: Config;
+  phases: ManifestPhase[];
+  events: Event[];
+  checkins: Checkin[];
+  sessions: Session[];
+};
+
 // ---------- Retro ----------
 
 export type RetroFindingCategory =
