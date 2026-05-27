@@ -14,10 +14,11 @@
 // The smoke defends LOADER-COMPATIBILITY, not value-correctness — that is
 // the unit tier's job. Assertions here are deliberately shallow.
 
-import { readFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { readManifest } from './manifest-toml.ts';
+import { readManifest, readManifestFile, stringifyManifest, writeManifest } from './manifest-toml.ts';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const fixturePath = join(here, '..', 'fixtures', 'manifest-real.toml');
@@ -31,6 +32,26 @@ if (manifest.meta.slug.length === 0) {
 if (manifest.phases.length < 1 || manifest.checkins.length < 1) {
   console.error('manifest-toml.smoke: expected at least one phase and one checkin');
   process.exit(1);
+}
+
+// Write path: serialize round-trips through readManifest, and an atomic
+// writeManifest → readManifestFile to a temp file preserves the shape.
+if (readManifest(stringifyManifest(manifest)).checkins.length !== manifest.checkins.length) {
+  console.error('manifest-toml.smoke: stringifyManifest round-trip lost a checkin');
+  process.exit(1);
+}
+
+const dir = mkdtempSync(join(tmpdir(), 'manifest-toml-smoke-'));
+try {
+  const target = join(dir, 'manifest.toml');
+  writeManifest(target, manifest);
+  const back = readManifestFile(target);
+  if (back.manifest.checkins.length !== manifest.checkins.length || back.token.size <= 0) {
+    console.error('manifest-toml.smoke: writeManifest → readManifestFile mismatch');
+    process.exit(1);
+  }
+} finally {
+  rmSync(dir, { recursive: true, force: true });
 }
 
 console.log(
