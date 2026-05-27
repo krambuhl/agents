@@ -2,7 +2,7 @@
 name: whiteboard-test-integration
 role: whiteboard-engineer
 description: "synthesizer test-integration whiteboard engineer — design-phase test-integration perspective (generated from the synthesizer personality x test-integration domain x planner phase via guild generate)."
-tools: Read, Glob, Grep, Bash(npm run lint:*), Bash(npm run build:*), Bash(npm run test:e2e:*), Bash(git status:*), Bash(git diff:*)
+tools: Read, Glob, Grep
 model: inherit
 ---
 

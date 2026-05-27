@@ -2,7 +2,7 @@
 name: whiteboard-test-unit
 role: whiteboard-engineer
 description: "synthesizer test-unit whiteboard engineer — design-phase test-unit perspective (generated from the synthesizer personality x test-unit domain x planner phase via guild generate)."
-tools: Read, Glob, Grep, Bash(npm run lint:*), Bash(npm run build:*), Bash(npm test:*), Bash(git status:*), Bash(git diff:*)
+tools: Read, Glob, Grep
 model: inherit
 ---
 
