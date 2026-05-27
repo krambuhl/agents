@@ -344,6 +344,11 @@ at = "2026-05-27T18:03:09.250Z"
 event = "checkin-created"
 detail = { number = "15", branch = "ev-agent.substrate-consolidation.domains-design" }
 
+[[events]]
+at = "2026-05-27T18:03:52.854Z"
+event = "pr-opened"
+detail = { pr = 82, url = "https://github.com/krambuhl/agents/pull/82" }
+
 [[checkins]]
 schema_version = 1
 number = "08"
