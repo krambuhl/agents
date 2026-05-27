@@ -94,19 +94,23 @@ Every phase runs a multi-engineer design pass **once before Step 0**
 for every tier in the phase (cited in each tier contract's `Inputs:`
 line). This step is **always-on**: the loop invokes
 `/guild-whiteboard` at phase start regardless of explicit
-configuration; an optional PLAN.md block overrides defaults.
+configuration; an optional `**Whiteboard**:` override from the parsed
+plan overrides defaults.
 
-**Default behavior** (no `**Whiteboard**:` block in PLAN.md):
+**Default behavior** (no `**Whiteboard**:` override in the parsed plan):
 - `engineers` = all currently registered `whiteboard-*` agents,
   resolved via glob of `.claude/agents/whiteboard-*.md`.
 - `topic` = the phase name.
 - `rounds` = 1.
 
-**Override** — optional PLAN.md block, placed immediately under the
-phase's prose paragraph:
+**Override** — read the phase's `whiteboard` field from
+`loom parse-plan <slug>` (a phase-level `**Whiteboard**:` block wins
+over the plan-level one). `loom parse-plan` hands off the raw block
+string as the single source; do not re-grep PLAN.md. This loop parses
+the semicolon-delimited DSL:
 
 ```
-**Whiteboard**: engineers=<comma-separated names>; topic=<one-line topic>; rounds=<N>
+engineers=<comma-separated names>; topic=<one-line topic>; rounds=<N>
 ```
 
 Any field in the block overrides the corresponding default. Partial
