@@ -35,10 +35,11 @@ import { LoomError } from './errors.ts';
 // `#`-count, so heading-level drift across plans doesn't drop a node.
 const MILESTONE_RE = /^#{2,4}\s+(M\d+)\s*[—–-]\s*(.+?)\s*$/;
 
-// `#### Phase 1 — Name` / `### Phase 1.1 — Name`. Id is captured as a
-// string (`[\d.]+`) so dotted ids survive; the dash is em-dash, en-dash,
-// or ASCII hyphen.
-const PHASE_RE = /^#{2,4}\s+Phase\s+([\d.]+)\s*[—–-]\s*(.+?)\s*$/;
+// `#### Phase 1 — Name` / `### Phase 1.1 — Name` / `### Phase 1: Name`.
+// Id is captured as a string (`[\d.]+`) so dotted ids survive; the
+// separator is em-dash, en-dash, ASCII hyphen, or colon (older plans
+// use `Phase N: Name`).
+const PHASE_RE = /^#{2,4}\s+Phase\s+([\d.]+)\s*[—–:-]\s*(.+?)\s*$/;
 
 // Any markdown heading — used to detect "is this a plan at all" and to
 // end section-collection (Loop strategy prose, exit bullet lists).
@@ -142,6 +143,12 @@ export function parsePlan(text: string): ParsePlanResult {
   let planWhiteboard: string | undefined;
   let sawHeading = false;
 
+  // 1-based source lines, kept out of the public ParsedPhase shape so the
+  // tree stays serialization-clean. Used to anchor diagnostics generated
+  // in the post-scan pass below to where the author can see them.
+  const phaseHeadingLine = new Map<ParsedPhase, number>();
+  const phaseDependsLine = new Map<ParsedPhase, number>();
+
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
 
@@ -176,6 +183,7 @@ export function parsePlan(text: string): ParsePlanResult {
         currentMilestone.phases.push(phase);
       }
       phases.push(phase);
+      phaseHeadingLine.set(phase, i + 1);
       currentPhase = phase;
       continue;
     }
@@ -223,6 +231,7 @@ export function parsePlan(text: string): ParsePlanResult {
       const dependsMatch = line.match(DEPENDS_RE);
       if (dependsMatch !== null) {
         currentPhase.dependsOn = parseDependsOn(dependsMatch[1]);
+        phaseDependsLine.set(currentPhase, i + 1);
         continue;
       }
     }
@@ -263,10 +272,11 @@ export function parsePlan(text: string): ParsePlanResult {
   // diagnostics for dependencies that point at a phase id with no
   // matching heading (silently breaks ev-run's actionability math).
   for (const phase of phases) {
+    const headingLine = phaseHeadingLine.get(phase) ?? 0;
     if (phase.goal === undefined) {
       diagnostics.push({
         code: 'plan-phase-missing-goal',
-        line: 0,
+        line: headingLine,
         severity: 'cosmetic',
         message: `phase ${phase.id} has no **Goal**`,
       });
@@ -274,7 +284,7 @@ export function parsePlan(text: string): ParsePlanResult {
     if (phase.exitCriteria.length === 0) {
       diagnostics.push({
         code: 'plan-phase-missing-exit',
-        line: 0,
+        line: headingLine,
         severity: 'cosmetic',
         message: `phase ${phase.id} has no **Exit**/**Output** criteria`,
       });
@@ -283,7 +293,7 @@ export function parsePlan(text: string): ParsePlanResult {
       if (phasesById[depId] === undefined) {
         diagnostics.push({
           code: 'plan-dangling-dependency',
-          line: 0,
+          line: phaseDependsLine.get(phase) ?? headingLine,
           severity: 'structural',
           message: `phase ${phase.id} depends on phase ${depId}, which has no heading`,
         });
