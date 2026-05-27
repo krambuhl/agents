@@ -390,6 +390,11 @@ at = "2026-05-27T18:45:24.402Z"
 event = "session-saved"
 detail = { filename = "2026-05-27-c.json" }
 
+[[events]]
+at = "2026-05-27T18:46:16.777Z"
+event = "pr-opened"
+detail = { pr = 84, url = "https://github.com/krambuhl/agents/pull/84" }
+
 [[checkins]]
 schema_version = 1
 number = "08"
