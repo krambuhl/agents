@@ -520,3 +520,79 @@ export function writeManifest(
   const stat = statSync(path);
   return { mtimeMs: stat.mtimeMs, size: stat.size };
 }
+
+// ---------- Section mutators (Phase 2 U4) ----------
+//
+// The verb-facing mutation API the U5 verb-flip will call. Each is a PURE
+// immutable update: it returns a new ManifestToml and never mutates the
+// input, so a verb's read-modify-write cycle is `m2 = mutate(m1); write(m2)`.
+// These are lib functions, not verbs — no verb is rewired here, no project
+// is converted (both U5). The shared harness (manifest-toml.harness.ts)
+// proves a mutation touches only its own section.
+
+// Append an event, idempotently. A no-op when an existing event has the
+// same `event` name and deep-equal `detail` (ignoring `at`) — so re-running
+// e.g. `pr merged 71` does not append a second pr-merged event. Idempotency
+// is APPEND-TIME ONLY: historical duplicates already in the log (the real
+// events.jsonl carries repeated phase-started events) are untouched, and
+// U5's conversion bulk-loads history rather than re-appending it.
+export function appendEvent(m: ManifestToml, event: Event): ManifestToml {
+  const duplicate = m.events.some(
+    (e) => e.event === event.event && deepEqual(e.detail, event.detail),
+  );
+  if (duplicate) return m;
+  return { ...m, events: [...m.events, event] };
+}
+
+// Append a checkin, rejecting a duplicate (branch, number) loudly — the
+// create-once guarantee today's writeCheckin enforces at the filesystem.
+export function appendCheckin(m: ManifestToml, checkin: Checkin): ManifestToml {
+  const exists = m.checkins.some(
+    (c) => c.branch === checkin.branch && c.number === checkin.number,
+  );
+  if (exists) {
+    throw new LoomError(
+      'checkin-already-exists',
+      `checkin ${checkin.number} on ${checkin.branch} already exists`,
+    );
+  }
+  return { ...m, checkins: [...m.checkins, checkin] };
+}
+
+// Append a session, rejecting a duplicate (date, letter) loudly.
+export function appendSession(m: ManifestToml, session: Session): ManifestToml {
+  const exists = m.sessions.some(
+    (s) => s.date === session.date && s.letter === session.letter,
+  );
+  if (exists) {
+    throw new LoomError(
+      'session-already-exists',
+      `session ${session.date}-${session.letter} already exists`,
+    );
+  }
+  return { ...m, sessions: [...m.sessions, session] };
+}
+
+// Merge a patch into the matching phase (status / branch / pr /
+// latest_checkin / blocked_reason). pr-state transitions go through here as
+// `updatePhase(m, n, { pr })`. Throws if the phase number is not present.
+export function updatePhase(
+  m: ManifestToml,
+  phaseNumber: number,
+  patch: Partial<ManifestPhase>,
+): ManifestToml {
+  const index = m.phases.findIndex((p) => p.number === phaseNumber);
+  if (index === -1) {
+    throw new LoomError('phase-not-found', `phase ${phaseNumber} not found`);
+  }
+  const phases = m.phases.map((p, i) => (i === index ? { ...p, ...patch } : p));
+  return { ...m, phases };
+}
+
+// Merge a patch into [meta] (current_branch / latest_checkin / status / …).
+export function updateMeta(
+  m: ManifestToml,
+  patch: Partial<ManifestMeta>,
+): ManifestToml {
+  return { ...m, meta: { ...m.meta, ...patch } };
+}
