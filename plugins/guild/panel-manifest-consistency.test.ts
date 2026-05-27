@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { isTomlTable, parseToml, type TomlTable } from './cli/lib/toml.ts';
 
 // Real-artifact consistency guard for the Phase 4 wiring.
 //
@@ -15,40 +16,45 @@ import { fileURLToPath } from 'node:url';
 // codegen can't find, or a phase missing from tools-map BEFORE Phase 5
 // tries to generate from these files.
 //
-// Extraction is lightweight (regex over the TOML text) deliberately, to
-// keep this guard self-contained rather than coupling guild's tests to
-// loom's TOML parser.
+// Extraction goes through guild's own minimal TOML reader (the same one
+// `guild generate` folds with), so this guard and the codegen share one
+// parser rather than this test re-deriving the data with regex.
 
 const here = dirname(fileURLToPath(import.meta.url)); // plugins/guild
-const manifest = readFileSync(join(here, 'panel.manifest.toml'), 'utf8');
-const toolsMap = readFileSync(join(here, 'tools-map.toml'), 'utf8');
+const manifest = parseToml(readFileSync(join(here, 'panel.manifest.toml'), 'utf8'));
+const toolsMap = parseToml(readFileSync(join(here, 'tools-map.toml'), 'utf8'));
 
-// All quoted strings inside every `domains = [ ... ]` array (each array
-// is single-line in the manifest).
-function domainsReferenced(text: string): string[] {
-  const found = new Set<string>();
-  const arrayRe = /domains\s*=\s*\[([^\]]*)\]/g;
-  let arrayMatch: RegExpExecArray | null = arrayRe.exec(text);
-  while (arrayMatch !== null) {
-    const itemRe = /"([^"]+)"/g;
-    let itemMatch: RegExpExecArray | null = itemRe.exec(arrayMatch[1]);
-    while (itemMatch !== null) {
-      found.add(itemMatch[1]);
-      itemMatch = itemRe.exec(arrayMatch[1]);
+// Both [[combinations]] and [[recipes]] reference axis fragments by name
+// and must resolve. Collect them as a single set of reference rows.
+function referenceRows(doc: TomlTable): TomlTable[] {
+  const rows: TomlTable[] = [];
+  for (const key of ['combinations', 'recipes']) {
+    const arr = doc[key];
+    if (Array.isArray(arr)) {
+      for (const entry of arr) if (isTomlTable(entry)) rows.push(entry);
     }
-    arrayMatch = arrayRe.exec(text);
+  }
+  return rows;
+}
+
+function domainsReferenced(doc: TomlTable): string[] {
+  const found = new Set<string>();
+  for (const row of referenceRows(doc)) {
+    const domains = row.domains;
+    if (Array.isArray(domains)) {
+      for (const d of domains) if (typeof d === 'string') found.add(d);
+    }
   }
   return [...found];
 }
 
-// All values of a scalar key (`personality = "x"`, `phase = "y"`).
-function scalarValues(text: string, key: string): string[] {
+// All values of a scalar key (`personality = "x"`, `phase = "y"`) across
+// the reference rows.
+function scalarValues(doc: TomlTable, key: string): string[] {
   const found = new Set<string>();
-  const re = new RegExp(`${key}\\s*=\\s*"([^"]+)"`, 'g');
-  let m: RegExpExecArray | null = re.exec(text);
-  while (m !== null) {
-    found.add(m[1]);
-    m = re.exec(text);
+  for (const row of referenceRows(doc)) {
+    const value = row[key];
+    if (typeof value === 'string') found.add(value);
   }
   return [...found];
 }
@@ -86,8 +92,9 @@ describe('panel.manifest.toml references resolve', () => {
     // Self-contained guard: a silently-empty extraction must not pass
     // this vacuously (don't lean on a sibling test's guard).
     expect(phases.length).toBeGreaterThan(0);
+    const phaseSection = toolsMap.phase;
     const missing = phases.filter(
-      (p) => !toolsMap.includes(`[phase.${p}]`),
+      (p) => !(isTomlTable(phaseSection) && isTomlTable(phaseSection[p])),
     );
     expect(missing).toEqual([]);
   });
