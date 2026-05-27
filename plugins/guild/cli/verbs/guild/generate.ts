@@ -2,11 +2,14 @@
 // phase) into scoped agent files.
 //
 // This verb is a pure CRUD-shaped fold, not an orchestration. It reads
-// three kinds of source input and writes one agent file per combination:
-//   - panel.manifest.toml — the NEEDED (personality x domain x phase)
-//     combinations (not the full 5x12x4 cross-product).
+// source input and writes one agent file per emitted agent:
+//   - panel.manifest.toml — the NEEDED agents to emit, across three
+//     section shapes: [[combinations]] (personality x domains @ phase),
+//     [[recipes]] (the same shape, a named multi-domain co-dispatch), and
+//     [[singletons]] (a personality @ phase with NO domain — the named
+//     exception for the domain-agnostic whiteboard-skeptic).
 //   - tools-map.toml      — the least-privilege tool fold
-//     (phase.base UNION domain.grants).
+//     (phase.base UNION domain.grants; a domainless singleton is base-only).
 //   - the source fragments — personality-base + the phase, domain, and
 //     personality mode files, inlined reference-free into each agent.
 //
@@ -14,14 +17,20 @@
 // Panel derivation is derive-panel's job; staging is the loop's job; the
 // freshness/smoke tests are separate targets. Keep this a fold.
 //
-// SCOPE (Phase 5 U1): folds the manifest's [[combinations]] only, into
-// reviewer (evaluator-<domain>) and planner (whiteboard-<domain>) agents.
-// [[recipes]], the domain-agnostic whiteboard-skeptic, and project-local
-// domains are deferred to U3; [retained] (contract-fit) is never
-// generated. This verb writes to --out (default agents/generated/); U1
-// does not commit any generated output (that is U2).
+// Two modes:
+//   - default        — fold the CORE manifest (--source-dir, the plugin)
+//                       into agents/generated/.
+//   - --project-dir   — the off-rails escape hatch. Fold a PROJECT-LOCAL
+//                       manifest's agents, resolving domain fragments from
+//                       the project first (core as fallback) while base /
+//                       phase / personality / tools-map still come from
+//                       core. A consumer adds a project-local domain
+//                       without copying core fragments. Emits only the
+//                       project's agents, not the core panel.
+//
+// [retained] (contract-fit) is never generated.
 
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
@@ -65,12 +74,20 @@ export type Combination = {
   domains: string[];
 };
 
+export type Singleton = {
+  phase: string;
+  personality: string;
+  name: string;
+};
+
 export type AgentPlan = {
   name: string;
   role: string;
   phase: string;
   personality: string;
-  domain: string;
+  // undefined for singletons (the domain-agnostic skeptic): no domain
+  // fragment is inlined and tools resolve to the phase base alone.
+  domain?: string;
   tools: string[];
   maxTurns?: number;
   description: string;
@@ -105,24 +122,37 @@ function domainGrants(toolsMap: TomlTable, domain: string): string[] {
   return grants as string[];
 }
 
-// agent.tools = phase.base UNION domain.grants, deduped, canonical order
-// (phase base in tools-map order, then domain grants in tools-map order).
-// FAIL LOUD when the phase has no tools-map row — never emit a permissive
-// empty tools line.
+// Domain grants apply ONLY at the phases that run verification. Per the
+// tools-map.toml contract: "domain grants apply only at the phases that
+// run verification (reviewer, implementer); researcher and planner get
+// the phase base alone." So a planner agent on a granted domain (e.g.
+// whiteboard-react) is still base-only — matching the baked whiteboard-*
+// agents, which all carry exactly Read, Glob, Grep.
+const VERIFICATION_PHASES = new Set(['reviewer', 'implementer']);
+
+// agent.tools = phase.base [UNION domain.grants only at a verification
+// phase], deduped, canonical order (phase base in tools-map order, then
+// domain grants in tools-map order). A domainless agent (singleton), and
+// any planner/researcher agent, is phase base only. FAIL LOUD when the
+// phase has no tools-map row — never emit a permissive empty tools line.
 export function resolveTools(
   phase: string,
-  domain: string,
+  domain: string | undefined,
   toolsMap: TomlTable,
 ): string[] {
   const base = phaseBase(toolsMap, phase);
   if (base === undefined) {
     throw new GenerateError(
-      `no [phase.${phase}] row in tools-map.toml (a combination references phase '${phase}'); refusing to emit a permissive empty tools line`,
+      `no [phase.${phase}] row in tools-map.toml (an agent references phase '${phase}'); refusing to emit a permissive empty tools line`,
     );
   }
+  const grants =
+    domain !== undefined && VERIFICATION_PHASES.has(phase)
+      ? domainGrants(toolsMap, domain)
+      : [];
   const seen = new Set<string>();
   const out: string[] = [];
-  for (const tool of [...base, ...domainGrants(toolsMap, domain)]) {
+  for (const tool of [...base, ...grants]) {
     if (!seen.has(tool)) {
       seen.add(tool);
       out.push(tool);
@@ -137,7 +167,7 @@ export function nameFor(phase: string, domain: string): string {
   const prefix = PHASE_PREFIX[phase];
   if (prefix === undefined) {
     throw new GenerateError(
-      `no agent-name prefix for phase '${phase}' (U1 emits reviewer/planner combinations only)`,
+      `no agent-name prefix for phase '${phase}' (generate emits reviewer/planner agents only)`,
     );
   }
   return `${prefix}-${domain}`;
@@ -158,9 +188,12 @@ function roleFor(phase: string): string {
 // Kept colon-free; emitted as a double-quoted YAML scalar.
 function synthesizeDescription(
   personality: string,
-  domain: string,
+  domain: string | undefined,
   phase: string,
 ): string {
+  if (domain === undefined) {
+    return `${personality} ${phase} whiteboard engineer — domain-agnostic ${personality} perspective that takes the brief's domain at dispatch (generated from the ${personality} personality x ${phase} phase via guild generate, no domain inlined).`;
+  }
   const provenance = `generated from the ${personality} personality x ${domain} domain x ${phase} phase via guild generate`;
   if (phase === 'reviewer') {
     return `${personality} ${domain} evaluator — antagonist-panel reviewer applying the ${domain} antipattern catalog (${provenance}).`;
@@ -204,48 +237,85 @@ export function stripFrontmatter(content: string): string {
 
 // Inline the fragment bodies in the Phase-4 composition order:
 // personality-base -> phase -> domain -> personality (personality
-// innermost as the modulating voice). A plain concatenation — the
-// fragments are reference-free, so no dispatch-time read survives.
+// innermost as the modulating voice). A singleton omits the domain
+// fragment. A plain concatenation — the fragments are reference-free,
+// so no dispatch-time read survives.
 export function composeBody(fragments: string[]): string {
   return `${fragments.map((f) => stripFrontmatter(f).trim()).join('\n\n')}\n`;
 }
 
 // ---------- Planning ----------
 
-function readCombinations(manifest: TomlTable): Combination[] {
-  const raw = manifest.combinations;
+// [[combinations]] and [[recipes]] share a shape: a personality applied
+// to a list of domains at a phase. A recipe carries an extra `name`
+// (its co-dispatch label, consumed at dispatch time, not at codegen);
+// for file emission it folds identically to a combination.
+function readCombinationLike(manifest: TomlTable, key: string): Combination[] {
+  const raw = manifest[key];
   if (raw === undefined) return [];
   if (!Array.isArray(raw)) {
-    throw new GenerateError('panel.manifest.toml: combinations is not an array');
+    throw new GenerateError(`panel.manifest.toml: ${key} is not an array`);
   }
   return raw.map((entry, i) => {
     if (!isTomlTable(entry)) {
-      throw new GenerateError(`combination ${i} is not a table`);
+      throw new GenerateError(`${key}[${i}] is not a table`);
     }
     const { phase, personality, domains } = entry;
     if (typeof phase !== 'string') {
-      throw new GenerateError(`combination ${i} has no string 'phase'`);
+      throw new GenerateError(`${key}[${i}] has no string 'phase'`);
     }
     if (typeof personality !== 'string') {
-      throw new GenerateError(`combination ${i} has no string 'personality'`);
+      throw new GenerateError(`${key}[${i}] has no string 'personality'`);
     }
     if (!Array.isArray(domains) || !domains.every((d) => typeof d === 'string')) {
-      throw new GenerateError(`combination ${i} has no string[] 'domains'`);
+      throw new GenerateError(`${key}[${i}] has no string[] 'domains'`);
     }
     return { phase, personality, domains: domains as string[] };
   });
 }
 
-// Fan each combination's domains into per-domain agent plans, resolve
-// each plan's tools (fail-loud here, before any fragment is read), then
-// sort by name for deterministic enumeration. Duplicate names are an
-// error (two combinations claiming the same generated file).
+// [[singletons]] — the named exception for a domain-agnostic agent (the
+// whiteboard-skeptic). An explicit `name` is required: a singleton is
+// declared, never a silently empty `domains = []`.
+function readSingletons(manifest: TomlTable): Singleton[] {
+  const raw = manifest.singletons;
+  if (raw === undefined) return [];
+  if (!Array.isArray(raw)) {
+    throw new GenerateError('panel.manifest.toml: singletons is not an array');
+  }
+  return raw.map((entry, i) => {
+    if (!isTomlTable(entry)) {
+      throw new GenerateError(`singletons[${i}] is not a table`);
+    }
+    const { phase, personality, name } = entry;
+    if (typeof phase !== 'string') {
+      throw new GenerateError(`singletons[${i}] has no string 'phase'`);
+    }
+    if (typeof personality !== 'string') {
+      throw new GenerateError(`singletons[${i}] has no string 'personality'`);
+    }
+    if (typeof name !== 'string') {
+      throw new GenerateError(`singletons[${i}] has no string 'name'`);
+    }
+    return { phase, personality, name };
+  });
+}
+
+// Fan combinations + recipes into per-domain plans and singletons into
+// domainless plans, resolving each plan's tools (fail-loud here, before
+// any fragment is read), then sort by name for deterministic
+// enumeration. Duplicate names are an error (two agents claiming the
+// same generated file).
 export function planAgents(
   manifest: TomlTable,
   toolsMap: TomlTable,
 ): AgentPlan[] {
   const plans: AgentPlan[] = [];
-  for (const combo of readCombinations(manifest)) {
+
+  for (const combo of [
+    ...readCombinationLike(manifest, 'combinations'),
+    ...readCombinationLike(manifest, 'recipes'),
+  ]) {
     for (const domain of combo.domains) {
       plans.push({
         name: nameFor(combo.phase, domain),
@@ -259,6 +329,24 @@ export function planAgents(
       });
     }
   }
+
+  for (const singleton of readSingletons(manifest)) {
+    plans.push({
+      name: singleton.name,
+      role: roleFor(singleton.phase),
+      phase: singleton.phase,
+      personality: singleton.personality,
+      domain: undefined,
+      tools: resolveTools(singleton.phase, undefined, toolsMap),
+      maxTurns: PHASE_MAX_TURNS[singleton.phase],
+      description: synthesizeDescription(
+        singleton.personality,
+        undefined,
+        singleton.phase,
+      ),
+    });
+  }
+
   plans.sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0));
 
   const seen = new Set<string>();
@@ -280,7 +368,8 @@ function fail(reason: string): DispatchResult {
 // The plugin root (plugins/guild), resolved from this file's own
 // location rather than process.cwd() — the source fragments are part of
 // the plugin and sit at a fixed offset from this verb, so module-
-// relative resolution is robust to where the CLI is invoked from.
+// relative resolution is robust to where the CLI is invoked from
+// (including from inside an installed marketplace copy).
 function defaultSourceDir(): string {
   // this file: plugins/guild/cli/verbs/guild/generate.ts
   return resolve(dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
@@ -297,13 +386,29 @@ function readFragment(path: string): string {
   }
 }
 
+// Resolve a domain fragment: the project's own domains/ first (the
+// off-rails escape hatch), then core modes/domains/. readFragment fails
+// loud if neither has it.
+function domainFragmentPath(
+  domain: string,
+  sourceDir: string,
+  projectDir: string | undefined,
+): string {
+  if (projectDir !== undefined) {
+    const projectPath = join(projectDir, 'domains', `${domain}.md`);
+    if (existsSync(projectPath)) return projectPath;
+  }
+  return join(sourceDir, 'modes', 'domains', `${domain}.md`);
+}
+
 export const generateVerb: GuildVerbHandler = (rest) => {
-  let values: { 'source-dir'?: string; out?: string };
+  let values: { 'source-dir'?: string; 'project-dir'?: string; out?: string };
   try {
     ({ values } = parseArgs({
       args: rest,
       options: {
         'source-dir': { type: 'string' },
+        'project-dir': { type: 'string' },
         out: { type: 'string' },
       },
       allowPositionals: false,
@@ -313,19 +418,25 @@ export const generateVerb: GuildVerbHandler = (rest) => {
     return fail(`bad args: ${(err as Error).message}`);
   }
 
+  // Core fragments + tools-map always come from --source-dir (the
+  // plugin). --project-dir, when present, supplies the manifest to fold
+  // and project-local domain fragments; it emits only the project's
+  // agents, not the core panel.
   const sourceDir = values['source-dir'] ?? defaultSourceDir();
-  const outDir = values.out ?? join(sourceDir, 'agents', 'generated');
+  const projectDir = values['project-dir'];
+  const manifestDir = projectDir ?? sourceDir;
+  const outDir = values.out ?? join(manifestDir, 'agents', 'generated');
 
   try {
     const manifest = parseToml(
-      readFileSync(join(sourceDir, 'panel.manifest.toml'), 'utf8'),
+      readFileSync(join(manifestDir, 'panel.manifest.toml'), 'utf8'),
     );
     const toolsMap = parseToml(
       readFileSync(join(sourceDir, 'tools-map.toml'), 'utf8'),
     );
 
-    // Plan first — this resolves every combination's tools and fails
-    // loud on a missing phase row before a single file is written.
+    // Plan first — this resolves every agent's tools and fails loud on a
+    // missing phase row before a single file is written.
     const plans = planAgents(manifest, toolsMap);
 
     mkdirSync(outDir, { recursive: true });
@@ -338,21 +449,19 @@ export const generateVerb: GuildVerbHandler = (rest) => {
       const phaseFrag = readFragment(
         join(sourceDir, 'modes', 'phases', `${plan.phase}.md`),
       );
-      const domainFrag = readFragment(
-        join(sourceDir, 'modes', 'domains', `${plan.domain}.md`),
-      );
       const personalityFrag = readFragment(
         join(sourceDir, 'agents', 'personalities', `${plan.personality}.md`),
       );
-      const body = composeBody([
-        personalityBase,
-        phaseFrag,
-        domainFrag,
-        personalityFrag,
-      ]);
+      const fragments = [personalityBase, phaseFrag];
+      if (plan.domain !== undefined) {
+        fragments.push(
+          readFragment(domainFragmentPath(plan.domain, sourceDir, projectDir)),
+        );
+      }
+      fragments.push(personalityFrag);
       writeFileSync(
         join(outDir, `${plan.name}.md`),
-        `${renderFrontmatter(plan)}\n\n${GENERATED_BANNER}\n\n${body}`,
+        `${renderFrontmatter(plan)}\n\n${GENERATED_BANNER}\n\n${composeBody(fragments)}`,
       );
       emitted.push(`${plan.name}.md`);
     }

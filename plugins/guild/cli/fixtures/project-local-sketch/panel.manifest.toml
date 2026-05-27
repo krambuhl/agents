@@ -1,0 +1,22 @@
+schema_version = 1
+
+# Demonstration of the project-local domain escape hatch (Phase 5 U3).
+#
+# This stands in for an aart.camp-local guild source. A consumer project
+# declares its own domain (sketch-ideation, in domains/) and which agent
+# to emit, then runs:
+#
+#   guild generate --project-dir=<this dir> --out=<project>/.claude/agents
+#
+# Core base / phase / personality fragments + tools-map come from the
+# installed plugin (resolved module-relative); only the domain fragment
+# is project-local. This manifest emits exactly one agent —
+# whiteboard-sketch-ideation — composed from the core generative
+# personality + planner phase + this project's sketch-ideation domain.
+# tools resolve to the planner base alone (a design-phase domain takes
+# no Bash grants).
+
+[[combinations]]
+phase = "planner"
+personality = "generative"
+domains = ["sketch-ideation"]

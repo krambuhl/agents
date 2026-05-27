@@ -60,13 +60,20 @@ phase = "planner"
 personality = "generative"
 domains = ["a11y"]
 
+# ---- Singletons (personality x phase, NO domain) ----
 # whiteboard-skeptic is the skeptic personality at the planner phase,
-# domain-agnostic in the current whiteboard (it pressure-tests whatever
-# the brief proposes). It is NOT enumerated as a fixed (skeptic x domain
-# x planner) row because it has no fixed domain. Phase 5 resolves whether
-# codegen emits a skeptic x <each-design-domain> x planner set or a
-# personality-led planner agent that takes the brief's domain at
-# dispatch. Recorded here as an open Phase-5 codegen-shape question.
+# domain-agnostic by design (it pressure-tests whatever the brief
+# proposes, taking the brief's domain at dispatch). It is NOT a
+# (skeptic x domain x planner) fan-out — that would emit a dozen
+# near-identical agents differing only in a catalog the skeptic does
+# not need. Codegen emits ONE personality-led planner agent with no
+# domain fragment inlined; tools resolve to the planner base alone.
+# Declared as an explicit named singleton, never a silent domains = [].
+
+[[singletons]]
+phase = "planner"
+personality = "skeptic"
+name = "whiteboard-skeptic"
 
 # ---- Recipes (named multi-domain co-dispatch at a phase) ----
 # A recipe is a named planner-phase panel spanning several domains under

@@ -2,7 +2,7 @@
 name: whiteboard-react
 role: whiteboard-engineer
 description: "synthesizer react whiteboard engineer — design-phase react perspective (generated from the synthesizer personality x react domain x planner phase via guild generate)."
-tools: Read, Glob, Grep, Bash(npm run lint:*), Bash(npm run build:*), Bash(git status:*), Bash(git diff:*)
+tools: Read, Glob, Grep
 model: inherit
 ---
 
