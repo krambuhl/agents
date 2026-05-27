@@ -15,3 +15,9 @@
 {"at": "2026-05-27T01:14:20.320Z", "event": "pr-merged", "detail": {"pr": 70}}
 {"at":"2026-05-27T01:20:33.702Z","event":"checkin-created","detail":{"number":"04","branch":"ev-agent.substrate-consolidation.consumer-migration"}}
 {"at":"2026-05-27T01:20:33.783Z","event":"phase-completed","detail":{"phase":1}}
+{"at": "2026-05-27T01:30:10.887Z", "event": "pr-opened", "detail": {"pr": 71, "url": "https://github.com/krambuhl/agents/pull/71"}}
+{"at": "2026-05-27T01:30:10.888Z", "event": "pr-merged", "detail": {"pr": 71}}
+{"at":"2026-05-27T02:37:12.068Z","event":"phase-started","detail":{"phase":2,"name":"Single-file TOML state"}}
+{"at":"2026-05-27T02:37:12.171Z","event":"session-saved","detail":{"filename":"2026-05-27-a.json"}}
+{"at":"2026-05-27T02:51:44.296Z","event":"checkin-created","detail":{"number":"05","branch":"ev-agent.substrate-consolidation.toml-parser"}}
+{"at":"2026-05-27T02:51:44.361Z","event":"phase-started","detail":{"phase":2,"name":"Single-file TOML state"}}

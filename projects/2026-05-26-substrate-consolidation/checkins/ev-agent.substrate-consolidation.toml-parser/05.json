@@ -1,0 +1,77 @@
+{
+  "schema_version": 1,
+  "number": "05",
+  "created": "2026-05-27T02:50:00Z",
+  "phase": {
+    "number": 2,
+    "name": "Single-file TOML state"
+  },
+  "branch": "ev-agent.substrate-consolidation.toml-parser",
+  "unit": "Generic hand-rolled TOML parser + serializer (loom/cli/lib/toml.ts)",
+  "contract": {
+    "goal": "Ship a pure, hand-rolled, zero-dependency TOML parser+serializer in plugins/loom/cli/lib/toml.ts covering loom's manifest subset. Harvest jelly-loom/cli/lib/manifest.ts's parse/serialize MECHANISM + loud-rejection posture, but NOT its JellyManifest coupling — a generic value-tree so U2's manifest typing layer sits on top.",
+    "acceptance_criteria": [
+      "parseToml(raw):TomlTable + stringifyToml(table):string exported, pure, generic (type TomlValue = string|number|boolean|TomlValue[]|TomlTable)",
+      "Subset: [table] headers, [[array-of-table]] headers, scalars (basic strings/ints/booleans), arrays (of scalars AND of inline tables), nestable inline tables { k=v, ... }, symmetric escaping of \\\" \\\\ \\n \\t \\r; unsupported constructs (multiline strings, floats/dates, dotted keys) throw a LoomError naming the line",
+      "Round-trip: parseToml(stringifyToml(t)) deep-equals t — fixture-pinned nasty cases (# / quote / */ inside a string, empty arrays, inline table holding a string-array, array-of-tables with inline-table fields, deeply-nested inline tables mirroring a real Checkin) PLUS one escaping property test",
+      "Strip-only smoke: toml.smoke.ts imports lib directly + round-trips a maximally-nested sample, shelled via spawnSync('node') asserting exit 0 + marker",
+      "Strip-only safe: // comments only, no parameter properties, erasable TS (no */-in-comment footgun)",
+      "vitest green (new + full loom suite) + standalone node toml.smoke.ts exit 0"
+    ],
+    "rules_applied": [
+      "Harvest mechanism, not coupling: reuse jelly-loom's stripTrailingComment / escapeString / unescapeString / array-splitting / loud-rejection; drop the [config]/[[phases]] hardcoding and the JellyManifest type",
+      "Generality over the harvest source: generic [table] / [[array-of-table]] headers and a RECURSIVE value parser (parseValueAt/parseArrayAt/parseInlineTableAt) replace jelly's line-flat parseValue, because Checkin.contract / Event.detail are encoded as nestable inline tables",
+      "Loud rejection: every unsupported construct throws LoomError('toml-invalid', 'line N: ...') — never silently mis-parse",
+      "Headers at root only: nesting below a header is expressed inline ({...}/[...]); the value tree does not distinguish header-vs-inline, so round-trip holds either way",
+      "Zero runtime dependency: only import is LoomError from ./errors.ts"
+    ],
+    "disqualifiers": [
+      "coupling the parser to a Manifest type",
+      "a runtime/npm TOML dependency",
+      "silent mis-parse (must throw loud)",
+      "parameter properties or */-in-JSDoc (strip-only break)",
+      "lossy escaping",
+      "gold-plating the subset beyond loom's manifest needs"
+    ],
+    "inputs": [
+      "plugins/jelly-loom/cli/lib/manifest.ts (mechanism + loud-rejection harvest)",
+      "plugins/loom/cli/lib/types.ts (Checkin/Event shapes the inline tables must encode)",
+      "plugins/loom/cli/lib/errors.ts (LoomError)",
+      "plugins/loom/cli/lib/plan.smoke.ts + plan.real.test.ts (strip-only smoke idiom)",
+      "projects/2026-05-26-substrate-consolidation/whiteboards/2-single-file-toml-state.md (round 1 design context)"
+    ]
+  },
+  "execution": {
+    "actions": [
+      "Wrote plugins/loom/cli/lib/toml.ts: TomlValue/TomlTable generic value tree; stringifyToml emits root-level [table]/[[array-of-table]] headers with leaf keys first and all nesting inline; parseToml runs a section state machine for headers + a recursive parseValueAt (strings with escape-aware close, arrays, inline tables, bare-token int/bool classification) that rejects multiline strings, floats, datetimes, dotted keys/headers, unterminated structures, trailing junk, and duplicate keys/tables with line-anchored LoomError('toml-invalid')",
+      "Wrote plugins/loom/cli/lib/toml.smoke.ts: imports the lib directly, round-trips a maximally-nested manifest-shaped sample (identity scalars + [config]-shaped inline table + [[checkins]] with deeply nested contract inline tables carrying # / quote / */ / newline / tab), order-independent deepEqual, prints 'toml.smoke ok' marker",
+      "Wrote plugins/loom/cli/lib/toml.test.ts: roundTrips() helper (real .toEqual), 11 round-trip tests over the nasty cases, 1 escaping property test (fragment cross-product), 12 loud-rejection tests via expectReject() asserting instanceof LoomError + code 'toml-invalid' + line anchor, 1 comments/blank-line parse test, and a spawnSync('node') smoke test asserting exit 0 + marker",
+      "Verified: npx vitest run plugins/loom = 14 files / 192 tests passed; toml.test.ts isolated = 24 passed; node plugins/loom/cli/lib/toml.smoke.ts exit 0 with marker",
+      "Evaluator panel (contract-fit + test-unit + naming) returned approved with zero blocking/advisory findings"
+    ],
+    "files_touched": [
+      "plugins/loom/cli/lib/toml.ts",
+      "plugins/loom/cli/lib/toml.smoke.ts",
+      "plugins/loom/cli/lib/toml.test.ts"
+    ],
+    "corrections": []
+  },
+  "scope": [
+    "plugins/loom/cli/lib/toml.ts",
+    "plugins/loom/cli/lib/toml.smoke.ts",
+    "plugins/loom/cli/lib/toml.test.ts"
+  ],
+  "changes_since_previous": "First unit of Phase 2. Adds the generic TOML value-tree layer (parser + serializer) that the rest of Phase 2 builds on: U2's manifest typing layer reads/writes through parseToml/stringifyToml, U3 wraps the writer in atomic temp+rename, U4 adds checkins/sessions as manifest sections. No existing files edited — this is purely additive.",
+  "verdict": {
+    "result": "approved",
+    "reasons": []
+  },
+  "notes_for_pr": [
+    "Panel = contract-fit + test-unit + naming. Manual override: bin/guild derive-panel emitted evaluator-react-api for these .ts files, but they are pure-Node CLI lib with no React/JSX import — dropped per the known derive-panel misderivation (gate react-api on JSX/react-import presence, not bare .ts). Substrate-followup candidate.",
+    "Harvest note: jelly-loom's manifest.ts parser is line-flat and hardcodes [config]/[[phases]] with only flat-scalar + string-array support. This lib keeps its mechanism (comment-stripping, escape/unescape, array-splitting, loud rejection) but generalizes to arbitrary table/array-of-table headers and adds a recursive value parser for nestable inline tables — the encoding loom's Checkin.contract and Event.detail (~40 detail variants) need. The whiteboard's TOML-fit concern (loom's nested data) is addressed by the inline-table mechanism per the operator's APPROVED decision to encode nesting as inline tables rather than switch to one-file JSON.",
+    "Round-trip invariant rests on: the value tree does not record header-vs-inline provenance, so stringify is free to use [table]/[[array]] headers at the root and inline {...}/[...] when nested, and parse reconstructs the same TomlTable from either form.",
+    "Scope-shift detection: zero signals (panel clean, no plan-structure redirect, no round-2 whiteboard, U1 is not the phase's last unit). No revise offered.",
+    "Installed-vs-source: toml.ts is a lib (not yet wired to any verb), so there is no runtime-active-vs-installed gap for this unit — it ships as source for U2 to import.",
+    "Carried from Phase 1 (still unresolved): .plan -> main cadence (land periodically vs one integration PR at project end). .plan is ~10 commits ahead of main."
+  ]
+}
