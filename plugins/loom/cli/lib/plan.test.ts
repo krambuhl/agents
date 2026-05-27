@@ -89,6 +89,11 @@ test('degrades gracefully on a phase missing goal and exit', () => {
   expect(codes).toContain('plan-phase-missing-goal');
   expect(codes).toContain('plan-phase-missing-exit');
   expect(diagnostics.every((d) => d.severity === 'cosmetic')).toBe(true);
+
+  // Diagnostics anchor to the phase heading line (line 3 in the fixture),
+  // not a placeholder 0, so a consumer can surface them to the author.
+  const missingGoal = diagnostics.find((d) => d.code === 'plan-phase-missing-goal');
+  expect(missingGoal?.line).toBe(3);
 });
 
 // ---------- Structural diagnostic: dangling dependency ----------
@@ -100,6 +105,8 @@ test('flags a dependency on a nonexistent phase as structural', () => {
   const dangling = diagnostics.find((d) => d.code === 'plan-dangling-dependency');
   expect(dangling).toBeDefined();
   expect(dangling?.severity).toBe('structural');
+  // Anchored to the **Depends on** line (line 10 in the fixture).
+  expect(dangling?.line).toBe(10);
 });
 
 // ---------- Heading-level tolerance, ranges, whiteboard blocks ----------

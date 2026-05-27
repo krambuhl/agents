@@ -3,3 +3,7 @@
 {"at":"2026-05-26T22:17:48.789Z","event":"research-completed","detail":{"slug":"2026-05-26-substrate-consolidation","research_path":"RESEARCH.md","notes_path":"RESEARCH-NOTES.md"}}
 {"at":"2026-05-27T00:06:59.573Z","event":"checkin-created","detail":{"number":"01","branch":"ev-agent.substrate-consolidation.parser-lib"}}
 {"at":"2026-05-27T00:06:59.653Z","event":"phase-started","detail":{"phase":1,"name":"Shared plan-parser lib"}}
+{"at": "2026-05-27T00:22:43.450Z", "event": "pr-opened", "detail": {"pr": 68, "url": "https://github.com/krambuhl/agents/pull/68"}}
+{"at": "2026-05-27T00:22:43.451Z", "event": "pr-merged", "detail": {"pr": 68}}
+{"at":"2026-05-27T00:29:45.939Z","event":"checkin-created","detail":{"number":"02","branch":"ev-agent.substrate-consolidation.parser-verify"}}
+{"at":"2026-05-27T00:29:46.019Z","event":"phase-started","detail":{"phase":1,"name":"Shared plan-parser lib"}}

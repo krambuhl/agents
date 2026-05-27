@@ -1,0 +1,77 @@
+{
+  "schema_version": 1,
+  "number": "02",
+  "created": "2026-05-27T00:29:45Z",
+  "phase": {
+    "number": 1,
+    "name": "Shared plan-parser lib"
+  },
+  "branch": "ev-agent.substrate-consolidation.parser-verify",
+  "unit": "Real-artifact regression + accurate diagnostic lines + strip-only smoke",
+  "contract": {
+    "goal": "Add the verification tiers PLAN.md's verification section + the testing-strategy whiteboard demand (real-artifact glob over projects/**/PLAN.md; strip-only node smoke importing the lib directly), and close the Unit 1 advisory by giving diagnostics accurate source line numbers.",
+    "acceptance_criteria": [
+      "Real-artifact glob test globs projects/**/PLAN.md (incl. archive/), parses each, asserts structural correctness: parse doesn't throw, every parsed phase has a non-empty name, zero dangling-dependency diagnostics across the corpus",
+      "Floor assertion: glob matched > 2 files (guards empty-glob-passes-green)",
+      "Real-plan structural assertions vs substrate-consolidation PLAN.md: 7 phases ids 1-7, 4 milestones M1-M4, phase 7 dependsOn=[1..6] (range expansion on a real plan), phase 3=[1,2]; stable facts, not a golden snapshot",
+      "Strip-only smoke: plan.smoke.ts imports lib/plan.ts directly (not via a verb), runs parsePlan on a fixture; plan.real.test.ts shells spawnSync(node, [smoke]) asserting exit 0 + stdout contains 'plan.smoke ok'",
+      "Accurate diagnostic lines: missing-goal/exit carry the phase heading line; dangling-dependency carries the **Depends on** line (not 0)",
+      "All tests green; full loom suite green; real-node smoke green"
+    ],
+    "rules_applied": [
+      "Real-artifact tests assert structure (survives), synthetic fixtures assert exact trees (Unit 1)",
+      "Floor assertions defeat empty-glob and silent-zero-phases false greens",
+      "Strip-only smoke imports the lib module directly so a footgun in plan.ts is caught before any verb imports it",
+      "Line-number maps kept OUT of the public ParsedPhase type (serialization-clean)"
+    ],
+    "disqualifiers": [
+      "real-artifact test asserting volatile content instead of structure",
+      "glob passing green on zero matches",
+      "smoke going through a CLI verb instead of importing the lib",
+      "full golden snapshot of a live, edited plan",
+      "parameter properties or */-in-JSDoc",
+      "storing line numbers on the public ParsedPhase type"
+    ],
+    "inputs": [
+      "plugins/loom/cli/lib/plan.ts",
+      "plugins/loom/cli/lib/plan.test.ts",
+      "plugins/loom/cli/loom.test.ts (spawnSync pattern, lines 181-212)",
+      "projects/**/PLAN.md (the real corpus)",
+      "projects/2026-05-26-substrate-consolidation/whiteboards/1-shared-plan-parser-lib.md"
+    ]
+  },
+  "execution": {
+    "actions": [
+      "Surveyed the real corpus (6 PLAN.md): found two archived plans diverge — loom-absorb-draft uses a colon separator (### Phase N: Name), marketplace-portable-install is deliberately phaseless (numbered workstreams). Widened PHASE_RE to accept a colon separator so loom-absorb-draft's 8 phases parse; reframed the corpus assertion from 'zero structural diagnostics' to 'zero dangling-dependency diagnostics + plansWithPhases>=4 floor' since a phaseless plan legitimately emits plan-no-phases-found",
+      "Added two local Map<ParsedPhase,number> (phaseHeadingLine, phaseDependsLine) in parsePlan, kept out of the public type; wired them into the missing-goal/exit (heading line) and dangling-dependency (depends line) diagnostics",
+      "Authored plan.real.test.ts (4 tests): corpus floor (>2), corpus survival + no-dangling + plansWithPhases>=4, substrate-consolidation structural assertions, spawnSync node strip-only smoke",
+      "Authored plan.smoke.ts: strip-only harness importing ./plan.ts directly, runs parsePlan on the milestone-integer fixture, exits 0/1",
+      "Added line-number assertions to the existing degraded (line 3) and dangling (line 10) unit tests in plan.test.ts",
+      "Verified: vitest 13/13 (plan + plan.real); full loom suite 163/163 (no regression); standalone node plan.smoke.ts exit 0 with no ERR_UNSUPPORTED_TYPESCRIPT_SYNTAX"
+    ],
+    "files_touched": [
+      "plugins/loom/cli/lib/plan.ts",
+      "plugins/loom/cli/lib/plan.real.test.ts",
+      "plugins/loom/cli/lib/plan.smoke.ts",
+      "plugins/loom/cli/lib/plan.test.ts"
+    ],
+    "corrections": []
+  },
+  "scope": [
+    "plugins/loom/cli/lib/plan.ts",
+    "plugins/loom/cli/lib/plan.real.test.ts",
+    "plugins/loom/cli/lib/plan.smoke.ts",
+    "plugins/loom/cli/lib/plan.test.ts"
+  ],
+  "changes_since_previous": "Second unit of Phase 1. Adds the real-artifact regression tier (glob over the real PLAN.md corpus) + the strip-only node smoke, and gives diagnostics accurate source line numbers (closing the Unit 1 advisory). Widens the phase-heading regex to accept a colon separator after surveying the real corpus.",
+  "verdict": {
+    "result": "approved",
+    "reasons": []
+  },
+  "notes_for_pr": [
+    "Corpus discovery: of 6 real PLAN.md files, loom-absorb-draft uses a colon phase separator (### Phase N: Name) and marketplace-portable-install is deliberately phaseless (workstreams, not phases). PHASE_RE now accepts em/en/hyphen/colon; the corpus assertion checks zero dangling-dependency diagnostics + a plansWithPhases>=4 floor rather than zero structural diagnostics, because a phaseless plan legitimately emits plan-no-phases-found.",
+    "PR-lifecycle reconciliation: #68 (the Unit 1 parser-lib PR) was opened via gh (loom pr open can't set --base for a stacked PR) and merged into the .plan integration branch. This commit carries the pr-opened + pr-merged #68 events that lagged the Unit 1 commit (the documented pr-event-rides-next-unit pattern). Substrate gap: no `loom pr open --base` and no pr-merged CLI verb (manual events.jsonl append).",
+    "Cadence note: #68 merged into .plan (not main) after Unit 1, establishing .plan as the project integration branch. This unit (parser-verify) stacks on the updated .plan and PRs into it. Open question for phase/project close: land .plan -> main incrementally vs one big integration PR at the end.",
+    "Diagnostic.line now accurate (Unit 1 advisory closed): missing-goal/exit anchor to the phase heading line, dangling-dependency to the **Depends on** line. Line numbers tracked via local maps, kept off the public ParsedPhase type to stay serialization-clean."
+  ]
+}
