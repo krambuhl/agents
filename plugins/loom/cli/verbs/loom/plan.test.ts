@@ -9,7 +9,7 @@ import {
 } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { planVerb, reviseVerb } from './plan.ts';
+import { planVerb, reviseVerb, parsePlanVerb } from './plan.ts';
 import type { GitRunner } from '../../lib/git.ts';
 
 let projectsRoot: string;
@@ -501,4 +501,82 @@ test('reviseVerb: missing --rationale throws missing-args', () => {
   );
   expect(result.exitCode).toBe(1);
   expect(JSON.parse(result.stderr as string).error).toBe('missing-args');
+});
+
+// ---------- parse-plan ----------
+
+const RICH_PLAN = [
+  '# Test Plan',
+  '',
+  '## Phases',
+  '',
+  '### M1 — Milestone one',
+  '',
+  '#### Phase 1 — Alpha',
+  '',
+  '**Goal**: Do alpha.',
+  '',
+  '**Exit**:',
+  '- a1',
+  '',
+  '**Depends on**: nothing.',
+  '',
+  '#### Phase 2 — Beta',
+  '',
+  '**Goal**: Do beta.',
+  '',
+  '**Exit**:',
+  '- b1',
+  '',
+  '**Depends on**: Phase 1.',
+  '',
+].join('\n');
+
+function seedPlanProject(slug: string, planText: string): void {
+  const path = join(projectsRoot, slug);
+  mkdirSync(path, { recursive: true });
+  writeFileSync(join(path, 'PLAN.md'), planText);
+}
+
+test('parsePlanVerb: emits the parsed plan + diagnostics as JSON', () => {
+  seedPlanProject('2026-05-15-parse-target', RICH_PLAN);
+
+  const result = parsePlanVerb(['2026-05-15-parse-target'], baseCtx());
+  expect(result.exitCode).toBe(0);
+
+  const payload = JSON.parse(result.stdout as string);
+  expect(payload.plan.phases.map((p: { id: string }) => p.id)).toEqual(['1', '2']);
+  expect(payload.plan.phasesById['2'].dependsOn).toEqual(['1']);
+  expect(payload.plan.milestones[0].id).toBe('M1');
+  expect(Array.isArray(payload.diagnostics)).toBe(true);
+});
+
+test('parsePlanVerb: --pretty produces indented JSON', () => {
+  seedPlanProject('2026-05-15-parse-pretty', RICH_PLAN);
+
+  const result = parsePlanVerb(['2026-05-15-parse-pretty', '--pretty'], baseCtx());
+  expect(result.exitCode).toBe(0);
+  expect(result.stdout as string).toContain('\n  ');
+});
+
+test('parsePlanVerb: missing slug -> missing-args', () => {
+  const result = parsePlanVerb([], baseCtx());
+  expect(result.exitCode).toBe(1);
+  expect(JSON.parse(result.stderr as string).error).toBe('missing-args');
+});
+
+test('parsePlanVerb: unknown slug -> project-not-found', () => {
+  const result = parsePlanVerb(['2026-01-01-nope'], baseCtx());
+  expect(result.exitCode).toBe(1);
+  expect(JSON.parse(result.stderr as string).error).toBe('project-not-found');
+});
+
+test('parsePlanVerb: a dir without PLAN.md is not a plan project -> project-not-found', () => {
+  // resolveProjectByPlan only resolves PLAN-bearing projects, so a
+  // PLAN-less directory never reaches the (race-guard) plan-not-found
+  // branch — it is simply not a plan project.
+  mkdirSync(join(projectsRoot, '2026-05-15-no-plan'), { recursive: true });
+  const result = parsePlanVerb(['2026-05-15-no-plan'], baseCtx());
+  expect(result.exitCode).toBe(1);
+  expect(JSON.parse(result.stderr as string).error).toBe('project-not-found');
 });

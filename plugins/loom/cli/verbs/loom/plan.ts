@@ -10,6 +10,7 @@ import { join } from 'node:path';
 import { LoomError } from '../../lib/errors.ts';
 import { createSlug } from '../../lib/project.ts';
 import { resolveProjectByPlan } from '../../lib/project.ts';
+import { parsePlan } from '../../lib/plan.ts';
 import { type GitRunner, defaultGitRunner } from '../../lib/git.ts';
 import {
   writeLoomSubstrate,
@@ -357,13 +358,71 @@ export function reviseVerb(
   };
 }
 
+const PARSE_PLAN_OPTIONS = {
+  pretty: { type: 'boolean' as const },
+};
+
+// `loom parse-plan <slug>` — read the project's PLAN.md and emit the
+// parsed tree + diagnostics as JSON. The bridge skills (ev-loop,
+// ev-run) shell to instead of re-parsing PLAN.md prose. A thin wrapper:
+// it owns the file read (mirroring readManifest's path/text split) and
+// delegates all parsing to the pure parsePlan() lib.
+export function parsePlanVerb(
+  rest: string[],
+  ctx: PlanCliContext,
+): DispatchResult {
+  const { values, positionals } = parseArgs({
+    args: rest,
+    options: PARSE_PLAN_OPTIONS,
+    allowPositionals: true,
+    strict: false,
+  });
+  const slug = positionals[0];
+  const pretty = values.pretty === true;
+
+  if (slug === undefined) {
+    return errToResult(
+      new LoomError(
+        'missing-args',
+        'parse-plan requires a <slug> positional argument',
+      ),
+    );
+  }
+
+  try {
+    const projectPath = resolveProjectByPlan(slug, ctx.projectsRoot);
+    const planPath = join(projectPath, 'PLAN.md');
+    let text: string;
+    try {
+      text = readFileSync(planPath, 'utf8');
+    } catch (err: unknown) {
+      const e = err as { code?: string };
+      if (e.code === 'ENOENT') {
+        throw new LoomError('plan-not-found', `PLAN.md not found at ${planPath}`);
+      }
+      throw new LoomError(
+        'plan-unreadable',
+        `PLAN.md unreadable at ${planPath}: ${(err as Error).message}`,
+      );
+    }
+    const result = parsePlan(text);
+    return { stdout: emit(result, pretty), exitCode: 0 };
+  } catch (err) {
+    return errToResult(err);
+  }
+}
+
 // Verbless-namespace registries for cli/loom.ts. Each loom top-level
-// verb (`loom plan`, `loom revise-plan`) is wired as its own
-// single-handler namespace — same pattern doctor uses.
+// verb (`loom plan`, `loom revise-plan`, `loom parse-plan`) is wired as
+// its own single-handler namespace — same pattern doctor uses.
 export const PLAN_VERBS = {
   plan: planVerb,
 };
 
 export const REVISE_PLAN_VERBS = {
   'revise-plan': reviseVerb,
+};
+
+export const PARSE_PLAN_VERBS = {
+  'parse-plan': parsePlanVerb,
 };
