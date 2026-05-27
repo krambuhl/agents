@@ -19,3 +19,5 @@
 {"at": "2026-05-27T01:30:10.888Z", "event": "pr-merged", "detail": {"pr": 71}}
 {"at":"2026-05-27T02:37:12.068Z","event":"phase-started","detail":{"phase":2,"name":"Single-file TOML state"}}
 {"at":"2026-05-27T02:37:12.171Z","event":"session-saved","detail":{"filename":"2026-05-27-a.json"}}
+{"at":"2026-05-27T02:51:44.296Z","event":"checkin-created","detail":{"number":"05","branch":"ev-agent.substrate-consolidation.toml-parser"}}
+{"at":"2026-05-27T02:51:44.361Z","event":"phase-started","detail":{"phase":2,"name":"Single-file TOML state"}}
