@@ -125,6 +125,8 @@ export function convertProject(projectDir: string): {
     events,
     checkins,
     sessions,
+    // Legacy projects predate the [[revisions]] section; they start empty.
+    revisions: [],
   };
 
   writeManifest(manifestPath(projectDir), state);

@@ -3,15 +3,19 @@ import {
   mkdtempSync,
   mkdirSync,
   rmSync,
+  copyFileSync,
   writeFileSync,
   readFileSync,
   existsSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { planVerb, reviseVerb, parsePlanVerb } from './plan.ts';
 import type { GitRunner } from '../../lib/git.ts';
 import { manifestPath, readManifestFile } from '../../lib/manifest-toml.ts';
+
+const REVISE_FIXTURES = join(dirname(fileURLToPath(import.meta.url)), '..', '..', 'fixtures');
 
 let projectsRoot: string;
 let planFile: string;
@@ -368,6 +372,70 @@ test('reviseVerb: happy path replaces PLAN.md, appends Revision log, commits', (
   expect(message).toContain('narrowed scope to lint-only');
   expect((paths as string[]).length).toBe(1);
   expect((paths as string[])[0]).toContain('PLAN.md');
+});
+
+// ---------- reviseVerb dual-write (Phase 3) ----------
+
+// An adopted project: PLAN.md + a real manifest.toml (the dual-write target).
+function seedAdoptedProject(slug: string, planContent: string): string {
+  const path = makePlanReadableProject(slug);
+  writeFileSync(join(path, 'PLAN.md'), planContent);
+  copyFileSync(join(REVISE_FIXTURES, 'manifest-basic.toml'), join(path, 'manifest.toml'));
+  return path;
+}
+
+function countRevisionLogLines(planText: string): number {
+  return (planText.match(/^- \d{4}-\d{2}-\d{2} — /gm) ?? []).length;
+}
+
+test('reviseVerb (adopted): dual-writes one [[revisions]] entry + one Revision log line', () => {
+  const dir = seedAdoptedProject('2026-05-15-adopt-biome', '# PLAN\n\nOriginal.\n');
+  const result = reviseVerb(
+    ['2026-05-15-adopt-biome', `--revision-file=${revisionFile()}`, '--rationale=narrow scope', '--no-commit'],
+    baseCtx(),
+  );
+  expect(result.exitCode).toBe(0);
+
+  const { manifest } = readManifestFile(manifestPath(dir));
+  expect(manifest.revisions).toHaveLength(1);
+  expect(manifest.revisions[0]).toMatchObject({ seq: 1, target: 'PLAN.md' });
+  expect(typeof manifest.revisions[0]?.timestamp).toBe('string');
+
+  const logLines = countRevisionLogLines(readFileSync(join(dir, 'PLAN.md'), 'utf8'));
+  expect(logLines).toBe(1);
+  // No drift: exactly one machine entry and one human log line.
+  expect(manifest.revisions.length).toBe(logLines);
+});
+
+test('reviseVerb (adopted): [[revisions]] is the append-only ledger; seq increments across revises', () => {
+  // The manifest is the durable machine ledger (append-only); PLAN.md is
+  // REPLACED by each revision file, so its ## Revision log only accumulates
+  // when the operator carries it forward. seq is therefore sourced from the
+  // manifest, not from counting PLAN.md lines.
+  const dir = seedAdoptedProject('2026-05-15-adopt-biome', '# PLAN\n\nOriginal.\n');
+  reviseVerb(['2026-05-15-adopt-biome', `--revision-file=${revisionFile()}`, '--rationale=first', '--no-commit'], baseCtx());
+  reviseVerb(['2026-05-15-adopt-biome', `--revision-file=${revisionFile()}`, '--rationale=second', '--no-commit'], baseCtx());
+
+  const { manifest } = readManifestFile(manifestPath(dir));
+  expect(manifest.revisions.map((r) => r.seq)).toEqual([1, 2]);
+  // Each revise wrote exactly one log line into the PLAN.md it produced
+  // (the revision file here carries no prior log, so the latest PLAN.md
+  // shows the most recent revision's line — per-operation no-drift).
+  expect(countRevisionLogLines(readFileSync(join(dir, 'PLAN.md'), 'utf8'))).toBe(1);
+});
+
+test('reviseVerb (plan-only): writes the Revision log line but no manifest [[revisions]] (graceful)', () => {
+  // seedTroutProjectWithPlan seeds PLAN.md only (no manifest.toml) — a
+  // plan-only, un-adopted project.
+  const dir = seedTroutProjectWithPlan('2026-05-15-adopt-biome', '# PLAN\n\nOriginal.\n');
+  const result = reviseVerb(
+    ['2026-05-15-adopt-biome', `--revision-file=${revisionFile()}`, '--rationale=x', '--no-commit'],
+    baseCtx(),
+  );
+  expect(result.exitCode).toBe(0);
+  expect(readFileSync(join(dir, 'PLAN.md'), 'utf8')).toContain('## Revision log');
+  // Graceful: revise-plan does not create a manifest for an un-adopted project.
+  expect(existsSync(manifestPath(dir))).toBe(false);
 });
 
 test('reviseVerb: --no-commit writes file but skips git', () => {

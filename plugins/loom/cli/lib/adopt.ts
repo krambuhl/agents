@@ -44,6 +44,7 @@ export function writeLoomSubstrate(opts: {
     ],
     checkins: [],
     sessions: [],
+    revisions: [],
   };
   writeManifest(manifestPath(projectDir), state);
 }

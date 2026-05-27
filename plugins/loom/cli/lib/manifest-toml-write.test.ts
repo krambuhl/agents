@@ -55,6 +55,7 @@ function syntheticManifest(): ManifestToml {
     events: [{ at: 't', event: 'project-initialized', detail: {} } as Event],
     checkins: [],
     sessions: [],
+    revisions: [],
   };
 }
 
@@ -75,6 +76,19 @@ test('stringifyManifest round-trips a synthetic manifest (null scalars, empty de
   // null-by-absence: omitted on write, re-injected as null on read.
   expect(back.meta.current_branch).toBeNull();
   expect(back.meta.latest_checkin).toBeNull();
+  expect(back).toEqual(m);
+});
+
+test('stringifyManifest round-trips a manifest with [[revisions]] entries', () => {
+  const m: ManifestToml = {
+    ...syntheticManifest(),
+    revisions: [
+      { timestamp: '2026-05-27T08:00:00Z', target: 'PLAN.md', seq: 1 },
+      { timestamp: '2026-05-27T09:00:00Z', target: 'PLAN.md', seq: 2 },
+    ],
+  };
+  const back = readManifest(stringifyManifest(m));
+  expect(back.revisions).toEqual(m.revisions);
   expect(back).toEqual(m);
 });
 

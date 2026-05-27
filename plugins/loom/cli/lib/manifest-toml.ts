@@ -51,6 +51,7 @@ import type {
   PhasePR,
   PhasePRState,
   PhaseStatus,
+  Revision,
   SchemaVersion,
 } from './types.ts';
 
@@ -375,6 +376,14 @@ function reconstructSession(t: TomlTable, where: string): Session {
   };
 }
 
+function reconstructRevision(t: TomlTable, where: string): Revision {
+  return {
+    timestamp: requireString(t, 'timestamp', where),
+    target: requireString(t, 'target', where),
+    seq: requireNumber(t, 'seq', where),
+  };
+}
+
 // ---------- Entry point ----------
 
 export function readManifest(raw: string): ManifestToml {
@@ -394,6 +403,9 @@ export function readManifest(raw: string): ManifestToml {
     ),
     sessions: sectionTables(root, 'sessions').map((t, i) =>
       reconstructSession(t, `[[sessions]] #${i + 1}`),
+    ),
+    revisions: sectionTables(root, 'revisions').map((t, i) =>
+      reconstructRevision(t, `[[revisions]] #${i + 1}`),
     ),
   };
 }
@@ -482,6 +494,7 @@ export function stringifyManifest(m: ManifestToml): string {
     events: m.events,
     checkins: m.checkins,
     sessions: m.sessions,
+    revisions: m.revisions,
   };
   return stringifyToml(stripNullish(root) as TomlTable);
 }
@@ -615,4 +628,11 @@ export function updateMeta(
   patch: Partial<ManifestMeta>,
 ): ManifestToml {
   return { ...m, meta: { ...m.meta, ...patch } };
+}
+
+// Append a [[revisions]] entry (Phase 3). Append-only, like the event/checkin
+// log — revisions accrete and never mutate. The caller sets seq (1-based,
+// = revisions.length + 1 for the next one).
+export function appendRevision(m: ManifestToml, revision: Revision): ManifestToml {
+  return { ...m, revisions: [...m.revisions, revision] };
 }
