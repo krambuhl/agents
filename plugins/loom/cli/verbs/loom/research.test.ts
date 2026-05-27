@@ -8,10 +8,17 @@ import {
   existsSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { researchVerb, RESEARCH_VERBS } from './research.ts';
 import type { GitRunner } from '../../lib/git.ts';
-import { readEvents } from '../../lib/events.ts';
+import { manifestPath, readManifestFile } from '../../lib/manifest-toml.ts';
+import type { Event } from '../../lib/types.ts';
+
+// Events now live in the project's manifest.toml [[events]].
+function readEvents(projectDir: string): Event[] {
+  return readManifestFile(manifestPath(projectDir)).manifest.events;
+}
 
 let projectsRoot: string;
 let researchFile: string;
@@ -90,13 +97,13 @@ test('researchVerb: happy path writes both research files + auto-adopts loom + c
     readFileSync(join(payload.path, 'RESEARCH-NOTES.md'), 'utf8'),
   ).toContain('# RESEARCH NOTES');
 
-  // Loom files written by auto-adopt
-  expect(existsSync(join(payload.path, 'manifest.json'))).toBe(true);
-  expect(existsSync(join(payload.path, 'config.json'))).toBe(true);
-  expect(existsSync(join(payload.path, 'events.jsonl'))).toBe(true);
+  // Single state file written by auto-adopt (config.json / events.jsonl folded in)
+  expect(existsSync(join(payload.path, 'manifest.toml'))).toBe(true);
+  expect(existsSync(join(payload.path, 'config.json'))).toBe(false);
+  expect(existsSync(join(payload.path, 'events.jsonl'))).toBe(false);
 
-  // events.jsonl carries project-initialized + research-started + research-completed
-  const events = readEvents(join(payload.path, 'events.jsonl'));
+  // [[events]] carries project-initialized + research-started + research-completed
+  const events = readEvents(payload.path);
   const names = events.map((e) => e.event);
   expect(names).toEqual([
     'project-initialized',
@@ -121,11 +128,12 @@ test('researchVerb: happy path writes both research files + auto-adopts loom + c
   expect(completedDetail.research_path).toBe('RESEARCH.md');
   expect(completedDetail.notes_path).toBe('RESEARCH-NOTES.md');
 
-  // git addAndCommit called once with all five files + a loom-research message
+  // git addAndCommit called once with the three files (RESEARCH.md +
+  // RESEARCH-NOTES.md + manifest.toml) + a loom-research message
   const addCalls = gitCalls.filter((c) => c.method === 'addAndCommit');
   expect(addCalls.length).toBe(1);
   const [, paths, message] = addCalls[0]?.args ?? [];
-  expect((paths as string[]).length).toBe(5);
+  expect((paths as string[]).length).toBe(3);
   expect(message).toContain('loom research');
   expect(message).toContain('2026-05-18-new-research-topic');
 });
@@ -149,9 +157,9 @@ test('researchVerb: --no-loom skips auto-adopt AND skips event emission', () => 
   // Research files present
   expect(existsSync(join(payload.path, 'RESEARCH.md'))).toBe(true);
   expect(existsSync(join(payload.path, 'RESEARCH-NOTES.md'))).toBe(true);
-  // No events.jsonl exists to write into
+  // No manifest exists to write events into
   expect(existsSync(join(payload.path, 'events.jsonl'))).toBe(false);
-  expect(existsSync(join(payload.path, 'manifest.json'))).toBe(false);
+  expect(existsSync(join(payload.path, 'manifest.toml'))).toBe(false);
 
   // Commit only includes the two research files
   const addCalls = gitCalls.filter((c) => c.method === 'addAndCommit');
@@ -160,16 +168,18 @@ test('researchVerb: --no-loom skips auto-adopt AND skips event emission', () => 
   expect((paths as string[]).length).toBe(2);
 });
 
-test('researchVerb: pre-existing manifest.json skips loom adopt but still emits events', () => {
+test('researchVerb: pre-existing manifest.toml skips loom adopt but still emits events', () => {
   // Recovery / coexistence case: a project that already adopted loom
   // (e.g. via `loom plan` earlier) and the user is now adding research.
   const slug = '2026-05-18-existing';
   const dir = join(projectsRoot, slug);
   mkdirSync(dir, { recursive: true });
-  writeFileSync(join(dir, 'manifest.json'), '{"existing":"manifest"}');
-  // The pre-existing project also has an events.jsonl that the verb
-  // appends to.
-  writeFileSync(join(dir, 'events.jsonl'), '');
+  // A valid pre-existing manifest.toml (recordEvent parses it to append).
+  const FIXTURES = join(dirname(fileURLToPath(import.meta.url)), '..', '..', 'fixtures');
+  writeFileSync(
+    manifestPath(dir),
+    readFileSync(join(FIXTURES, 'manifest-basic.toml'), 'utf8'),
+  );
 
   const result = researchVerb(
     [
@@ -184,13 +194,11 @@ test('researchVerb: pre-existing manifest.json skips loom adopt but still emits 
   expect(payload.loom_adopted).toBe(false);
   expect(payload.events_emitted).toBe(true);
 
-  // Existing manifest preserved
-  expect(readFileSync(join(dir, 'manifest.json'), 'utf8')).toBe(
-    '{"existing":"manifest"}',
-  );
-  // Events appended to the pre-existing log
-  const events = readEvents(join(dir, 'events.jsonl'));
-  const names = events.map((e) => e.event);
+  // Existing manifest preserved (its phases survive; only [[events]] grows)
+  const { manifest } = readManifestFile(manifestPath(dir));
+  expect(manifest.phases).toHaveLength(4);
+  // Events appended to the pre-existing manifest
+  const names = manifest.events.map((e) => e.event);
   expect(names).toEqual(['research-started', 'research-completed']);
 });
 
@@ -209,7 +217,7 @@ test('researchVerb: --no-commit writes files but skips git', () => {
   expect(payload.committed).toBe(false);
   // Files still written + loom still adopted
   expect(existsSync(join(payload.path, 'RESEARCH.md'))).toBe(true);
-  expect(existsSync(join(payload.path, 'manifest.json'))).toBe(true);
+  expect(existsSync(join(payload.path, 'manifest.toml'))).toBe(true);
   // Events still emitted — emission is gated on loom-presence, not on
   // commit decisions.
   expect(payload.events_emitted).toBe(true);
@@ -259,10 +267,12 @@ test('researchVerb: full-slug positional passed through verbatim', () => {
   const payload = JSON.parse(result.stdout as string);
   expect(payload.slug).toBe('2026-05-18-explicit-slug');
   // research-started.detail.topic is null when the positional was a slug
-  const events = readEvents(join(payload.path, 'events.jsonl'));
+  const events = readEvents(payload.path);
   const startedDetail = events.find((e) => e.event === 'research-started')
-    ?.detail as { topic: string | null };
-  expect(startedDetail.topic).toBeNull();
+    ?.detail as { topic?: string | null };
+  // TOML has no null literal, so a null topic round-trips as an absent key
+  // (null-by-absence) — undefined here, semantically "no topic" either way.
+  expect(startedDetail.topic ?? null).toBeNull();
 });
 
 // ---------- Directory exists but no RESEARCH.md ----------

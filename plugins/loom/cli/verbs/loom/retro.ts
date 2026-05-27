@@ -3,7 +3,12 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { resolveProject } from '../../lib/project.ts';
 import { readRetro, listRetros, writeRetro } from '../../lib/retro.ts';
-import { appendEvent } from '../../lib/events.ts';
+import {
+  appendEvent,
+  manifestPath,
+  readManifestFile,
+  writeManifest,
+} from '../../lib/manifest-toml.ts';
 import { LoomError } from '../../lib/errors.ts';
 import type { CliContext, DispatchResult } from './project.ts';
 import type { Retro, RetroType } from '../../lib/types.ts';
@@ -148,17 +153,22 @@ export function retroWrite(rest: string[], ctx: CliContext): DispatchResult {
   }
   try {
     const path = resolveProject(slug, ctx.projectsRoot);
+    // Retros stay file-per-record (out of the manifest's six sections);
+    // only the retro-written event is rerouted into [[events]].
     const written = writeRetro(path, parsed);
     const detail: { type: RetroType; phase?: number; tier?: number } = { type: parsed.type };
     if (parsed.type === 'session') {
       detail.phase = parsed.phase;
       detail.tier = parsed.tier;
     }
-    appendEvent(join(path, 'events.jsonl'), {
+    const mp = manifestPath(path);
+    const { manifest, token } = readManifestFile(mp);
+    const next = appendEvent(manifest, {
       at: new Date().toISOString(),
       event: 'retro-written',
       detail,
     });
+    writeManifest(mp, next, { expect: token });
     return { stdout: emit(written, values.pretty === true), exitCode: 0 };
   } catch (err) {
     return errToResult(err);

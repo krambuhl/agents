@@ -1,38 +1,31 @@
 import { test, expect, beforeEach, afterEach } from 'vitest';
-import {
-  mkdtempSync,
-  mkdirSync,
-  rmSync,
-  copyFileSync,
-  writeFileSync,
-  readFileSync,
-} from 'node:fs';
+import { mkdtempSync, mkdirSync, rmSync, writeFileSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { prDiscover, prOpen, prUpdate, prComments, prRespond } from './pr.ts';
+import { manifestPath, readManifestFile, writeManifest } from '../../lib/manifest-toml.ts';
+import type { Checkin } from '../../lib/types.ts';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const FIXTURES = join(__dirname, '..', '..', 'fixtures');
 
 let projectsRoot: string;
-const branchDirRel = ['checkins', 'loom-cli', 'test-branch'];
+const TEST_BRANCH = 'loom-cli/test-branch';
 
 function setupProjectWithCheckins(checkinNumbers: string[]): string {
   const projectPath = join(projectsRoot, '2026-05-15-test-loom');
   mkdirSync(projectPath);
-  copyFileSync(
-    join(FIXTURES, 'manifest-basic.json'),
-    join(projectPath, 'manifest.json'),
-  );
-  const branchDir = join(projectPath, ...branchDirRel);
-  mkdirSync(branchDir, { recursive: true });
-  for (const n of checkinNumbers) {
-    copyFileSync(
-      join(FIXTURES, 'checkin-basic.json'),
-      join(branchDir, `${n}.json`),
-    );
-  }
+  const base = readManifestFile(join(FIXTURES, 'manifest-basic.toml')).manifest;
+  const template = JSON.parse(
+    readFileSync(join(FIXTURES, 'checkin-basic.json'), 'utf8'),
+  ) as Checkin;
+  const checkins = checkinNumbers.map((n) => ({
+    ...template,
+    number: n,
+    branch: TEST_BRANCH,
+  }));
+  writeManifest(manifestPath(projectPath), { ...base, checkins });
   return projectPath;
 }
 
@@ -154,13 +147,13 @@ test('prOpen: composes gh pr create, parses URL, appends event', () => {
   expect(ghCalls[0]).toContain('--title');
   expect(ghCalls[0]).toContain('Test PR');
 
-  // pr-opened event appended
-  const eventsRaw = readFileSync(join(projectPath, 'events.jsonl'), 'utf8');
-  const lastLine = eventsRaw.trim().split('\n').pop() as string;
-  const event = JSON.parse(lastLine);
-  expect(event.event).toBe('pr-opened');
-  expect(event.detail.pr).toBe(77);
-  expect(event.detail.url).toBe('https://github.com/owner/repo/pull/77');
+  // pr-opened event appended to [[events]]
+  const { manifest } = readManifestFile(manifestPath(projectPath));
+  const event = manifest.events[manifest.events.length - 1];
+  expect(event?.event).toBe('pr-opened');
+  const detail = event?.detail as { pr: number; url: string };
+  expect(detail.pr).toBe(77);
+  expect(detail.url).toBe('https://github.com/owner/repo/pull/77');
 });
 
 test('prOpen: gh failure surfaces as gh-failed', () => {
@@ -237,12 +230,11 @@ test('prUpdate: composes gh pr edit, appends pr-updated event', () => {
   expect(ghCalls[0]).toContain('edit');
   expect(ghCalls[0]).toContain('42');
 
-  // pr-updated event
-  const eventsRaw = readFileSync(join(projectPath, 'events.jsonl'), 'utf8');
-  const lastLine = eventsRaw.trim().split('\n').pop() as string;
-  const event = JSON.parse(lastLine);
-  expect(event.event).toBe('pr-updated');
-  expect(event.detail.pr).toBe(42);
+  // pr-updated event in [[events]]
+  const { manifest } = readManifestFile(manifestPath(projectPath));
+  const event = manifest.events[manifest.events.length - 1];
+  expect(event?.event).toBe('pr-updated');
+  expect((event?.detail as { pr: number }).pr).toBe(42);
 });
 
 test('prUpdate: missing --pr returns missing-args', () => {
@@ -311,7 +303,6 @@ test('prComments: gh failure surfaces as gh-failed', () => {
 
 test('prRespond: writes one file per response under checkins/<branch>/responses/', () => {
   setupProjectWithCheckins(['01']);
-  const projectPath = join(projectsRoot, '2026-05-15-test-loom');
   const responsesFile = join(projectsRoot, 'responses.json');
   writeFileSync(
     responsesFile,

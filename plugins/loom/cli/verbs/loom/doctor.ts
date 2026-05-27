@@ -1,14 +1,10 @@
 import { parseArgs } from 'node:util';
 import { existsSync } from 'node:fs';
-import { join, sep } from 'node:path';
+import { sep } from 'node:path';
 import { resolveProject, listProjects } from '../../lib/project.ts';
-import { readManifest } from '../../lib/manifest.ts';
-import { readConfig } from '../../lib/config.ts';
-import { readEvents } from '../../lib/events.ts';
+import { manifestPath, readManifestFile } from '../../lib/manifest-toml.ts';
 import { LoomError } from '../../lib/errors.ts';
 import type { CliContext, DispatchResult } from './project.ts';
-
-const SUPPORTED_SCHEMA_VERSION = 1;
 
 function emit(value: unknown, pretty: boolean): string {
   return pretty ? JSON.stringify(value, null, 2) : JSON.stringify(value);
@@ -35,72 +31,26 @@ type DoctorReport = {
 
 function checkProject(projectPath: string, slug: string): DoctorReport {
   const issues: DoctorIssue[] = [];
-  const manifestPath = join(projectPath, 'manifest.json');
-  const eventsPath = join(projectPath, 'events.jsonl');
-  const configPath = join(projectPath, 'config.json');
+  const mp = manifestPath(projectPath);
 
-  if (!existsSync(manifestPath)) {
+  // Post-cutover, all state lives in one manifest.toml; a clean parse of it
+  // certifies meta + config + the append-only sections in one read
+  // (readManifest validates the required sections + schema version).
+  if (!existsSync(mp)) {
     issues.push({
       code: 'manifest-missing',
       severity: 'error',
-      detail: `manifest.json not found at ${manifestPath}`,
+      detail: `manifest.toml not found at ${mp}`,
     });
   } else {
+    // readManifest validates the required sections AND the schema version
+    // (it throws manifest-unsupported-version for anything but v1), so a
+    // clean parse is the whole health check; any failure is unreadable.
     try {
-      const m = readManifest(manifestPath);
-      if (m.schema_version !== SUPPORTED_SCHEMA_VERSION) {
-        issues.push({
-          code: 'schema-version-mismatch',
-          severity: 'error',
-          detail: `manifest schema_version is ${m.schema_version}; supported: ${SUPPORTED_SCHEMA_VERSION}`,
-        });
-      }
+      readManifestFile(mp);
     } catch (err: unknown) {
       issues.push({
         code: 'manifest-unreadable',
-        severity: 'error',
-        detail: (err as Error).message,
-      });
-    }
-  }
-
-  if (!existsSync(eventsPath)) {
-    issues.push({
-      code: 'events-missing',
-      severity: 'error',
-      detail: `events.jsonl not found at ${eventsPath}`,
-    });
-  } else {
-    try {
-      readEvents(eventsPath, { limit: 1 });
-    } catch (err: unknown) {
-      issues.push({
-        code: 'events-unreadable',
-        severity: 'error',
-        detail: (err as Error).message,
-      });
-    }
-  }
-
-  if (!existsSync(configPath)) {
-    issues.push({
-      code: 'config-missing',
-      severity: 'error',
-      detail: `config.json not found at ${configPath}`,
-    });
-  } else {
-    try {
-      const c = readConfig(configPath);
-      if (c.schema_version !== SUPPORTED_SCHEMA_VERSION) {
-        issues.push({
-          code: 'schema-version-mismatch',
-          severity: 'error',
-          detail: `config schema_version is ${c.schema_version}; supported: ${SUPPORTED_SCHEMA_VERSION}`,
-        });
-      }
-    } catch (err: unknown) {
-      issues.push({
-        code: 'config-unreadable',
         severity: 'error',
         detail: (err as Error).message,
       });

@@ -1,11 +1,15 @@
 import { parseArgs } from 'node:util';
-import { join } from 'node:path';
 import { resolveProject } from '../../lib/project.ts';
-import { readManifest, writeManifest } from '../../lib/manifest.ts';
-import { appendEvent } from '../../lib/events.ts';
+import {
+  appendEvent,
+  manifestPath,
+  readManifestFile,
+  updatePhase,
+  writeManifest,
+} from '../../lib/manifest-toml.ts';
 import { LoomError } from '../../lib/errors.ts';
-import type { CliContext, DispatchResult } from './project.ts';
 import type { Event, ManifestPhase, PhaseStatus } from '../../lib/types.ts';
+import type { CliContext, DispatchResult } from './project.ts';
 
 function emit(value: unknown, pretty: boolean): string {
   return pretty ? JSON.stringify(value, null, 2) : JSON.stringify(value);
@@ -43,7 +47,7 @@ export function phaseRead(rest: string[], ctx: CliContext): DispatchResult {
   }
   try {
     const path = resolveProject(slug, ctx.projectsRoot);
-    const manifest = readManifest(join(path, 'manifest.json'));
+    const { manifest } = readManifestFile(manifestPath(path));
     const phase = manifest.phases.find((p) => p.number === phaseNum);
     if (phase === undefined) {
       return errToResult(
@@ -74,7 +78,7 @@ export function phaseList(rest: string[], ctx: CliContext): DispatchResult {
   }
   try {
     const path = resolveProject(slug, ctx.projectsRoot);
-    const manifest = readManifest(join(path, 'manifest.json'));
+    const { manifest } = readManifestFile(manifestPath(path));
     return { stdout: emit(manifest.phases, values.pretty === true), exitCode: 0 };
   } catch (err) {
     return errToResult(err);
@@ -197,8 +201,7 @@ export function phaseUpdate(rest: string[], ctx: CliContext): DispatchResult {
 
   try {
     const path = resolveProject(slug, ctx.projectsRoot);
-    const manifestPath = join(path, 'manifest.json');
-    const manifest = readManifest(manifestPath);
+    const { manifest, token } = readManifestFile(manifestPath(path));
     const phase = manifest.phases.find((p) => p.number === phaseNum);
     if (phase === undefined) {
       return errToResult(
@@ -224,10 +227,7 @@ export function phaseUpdate(rest: string[], ctx: CliContext): DispatchResult {
         state: (prStateArg ?? phase.pr?.state ?? 'open') as 'open' | 'merged' | 'closed',
       };
     }
-    manifest.phases = manifest.phases.map((p) =>
-      p.number === phaseNum ? updated : p,
-    );
-    writeManifest(manifestPath, manifest);
+    let next = updatePhase(manifest, phaseNum, updated);
     const event = eventForTransition(
       prior,
       status as PhaseStatus,
@@ -236,8 +236,9 @@ export function phaseUpdate(rest: string[], ctx: CliContext): DispatchResult {
       values.reason,
     );
     if (event !== null) {
-      appendEvent(join(path, 'events.jsonl'), event);
+      next = appendEvent(next, event);
     }
+    writeManifest(manifestPath(path), next, { expect: token });
     return { stdout: emit(updated, values.pretty === true), exitCode: 0 };
   } catch (err) {
     return errToResult(err);

@@ -1,12 +1,5 @@
 import { test, expect, beforeEach, afterEach } from 'vitest';
-import {
-  mkdtempSync,
-  mkdirSync,
-  rmSync,
-  copyFileSync,
-  readFileSync,
-  writeFileSync,
-} from 'node:fs';
+import { mkdtempSync, mkdirSync, rmSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -16,26 +9,32 @@ import {
   checkinLatest,
   checkinWrite,
 } from './checkin.ts';
+import { manifestPath, readManifestFile, writeManifest } from '../../lib/manifest-toml.ts';
+import type { Checkin } from '../../lib/types.ts';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const FIXTURES = join(__dirname, '..', '..', 'fixtures');
 
 let projectsRoot: string;
 
+function seedCheckin(fixture: string, number: string, branch: string): Checkin {
+  const c = JSON.parse(readFileSync(join(FIXTURES, fixture), 'utf8')) as Checkin;
+  return { ...c, number, branch };
+}
+
 beforeEach(() => {
   projectsRoot = mkdtempSync(join(tmpdir(), 'loom-verbs-checkin-'));
   const projectPath = join(projectsRoot, '2026-05-15-test-loom');
   mkdirSync(projectPath);
-  // Loom marker
-  copyFileSync(
-    join(FIXTURES, 'manifest-basic.json'),
-    join(projectPath, 'manifest.json'),
-  );
-  // Branch with slash → nested dir
-  const branchDir = join(projectPath, 'checkins', 'loom-cli', 'phase-1');
-  mkdirSync(branchDir, { recursive: true });
-  copyFileSync(join(FIXTURES, 'checkin-basic.json'), join(branchDir, '04.json'));
-  copyFileSync(join(FIXTURES, 'checkin-flagged.json'), join(branchDir, '07.json'));
+  // Seed manifest.toml with two checkins on one branch in [[checkins]].
+  const base = readManifestFile(join(FIXTURES, 'manifest-basic.toml')).manifest;
+  writeManifest(manifestPath(projectPath), {
+    ...base,
+    checkins: [
+      seedCheckin('checkin-basic.json', '04', 'loom-cli/phase-1'),
+      seedCheckin('checkin-flagged.json', '07', 'loom-cli/phase-1'),
+    ],
+  });
 });
 
 afterEach(() => {
@@ -116,16 +115,15 @@ test('checkinWrite: writes a new checkin and appends checkin-created event', () 
   expect(written.number).toBe('11');
   expect(written.branch).toBe('loom-cli/feature-new');
 
-  // Event must be appended
-  const eventsRaw = readFileSync(
-    join(projectsRoot, '2026-05-15-test-loom', 'events.jsonl'),
-    'utf8',
+  // Event must be appended to manifest.toml's [[events]].
+  const { manifest } = readManifestFile(
+    manifestPath(join(projectsRoot, '2026-05-15-test-loom')),
   );
-  const lastLine = eventsRaw.trim().split('\n').pop() as string;
-  const event = JSON.parse(lastLine);
-  expect(event.event).toBe('checkin-created');
-  expect(event.detail.number).toBe('11');
-  expect(event.detail.branch).toBe('loom-cli/feature-new');
+  const event = manifest.events[manifest.events.length - 1];
+  expect(event?.event).toBe('checkin-created');
+  const detail = event?.detail as { number: string; branch: string };
+  expect(detail.number).toBe('11');
+  expect(detail.branch).toBe('loom-cli/feature-new');
 });
 
 test('checkinWrite: missing --checkin-file returns missing-args', () => {

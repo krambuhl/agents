@@ -17,6 +17,7 @@ import {
   synthesizeManifestInit,
   synthesizeConfig,
 } from '../../lib/adopt.ts';
+import { manifestPath as manifestPathFor } from '../../lib/manifest-toml.ts';
 
 // Shared context for the plan/revise verbs. Tests inject
 // `projectsRoot` (a temp dir), `today` (deterministic slug
@@ -161,13 +162,12 @@ export function planVerb(
     );
   }
 
-  // Auto-adopt loom substrate (manifest.json, config.json, events.jsonl,
-  // checkins/, sessions/) by default. Skipped when --no-loom is passed
-  // or when manifest.json already exists (recovery case where the plan
-  // verb is re-run and loom is already set up).
+  // Auto-adopt loom substrate (the single manifest.toml) by default.
+  // Skipped when --no-loom is passed or when manifest.toml already exists
+  // (recovery case where the plan verb is re-run and loom is already set up).
   const filesToCommit = [planMdPath, interviewMdPath];
-  const manifestPath = join(targetDir, 'manifest.json');
-  const adoptLoom = !noLoom && !existsSync(manifestPath);
+  const manifestFilePath = manifestPathFor(targetDir);
+  const adoptLoom = !noLoom && !existsSync(manifestFilePath);
   if (adoptLoom) {
     try {
       writeLoomSubstrate({
@@ -176,11 +176,7 @@ export function planVerb(
         config: synthesizeConfig(),
         manifestInit: synthesizeManifestInit(slug, todayString(ctx)),
       });
-      filesToCommit.push(
-        manifestPath,
-        join(targetDir, 'config.json'),
-        join(targetDir, 'events.jsonl'),
-      );
+      filesToCommit.push(manifestFilePath);
     } catch (err: unknown) {
       return errToResult(
         new LoomError(

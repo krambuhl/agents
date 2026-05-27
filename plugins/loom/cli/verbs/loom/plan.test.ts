@@ -11,6 +11,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { planVerb, reviseVerb, parsePlanVerb } from './plan.ts';
 import type { GitRunner } from '../../lib/git.ts';
+import { manifestPath, readManifestFile } from '../../lib/manifest-toml.ts';
 
 let projectsRoot: string;
 let planFile: string;
@@ -93,26 +94,23 @@ test('planVerb: happy path writes both draft files + auto-adopts loom + commits'
     readFileSync(join(payload.path, 'INTERVIEW.md'), 'utf8'),
   ).toContain('# INTERVIEW');
 
-  // Loom files written by auto-adopt
-  expect(existsSync(join(payload.path, 'manifest.json'))).toBe(true);
-  expect(existsSync(join(payload.path, 'config.json'))).toBe(true);
-  expect(existsSync(join(payload.path, 'events.jsonl'))).toBe(true);
-  expect(existsSync(join(payload.path, 'checkins'))).toBe(true);
-  expect(existsSync(join(payload.path, 'sessions'))).toBe(true);
+  // Single state file written by auto-adopt (config.json / events.jsonl folded in)
+  expect(existsSync(join(payload.path, 'manifest.toml'))).toBe(true);
+  expect(existsSync(join(payload.path, 'config.json'))).toBe(false);
+  expect(existsSync(join(payload.path, 'events.jsonl'))).toBe(false);
 
   // Manifest carries title derived from slug
-  const m = JSON.parse(
-    readFileSync(join(payload.path, 'manifest.json'), 'utf8'),
-  );
-  expect(m.title).toBe('Adopt Biome');
-  expect(m.slug).toBe('2026-05-15-adopt-biome');
-  expect(m.status).toBe('active');
+  const { manifest } = readManifestFile(manifestPath(payload.path));
+  expect(manifest.meta.title).toBe('Adopt Biome');
+  expect(manifest.meta.slug).toBe('2026-05-15-adopt-biome');
+  expect(manifest.meta.status).toBe('active');
 
-  // git addAndCommit called once with all five files + a draft-plan message
+  // git addAndCommit called once with the three files (PLAN.md +
+  // INTERVIEW.md + manifest.toml) + a draft-plan message
   const addCalls = gitCalls.filter((c) => c.method === 'addAndCommit');
   expect(addCalls.length).toBe(1);
   const [, paths, message] = addCalls[0]?.args ?? [];
-  expect((paths as string[]).length).toBe(5);
+  expect((paths as string[]).length).toBe(3);
   expect(message).toContain('loom plan');
   expect(message).toContain('2026-05-15-adopt-biome');
 });
@@ -136,7 +134,7 @@ test('planVerb: --no-loom skips auto-adopt', () => {
   expect(existsSync(join(payload.path, 'PLAN.md'))).toBe(true);
   expect(existsSync(join(payload.path, 'INTERVIEW.md'))).toBe(true);
   // Loom files NOT written
-  expect(existsSync(join(payload.path, 'manifest.json'))).toBe(false);
+  expect(existsSync(join(payload.path, 'manifest.toml'))).toBe(false);
   expect(existsSync(join(payload.path, 'config.json'))).toBe(false);
   expect(existsSync(join(payload.path, 'events.jsonl'))).toBe(false);
 
@@ -147,15 +145,16 @@ test('planVerb: --no-loom skips auto-adopt', () => {
   expect((paths as string[]).length).toBe(2);
 });
 
-test('planVerb: skips loom adopt when manifest.json already exists (recovery case)', () => {
-  // Pre-create the project with PLAN.md uncommitted + manifest.json
+test('planVerb: skips loom adopt when manifest.toml already exists (recovery case)', () => {
+  // Pre-create the project with PLAN.md uncommitted + manifest.toml
   // already in place (simulating a prior successful loom adopt that
   // the user is rerunning loom plan over).
   const slug = '2026-05-15-existing';
   const dir = join(projectsRoot, slug);
   mkdirSync(dir, { recursive: true });
   writeFileSync(join(dir, 'PLAN.md'), '# old plan\n');
-  writeFileSync(join(dir, 'manifest.json'), '{"existing":"manifest"}');
+  const sentinel = '# pre-existing manifest sentinel\n';
+  writeFileSync(join(dir, 'manifest.toml'), sentinel);
 
   const result = planVerb(
     [slug, `--plan-file=${planFile}`, `--interview-file=${interviewFile}`],
@@ -164,10 +163,9 @@ test('planVerb: skips loom adopt when manifest.json already exists (recovery cas
   expect(result.exitCode).toBe(0);
   const payload = JSON.parse(result.stdout as string);
   expect(payload.loom_adopted).toBe(false);
-  // Existing manifest preserved (writeLoomSubstrate would have overwritten)
-  expect(readFileSync(join(dir, 'manifest.json'), 'utf8')).toBe(
-    '{"existing":"manifest"}',
-  );
+  // Existing manifest left untouched (the plan verb is event-free; it only
+  // checks existence to skip adopt, never rewrites the manifest).
+  expect(readFileSync(join(dir, 'manifest.toml'), 'utf8')).toBe(sentinel);
 });
 
 test('planVerb: --no-commit writes files but skips git', () => {
