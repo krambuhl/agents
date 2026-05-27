@@ -52,12 +52,18 @@ writes = true
 # domain self-verifies with the same command).
 #
 # Domains NOT listed inherit the phase base only:
-#   - css-architecture, naming: grep-only reviewer lenses (their baked
-#     evaluators carry Read/Glob/Grep and no Bash — matched here by
-#     absence).
+#   - css-architecture: grep-only reviewer lens (its baked evaluator
+#     carries Read/Glob/Grep and no Bash — matched here by absence).
 #   - composition, abstraction, performance, substrate: design-phase
 #     domains with no reviewer cell; planner/researcher base is the
 #     whole story.
+#
+# naming is NOT base-only: although it has no dedicated CLI signal
+# (grep + manual inspection), its baked evaluator deliberately carries
+# Bash(lint)/Bash(build)/git "so the evaluator can confirm the artifact
+# still builds and lints" (per evaluator-naming.md's own rubric). The
+# grant is intentional, so naming is listed below to match the baked
+# tools exactly.
 
 [domain.a11y]
 grants = ["Bash(npm run lint:*)", "Bash(npm run build:*)", "Bash(npm run test:a11y:*)", "Bash(git status:*)", "Bash(git diff:*)"]
@@ -76,3 +82,9 @@ grants = ["Bash(npm run lint:*)", "Bash(npm run build:*)", "Bash(npm test:*)", "
 
 [domain.test-integration]
 grants = ["Bash(npm run lint:*)", "Bash(npm run build:*)", "Bash(npm run test:e2e:*)", "Bash(git status:*)", "Bash(git diff:*)"]
+
+# naming has no dedicated CLI signal but its baked evaluator carries the
+# generic build/lint/git grants to confirm the artifact still builds and
+# lints (see the header note). No test:* grant — naming runs no test.
+[domain.naming]
+grants = ["Bash(npm run lint:*)", "Bash(npm run build:*)", "Bash(git status:*)", "Bash(git diff:*)"]

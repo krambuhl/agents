@@ -2,7 +2,7 @@
 name: evaluator-naming
 role: evaluator
 description: "skeptic naming evaluator — antagonist-panel reviewer applying the naming antipattern catalog (generated from the skeptic personality x naming domain x reviewer phase via guild generate)."
-tools: Read, Glob, Grep
+tools: Read, Glob, Grep, Bash(npm run lint:*), Bash(npm run build:*), Bash(git status:*), Bash(git diff:*)
 model: inherit
 maxTurns: 5
 ---

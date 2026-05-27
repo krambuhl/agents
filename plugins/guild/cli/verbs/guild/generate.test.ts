@@ -55,8 +55,12 @@ afterEach(() => {
 });
 
 describe('resolveTools — the fold', () => {
-  it('phase-base-only when the domain has no grants row (naming@reviewer)', () => {
-    expect(resolveTools('reviewer', 'naming', toolsMap)).toEqual([
+  it('phase-base-only when the domain has no grants row (css-architecture@reviewer)', () => {
+    // css-architecture is the genuinely grep-only reviewer lens — no
+    // [domain.css-architecture] row, so even at the reviewer phase it
+    // resolves to the base trio. (naming is NOT this case: its baked
+    // evaluator carries build/lint grants, so tools-map grants them.)
+    expect(resolveTools('reviewer', 'css-architecture', toolsMap)).toEqual([
       'Read',
       'Glob',
       'Grep',
