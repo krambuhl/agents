@@ -1,0 +1,83 @@
+{
+  "schema_version": 1,
+  "number": "08",
+  "created": "2026-05-27T04:15:00Z",
+  "phase": {
+    "number": 2,
+    "name": "Single-file TOML state"
+  },
+  "branch": "ev-agent.substrate-consolidation.checkin-session-sections",
+  "unit": "Section-mutation helpers + shared parallel-safe verb-test harness",
+  "contract": {
+    "goal": "Build the verb-facing mutation API on ManifestToml and the shared parallel-safe test harness that U5's verb-flip will stand on. Lib/infra only — no verb rewired, no project converted (U5). The manifest layer already reads/writes all six sections (U2/U3); this adds the typed mutators verbs will call and the harness that proves a mutation touches only its section.",
+    "acceptance_criteria": [
+      "manifest-toml.ts gains pure mutation helpers (take a ManifestToml, return a new one, no in-place mutation): appendEvent (idempotent — no-op if an existing event has same event name + deep-equal detail ignoring at), appendCheckin (throws checkin-already-exists on dup branch+number), appendSession (throws session-already-exists on dup date+letter), updatePhase (merges Partial<ManifestPhase>; throws phase-not-found), updateMeta (merges Partial<ManifestMeta>)",
+      "new manifest-toml.harness.ts: baseManifest(), makeProject(seed): {dir,path} (unique mkdtempSync + writeManifest), cleanup(project) (rmSync), assertSectionsUnchanged(before, after, changed[]) (deep-equals every section except the named ones); shared (U5 verb tests import it)",
+      "new manifest-toml-helpers.test.ts exercises the helpers through the harness: idempotent re-append no-op; distinct events append; dup checkin/session throw typed code; updatePhase merges + throws-on-missing; and the other-sections-untouched guarantee through a real read->mutate->writeManifest->re-read cycle",
+      "strip-only smoke: extend manifest-toml.smoke.ts to exercise appendEvent under node; standalone exit 0 + marker",
+      "vitest green (new + full loom suite) + standalone node smoke exit 0"
+    ],
+    "rules_applied": [
+      "Lib/infra only: no verb-dispatch edits, no project conversion, no live manifest.ts/checkin.ts/session.ts touched (all U5)",
+      "Pure immutable mutators: return a new ManifestToml (spread), never mutate the input — a verb's read-modify-write is m2 = mutate(m1); write(m2)",
+      "Idempotency is append-time only: historical duplicates (the real events.jsonl carries repeated phase-started events) are preserved when U5 bulk-loads during conversion",
+      "Harness mints a unique temp dir per test (parallel-safe), try/finally cleanup",
+      "other-sections-untouched asserts parsed-content equality (toEqual), since whole-file rewrite necessarily moves bytes (U3's verify-before-rename already guarantees faithful re-serialization)"
+    ],
+    "disqualifiers": [
+      "rewiring any verb (U5)",
+      "converting any project's on-disk state (U5)",
+      "editing manifest.ts/checkin.ts/session.ts/verbs",
+      "in-place mutation of the passed ManifestToml",
+      "blanket content-dedup applied on READ (idempotency is append-only)",
+      "a hardcoded/shared temp path in the harness (must be mkdtemp-unique)",
+      "asserting literal byte-stability of unchanged sections (assert content equality)"
+    ],
+    "inputs": [
+      "plugins/loom/cli/lib/manifest-toml.ts (U2 read + U3 write + types)",
+      "plugins/loom/cli/loom.test.ts ~16-17 makeCtx (mkdtempSync+rmSync idiom to extend)",
+      "plugins/loom/cli/lib/errors.ts (LoomError; reuse checkin-already-exists)",
+      "plugins/loom/cli/lib/checkin.ts (create-once guard — idempotency precedent)",
+      "projects/2026-05-26-substrate-consolidation/whiteboards/2-single-file-toml-state.md (Q5 shared-harness spec)",
+      "plugins/loom/cli/fixtures/manifest-real.toml"
+    ]
+  },
+  "execution": {
+    "actions": [
+      "manifest-toml.ts: added appendEvent (idempotent on event+detail via the existing deepEqual, returns m unchanged on dup), appendCheckin/appendSession (throw checkin-already-exists / session-already-exists on dup key), updatePhase (findIndex + merge or throw phase-not-found), updateMeta (spread merge) — all pure/immutable",
+      "manifest-toml.harness.ts (new, .harness test-time segment): baseManifest minimal seed; makeProject = mkdtempSync(tmpdir,'loom-harness-') + writeManifest; cleanup = rmSync; assertSectionsUnchanged compares each non-changed section by JSON.stringify content and throws on mismatch; SectionName union derived from the SECTIONS tuple",
+      "manifest-toml-helpers.test.ts (new, 12 tests): pure-helper tests (idempotent .toBe(m), distinct append, no-input-mutation, dup throws typed code, updatePhase merge + throws-on-missing, updateMeta merge); harness tests through the real write cycle (appendEvent + updatePhase -> assertSectionsUnchanged on the rest); a self-test that assertSectionsUnchanged itself throws when an unexpected section changed",
+      "manifest-toml.smoke.ts: extended to exercise appendEvent (grow + idempotent re-append no-op) under node",
+      "Post-approval polish (panel-suggested, type-only): tightened assertSectionsUnchanged's changed param from string[] to a SectionName union, so a typo ('event' vs 'events') is a compile error rather than a silent false-pass — strengthens the shared harness before U5 writes verb tests against it",
+      "Verified: npx vitest run plugins/loom = 17 files / 229 passed; manifest-toml-helpers.test.ts isolated = 12 passed (re-confirmed after the type tightening); node plugins/loom/cli/lib/manifest-toml.smoke.ts exit 0 with marker",
+      "Evaluator panel (contract-fit + test-unit + naming) returned approved, zero blocking/advisory findings"
+    ],
+    "files_touched": [
+      "plugins/loom/cli/lib/manifest-toml.ts",
+      "plugins/loom/cli/lib/manifest-toml.harness.ts",
+      "plugins/loom/cli/lib/manifest-toml-helpers.test.ts",
+      "plugins/loom/cli/lib/manifest-toml.smoke.ts"
+    ],
+    "corrections": []
+  },
+  "scope": [
+    "plugins/loom/cli/lib/manifest-toml.ts",
+    "plugins/loom/cli/lib/manifest-toml.harness.ts",
+    "plugins/loom/cli/lib/manifest-toml-helpers.test.ts",
+    "plugins/loom/cli/lib/manifest-toml.smoke.ts"
+  ],
+  "changes_since_previous": "Fourth unit of Phase 2. Adds the verb-facing mutation API (append/update helpers) on ManifestToml plus the shared parallel-safe verb-test harness. Lib/infra only — U5 flips all writer verbs onto this API and converts the on-disk state atomically. The manifest layer (read/write/mutate) is now complete; U5 is wiring + migration.",
+  "verdict": {
+    "result": "approved",
+    "reasons": []
+  },
+  "notes_for_pr": [
+    "Operator decision (grilled before contract): U4 = section-mutation helpers + shared harness, LIB/INFRA ONLY. The verb-dispatch flip + on-disk conversion both defer to U5, consistent with U3 — the source loom does this project's own bookkeeping and it is still JSON until U5, so flipping verbs now would break the dogfood loop on its own project.",
+    "Plan-structure refinement (single scope-shift signal, no revise): the U3+U4 lib-only decisions consolidated the full verb-flip + all-project conversion + marker flip into U5, which is now the large atomic unit (verb rewire and conversion are coupled — a toml-writing verb needs the project to BE toml). This is within the loop's RUNTIME unit decomposition, not a PLAN.md change: Phase 2's exit criteria are unchanged. Recorded here as substrate trace; no inner-RPI (only one signal, and U4 is not the phase's last unit).",
+    "Idempotency model: appendEvent dedups on (event name, deep-equal detail) ignoring `at`, APPEND-TIME ONLY. Historical duplicates already in a log (the real events.jsonl carries repeated phase-started events) are preserved — U5's conversion bulk-loads history rather than re-appending it, so dedup never rewrites the past.",
+    "Harness shape: ONE shared parallel-safe harness (per the whiteboard's anti-bespoke mandate) — unique mkdtemp per test, seed->mutate->re-read, assertSectionsUnchanged for the 'other sections untouched' guarantee (the scary consolidation bug: one verb trampling another's section). U5's verb tests import the same harness.",
+    "Post-approval type-only polish: assertSectionsUnchanged's `changed` param tightened string[] -> SectionName union (panel-suggested). Catches a 'event'-vs-'events' typo at compile time so a future verb test can't silently false-pass. Re-ran the suite green after the change.",
+    "Panel = contract-fit + test-unit + naming. Same manual override: derive-panel adds evaluator-react-api for these pure-Node .ts files (no React/JSX) — dropped. Substrate-followup: gate react-api on JSX/react-import presence.",
+    "#74 (Phase 2 U3) pr-opened + pr-merged reconciled into this commit per the per-unit cadence recipe."
+  ]
+}

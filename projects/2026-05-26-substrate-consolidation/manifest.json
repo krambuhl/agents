@@ -18,7 +18,7 @@
       "number": 2,
       "name": "Single-file TOML state",
       "status": "in-progress",
-      "branch": "ev-agent.substrate-consolidation.toml-writer"
+      "branch": "ev-agent.substrate-consolidation.checkin-session-sections"
     },
     {
       "number": 3,

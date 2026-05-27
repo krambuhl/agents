@@ -29,3 +29,7 @@
 {"at":"2026-05-27T04:17:37.746Z","event":"pr-merged","detail":{"pr":73}}
 {"at":"2026-05-27T04:36:16.382Z","event":"checkin-created","detail":{"number":"07","branch":"ev-agent.substrate-consolidation.toml-writer"}}
 {"at":"2026-05-27T04:36:16.446Z","event":"phase-started","detail":{"phase":2,"name":"Single-file TOML state"}}
+{"at":"2026-05-27T04:41:18.742Z","event":"pr-opened","detail":{"pr":74,"url":"https://github.com/krambuhl/agents/pull/74"}}
+{"at":"2026-05-27T04:41:19.742Z","event":"pr-merged","detail":{"pr":74}}
+{"at":"2026-05-27T05:12:26.831Z","event":"checkin-created","detail":{"number":"08","branch":"ev-agent.substrate-consolidation.checkin-session-sections"}}
+{"at":"2026-05-27T05:12:26.893Z","event":"phase-started","detail":{"phase":2,"name":"Single-file TOML state"}}

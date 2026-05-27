@@ -18,7 +18,7 @@ import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { readManifest, readManifestFile, stringifyManifest, writeManifest } from './manifest-toml.ts';
+import { appendEvent, readManifest, readManifestFile, stringifyManifest, writeManifest } from './manifest-toml.ts';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const fixturePath = join(here, '..', 'fixtures', 'manifest-real.toml');
@@ -52,6 +52,14 @@ try {
   }
 } finally {
   rmSync(dir, { recursive: true, force: true });
+}
+
+// Mutation helper: appendEvent grows the log; an idempotent re-append is a no-op.
+const grown = appendEvent(manifest, { at: 'smoke', event: 'note', detail: { text: 'smoke' } });
+const reAppended = appendEvent(grown, { at: 'again', event: 'note', detail: { text: 'smoke' } });
+if (grown.events.length !== manifest.events.length + 1 || reAppended.events.length !== grown.events.length) {
+  console.error('manifest-toml.smoke: appendEvent idempotency broke');
+  process.exit(1);
 }
 
 console.log(
