@@ -1,3 +1,5 @@
 {"at":"2026-05-26T22:17:48.789Z","event":"project-initialized","detail":{}}
 {"at":"2026-05-26T22:17:48.789Z","event":"research-started","detail":{"slug":"2026-05-26-substrate-consolidation","topic":null}}
 {"at":"2026-05-26T22:17:48.789Z","event":"research-completed","detail":{"slug":"2026-05-26-substrate-consolidation","research_path":"RESEARCH.md","notes_path":"RESEARCH-NOTES.md"}}
+{"at":"2026-05-27T00:06:59.573Z","event":"checkin-created","detail":{"number":"01","branch":"ev-agent.substrate-consolidation.parser-lib"}}
+{"at":"2026-05-27T00:06:59.653Z","event":"phase-started","detail":{"phase":1,"name":"Shared plan-parser lib"}}

@@ -1,0 +1,83 @@
+{
+  "schema_version": 1,
+  "number": "01",
+  "created": "2026-05-27T00:06:49Z",
+  "phase": {
+    "number": 1,
+    "name": "Shared plan-parser lib"
+  },
+  "branch": "ev-agent.substrate-consolidation.parser-lib",
+  "unit": "parsePlan() lib + types + synthetic unit tests",
+  "contract": {
+    "goal": "Implement a pure, typed parsePlan(text) in plugins/loom/cli/lib/plan.ts that parses PLAN.md into a typed tree (phases first-class + indexed, optional milestone grouping, per-phase goal + exitCriteria + dependencies, plan/phase-level whiteboard + loop-strategy), returning { plan, diagnostics } under lenient-with-diagnostics tolerance. Cover with synthetic-fixture unit tests.",
+    "acceptance_criteria": [
+      "parsePlan(text: string): ParsePlanResult exported from lib/plan.ts; pure (no fs/clock/network); mirrors manifest.ts patterns; no path-taking variant",
+      "Types in types.ts: ParsedPlan (phases + phasesById + milestones? + loopStrategy? + whiteboard?), ParsedPhase (id:string, name, milestone?, goal?, exitCriteria:string[], dependsOn:string[], whiteboard?), Milestone, PlanMilestoneRef, Diagnostic (code + line + severity structural|cosmetic + message), ParsePlanResult",
+      "Phase headings level-tolerant: 2-4 hashes, dotted string ids (no int coercion), em/en/hyphen dashes",
+      "dependsOn: 'Phase 1, Phase 2' -> ['1','2']; 'nothing' -> []; ranges 'Phases 1-6' (any dash) -> expanded; dangling ref -> structural diagnostic (no throw)",
+      "**Goal**: -> goal?; **Exit**: (alias **Output**:) bullets -> exitCriteria:string[] (opaque); no deliverables field",
+      "## Loop strategy -> plan-level loopStrategy?; **Whiteboard**: raw at plan+phase (phase overrides), not sub-parsed",
+      "Lenient: missing optional section -> absent/empty field + cosmetic diagnostic, tree still returns; only thrown error (LoomError plan-no-headings) is zero-headings input",
+      "plan.test.ts: exact-tree on synthetic fixtures (integer-milestone, dotted-id, flat-no-milestone); degradation; structural diagnostic on dangling-dep; hyphen-heading + en-dash-range acceptance; fixtures in fixtures/plan-*.md"
+    ],
+    "rules_applied": [
+      "Pure read-derivation: text-in/tree-out, caller owns readFileSync (mirrors manifest.ts path/text split)",
+      "Erasable/strip-only TS: no parameter properties, no */ inside block comments (// comments only); verified by real-node smoke",
+      "Zero runtime deps: hand-rolled regex line scanner, no markdown-AST",
+      "Diagnostic codes reuse the LoomError kebab-case vocabulary",
+      "TDD-shaped: synthetic fixtures own exact-tree assertions"
+    ],
+    "disqualifiers": [
+      "path-taking/FS-touching parsePlan",
+      "integer-coerced phase ids (collides jelly 1.1/1.2)",
+      "throwing on a missing optional section",
+      "markdown-AST or any runtime dependency",
+      "parameter properties or */-in-JSDoc (Node strip-only footguns)",
+      "sub-parsing the whiteboard DSL or exit-bullet internals"
+    ],
+    "inputs": [
+      "plugins/loom/cli/lib/manifest.ts",
+      "plugins/loom/cli/lib/types.ts",
+      "plugins/loom/cli/lib/errors.ts",
+      "projects/2026-05-26-substrate-consolidation/whiteboards/1-shared-plan-parser-lib.md"
+    ]
+  },
+  "execution": {
+    "actions": [
+      "Appended a Plan-parsing types section to lib/types.ts (Diagnostic, DiagnosticSeverity, PlanMilestoneRef, ParsedPhase, Milestone, ParsedPlan, ParsePlanResult) with inline rationale on the string-id and exitCriteria decisions",
+      "Authored lib/plan.ts: parsePlan(text) line scanner + exported parseDependsOn helper; level-tolerant MILESTONE_RE/PHASE_RE, GOAL_RE (with (updated) variant), EXIT_RE (Output alias), DEPENDS_RE, WHITEBOARD_RE; collectBullets/collectProse helpers",
+      "Authored 6 synthetic fixtures in cli/fixtures/plan-*.md covering the integer-milestone, dotted-id, flat-no-milestone, degraded, dangling-dep, and hyphen/range shapes",
+      "Authored lib/plan.test.ts (9 tests): exact-tree assertions, graceful degradation, structural dangling-dep diagnostic, hyphen+range acceptance, the single not-a-plan throw, and a parseDependsOn unit case",
+      "Verified: vitest 9/9 on plan.test.ts; full loom suite 159/159 (no regression from the types.ts edit); real-node strip-only smoke loaded plan.ts and ran parsePlan with no ERR_UNSUPPORTED_TYPESCRIPT_SYNTAX"
+    ],
+    "files_touched": [
+      "plugins/loom/cli/lib/plan.ts",
+      "plugins/loom/cli/lib/plan.test.ts",
+      "plugins/loom/cli/lib/types.ts",
+      "plugins/loom/cli/fixtures/plan-milestone-integer.md",
+      "plugins/loom/cli/fixtures/plan-dotted-ids.md",
+      "plugins/loom/cli/fixtures/plan-flat-output.md",
+      "plugins/loom/cli/fixtures/plan-degraded.md",
+      "plugins/loom/cli/fixtures/plan-dangling-dep.md",
+      "plugins/loom/cli/fixtures/plan-hyphen-range.md"
+    ],
+    "corrections": []
+  },
+  "scope": [
+    "plugins/loom/cli/lib/plan.ts",
+    "plugins/loom/cli/lib/types.ts",
+    "plugins/loom/cli/lib/plan.test.ts",
+    "plugins/loom/cli/fixtures/plan-*.md"
+  ],
+  "changes_since_previous": "First unit of Phase 1. Adds the shared PLAN.md parser lib + its types + synthetic unit tests. Consumed (read-only) by the loom CLI; the JSON verb bridge (Unit 3) and the ev-loop/ev-run migration (Unit 4) build on this.",
+  "verdict": {
+    "result": "approved",
+    "reasons": []
+  },
+  "notes_for_pr": [
+    "Scope signal (single, recorded; no revise triggered): Phase 1 was widened this session from PLAN.md's literal 'phases, exit criteria, dependencies' to 'lib + consumer migration, decompose-at-runtime model' per operator decision. exitCriteria is exposed as raw strings; there is deliberately NO deliverables field (PLAN.md does not enumerate units; consumers decompose at runtime). PLAN.md Phase 1 prose to be refined to match at phase close.",
+    "Follow-up (Unit 2+): Diagnostic.line is currently 0 for all diagnostics. The missing-section/dangling diagnostics are generated in a post-scan pass that does not retain the phase heading line. Wire real source-line numbers (store heading line on the phase) when the real-artifact + diagnostics work lands in Unit 2. Flagged advisory by evaluator-contract-fit; not gating.",
+    "Naming note (advisory, defensible): the Parsed* types use camelCase (exitCriteria, dependsOn, loopStrategy, phasesById) while the rest of types.ts uses snake_case. Intentional: snake_case types serialize to disk (carry schema_version); Parsed* is in-memory parser output that never serializes. The casing split tracks the on-disk-vs-in-memory boundary.",
+    "Scope boundary for the rest of the phase: real-artifact glob test + strip-only spawnSync node smoke = Unit 2; loom plan parse JSON verb = Unit 3; ev-loop-interactive + ev-run skill-body migration = Unit 4."
+  ]
+}

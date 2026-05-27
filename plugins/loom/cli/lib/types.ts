@@ -505,3 +505,77 @@ export type ProjectRetro = {
 export type Retro = SessionRetro | ProjectRetro;
 
 export type RetroType = Retro['type'];
+
+// ---------- Plan parsing (Phase 1: shared plan-parser lib) ----------
+//
+// parsePlan() reads PLAN.md text and returns this typed tree plus a
+// list of diagnostics. The tree is a flat, level-tolerant view of the
+// plan's phases; milestones are an optional grouping annotation over
+// those phases, never a mandatory nesting layer (a plan with no
+// milestone headers still returns a full phase list). PLAN.md is the
+// human-authored source; this parser is tolerant-read-only and is NOT
+// the authority on phase existence once manifest.toml ships (Phase 2).
+
+export type DiagnosticSeverity = 'structural' | 'cosmetic';
+
+// A diagnostic the parser surfaces instead of throwing. `structural`
+// diagnostics mean the tree is missing something a consumer relies on
+// (no phases, a dependency pointing at a nonexistent phase); `cosmetic`
+// diagnostics mean an optional section was absent. Callers decide
+// whether to treat a given code as fatal. `code` reuses the LoomError
+// kebab-case vocabulary so verbs classify diagnostics the same way they
+// classify thrown errors. `line` is 1-based (0 when not line-anchored).
+export type Diagnostic = {
+  code: string;
+  line: number;
+  severity: DiagnosticSeverity;
+  message: string;
+};
+
+export type PlanMilestoneRef = {
+  id: string;
+  name: string;
+};
+
+// A phase as parsed from PLAN.md. `id` is the literal heading id kept
+// as a string ("1", "1.1") — never coerced to a number, because dotted
+// ids (jelly's "1.1"/"1.2") would collide under integer coercion.
+// `exitCriteria` are the raw `**Exit**:`/`**Output**:` bullet strings,
+// opaque and not sub-parsed (consumers decompose units from them at
+// runtime). `dependsOn` is resolved to phase-id strings with ranges
+// expanded. `whiteboard` carries the raw `**Whiteboard**:` override
+// string when present at this phase (overrides the plan-level default).
+export type ParsedPhase = {
+  id: string;
+  name: string;
+  milestone?: PlanMilestoneRef;
+  goal?: string;
+  exitCriteria: string[];
+  dependsOn: string[];
+  whiteboard?: string;
+};
+
+export type Milestone = {
+  id: string;
+  name: string;
+  phases: ParsedPhase[];
+};
+
+// `phases` is the canonical flat list in document order; `phasesById`
+// indexes it for the dependency resolver and for ev-run's actionability
+// math (lookup by id, not by walking the milestone nesting). `milestones`
+// is present only when the plan has milestone headers. `loopStrategy`
+// and `whiteboard` are plan-level raw strings, captured but not
+// sub-parsed.
+export type ParsedPlan = {
+  phases: ParsedPhase[];
+  phasesById: Record<string, ParsedPhase>;
+  milestones?: Milestone[];
+  loopStrategy?: string;
+  whiteboard?: string;
+};
+
+export type ParsePlanResult = {
+  plan: ParsedPlan;
+  diagnostics: Diagnostic[];
+};
