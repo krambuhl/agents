@@ -91,7 +91,9 @@ type LegacyManifest = {
   current_branch: string | null;
   latest_checkin: string | null;
   strategy: string;
-  phases: ManifestToml['phases'];
+  // Legacy phases may carry a `pr` field (a pre-(d) manifest.json stored PR
+  // state on the phase). It is stripped during conversion — see below.
+  phases: Array<ManifestToml['phases'][number] & { pr?: unknown }>;
 };
 
 export function convertProject(projectDir: string): {
@@ -121,7 +123,15 @@ export function convertProject(projectDir: string): {
       strategy: m.strategy,
     },
     config,
-    phases: m.phases,
+    // Drop any legacy `pr` field: PR state is derived on demand via
+    // `loom pr discover` (option (d)), never stored in the manifest. A
+    // pre-(d) manifest.json may carry it; the converted manifest.toml must
+    // not, or the round-trip write-verify (which no longer parses `pr`) fails.
+    phases: m.phases.map((legacyPhase) => {
+      const phase = { ...legacyPhase };
+      delete phase.pr;
+      return phase;
+    }),
     events,
     checkins,
     sessions,

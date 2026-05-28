@@ -130,10 +130,10 @@ test('updatePhase merges a patch into the matching phase', () => {
   };
   const next = updatePhase(m, 1, {
     status: 'in-progress',
-    pr: { number: 9, url: 'u', state: 'open' },
+    branch: 'feature/x',
   });
   expect(next.phases[0].status).toBe('in-progress');
-  expect(next.phases[0].pr).toEqual({ number: 9, url: 'u', state: 'open' });
+  expect(next.phases[0].branch).toBe('feature/x');
   expect(m.phases[0].status).toBe('not-started'); // input untouched
 });
 

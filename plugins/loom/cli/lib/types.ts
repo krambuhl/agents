@@ -18,14 +18,9 @@ export type PhaseStatus =
   | 'blocked'
   | 'completed';
 
-export type PhasePRState = 'open' | 'merged' | 'closed';
-
-export type PhasePR = {
-  number: number;
-  url: string;
-  state: PhasePRState;
-};
-
+// No `pr` field on a phase: PR open/merged state is derived on demand from
+// gh via `loom pr discover` (commit-discipline option (d)), never stored in
+// the manifest. Storing it would reintroduce the staleness deriving solved.
 export type ManifestPhase = {
   number: number;
   name: string;
@@ -33,7 +28,6 @@ export type ManifestPhase = {
   branch?: string;
   latest_checkin?: string;
   blocked_reason?: string;
-  pr?: PhasePR;
 };
 
 export type Manifest = {

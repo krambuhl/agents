@@ -48,8 +48,6 @@ import type {
   ManifestPhase,
   ManifestStatus,
   ManifestToml,
-  PhasePR,
-  PhasePRState,
   PhaseStatus,
   Revision,
   SchemaVersion,
@@ -298,15 +296,9 @@ function reconstructPhase(t: TomlTable, where: string): ManifestPhase {
   if (latestCheckin !== undefined) phase.latest_checkin = latestCheckin;
   const blockedReason = optionalString(t, 'blocked_reason', where);
   if (blockedReason !== undefined) phase.blocked_reason = blockedReason;
-  if (t.pr !== undefined) {
-    const pr = asTable(t.pr, `${where} pr`);
-    const phasePr: PhasePR = {
-      number: requireNumber(pr, 'number', `${where} pr`),
-      url: requireString(pr, 'url', `${where} pr`),
-      state: requireString(pr, 'state', `${where} pr`) as PhasePRState,
-    };
-    phase.pr = phasePr;
-  }
+  // A `pr` table on a phase (from a pre-(d) manifest) is intentionally not
+  // read — PR state is derived via `loom pr discover`. It is dropped on the
+  // next re-serialize, which is harmless (the data was never authoritative).
   return phase;
 }
 
@@ -606,9 +598,8 @@ export function appendSession(m: ManifestToml, session: Session): ManifestToml {
   return { ...m, sessions: [...m.sessions, session] };
 }
 
-// Merge a patch into the matching phase (status / branch / pr /
-// latest_checkin / blocked_reason). pr-state transitions go through here as
-// `updatePhase(m, n, { pr })`. Throws if the phase number is not present.
+// Merge a patch into the matching phase (status / branch /
+// latest_checkin / blocked_reason). Throws if the phase number is not present.
 export function updatePhase(
   m: ManifestToml,
   phaseNumber: number,

@@ -41,12 +41,15 @@ test('reads the real-artifact fixture into the full typed shape', () => {
   expect(m.config.worker_bindings).toEqual({ default: 'ev-loop-interactive' });
 
   expect(m.phases.map((p) => p.number)).toEqual([1, 2]);
-  expect(m.phases[0].pr).toEqual({
-    number: 71,
-    url: 'https://github.com/krambuhl/agents/pull/71',
-    state: 'merged',
-  });
-  expect(m.phases[1].pr).toBeUndefined(); // optional, omitted
+  // A pre-(d) `pr` table on a phase is tolerantly ignored: PR state is derived
+  // via `loom pr discover`, never read from or stored in the manifest. The
+  // `in` check sidesteps the now-removed `pr` field on the ManifestPhase type.
+  // GUARD COUPLING: this assertion is only meaningful while the fixture's first
+  // phase carries a populated `pr = {…}` table (manifest-real.toml). If that
+  // table is ever removed from the fixture, phase[0] passes trivially and the
+  // tolerant-ignore regression is no longer covered — keep the fixture's pr.
+  expect('pr' in m.phases[0]).toBe(false);
+  expect('pr' in m.phases[1]).toBe(false);
 
   expect(m.events).toHaveLength(2);
   expect(m.events[0].event).toBe('project-initialized');
@@ -124,7 +127,6 @@ test('optional phase fields: absent branch reads as undefined', () => {
   const raw = MINIMAL + ['[[phases]]', 'number = 1', 'name = "P"', 'status = "not-started"', ''].join('\n');
   const m = readManifest(raw);
   expect(m.phases[0].branch).toBeUndefined();
-  expect(m.phases[0].pr).toBeUndefined();
 });
 
 test('lenient event detail: arbitrary detail record is kept, not re-validated', () => {
