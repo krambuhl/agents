@@ -1,6 +1,5 @@
 checkins = []
 sessions = []
-revisions = []
 
 [meta]
 schema_version = 1
@@ -26,3 +25,8 @@ status = "not-started"
 at = "2026-05-28T07:59:42.810Z"
 event = "project-initialized"
 detail = {}
+
+[[revisions]]
+timestamp = "2026-05-28T08:05:29.356Z"
+target = "PLAN.md"
+seq = 1

@@ -1,14 +1,18 @@
 # loom-adr
 
 Ship `loom adr` — a workspace-level Architectural Decision Records verb,
-plus its surfacing skill — as a faithful port of the jelly-loom artifacts
+its surfacing skill, plus a first downstream consumer hook in
+`ev-loop-interactive` — as a faithful port of the jelly-loom artifacts
 at commit `d10133c` (PR #64, "[jelly loom] Phase 1.3 U6: jelly adr verb +
 workspace adr-log") that were deleted in the substrate-consolidation
 salt-earth phase (PR #98) without being harvested into canonical loom.
 The provenance commit ships a working verb + 15-test suite; this project
-ports it into loom's verb conventions, adds the surfacing skill, and
-notes the placement in `CONVENTIONS.md`. Two phases, direct-to-main per
-phase, matching the substrate-followups cadence.
+ports it into loom's verb conventions, adds the surfacing skill, notes
+the placement in `CONVENTIONS.md`, and wires `[adr-candidate]`-marked
+checkin entries into the ev-loop-interactive close path so the loop can
+offer to lift an architectural decision into an ADR at the moment it
+surfaces. Three phases, direct-to-main per phase, matching the
+substrate-followups cadence.
 
 The provenance commit `d10133c` and its parent design conversation (the
 strawman supplied at /loom-plan invocation) function as the research
@@ -39,6 +43,15 @@ The adr-log is the one bit of cross-project shared state in the
 substrate (`projects/adr-log/`, workspace-level, NOT per-project) —
 matching the jelly INTERVIEW Q8 resolution that survived dogfooding.
 
+The Phase 3 ev-loop hook is the first real downstream consumer of the
+verb: today, ev-loop-interactive captures load-bearing decisions in
+the unit's `notes_for_pr` array (cf. `plugins/ev/skills/ev-loop-
+interactive/SKILL.md` § Scope-shift detection + § Checkin close path),
+but those notes only ever surface in the PR description. Lifting an
+explicitly-marked decision into a durable, numbered ADR closes the
+"decisions disappear into PR bodies and become unsearchable" loop —
+the exact gap that motivated jelly's adr verb in the first place.
+
 ## Scope
 
 ### In
@@ -63,6 +76,21 @@ matching the jelly INTERVIEW Q8 resolution that survived dogfooding.
   `projects/adr-log/`; create via `loom adr`; numbers are permanent."
   Dogfood by writing `projects/adr-log/0001-introduce-loom-adr.md` as
   the verification artifact.
+
+- **Phase 3 — `ev-loop-interactive` ADR-emit hook.** Wire the
+  loom-adr verb into ev-loop-interactive's checkin close path so the
+  loop offers to lift `[adr-candidate]`-marked `notes_for_pr` entries
+  into a real ADR. Operator-marked, opt-in (no auto-detection in v1):
+  the operator tags a `notes_for_pr` entry with the literal
+  `[adr-candidate]` marker when writing the checkin; at unit close,
+  the loop scans for the marker, surfaces the entry, and offers a
+  single AskUserQuestion to write it as an ADR draft via
+  `loom adr "<title>" --body-file=<tmp> --no-commit`. The resulting
+  ADR file is added to the unit's git commit alongside the checkin;
+  the operator can hand-edit the body before commit if needed. The
+  hook is ev-loop-interactive only; ev-loop-confidence is out of
+  scope (confidence loops are bulk-transform shaped and the
+  "I'm making an architectural decision" surface rarely fits).
 
 ### Out / deferred
 
@@ -91,6 +119,14 @@ matching the jelly INTERVIEW Q8 resolution that survived dogfooding.
 - **`loom adr supersede` sub-verb.** Status field exists, the
   convention is "new ADR with `--status=superseded` body-linking back."
   No machine-mediated supersession in v1.
+- **Auto-detected ADR candidates in Phase 3.** v1 is operator-marked
+  (`[adr-candidate]`) only. A future v2 could scan
+  `notes_for_pr` entries for shape signals ("decision:", "we picked",
+  "the tradeoff was"), but that's high-risk false-positive territory.
+  Operator marks the intent; the loop doesn't guess.
+- **`ev-loop-confidence` ADR hook.** Out of scope — confidence
+  loops are bulk-transform shaped; architectural decisions surface
+  rarely there. Revisit if a real use case lands.
 
 ## Phases
 
@@ -177,12 +213,83 @@ for this design itself.
 behavior; the CONVENTIONS.md note names a verb; the dogfood ADR uses
 the verb to write itself).
 
+### Phase 3 — `ev-loop-interactive` ADR-emit hook
+
+**Goal**: Lift `[adr-candidate]`-marked `notes_for_pr` entries into
+real ADRs at unit close. Operator marks the intent in a checkin note;
+the loop offers to lift it via `loom adr`. Closes the "decisions
+disappear into PR bodies and become unsearchable" gap — the loop is
+the first downstream consumer of the verb.
+
+**Exit**:
+- `plugins/ev/skills/ev-loop-interactive/SKILL.md` § Checkin close
+  path gains an ADR-emit step (numbered to fit the existing sequence;
+  likely between scope-shift detection and phase update). Behavior:
+  scan the just-written checkin's `notes_for_pr` array for entries
+  containing the literal `[adr-candidate]` marker (case-sensitive,
+  bracketed-literal — picked for unambiguity against natural prose).
+  For each match: surface the entry to the operator via a single
+  AskUserQuestion offering (a) write ADR now, (b) skip this one. On
+  accept: compose a candidate ADR body (Context: a paraphrase of the
+  marked entry + the unit's contract one-liner; Decision: the
+  decision the operator named in the entry; Consequences: TODO for
+  the operator to fill before the loop commits), write to
+  `/tmp/loom-adr-<slug>-<n>.md`, invoke `node plugins/loom/cli/loom.ts
+  adr "<title>" --body-file=<tmp> --no-commit`, capture the returned
+  ADR path, and add it to the unit's pending git-add list so the
+  ADR commits with the checkin. The operator can hand-edit the body
+  before the checkin's git commit step runs.
+- New event in the ev-loop event vocabulary:
+  `adr-emitted` with detail `{slug, phase, unit, adr_number,
+  adr_path}` — fires after the `loom adr --no-commit` returns and
+  the ADR is queued for commit. (Or `adr-emit-declined` if the
+  operator picks (b); this captures the substrate signal that an
+  ADR-candidate was surfaced but declined, useful for forensics on
+  marker-usage patterns.)
+- One real fixture-driven test for the hook in
+  `plugins/ev/skills/ev-loop-interactive/` (or wherever the SKILL.md's
+  behavioral tests live — verify at unit contract negotiation; if no
+  test surface exists for SKILL.md prose, the test lives as a smoke
+  script that exercises a synthetic checkin with an `[adr-candidate]`
+  entry and asserts the loop's emitted offer + the resulting ADR
+  file).
+- `plugins/loom/skills/loom-adr/SKILL.md` (from Phase 2) gains a
+  short "When this skill is invoked from within ev-loop-interactive"
+  section pointing the agent at the `--body-file` + `--no-commit`
+  pattern the loop uses, so the skill's behavior matches the loop's
+  expectation.
+- `plugins/ev/docs/SUBSTRATE-COMPOSITIONS.md` (if it exists in the
+  ev plugin; otherwise the canonical loom copy) gains a one-paragraph
+  description of the ADR-emit composition, naming the marker
+  convention, the operator-opt-in posture, and the `--no-commit`
+  rationale.
+- `npm test` green across the full suite. No regression in existing
+  ev-loop-interactive tests.
+- Manual: run `/ev-loop-interactive 2026-05-28-loom-adr 3` against
+  this very project's Phase 3, with a synthetic `[adr-candidate]`
+  marker added to the unit's `notes_for_pr` mid-execution; confirm
+  the hook fires at unit close, the ADR is written, and the
+  committed checkin includes both the checkin JSON and the ADR file.
+  (Meta-dogfood: Phase 3 uses Phase 3's own hook to emit an ADR
+  about Phase 3.)
+
+**Depends on**: Phase 1 landed (the verb must exist for the hook to
+call it). Phase 2 strongly recommended but not strictly required:
+the hook calls the CLI directly, not via the `loom-adr` skill — but
+the skill's body should reference the loop's calling pattern for
+consistency, so Phase 3 reads more cleanly after Phase 2 ships.
+
 ## Dependencies
 
 Phase 2 depends on Phase 1 (the skill + the convention note both
 reference the verb's existence, and the dogfood ADR is written by the
-verb). Phase 1 has no external dependencies — the jelly source at
-`d10133c` is in this repo's git history, accessible via `git show`.
+verb). Phase 3 depends on Phase 1 (the hook calls the verb's CLI
+directly); Phase 3 is strongly-but-not-strictly ordered after Phase 2
+(Phase 2's SKILL.md will be updated by Phase 3 to mention the loop's
+calling pattern, so shipping Phase 2 first means one fewer
+back-edit). Phase 1 has no external dependencies — the jelly source
+at `d10133c` is in this repo's git history, accessible via
+`git show`.
 
 ## Verification
 
@@ -190,7 +297,7 @@ verb). Phase 1 has no external dependencies — the jelly source at
   panel approved (contract-fit baseline + whatever specialists `guild
   derive-panel` derives for the touched files — almost certainly
   test-unit + naming for Phase 1, contract-fit alone for Phase 2's
-  prose).
+  prose, contract-fit + test-unit for Phase 3's hook).
 - **Phase 1-specific**: the 15-test ported suite passes (+15 vs the
   current count); the gap test specifically asserts `nextAdrNumber`
   against a directory with `0001` + `0003` present returns `4`; the
@@ -202,16 +309,21 @@ verb). Phase 1 has no external dependencies — the jelly source at
   introduce loom adr` message), and reads cleanly to a fresh reader. A
   spawned-session sanity check confirms the skill triggers on
   decision-recording language.
+- **Phase 3-specific**: the meta-dogfood (Phase 3 emits an ADR about
+  Phase 3's own marker convention during its own execution); the
+  `adr-emitted` event appears in the project's `events.jsonl`; the
+  resulting ADR file appears in `projects/adr-log/` with the next
+  available number and is committed in the same git commit as the
+  Phase 3 unit's checkin.
 
 ## Risks
 
 - **Salt-earth recurrence**: a future substrate consolidation could
   again delete this verb without harvesting. Mitigation: the dogfood
-  ADR-0001 + the CONVENTIONS.md note make the verb's existence
-  load-bearing in the workspace's own conventions; deleting it would
-  trip both the workspace-conventions consistency check and the
-  doc-copies hash check (if that lands from substrate-followups Phase
-  2). Cheap insurance.
+  ADR-0001 + the CONVENTIONS.md note + the ev-loop hook (Phase 3) all
+  make the verb's existence load-bearing in the workspace's own
+  conventions and the substrate's primary execution loop; deleting
+  the verb would break the loop. Strong insurance.
 - **`kebabCase` factor changes `createSlug` semantics by accident**:
   the factor is mechanical (extract the three `.replace`/`.toLowerCase`
   calls into a named helper) but a subtle behavior change would ripple
@@ -224,13 +336,33 @@ verb). Phase 1 has no external dependencies — the jelly source at
   parallel invocations could collide. Mitigation: documented as a
   known v1 limitation (per design doc § Concurrency caveat); v2
   follow-up can add a `wx`-flag open. Operator-paired v1 use makes
-  the race rare in practice.
+  the race rare in practice. Phase 3's hook calls the verb with
+  `--no-commit`, so a race on the file write would be detected at
+  the operator's subsequent git-add (the file already exists).
 - **Skill triggering false positives**: "record a decision" is broad
   language; the skill might fire on unrelated decisions (e.g. naming
   a variable). Mitigation: the SKILL.md body frames the trigger as
   *architectural* decisions specifically — visible to other engineers
   / agents, not local-to-a-PR. The trigger language is tightened in
   the SKILL.md body.
+- **`[adr-candidate]` marker false positives** (Phase 3): an
+  operator might write the marker in a checkin note casually
+  ("considered this an [adr-candidate] but decided no") and trigger
+  the hook unintentionally. Mitigation: the marker is bracketed,
+  case-sensitive, and on its own — the operator can decline at the
+  AskUserQuestion offer. The marker convention is documented in both
+  ev-loop-interactive's SKILL.md and the loom-adr SKILL.md so it's
+  discoverable. Accept the false-positive risk in exchange for
+  operator-driven simplicity (vs an auto-detector).
+- **ev-loop / loom plugin coupling** (Phase 3): the ev-loop hook
+  shells to `node plugins/loom/cli/loom.ts adr ...` directly, which
+  is a real cross-plugin dependency at runtime. Mitigation: the
+  shell-out pattern matches the existing ev-loop calls to other loom
+  verbs (`loom checkin write`, etc.); the hook fails gracefully if
+  the verb isn't installed (try/catch with a one-line "loom adr not
+  available, skipping" log). The two plugins are already coupled
+  via the wider substrate; this hook doesn't add a new coupling
+  shape, just a new call.
 
 ## Open questions
 
@@ -251,22 +383,39 @@ verb). Phase 1 has no external dependencies — the jelly source at
   **"Architectural Decisions"** (full term in the heading, "ADR" as
   the abbreviated form in the body and verb help text). Decided at
   unit contract.
+- **Phase 3 marker exact form**: `[adr-candidate]` vs `[adr]` vs a
+  YAML-frontmatter-style key in the notes_for_pr entry.
+  Recommendation: **`[adr-candidate]`** as a literal substring of
+  the note text — visually distinctive, no parsing required, low
+  collision risk with natural prose. Decided at unit contract.
+- **Phase 3 ADR title source**: derive from the first sentence of the
+  marked entry, or prompt the operator at the offer?
+  Recommendation: **prompt the operator** at the AskUserQuestion
+  offer (one extra field on the form); auto-derivation produces ugly
+  titles. Decided at unit contract.
+- **Phase 3 `adr-emit-declined` event**: ship the
+  declined-but-detected event, or only emit on accept?
+  Recommendation: **ship both** — the declined event is substrate
+  signal worth capturing (marker-usage patterns, false-positive
+  rate). Decided at unit contract.
 
 ## Decisions
 
-- **Loop strategy**: `ev-loop-interactive`. Both phases have
+- **Loop strategy**: `ev-loop-interactive`. All three phases have
   judgment-shaped seams (the `kebabCase` factor's purity check; the
-  skill's triggering language; the dogfood ADR's body composition).
-  Matches the substrate-followups loop choice.
+  skill's triggering language; the dogfood ADR's body composition;
+  the Phase 3 hook's marker form + offer shape). Matches the
+  substrate-followups loop choice.
 - **PR cadence**: direct-to-main per phase. Each phase = one PR
   `--base=main`, merged, then next phase branches off updated main.
   No `.plan` integration branch. Matches the substrate-followups
   cadence and the parent project's resolved drag.
 - **Phase ordering**: Phase 1 (verb) → Phase 2 (skill + conventions +
-  dogfood). Phase 2 references Phase 1's behavior; reversing the
-  order would create a documentation-pointing-at-vapor moment. The
-  operator may not re-sequence — the dependency is real, not
-  preference.
+  dogfood) → Phase 3 (ev-loop hook). Phase 2 and Phase 3 both
+  reference Phase 1's behavior; Phase 3 references Phase 2's SKILL.md.
+  Reversing the order would create documentation-pointing-at-vapor
+  moments. The operator may not re-sequence — the dependencies are
+  real, not preferences.
 - **Research foundation**: the supplied design doc + the jelly
   `d10133c` commit body together act as the research input. No
   separate `RESEARCH.md` is authored. The `## Context` section above
@@ -281,9 +430,23 @@ verb). Phase 1 has no external dependencies — the jelly source at
   MCP wrapper, skip `griot init` `.gitkeep`). Overrides possible at
   unit contract negotiation but the design doc's case for each is the
   strawman.
+- **Phase 3 marker posture: operator-marked, opt-in**: v1 does NOT
+  auto-detect ADR candidates from notes_for_pr text shape signals
+  ("decision:", "we picked", "the tradeoff"). The operator owns
+  architectural-decision intent by adding `[adr-candidate]` to a
+  note. Auto-detection is high-risk false-positive territory and
+  belongs in a future v2 if a real signal-quality story emerges.
+- **Phase 3 scope: ev-loop-interactive only**: ev-loop-confidence
+  is out of scope. Confidence loops are bulk-transform shaped;
+  architectural decisions surface rarely there. Revisit if a real
+  use case lands.
 - **Provenance attribution in Phase 1 commit body**: the Phase 1
   commit message names `d10133c` as the source SHA and the
   `JellyError → LoomError` + `CliContext` shape adjustments as the
   only deltas from a verbatim port. This keeps the harvest trail
   searchable (`git log --grep=d10133c`) and answers "what changed
   from jelly's working implementation" in one line.
+
+## Revision log
+
+- 2026-05-28 — Add Phase 3 — ev-loop-interactive ADR-emit hook lifting [adr-candidate]-marked notes_for_pr entries into real ADRs at unit close, with operator-marked opt-in posture (no auto-detection) and ev-loop-confidence explicitly out of scope
