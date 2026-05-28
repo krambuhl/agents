@@ -1,38 +1,31 @@
 import { test, expect, beforeEach, afterEach } from 'vitest';
-import {
-  mkdtempSync,
-  mkdirSync,
-  rmSync,
-  copyFileSync,
-  writeFileSync,
-  readFileSync,
-} from 'node:fs';
+import { mkdtempSync, mkdirSync, rmSync, writeFileSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { prDiscover, prOpen, prUpdate, prComments, prRespond } from './pr.ts';
+import { manifestPath, readManifestFile, writeManifest } from '../../lib/manifest-toml.ts';
+import type { Checkin } from '../../lib/types.ts';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const FIXTURES = join(__dirname, '..', '..', 'fixtures');
 
 let projectsRoot: string;
-const branchDirRel = ['checkins', 'loom-cli', 'test-branch'];
+const TEST_BRANCH = 'loom-cli/test-branch';
 
 function setupProjectWithCheckins(checkinNumbers: string[]): string {
   const projectPath = join(projectsRoot, '2026-05-15-test-loom');
   mkdirSync(projectPath);
-  copyFileSync(
-    join(FIXTURES, 'manifest-basic.json'),
-    join(projectPath, 'manifest.json'),
-  );
-  const branchDir = join(projectPath, ...branchDirRel);
-  mkdirSync(branchDir, { recursive: true });
-  for (const n of checkinNumbers) {
-    copyFileSync(
-      join(FIXTURES, 'checkin-basic.json'),
-      join(branchDir, `${n}.json`),
-    );
-  }
+  const base = readManifestFile(join(FIXTURES, 'manifest-basic.toml')).manifest;
+  const template = JSON.parse(
+    readFileSync(join(FIXTURES, 'checkin-basic.json'), 'utf8'),
+  ) as Checkin;
+  const checkins = checkinNumbers.map((n) => ({
+    ...template,
+    number: n,
+    branch: TEST_BRANCH,
+  }));
+  writeManifest(manifestPath(projectPath), { ...base, checkins });
   return projectPath;
 }
 
@@ -61,13 +54,14 @@ test('prDiscover: no existing PR returns marker_state=new', () => {
   expect(out.pr).toBeNull();
 });
 
-test('prDiscover: PR body marker matches disk → fresh', () => {
+test('prDiscover: PR body marker matches disk → fresh, surfaces gh state', () => {
   setupProjectWithCheckins(['01', '02']);
   const ghRunner = () =>
     JSON.stringify({
       number: 42,
       url: 'https://github.com/x/y/pull/42',
       body: '<!-- loom-pr-checkins: 01,02 -->\n\n## Body',
+      state: 'MERGED',
     });
   const result = prDiscover(
     ['test-loom', '--branch=loom-cli/test-branch'],
@@ -77,6 +71,40 @@ test('prDiscover: PR body marker matches disk → fresh', () => {
   const out = JSON.parse(result.stdout as string);
   expect(out.marker_state).toBe('fresh');
   expect(out.pr.number).toBe(42);
+  // gh merge state surfaces — orientation's open/merged signal under (d).
+  expect(out.pr.state).toBe('MERGED');
+});
+
+test('prDiscover: invokes `gh pr view <branch>` positionally with state field', () => {
+  // Pins the gh invocation. `gh pr view` takes the branch as a POSITIONAL;
+  // `--head` is a `gh pr list` flag and `gh pr view --head` errors out — a
+  // regression to it would make discover silently report "no PR" (the catch
+  // swallows the gh error). The mock here returns valid JSON, so only an
+  // assertion on the args themselves catches the mistake fixtures otherwise
+  // mask.
+  setupProjectWithCheckins(['01']);
+  const ghCalls: string[][] = [];
+  const ghRunner = (args: string[]) => {
+    ghCalls.push(args);
+    return JSON.stringify({
+      number: 7,
+      url: 'https://github.com/x/y/pull/7',
+      body: '<!-- loom-pr-checkins: 01 -->\n\n## Body',
+      state: 'OPEN',
+    });
+  };
+  const result = prDiscover(
+    ['test-loom', '--branch=feature/x'],
+    { projectsRoot, ghRunner },
+  );
+  expect(result.exitCode).toBe(0);
+  const args = ghCalls[0] as string[];
+  expect(args.slice(0, 2)).toEqual(['pr', 'view']);
+  expect(args).toContain('feature/x');
+  expect(args).not.toContain('--head');
+  // state is requested from gh so orientation can read open/merged.
+  const jsonIdx = args.indexOf('--json');
+  expect(args[jsonIdx + 1]).toContain('state');
 });
 
 test('prDiscover: PR marker is subset of disk → stale', () => {
@@ -122,7 +150,7 @@ test('prDiscover: missing --branch returns missing-args', () => {
 
 // ---------- prOpen tests ----------
 
-test('prOpen: composes gh pr create, parses URL, appends event', () => {
+test('prOpen: composes gh pr create, parses URL, records no event', () => {
   setupProjectWithCheckins(['01']);
   const projectPath = join(projectsRoot, '2026-05-15-test-loom');
   const bodyFile = join(projectsRoot, 'body.md');
@@ -154,13 +182,11 @@ test('prOpen: composes gh pr create, parses URL, appends event', () => {
   expect(ghCalls[0]).toContain('--title');
   expect(ghCalls[0]).toContain('Test PR');
 
-  // pr-opened event appended
-  const eventsRaw = readFileSync(join(projectPath, 'events.jsonl'), 'utf8');
-  const lastLine = eventsRaw.trim().split('\n').pop() as string;
-  const event = JSON.parse(lastLine);
-  expect(event.event).toBe('pr-opened');
-  expect(event.detail.pr).toBe(77);
-  expect(event.detail.url).toBe('https://github.com/owner/repo/pull/77');
+  // No event recorded: PR state is derived on demand via `loom pr discover`,
+  // so `pr open` makes no manifest write. `pr-opened` is gone from the
+  // EventName union, so cast through string to assert it is absent at runtime.
+  const { manifest } = readManifestFile(manifestPath(projectPath));
+  expect(manifest.events.some((e) => (e.event as string) === 'pr-opened')).toBe(false);
 });
 
 test('prOpen: gh failure surfaces as gh-failed', () => {
@@ -212,7 +238,7 @@ test('prOpen: invalid gh URL output returns invalid-pr-url', () => {
 
 // ---------- prUpdate tests ----------
 
-test('prUpdate: composes gh pr edit, appends pr-updated event', () => {
+test('prUpdate: composes gh pr edit, records no event', () => {
   setupProjectWithCheckins(['01']);
   const projectPath = join(projectsRoot, '2026-05-15-test-loom');
   const bodyFile = join(projectsRoot, 'body.md');
@@ -237,12 +263,10 @@ test('prUpdate: composes gh pr edit, appends pr-updated event', () => {
   expect(ghCalls[0]).toContain('edit');
   expect(ghCalls[0]).toContain('42');
 
-  // pr-updated event
-  const eventsRaw = readFileSync(join(projectPath, 'events.jsonl'), 'utf8');
-  const lastLine = eventsRaw.trim().split('\n').pop() as string;
-  const event = JSON.parse(lastLine);
-  expect(event.event).toBe('pr-updated');
-  expect(event.detail.pr).toBe(42);
+  // No event recorded: PR body refresh is gh-only (no manifest write).
+  // `pr-updated` is gone from EventName; cast through string to assert absence.
+  const { manifest } = readManifestFile(manifestPath(projectPath));
+  expect(manifest.events.some((e) => (e.event as string) === 'pr-updated')).toBe(false);
 });
 
 test('prUpdate: missing --pr returns missing-args', () => {
@@ -311,7 +335,6 @@ test('prComments: gh failure surfaces as gh-failed', () => {
 
 test('prRespond: writes one file per response under checkins/<branch>/responses/', () => {
   setupProjectWithCheckins(['01']);
-  const projectPath = join(projectsRoot, '2026-05-15-test-loom');
   const responsesFile = join(projectsRoot, 'responses.json');
   writeFileSync(
     responsesFile,

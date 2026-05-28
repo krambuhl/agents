@@ -1,9 +1,10 @@
 import { test, expect, beforeEach, afterEach } from 'vitest';
-import { mkdtempSync, mkdirSync, rmSync, copyFileSync, readFileSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, rmSync, copyFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { phaseRead, phaseList, phaseUpdate } from './phase.ts';
+import { manifestPath, readManifestFile } from '../../lib/manifest-toml.ts';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const FIXTURES = join(__dirname, '..', '..', 'fixtures');
@@ -15,8 +16,8 @@ beforeEach(() => {
   const projectPath = join(projectsRoot, '2026-05-15-test-loom');
   mkdirSync(projectPath);
   copyFileSync(
-    join(FIXTURES, 'manifest-basic.json'),
-    join(projectPath, 'manifest.json'),
+    join(FIXTURES, 'manifest-basic.toml'),
+    join(projectPath, 'manifest.toml'),
   );
 });
 
@@ -62,15 +63,9 @@ test('phaseList: returns all four phases', () => {
 });
 
 function readEventsJsonl(projectPath: string): Array<{ event: string; detail: Record<string, unknown> }> {
-  try {
-    const raw = readFileSync(join(projectPath, 'events.jsonl'), 'utf8');
-    return raw
-      .split('\n')
-      .filter((l) => l.length > 0)
-      .map((l) => JSON.parse(l));
-  } catch {
-    return [];
-  }
+  // Post-cutover, events live in manifest.toml's [[events]] section.
+  const { manifest } = readManifestFile(manifestPath(projectPath));
+  return manifest.events as Array<{ event: string; detail: Record<string, unknown> }>;
 }
 
 test('phaseUpdate: transition not-started → in-progress emits phase-started', () => {
@@ -138,22 +133,14 @@ test('phaseUpdate: status=blocked with --reason emits phase-blocked', () => {
   expect(last?.detail.reason).toBe('waiting on review');
 });
 
-test('phaseUpdate: --branch and --pr propagate into the phase row', () => {
+test('phaseUpdate: --branch propagates into the phase row', () => {
   const result = phaseUpdate(
-    [
-      'test-loom',
-      '2',
-      '--status=in-progress',
-      '--branch=loom-cli/foo',
-      '--pr=99',
-    ],
+    ['test-loom', '2', '--status=in-progress', '--branch=loom-cli/foo'],
     { projectsRoot },
   );
   expect(result.exitCode).toBe(0);
   const phase = JSON.parse(result.stdout as string);
   expect(phase.branch).toBe('loom-cli/foo');
-  expect(phase.pr).toBeDefined();
-  expect(phase.pr.number).toBe(99);
 });
 
 test('phaseUpdate: nonexistent phase returns phase-not-found', () => {
@@ -163,76 +150,4 @@ test('phaseUpdate: nonexistent phase returns phase-not-found', () => {
   );
   expect(result.exitCode).toBe(1);
   expect(JSON.parse(result.stderr as string).error).toBe('phase-not-found');
-});
-
-test('phaseUpdate: --url sets the real PR url instead of the placeholder', () => {
-  const result = phaseUpdate(
-    [
-      'test-loom',
-      '2',
-      '--status=in-progress',
-      '--pr=42',
-      '--url=https://github.com/krambuhl/aart.camp/pull/42',
-    ],
-    { projectsRoot },
-  );
-  expect(result.exitCode).toBe(0);
-  const phase = JSON.parse(result.stdout as string);
-  expect(phase.pr.url).toBe('https://github.com/krambuhl/aart.camp/pull/42');
-});
-
-test('phaseUpdate: --pr without --url falls back to placeholder url', () => {
-  const result = phaseUpdate(
-    ['test-loom', '2', '--status=in-progress', '--pr=42'],
-    { projectsRoot },
-  );
-  expect(result.exitCode).toBe(0);
-  const phase = JSON.parse(result.stdout as string);
-  expect(phase.pr.url).toContain('example/example/pull/42');
-});
-
-test('phaseUpdate: --pr-state=merged records PR as merged', () => {
-  const result = phaseUpdate(
-    [
-      'test-loom',
-      '2',
-      '--status=completed',
-      '--pr=42',
-      '--url=https://github.com/k/r/pull/42',
-      '--pr-state=merged',
-    ],
-    { projectsRoot },
-  );
-  expect(result.exitCode).toBe(0);
-  const phase = JSON.parse(result.stdout as string);
-  expect(phase.pr.state).toBe('merged');
-});
-
-test('phaseUpdate: --pr-state with invalid value rejects', () => {
-  const result = phaseUpdate(
-    [
-      'test-loom',
-      '2',
-      '--status=in-progress',
-      '--pr=42',
-      '--pr-state=draft',
-    ],
-    { projectsRoot },
-  );
-  expect(result.exitCode).toBe(1);
-  expect(JSON.parse(result.stderr as string).error).toBe('invalid-pr-state');
-});
-
-test('phaseUpdate: --url without --pr rejects (need a PR to attach the url to)', () => {
-  const result = phaseUpdate(
-    [
-      'test-loom',
-      '2',
-      '--status=in-progress',
-      '--url=https://github.com/k/r/pull/42',
-    ],
-    { projectsRoot },
-  );
-  expect(result.exitCode).toBe(1);
-  expect(JSON.parse(result.stderr as string).error).toBe('missing-args');
 });

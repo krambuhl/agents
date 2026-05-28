@@ -8,12 +8,14 @@ import {
 } from 'node:fs';
 import { join } from 'node:path';
 import { resolveProject } from '../../lib/project.ts';
-import { listCheckins } from '../../lib/checkin.ts';
+import {
+  manifestPath,
+  readManifestFile,
+} from '../../lib/manifest-toml.ts';
 import {
   parseCheckinMarker,
   computeMarkerState,
 } from '../../lib/pr-marker.ts';
-import { appendEvent } from '../../lib/events.ts';
 import { LoomError } from '../../lib/errors.ts';
 import { defaultGhRunner } from '../../lib/gh.ts';
 import type { GhRunner } from '../../lib/gh.ts';
@@ -41,22 +43,27 @@ type PrViewResponse = {
   number: number;
   url: string;
   body: string;
+  // gh's PR state: "OPEN" | "MERGED" | "CLOSED". Under derive-on-demand this
+  // is the authoritative open/merged signal orientation reads (replacing the
+  // retired pr-opened/pr-merged events).
+  state: string;
 };
 
 function fetchPrForBranch(
   ghRunner: GhRunner,
   branch: string,
 ): PrViewResponse | null {
-  // gh pr view --head <branch> exits non-zero if no PR exists for that
-  // head. We treat that as "no PR" and return null.
+  // `gh pr view <branch>` (branch as a positional, NOT a `--head` flag —
+  // `--head` belongs to `gh pr list`) resolves the PR for a branch, including
+  // merged ones, and exits non-zero when none exists. We treat that as "no
+  // PR" and return null.
   try {
     const stdout = ghRunner([
       'pr',
       'view',
-      '--head',
       branch,
       '--json',
-      'number,url,body',
+      'number,url,body,state',
     ]);
     return JSON.parse(stdout) as PrViewResponse;
   } catch {
@@ -82,8 +89,9 @@ export function prDiscover(rest: string[], ctx: CliContext): DispatchResult {
   }
   try {
     const projectPath = resolveProject(slug, ctx.projectsRoot);
-    const diskCheckins = listCheckins(projectPath, { branch: values.branch });
-    const diskNumbers = diskCheckins
+    const { manifest } = readManifestFile(manifestPath(projectPath));
+    const diskNumbers = manifest.checkins
+      .filter((c) => c.branch === values.branch)
       .map((c) => Number.parseInt(c.number, 10))
       .filter((n) => !Number.isNaN(n))
       .sort((a, b) => a - b);
@@ -96,7 +104,10 @@ export function prDiscover(rest: string[], ctx: CliContext): DispatchResult {
     const result = {
       checkins: diskNumbers,
       marker_state: state,
-      pr: pr === null ? null : { number: pr.number, url: pr.url },
+      pr:
+        pr === null
+          ? null
+          : { number: pr.number, url: pr.url, state: pr.state },
     };
     return { stdout: emit(result, values.pretty === true), exitCode: 0 };
   } catch (err) {
@@ -127,9 +138,8 @@ export function prOpen(rest: string[], ctx: CliContext): DispatchResult {
       new LoomError('missing-args', 'pr open requires --title and --body-file'),
     );
   }
-  let projectPath: string;
   try {
-    projectPath = resolveProject(slug, ctx.projectsRoot);
+    resolveProject(slug, ctx.projectsRoot); // existence check
   } catch (err) {
     return errToResult(err);
   }
@@ -157,11 +167,9 @@ export function prOpen(rest: string[], ctx: CliContext): DispatchResult {
   }
   const prNum = Number.parseInt(match[1] as string, 10);
   const url = match[0] as string;
-  appendEvent(join(projectPath, 'events.jsonl'), {
-    at: new Date().toISOString(),
-    event: 'pr-opened',
-    detail: { pr: prNum, url },
-  });
+  // PR state is derived on demand via `loom pr discover` (gh + the checkin
+  // marker); `pr open` is a thin gh wrapper and records no event — there is
+  // no manifest write, so the caller folds nothing into a state-only commit.
   return {
     stdout: emit({ pr: prNum, url }, values.pretty === true),
     exitCode: 0,
@@ -196,9 +204,8 @@ export function prUpdate(rest: string[], ctx: CliContext): DispatchResult {
       new LoomError('invalid-pr', `--pr must be a non-negative integer: ${values.pr}`),
     );
   }
-  let projectPath: string;
   try {
-    projectPath = resolveProject(slug, ctx.projectsRoot);
+    resolveProject(slug, ctx.projectsRoot); // existence check
   } catch (err) {
     return errToResult(err);
   }
@@ -210,11 +217,8 @@ export function prUpdate(rest: string[], ctx: CliContext): DispatchResult {
       new LoomError('gh-failed', `gh pr edit failed: ${(err as Error).message}`),
     );
   }
-  appendEvent(join(projectPath, 'events.jsonl'), {
-    at: new Date().toISOString(),
-    event: 'pr-updated',
-    detail: { pr: prNum },
-  });
+  // PR body refresh is gh-only and records no event (no manifest write) —
+  // current PR state is derived on demand via `loom pr discover`.
   return {
     stdout: emit({ pr: prNum }, values.pretty === true),
     exitCode: 0,

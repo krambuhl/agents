@@ -1,13 +1,29 @@
 import { parseArgs } from 'node:util';
 import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { resolveProject } from '../../lib/project.ts';
-import { readSession, listSessions, writeSession } from '../../lib/session.ts';
-import { readCheckin, listCheckins } from '../../lib/checkin.ts';
-import { appendEvent } from '../../lib/events.ts';
+import {
+  appendEvent,
+  appendSession,
+  manifestPath,
+  readManifestFile,
+  writeManifest,
+} from '../../lib/manifest-toml.ts';
 import { LoomError } from '../../lib/errors.ts';
+import type { Checkin, Session } from '../../lib/types.ts';
 import type { CliContext, DispatchResult } from './project.ts';
-import type { Session } from '../../lib/types.ts';
+
+function sessionFilename(s: { date: string; letter: string }): string {
+  return `${s.date}-${s.letter}.json`;
+}
+
+// Checkins sorted as the per-file store listed them (branch, then number) —
+// the order session corrections are gathered in.
+function sortedCheckins(checkins: Checkin[]): Checkin[] {
+  return [...checkins].sort((a, b) => {
+    if (a.branch !== b.branch) return a.branch < b.branch ? -1 : 1;
+    return Number.parseInt(a.number, 10) - Number.parseInt(b.number, 10);
+  });
+}
 
 function emit(value: unknown, pretty: boolean): string {
   return pretty ? JSON.stringify(value, null, 2) : JSON.stringify(value);
@@ -39,7 +55,12 @@ export function sessionList(rest: string[], ctx: CliContext): DispatchResult {
   }
   try {
     const path = resolveProject(slug, ctx.projectsRoot);
-    return { stdout: emit(listSessions(path), values.pretty === true), exitCode: 0 };
+    const mp = manifestPath(path);
+    const { manifest } = readManifestFile(mp);
+    const list = manifest.sessions
+      .map((s) => ({ filename: sessionFilename(s), path: mp }))
+      .sort((a, b) => (a.filename < b.filename ? -1 : 1));
+    return { stdout: emit(list, values.pretty === true), exitCode: 0 };
   } catch (err) {
     return errToResult(err);
   }
@@ -63,7 +84,18 @@ export function sessionRead(rest: string[], ctx: CliContext): DispatchResult {
   }
   try {
     const path = resolveProject(slug, ctx.projectsRoot);
-    const session = readSession(join(path, 'sessions', values.filename));
+    const { manifest } = readManifestFile(manifestPath(path));
+    const session = manifest.sessions.find(
+      (s) => sessionFilename(s) === values.filename,
+    );
+    if (session === undefined) {
+      return errToResult(
+        new LoomError(
+          'session-not-found',
+          `session ${values.filename} not found in ${slug}`,
+        ),
+      );
+    }
     return { stdout: emit(session, values.pretty === true), exitCode: 0 };
   } catch (err) {
     return errToResult(err);
@@ -90,17 +122,12 @@ export function sessionCorrections(rest: string[], ctx: CliContext): DispatchRes
   const sinceCheckin = values['since-checkin'];
   try {
     const path = resolveProject(slug, ctx.projectsRoot);
-    const checkins = listCheckins(path);
+    const { manifest } = readManifestFile(manifestPath(path));
     const corrections: CorrectionEntry[] = [];
-    for (const summary of checkins) {
-      if (sinceCheckin !== undefined && summary.number < sinceCheckin) continue;
-      const c = readCheckin(summary.path);
+    for (const c of sortedCheckins(manifest.checkins)) {
+      if (sinceCheckin !== undefined && c.number < sinceCheckin) continue;
       for (const text of c.execution.corrections ?? []) {
-        corrections.push({
-          text,
-          checkin: summary.number,
-          branch: summary.branch,
-        });
+        corrections.push({ text, checkin: c.number, branch: c.branch });
       }
     }
     return { stdout: emit(corrections, values.pretty === true), exitCode: 0 };
@@ -163,13 +190,17 @@ export function sessionWrite(rest: string[], ctx: CliContext): DispatchResult {
   }
   try {
     const path = resolveProject(slug, ctx.projectsRoot);
-    const written = writeSession(path, parsed);
-    appendEvent(join(path, 'events.jsonl'), {
+    const mp = manifestPath(path);
+    const { manifest, token } = readManifestFile(mp);
+    const filename = sessionFilename(parsed);
+    let next = appendSession(manifest, parsed);
+    next = appendEvent(next, {
       at: new Date().toISOString(),
       event: 'session-saved',
-      detail: { filename: written.filename },
+      detail: { filename },
     });
-    return { stdout: emit(written, values.pretty === true), exitCode: 0 };
+    writeManifest(mp, next, { expect: token });
+    return { stdout: emit({ path: mp, filename }, values.pretty === true), exitCode: 0 };
   } catch (err) {
     return errToResult(err);
   }

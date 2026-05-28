@@ -17,30 +17,36 @@ section further down.
 
 ```
 projects/<slug>/
-├── manifest.json              # project state, single source of truth
-├── config.json                # per-project overrides
+├── manifest.toml              # all machine state: [meta] + [config] +
+│                              # [[phases]] + [[events]] + [[checkins]] +
+│                              # [[sessions]] + [[revisions]] in one
+│                              # sectioned TOML file
 ├── PLAN.md                    # the human-authored plan
 ├── INTERVIEW.md               # grill-me transcript from project birth
-├── events.jsonl               # append-only event log
 ├── RECOVERY-STATUS.json       # present only when a sub-agent failed
 │                              # mid-flight (see AGENT-CONVENTIONS.md)
-├── checkins/
-│   └── <branch>/
-│       ├── 01.json            # numbered unit-of-work records
-│       ├── 02.json
-│       └── responses/
-│           └── <id>.md        # responses to PR comments (optional)
-├── sessions/
-│   └── <YYYY-MM-DD>-<letter>.json   # session handoffs
 ├── retros/
 │   ├── session-<phase>-<tier>.json
 │   └── project.json
-└── whiteboards/
-    └── <phase>-<topic-slug>.md      # multi-perspective design artifacts
+├── whiteboards/
+│   └── <phase>-<topic-slug>.md      # multi-perspective design artifacts
+└── checkins/                  # the only residual of the pre-M1
+    └── <branch>/              #   per-file state model; created on-
+        └── responses/         #   demand by `bin/loom pr respond` for
+            └── <id>.md        #   PR-comment response markdowns
 ```
 
 After a project is archived, the entire directory is moved to
 `projects/archive/<slug>/`. See § Archive below.
+
+**Pre-M1 layout**: prior to Phase 2 of substrate-consolidation,
+project state lived in five separate files (`manifest.json`,
+`config.json`, `events.jsonl`, `checkins/<branch>/<NN>.json`,
+`sessions/<YYYY-MM-DD>-<letter>.json`). Phase 2 collapsed them into
+one sectioned `manifest.toml`. The legacy paths are gone except
+for `checkins/<branch>/responses/<id>.md`, which `bin/loom pr
+respond` still writes on-demand (substrate follow-up: relocate or
+fold into `manifest.toml`).
 
 ## Branch naming
 
@@ -92,15 +98,19 @@ accepts any string the loop supplies.
 
 ## Schema versioning
 
-All JSON artifacts declare a top-level `schema_version: 1`.
+All loom-managed artifacts declare a top-level `schema_version: 1`
+(`manifest.toml` carries it once in `[meta]`; retros and
+`RECOVERY-STATUS.json` carry it at the root of their JSON file).
 Evolution is **additive only**: new fields may appear in later
 versions, but the existing fields' shapes are stable within a major
 version. A breaking change bumps the major.
 
-Schema version is **per artifact type** (manifest, checkin,
-session, retro), not per project. A project may have a v1 manifest
-alongside a v1 checkin alongside a v1 session — they all share
-the marketplace's current substrate version.
+Schema version is **per artifact type** (manifest, retro,
+recovery-status), not per project. A project may have a v1 manifest
+alongside v1 retros — they all share the marketplace's current
+substrate version. Inside `manifest.toml`, each `[[checkins]]` /
+`[[sessions]]` / `[[revisions]]` entry also carries its own
+`schema_version` field for forward-compat with per-record migrations.
 
 The substrate **does not write schema migrations**: when the major
 bumps, the loom CLI either reads both versions transparently or
@@ -109,69 +119,72 @@ deferred until a real breaking change is justified.
 
 ## Artifact shapes
 
-### `manifest.json`
+### `manifest.toml`
 
-The single source of truth for project state. **Write surface**:
-`bin/loom project scaffold` (creates), `bin/loom project adopt`
-(creates from existing layout), `bin/loom phase update` (mutates).
-Single-writer-serialized per `projects/CONVENTIONS.md` § Category
-3.
+The consolidated source of truth for project state. Phase 2 of
+substrate-consolidation folded `manifest.json` + `config.json` +
+`events.jsonl` + `checkins/<branch>/<NN>.json` +
+`sessions/<YYYY-MM-DD>-<letter>.json` into one sectioned TOML file.
+Identity scalars and mutable status live in the `[meta]` and
+`[config]` tables; per-record histories (phases, events, checkins,
+sessions, revisions) live in `[[<name>]]` array-of-table sections.
 
-```json
-{
-  "schema_version": 1,
-  "title": "<human-readable project title>",
-  "slug": "<YYYY-MM-DD>-<topic-slug>",
-  "started": "<YYYY-MM-DD>",
-  "status": "active" | "archived",
-  "current_branch": "<branch-name>" | null,
-  "latest_checkin": "<checkin-number>" | null,
-  "strategy": "<free-form>",
-  "phases": [
-    {
-      "number": 1,
-      "name": "<phase title>",
-      "status": "not-started" | "in-progress" | "blocked" | "completed",
-      "branch": "<branch-name>",
-      "latest_checkin": "<NN>",
-      "blocked_reason": "<text>",
-      "pr": { "number": 42, "url": "...", "state": "open" | "merged" | "closed" }
-    }
-  ]
-}
+**Write surface**: every loom verb that mutates state writes the
+whole manifest under atomic temp + rename; append-only sections
+(`[[events]]`, `[[checkins]]`, `[[sessions]]`, `[[revisions]]`) are
+only appended to by CLI discipline. Single-writer-serialized per
+`projects/CONVENTIONS.md` § Category 3. The hand-rolled, zero-dep
+TOML parser (`plugins/loom/cli/lib/toml.ts`) encodes the nested
+record bodies (`Checkin.contract`, `Event.detail`, etc) as inline
+tables so the value tree round-trips.
+
+The sub-sections below describe each table in the order they appear
+in the file. A field marked nullable is encoded by **key omission**
+— TOML has no null literal — and `readManifest` reconstructs the
+typed shape from absence.
+
+#### `[meta]`
+
+The project's identity scalars and mutable top-level status. Set at
+project birth by `bin/loom project scaffold` / `adopt`; mutated in
+place by phase/state verbs.
+
+```toml
+[meta]
+schema_version = 1
+title = "<human-readable project title>"
+slug = "<YYYY-MM-DD>-<topic-slug>"
+started = "<YYYY-MM-DD>"
+status = "active"            # "active" | "archived"
+current_branch = "<branch>"  # nullable; encoded by absence
+latest_checkin = "<NN>"      # nullable; encoded by absence
+strategy = "interactive"     # free-form ("interactive", "confidence", ...)
 ```
 
 Field notes:
 
-- **`status`**: `active` while the project is in flight;
-  `archived` after `bin/loom project archive` runs.
-- **`current_branch`**: top-level branch reference. Today, no CLI
-  verb writes this field; phase-level `branch` on each phase entry
-  carries the active branch. Field reserved for future use.
-- **`latest_checkin`** (top-level and per-phase): tracks the most
-  recent checkin number, set on every `checkin write`. May lag
-  during in-flight execution.
-- **`strategy`**: free-form string set at project birth. Common
-  values: `"interactive"`, `"confidence"`. The router (`/ev-run`)
-  reads this when no `worker_bindings` in `config.json` overrides.
-- **`phases[]`**: ordered list. Phase numbers are 1-indexed and
-  contiguous.
+- **`schema_version`**: lives here once for the whole file.
+  `[config]` does not repeat it (`readManifest` synthesizes
+  `Config.schema_version` from `[meta]`).
+- **`status`**: `active` while the project is in flight; `archived`
+  after `bin/loom project archive` runs.
+- **`current_branch`** / **`latest_checkin`**: nullable scalars
+  encoded by key omission.
+- **`strategy`**: free-form. The router (`/ev-run`) reads this when
+  `[config].worker_bindings` doesn't override.
 
-### `config.json`
+#### `[config]`
 
-Per-project overrides for substrate behavior. **Write surface**:
-`bin/loom project scaffold` (creates with defaults); hand-edited
-afterward.
+Per-project overrides for substrate behavior. Set at project birth
+with defaults; hand-edited afterward.
 
-```json
-{
-  "schema_version": 1,
-  "base_branch": "main",
-  "reviewers": [],
-  "labels": [],
-  "verification": [],
-  "worker_bindings": {}
-}
+```toml
+[config]
+base_branch = "main"
+reviewers = []
+labels = []
+verification = []
+worker_bindings = {}
 ```
 
 - **`base_branch`**: target branch for PRs.
@@ -180,8 +193,143 @@ afterward.
 - **`labels`**: GitHub labels applied to every PR.
 - **`verification`**: commands run at phase close as part of the
   verification gate (currently unused; reserved for CI hookup).
-- **`worker_bindings`**: `{ "default": "<loop-name>", "phase-1": "<loop-name>" }`
+- **`worker_bindings`**: `{ default = "<loop>", "phase-1" = "<loop>" }`
   overrides for which loop the router (`/ev-run`) dispatches to.
+
+#### `[[phases]]`
+
+Ordered list of phases. Phase numbers are 1-indexed and contiguous.
+**Write surface**: `bin/loom phase update`.
+
+```toml
+[[phases]]
+number = 1
+name = "<phase title>"
+status = "in-progress"       # not-started | in-progress | blocked | completed
+branch = "<branch-name>"     # the branch carrying this phase's work
+latest_checkin = "<NN>"      # most recent checkin number for this phase
+blocked_reason = "<text>"    # only when status = blocked
+```
+
+PR open/merged/updated state is **not** carried on the phase entry
+(removed in Phase 6 U2 of substrate-consolidation). It is derived on
+demand from `gh` via `bin/loom pr discover` — see `[[events]]` below
+for the broader retirement of pr-event vocabulary.
+
+#### `[[events]]`
+
+The project's append-only event log. Order is write-order; each
+write goes through an atomic temp + rename of the whole manifest,
+and the `[[events]]` section is only ever appended to by CLI
+discipline.
+
+```toml
+[[events]]
+at = "<ISO 8601 timestamp>"
+event = "<event-name>"
+detail = { ... }              # event-specific inline table
+```
+
+Event vocabulary (current set):
+
+| Event | Detail shape | Emitted by |
+|-------|-------------|------------|
+| `project-initialized` | `{}` | `bin/loom project scaffold` / `adopt` |
+| `phase-started` | `{ phase, name }` | `bin/loom phase update --status=in-progress` |
+| `phase-completed` | `{ phase }` | `bin/loom phase update --status=completed` |
+| `phase-blocked` | `{ phase, reason }` | `bin/loom phase update --status=blocked --reason=...` |
+| `phase-unblocked` | `{ phase }` | `bin/loom phase update --status=in-progress` (from blocked) |
+| `checkin-created` | `{ number, branch }` | `bin/loom checkin write` |
+| `session-saved` | `{ filename }` | `bin/loom session write` |
+| `retro-written` | `{ type, phase?, tier? }` | `bin/loom retro write` |
+| `archived` | `{ destination }` | `bin/loom project archive` |
+| `note` | `{ text }` | `bin/loom events note` (free-form annotation) |
+
+Phases 3-7 of the loom-absorb-draft project add ~25 more event
+types in clusters (`research-*`, `plan-*`, `rpi-*`,
+`auto-mode-*`). The vocabulary is **additive** — new event names
+may appear, but existing consumers read events by name and ignore
+unknown ones, so the schema does not need a version bump.
+
+PR open/merged/updated state is **not** an event. It is derived on
+demand from `gh` via `bin/loom pr discover`, which reads
+`gh pr view <branch>` (number, url, and merge state) plus the checkin
+marker in the PR body. `bin/loom pr open` and `bin/loom pr update` are
+thin `gh` wrappers that record nothing — there are no `pr-opened`,
+`pr-merged`, or `pr-updated` events. (Retired in Phase 6 U1 of
+substrate-consolidation, commit-discipline option (d): state rides
+the feature commit; derive PR state on demand.)
+
+#### `[[checkins]]`
+
+Per-unit-of-work immutable records. **Write surface**:
+`bin/loom checkin write`. Each entry is the contract + execution +
+verdict for one unit inside a phase, encoded as an array-of-table
+entry whose nested `contract` / `execution` / `verdict` bodies are
+inline tables (the encoding loom's TOML parser uses to round-trip
+nested data).
+
+```toml
+[[checkins]]
+schema_version = 1
+number = "<NN>"
+created = "<ISO 8601 timestamp>"
+phase = { number = 1, name = "..." }
+branch = "<branch>"
+unit = "<one-line unit title>"
+contract = { goal = "...", acceptance_criteria = [...], rules_applied = [...], disqualifiers = [...], inputs = [...] }
+execution = { actions = [...], files_touched = [...], corrections = [...] }
+scope = [...]
+changes_since_previous = "..."
+verdict = { result = "approved", reasons = [...] }   # result: "approved" | "flagged"
+notes_for_pr = [...]
+```
+
+**Immutability rule**: once `bin/loom checkin write` appends a
+checkin, the entry is read-only. Re-writing the same
+`(branch, number)` pair fails with `checkin-already-exists`. Updates
+to a unit's history go in subsequent checkins (e.g. a resolution
+checkin after a flagged verdict).
+
+Numbering is monotonic per branch: `01`, `02`, `03`, ... — kept as
+strings (zero-padded to 2 digits in current usage but the substrate
+stores whatever string the writer chose).
+
+#### `[[sessions]]`
+
+Session handoffs — the human-readable summary of what happened in a
+working session. **Write surface**: `bin/loom session write`. The
+date + letter pair is the partition (first session on a given date
+= `a`, second = `b`, etc).
+
+```toml
+[[sessions]]
+schema_version = 1
+date = "<YYYY-MM-DD>"
+letter = "a"                 # "a" | "b" | "c" | ...
+phases_touched = [1, 2]
+checkins_written = ["01", "02"]
+pr_activity = ["...free-form lines..."]
+what_happened = [...]
+open_threads = [...]
+notes = [...]
+```
+
+#### `[[revisions]]`
+
+Plan revisions — the machine record of every `bin/loom revise-plan`
+operation. **Write surface**: `bin/loom revise-plan` writes both
+the manifest-side `[[revisions]]` entry and a dated PLAN.md
+`## Revision log` line atomically (one rewrite covers both files),
+so the two never drift. The human rationale lives in PLAN.md; this
+section is the machine counterpart.
+
+```toml
+[[revisions]]
+timestamp = "<ISO 8601>"
+target = "PLAN.md"           # the revised artifact (extensible)
+seq = 1                      # 1-based revision number
+```
 
 ### `PLAN.md`
 
@@ -208,7 +356,7 @@ Document shape (loose, conventional):
 
 Phase headings are the load-bearing structure for the router and
 loops: phase numbers and `## Phase N:` headings must match the
-manifest's `phases[].number` and `phases[].name`.
+manifest's `[[phases]].number` and `[[phases]].name`.
 
 ### `INTERVIEW.md`
 
@@ -216,117 +364,6 @@ Grill-me transcript from project birth, kept as audit trail of why
 the plan looks the way it does. **Write surface**: `bin/loom plan`
 writes this once at project creation. Not subsequently mutated
 (future: `bin/loom plan-amend` may extend it).
-
-### `events.jsonl`
-
-The project's event log. **Write surface**: every loom verb that
-mutates state appends an event. **Append-only** per
-`projects/CONVENTIONS.md` § Category 1.
-
-Format: one JSON object per line, no trailing newlines inside
-objects. Order is write-order. The substrate guarantees that
-record boundaries are line-buffered so concurrent appends from
-different processes don't corrupt each other (though they may
-interleave).
-
-Event vocabulary (current set):
-
-| Event | Detail shape | Emitted by |
-|-------|-------------|------------|
-| `project-initialized` | `{}` | `bin/loom project scaffold` / `adopt` |
-| `phase-started` | `{ phase, name }` | `bin/loom phase update --status=in-progress` |
-| `phase-completed` | `{ phase }` | `bin/loom phase update --status=completed` |
-| `phase-blocked` | `{ phase, reason }` | `bin/loom phase update --status=blocked --reason=...` |
-| `phase-unblocked` | `{ phase }` | `bin/loom phase update --status=in-progress` (from blocked) |
-| `checkin-created` | `{ number, branch }` | `bin/loom checkin write` |
-| `pr-opened` | `{ pr, url }` | `bin/loom pr open` |
-| `pr-updated` | `{ pr }` | `bin/loom pr update` |
-| `pr-merged` | `{ pr }` | reconciliation (when a merge is detected) |
-| `session-saved` | `{ filename }` | `bin/loom session write` |
-| `retro-written` | `{ type, phase?, tier? }` | `bin/loom retro write` |
-| `archived` | `{ destination }` | `bin/loom project archive` |
-| `note` | `{ text }` | `bin/loom events note` (free-form annotation) |
-
-Phases 3-7 of the loom-absorb-draft project add ~25 more event
-types in clusters (`research-*`, `plan-*`, `rpi-*`,
-`auto-mode-*`). The vocabulary is **additive** — new event names
-may appear, but existing consumers read events by name and ignore
-unknown ones, so the schema does not need a version bump.
-
-### `checkins/<branch>/<NN>.json`
-
-Per-unit-of-work immutable records. **Write surface**:
-`bin/loom checkin write`. **Partitioned** per
-`projects/CONVENTIONS.md` § Category 2.
-
-Each checkin is the contract + execution + verdict for one unit
-inside a phase. Shape:
-
-```json
-{
-  "schema_version": 1,
-  "number": "<NN>",
-  "created": "<ISO 8601 timestamp>",
-  "phase": { "number": 1, "name": "..." },
-  "branch": "<branch>",
-  "unit": "<one-line unit title>",
-  "contract": {
-    "goal": "...",
-    "acceptance_criteria": ["..."],
-    "rules_applied": ["..."],
-    "disqualifiers": ["..."],
-    "inputs": ["..."]
-  },
-  "execution": {
-    "actions": ["..."],
-    "files_touched": ["..."],
-    "corrections": ["..."]
-  },
-  "scope": ["..."],
-  "changes_since_previous": "...",
-  "verdict": {
-    "result": "approved" | "flagged",
-    "reasons": ["..."]
-  },
-  "notes_for_pr": ["..."]
-}
-```
-
-**Immutability rule**: once `bin/loom checkin write` writes a
-`<NN>.json`, the file is read-only. Re-writing the same `<NN>`
-fails with `checkin-already-exists`. Updates to a unit's history
-go in subsequent checkins (e.g. a resolution checkin after a
-flagged verdict).
-
-Numbering is monotonic per branch: `01`, `02`, `03`, ... — kept
-as strings (zero-padded to 2 digits in current usage but the
-substrate stores whatever string the writer chose).
-
-### `sessions/<YYYY-MM-DD>-<letter>.json`
-
-Session handoffs — the human-readable summary of what happened in
-a working session. **Write surface**: `bin/loom session write`.
-**Partitioned** per `projects/CONVENTIONS.md` § Category 2 (the
-date + letter pair is the partition).
-
-Shape:
-
-```json
-{
-  "schema_version": 1,
-  "date": "<YYYY-MM-DD>",
-  "letter": "a" | "b" | "c" | ...,
-  "phases_touched": [1, 2],
-  "checkins_written": ["01", "02"],
-  "pr_activity": ["...free-form lines..."],
-  "what_happened": ["..."],
-  "open_threads": ["..."],
-  "notes": ["..."]
-}
-```
-
-The `letter` partitions multiple sessions on the same date (first
-session = `a`, second = `b`, etc).
 
 ### `retros/<filename>.json`
 
@@ -402,7 +439,7 @@ typically has one round-1 whiteboard at `whiteboards/<phase>-<topic-slug>.md`.
 Present only when a sub-agent invocation failed mid-flight. See
 [`AGENT-CONVENTIONS.md`](./AGENT-CONVENTIONS.md) § Recovery from
 sub-agent failures for the full shape. Lives at the project root
-alongside `manifest.json`.
+alongside `manifest.toml`.
 
 ## Slug-resolution semantics
 

@@ -30,46 +30,10 @@
       "dependencies": ["commons", "guild", "griot"]
     },
     {
-      "name": "linear-loom",
-      "source": "./plugins/linear-loom",
-      "description": "Linear-backed project substrate: linear-loom CLI + linear-loom-* skills for plans, research, tasks, retros against a Linear workspace. Personal-CLI scope (no orchestration); composes guild for panel validation.",
-      "dependencies": ["commons", "guild"]
-    },
-    {
-      "name": "jelly-guild",
-      "source": "./plugins/jelly-guild",
-      "description": "Subagent registry for /goal-shaped projects under the jelly substrate family. Three-axis decomposition (personality HOW + domain WHAT + phase WHEN): 5 personality subagents read 5 domain + 4 phase mode files at dispatch time. Paired domain rubrics expose the same content to Outcomes-callable graders. Project-scoped CLAUDE.md template carries substrate posture via @-import composition.",
-      "dependencies": ["commons"]
-    },
-    {
-      "name": "jelly-loom",
-      "source": "./plugins/jelly-loom",
-      "description": "Record-keeping + plan-lifecycle layer of the jelly substrate family. Ships the jelly CLI (research, plan, revise, adr) + a hand-rolled TOML project manifest + a workspace-level ADR log + an MCP server exposing the verbs as mcp__jelly__* tools. Tighter metadata discipline than loom: single manifest.toml per project (write-once), no events.jsonl. Parallel to loom; both coexist.",
-      "dependencies": ["commons"]
-    },
-    {
-      "name": "jelly-run",
-      "source": "./plugins/jelly-run",
-      "description": "Orchestration layer of the jelly substrate family. Operator-invoked skills (/jelly-run, /jelly-pr, /jelly-pr-feedback) that wrap /goal with operator-paired grill-gates at the PR boundary: compose a /goal preamble, auto-chain a confidence-scored draft-then-grill PR open, and run a turn-based feedback protocol on review comments (yield-to-operator). Deterministic logic lives in jelly-run's own testable CLI; the skills are thin glue.",
-      "dependencies": ["commons", "jelly-guild", "jelly-loom"]
-    },
-    {
-      "name": "jelly",
-      "source": "./plugins/jelly",
-      "description": "Meta-bundle: zero-content plugin that cascade-installs the full jelly substrate family (commons, jelly-guild, jelly-loom, jelly-run).",
-      "dependencies": ["commons", "jelly-guild", "jelly-loom", "jelly-run"]
-    },
-    {
       "name": "ev",
       "source": "./plugins/ev",
       "description": "Execution loops: ev-loop-confidence (tiered transforms), ev-loop-interactive (paired units), ev-run (router).",
       "dependencies": ["commons", "loom", "guild", "griot"]
-    },
-    {
-      "name": "ev-linear",
-      "source": "./plugins/ev-linear",
-      "description": "Execution loops targeting linear-loom-backed projects: ev-loop-confidence (tiered transforms), ev-loop-interactive (paired units), ev-run (router). Parallel to ev; substrate references target linear-loom instead of loom (DESIGN.md § 17). Griot integration excised entirely (§ 18).",
-      "dependencies": ["commons", "linear-loom", "guild"]
     },
     {
       "name": "agent-loop-full",

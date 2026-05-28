@@ -1,4 +1,0 @@
-{
-  "name": "linear-loom",
-  "description": "Linear-backed project substrate: linear-loom CLI + linear-loom-* skills for plans, research, tasks, retros against a Linear workspace. Personal-CLI scope (no orchestration); composes guild for panel validation."
-}

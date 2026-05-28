@@ -1,0 +1,62 @@
+{
+  "schema_version": 1,
+  "type": "project",
+  "created": "2026-05-28T06:30:00Z",
+  "findings": [
+    {
+      "category": "kept-well",
+      "description": "The 3-axis codegen + manifest-driven panel was the unambiguous design win — ~21 hand-baked agent files collapsed to 5 personalities × 12 domains × 4 phases compiled from panel.manifest.toml; cross-axis equivalence tests caught two latent fold bugs in U3/U4 and validated the approach empirically.",
+      "evidence": "Phase 4 (axis-wiring) + Phase 5 (codegen + panel migration #85-88) + Phase 7 U1 (cutover #97). Two latent tools-fold bugs caught by anti-drift tests rather than the single-cell equivalence anchor (see [[feedback_fold_equivalence_anchor_spans_axes]])."
+    },
+    {
+      "category": "kept-well",
+      "description": "Harvest-first / delete-last ordering of M4 — PLAN.md's 'no backwards compatibility' was deliberately paired with harvest-before-delete: M1 absorbed jelly-loom's TOML parser mechanism, M2 absorbed jelly-guild's 3-axis source, M3 absorbed named recipes, M4 deleted the 6 forks. Each harvest was provably grounded (linked from checkin) before the source disappeared.",
+      "evidence": "M1 PRs #68-71 + #80-84 + #89; M2 PRs #85-88; M3 PRs #90-96; M4 PRs #97-98. 147 fork files deleted in U2 (#98); zero remaining fork-name references in plugins/, scripts/, .claude-plugin/."
+    },
+    {
+      "category": "improvement",
+      "description": "PR cadence was carried unresolved for 7 phases — the .plan→main landing decision ('periodically vs one integration PR at project end') was logged in session-d and re-surfaced in every Phase 6/7 checkin's notes_for_pr without ever being resolved during execution. .plan is now ~64 commits ahead of main and the cadence still lives in this archive moment. Next project: name the cadence at PLAN time, not punt it.",
+      "evidence": "session-d open thread #5 'UNRESOLVED CADENCE (carried all phases)'; same thread re-stated in Phase 6 U7 notes_for_pr and Phase 7 U1/U2 notes_for_pr (5+ re-statements without resolution)."
+    },
+    {
+      "category": "improvement",
+      "description": "The 3-copy doc redundancy across plugins/{ev,guild,loom}/docs/ was discovered via drift, not by design — guild's LOOM-CONVENTIONS.md had silently diverged from ev/loom by Phase 6 U1 (still carried pr-event references commit-discipline (d) had retired). Caught only when Phase 6 U7's audit surfaced divergent md5sums. The U7 sweep re-syncs the copies, but the underlying structural problem (per-plugin shipping with no propagation mechanism) is unresolved and lives as a follow-up.",
+      "evidence": "Phase 6 U7 (#96): pre-U7 md5sums on plugins/guild/docs/LOOM-CONVENTIONS.md differed from ev/loom's (17512aa vs 9bec506); post-U7 all 3 copies = f989a7b67f3fffe960839b98039bc75b. Drift existed because the 3-copy doc-shipping model has no propagation discipline."
+    },
+    {
+      "category": "process-change",
+      "description": "Grill-me 'author a new X' options should surface prose-authoring cost up front. Phase 7 U1's generator-css-codemod decision started with operator choosing 'author implementer combination,' then pivoted to 'drop entirely' mid-execution once the cost (a new domain fragment whose template doesn't fit generator-shaped prose) became visible. Substrate convention: when a grill option says 'author a new X' (domain fragment, evaluator, recipe), include a sentence on the prose-authoring shape and how it diverges from existing siblings, so the original decision is grounded in actual cost.",
+      "evidence": "Phase 7 U1 (#97) original grill: option C 'Author implementer combination in manifest' had only '(overhead for symmetry)' as cost framing; the actual cost (new modes/domains/<d>.md fragment mismatching the (Scope/Concerns/Antipattern catalog/Good patterns/Vocabulary/Cross-domain notes) template the 12 existing fragments follow) surfaced only at execution time and forced the re-grill to 'Drop entirely.'"
+    },
+    {
+      "category": "process-change",
+      "description": "Harvest-first / delete-last as the default discipline for substrate experiments. The fork-plugin testbed model worked: M1-M3 absorbed proven mechanisms, M4 deleted the now-superfluous parallels. Codifying this as the default posture for substrate exploration prevents permanent parallel families that pay rent.",
+      "evidence": "Substrate-consolidation outcome itself: zero fork-name references in canonical substrate post-M4; the harvest decisions are documented in code-comments-turned-genericized (per [[feedback_genericize_on_deletion]]) and in M1-M3 PR bodies. The pattern generalizes."
+    },
+    {
+      "category": "follow-up",
+      "description": "3-copy doc redundancy across plugins/{ev,guild,loom}/docs/ — substrate-shape fix candidate. Concrete options: (a) canonical location + build-time copy at install; (b) symlinks in source / files at install; (c) one-plugin-owns each doc with cross-plugin references; (d) CI hash check.",
+      "evidence": "Phase 6 U7 (#96) notes_for_pr documented these four options; drift between plugins/guild/docs/LOOM-CONVENTIONS.md and ev/loom's copy was the proof-by-existence that the 3-copy model has no propagation safety."
+    },
+    {
+      "category": "follow-up",
+      "description": "loom doctor exit-code semantics — make exit non-zero on ok:false so shell consumers can use 'loom doctor || fallback' instead of grepping stdout shape. A health check that surfaces an error-severity issue but exits 0 is a slightly awkward contract.",
+      "evidence": "Phase 6 U6 (#95) checkin notes; memory [[feedback_loom_doctor_exit_zero_on_unreadable]]. The ev preflight tier-2 had to use grep -q '\"ok\":true' as a workaround."
+    },
+    {
+      "category": "follow-up",
+      "description": "Live-spawn smoke for the renamed generated guild agents — must run in a fresh post-merge session against the re-installed guild plugin. Gates on dispatching evaluator-a11y + whiteboard-react against a known-bad sample diff and confirming a real VERDICT: returns through guild parse-and-aggregate.",
+      "evidence": "plugins/guild/docs/AGENT-CODEGEN.md § Live-spawn smoke (rewritten in Phase 7 U1 #97). Recorded as a follow-up because this session continues against the stale installed copy and can't run it."
+    },
+    {
+      "category": "follow-up",
+      "description": "L332 orphan path — pr respond at plugins/loom/cli/verbs/loom/pr.ts:364 still mkdirSyncs projects/<slug>/checkins/<branch>/responses/<id>.md. The checkins/ directory tree is otherwise gone post-M1; this one path remains as the only pre-M1 vestige on disk. Future substrate unit: relocate the responses path, or fold into a manifest.toml [[responses]] section.",
+      "evidence": "Phase 6 U7 (#96) AC2 explicitly carved L332 out of the doc-sweep ('unchanged file path... per the contract'). Phase 7 U2 (#98) tracked the path unchanged."
+    },
+    {
+      "category": "follow-up",
+      "description": "PR cadence decision (.plan → main) — the .plan integration branch is ~64 commits ahead of main; only blocker to final project closure. Three reasonable shapes: (a) merge .plan→main immediately + run /loom-archive against main; (b) finish /loom-archive on .plan then one giant integration PR; (c) squash .plan into a single integration commit on main first. Operator's call.",
+      "evidence": "Carried open thread across Phase 1-7; this archive PR is the natural moment to resolve it."
+    }
+  ]
+}

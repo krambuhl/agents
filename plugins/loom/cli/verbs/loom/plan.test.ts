@@ -3,14 +3,19 @@ import {
   mkdtempSync,
   mkdirSync,
   rmSync,
+  copyFileSync,
   writeFileSync,
   readFileSync,
   existsSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
-import { planVerb, reviseVerb } from './plan.ts';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { planVerb, reviseVerb, parsePlanVerb } from './plan.ts';
 import type { GitRunner } from '../../lib/git.ts';
+import { manifestPath, readManifestFile } from '../../lib/manifest-toml.ts';
+
+const REVISE_FIXTURES = join(dirname(fileURLToPath(import.meta.url)), '..', '..', 'fixtures');
 
 let projectsRoot: string;
 let planFile: string;
@@ -93,26 +98,23 @@ test('planVerb: happy path writes both draft files + auto-adopts loom + commits'
     readFileSync(join(payload.path, 'INTERVIEW.md'), 'utf8'),
   ).toContain('# INTERVIEW');
 
-  // Loom files written by auto-adopt
-  expect(existsSync(join(payload.path, 'manifest.json'))).toBe(true);
-  expect(existsSync(join(payload.path, 'config.json'))).toBe(true);
-  expect(existsSync(join(payload.path, 'events.jsonl'))).toBe(true);
-  expect(existsSync(join(payload.path, 'checkins'))).toBe(true);
-  expect(existsSync(join(payload.path, 'sessions'))).toBe(true);
+  // Single state file written by auto-adopt (config.json / events.jsonl folded in)
+  expect(existsSync(join(payload.path, 'manifest.toml'))).toBe(true);
+  expect(existsSync(join(payload.path, 'config.json'))).toBe(false);
+  expect(existsSync(join(payload.path, 'events.jsonl'))).toBe(false);
 
   // Manifest carries title derived from slug
-  const m = JSON.parse(
-    readFileSync(join(payload.path, 'manifest.json'), 'utf8'),
-  );
-  expect(m.title).toBe('Adopt Biome');
-  expect(m.slug).toBe('2026-05-15-adopt-biome');
-  expect(m.status).toBe('active');
+  const { manifest } = readManifestFile(manifestPath(payload.path));
+  expect(manifest.meta.title).toBe('Adopt Biome');
+  expect(manifest.meta.slug).toBe('2026-05-15-adopt-biome');
+  expect(manifest.meta.status).toBe('active');
 
-  // git addAndCommit called once with all five files + a draft-plan message
+  // git addAndCommit called once with the three files (PLAN.md +
+  // INTERVIEW.md + manifest.toml) + a draft-plan message
   const addCalls = gitCalls.filter((c) => c.method === 'addAndCommit');
   expect(addCalls.length).toBe(1);
   const [, paths, message] = addCalls[0]?.args ?? [];
-  expect((paths as string[]).length).toBe(5);
+  expect((paths as string[]).length).toBe(3);
   expect(message).toContain('loom plan');
   expect(message).toContain('2026-05-15-adopt-biome');
 });
@@ -136,7 +138,7 @@ test('planVerb: --no-loom skips auto-adopt', () => {
   expect(existsSync(join(payload.path, 'PLAN.md'))).toBe(true);
   expect(existsSync(join(payload.path, 'INTERVIEW.md'))).toBe(true);
   // Loom files NOT written
-  expect(existsSync(join(payload.path, 'manifest.json'))).toBe(false);
+  expect(existsSync(join(payload.path, 'manifest.toml'))).toBe(false);
   expect(existsSync(join(payload.path, 'config.json'))).toBe(false);
   expect(existsSync(join(payload.path, 'events.jsonl'))).toBe(false);
 
@@ -147,15 +149,16 @@ test('planVerb: --no-loom skips auto-adopt', () => {
   expect((paths as string[]).length).toBe(2);
 });
 
-test('planVerb: skips loom adopt when manifest.json already exists (recovery case)', () => {
-  // Pre-create the project with PLAN.md uncommitted + manifest.json
+test('planVerb: skips loom adopt when manifest.toml already exists (recovery case)', () => {
+  // Pre-create the project with PLAN.md uncommitted + manifest.toml
   // already in place (simulating a prior successful loom adopt that
   // the user is rerunning loom plan over).
   const slug = '2026-05-15-existing';
   const dir = join(projectsRoot, slug);
   mkdirSync(dir, { recursive: true });
   writeFileSync(join(dir, 'PLAN.md'), '# old plan\n');
-  writeFileSync(join(dir, 'manifest.json'), '{"existing":"manifest"}');
+  const sentinel = '# pre-existing manifest sentinel\n';
+  writeFileSync(join(dir, 'manifest.toml'), sentinel);
 
   const result = planVerb(
     [slug, `--plan-file=${planFile}`, `--interview-file=${interviewFile}`],
@@ -164,10 +167,9 @@ test('planVerb: skips loom adopt when manifest.json already exists (recovery cas
   expect(result.exitCode).toBe(0);
   const payload = JSON.parse(result.stdout as string);
   expect(payload.loom_adopted).toBe(false);
-  // Existing manifest preserved (writeLoomSubstrate would have overwritten)
-  expect(readFileSync(join(dir, 'manifest.json'), 'utf8')).toBe(
-    '{"existing":"manifest"}',
-  );
+  // Existing manifest left untouched (the plan verb is event-free; it only
+  // checks existence to skip adopt, never rewrites the manifest).
+  expect(readFileSync(join(dir, 'manifest.toml'), 'utf8')).toBe(sentinel);
 });
 
 test('planVerb: --no-commit writes files but skips git', () => {
@@ -372,6 +374,70 @@ test('reviseVerb: happy path replaces PLAN.md, appends Revision log, commits', (
   expect((paths as string[])[0]).toContain('PLAN.md');
 });
 
+// ---------- reviseVerb dual-write (Phase 3) ----------
+
+// An adopted project: PLAN.md + a real manifest.toml (the dual-write target).
+function seedAdoptedProject(slug: string, planContent: string): string {
+  const path = makePlanReadableProject(slug);
+  writeFileSync(join(path, 'PLAN.md'), planContent);
+  copyFileSync(join(REVISE_FIXTURES, 'manifest-basic.toml'), join(path, 'manifest.toml'));
+  return path;
+}
+
+function countRevisionLogLines(planText: string): number {
+  return (planText.match(/^- \d{4}-\d{2}-\d{2} — /gm) ?? []).length;
+}
+
+test('reviseVerb (adopted): dual-writes one [[revisions]] entry + one Revision log line', () => {
+  const dir = seedAdoptedProject('2026-05-15-adopt-biome', '# PLAN\n\nOriginal.\n');
+  const result = reviseVerb(
+    ['2026-05-15-adopt-biome', `--revision-file=${revisionFile()}`, '--rationale=narrow scope', '--no-commit'],
+    baseCtx(),
+  );
+  expect(result.exitCode).toBe(0);
+
+  const { manifest } = readManifestFile(manifestPath(dir));
+  expect(manifest.revisions).toHaveLength(1);
+  expect(manifest.revisions[0]).toMatchObject({ seq: 1, target: 'PLAN.md' });
+  expect(typeof manifest.revisions[0]?.timestamp).toBe('string');
+
+  const logLines = countRevisionLogLines(readFileSync(join(dir, 'PLAN.md'), 'utf8'));
+  expect(logLines).toBe(1);
+  // No drift: exactly one machine entry and one human log line.
+  expect(manifest.revisions.length).toBe(logLines);
+});
+
+test('reviseVerb (adopted): [[revisions]] is the append-only ledger; seq increments across revises', () => {
+  // The manifest is the durable machine ledger (append-only); PLAN.md is
+  // REPLACED by each revision file, so its ## Revision log only accumulates
+  // when the operator carries it forward. seq is therefore sourced from the
+  // manifest, not from counting PLAN.md lines.
+  const dir = seedAdoptedProject('2026-05-15-adopt-biome', '# PLAN\n\nOriginal.\n');
+  reviseVerb(['2026-05-15-adopt-biome', `--revision-file=${revisionFile()}`, '--rationale=first', '--no-commit'], baseCtx());
+  reviseVerb(['2026-05-15-adopt-biome', `--revision-file=${revisionFile()}`, '--rationale=second', '--no-commit'], baseCtx());
+
+  const { manifest } = readManifestFile(manifestPath(dir));
+  expect(manifest.revisions.map((r) => r.seq)).toEqual([1, 2]);
+  // Each revise wrote exactly one log line into the PLAN.md it produced
+  // (the revision file here carries no prior log, so the latest PLAN.md
+  // shows the most recent revision's line — per-operation no-drift).
+  expect(countRevisionLogLines(readFileSync(join(dir, 'PLAN.md'), 'utf8'))).toBe(1);
+});
+
+test('reviseVerb (plan-only): writes the Revision log line but no manifest [[revisions]] (graceful)', () => {
+  // seedTroutProjectWithPlan seeds PLAN.md only (no manifest.toml) — a
+  // plan-only, un-adopted project.
+  const dir = seedTroutProjectWithPlan('2026-05-15-adopt-biome', '# PLAN\n\nOriginal.\n');
+  const result = reviseVerb(
+    ['2026-05-15-adopt-biome', `--revision-file=${revisionFile()}`, '--rationale=x', '--no-commit'],
+    baseCtx(),
+  );
+  expect(result.exitCode).toBe(0);
+  expect(readFileSync(join(dir, 'PLAN.md'), 'utf8')).toContain('## Revision log');
+  // Graceful: revise-plan does not create a manifest for an un-adopted project.
+  expect(existsSync(manifestPath(dir))).toBe(false);
+});
+
 test('reviseVerb: --no-commit writes file but skips git', () => {
   seedTroutProjectWithPlan(
     '2026-05-15-adopt-biome',
@@ -501,4 +567,82 @@ test('reviseVerb: missing --rationale throws missing-args', () => {
   );
   expect(result.exitCode).toBe(1);
   expect(JSON.parse(result.stderr as string).error).toBe('missing-args');
+});
+
+// ---------- parse-plan ----------
+
+const RICH_PLAN = [
+  '# Test Plan',
+  '',
+  '## Phases',
+  '',
+  '### M1 — Milestone one',
+  '',
+  '#### Phase 1 — Alpha',
+  '',
+  '**Goal**: Do alpha.',
+  '',
+  '**Exit**:',
+  '- a1',
+  '',
+  '**Depends on**: nothing.',
+  '',
+  '#### Phase 2 — Beta',
+  '',
+  '**Goal**: Do beta.',
+  '',
+  '**Exit**:',
+  '- b1',
+  '',
+  '**Depends on**: Phase 1.',
+  '',
+].join('\n');
+
+function seedPlanProject(slug: string, planText: string): void {
+  const path = join(projectsRoot, slug);
+  mkdirSync(path, { recursive: true });
+  writeFileSync(join(path, 'PLAN.md'), planText);
+}
+
+test('parsePlanVerb: emits the parsed plan + diagnostics as JSON', () => {
+  seedPlanProject('2026-05-15-parse-target', RICH_PLAN);
+
+  const result = parsePlanVerb(['2026-05-15-parse-target'], baseCtx());
+  expect(result.exitCode).toBe(0);
+
+  const payload = JSON.parse(result.stdout as string);
+  expect(payload.plan.phases.map((p: { id: string }) => p.id)).toEqual(['1', '2']);
+  expect(payload.plan.phasesById['2'].dependsOn).toEqual(['1']);
+  expect(payload.plan.milestones[0].id).toBe('M1');
+  expect(Array.isArray(payload.diagnostics)).toBe(true);
+});
+
+test('parsePlanVerb: --pretty produces indented JSON', () => {
+  seedPlanProject('2026-05-15-parse-pretty', RICH_PLAN);
+
+  const result = parsePlanVerb(['2026-05-15-parse-pretty', '--pretty'], baseCtx());
+  expect(result.exitCode).toBe(0);
+  expect(result.stdout as string).toContain('\n  ');
+});
+
+test('parsePlanVerb: missing slug -> missing-args', () => {
+  const result = parsePlanVerb([], baseCtx());
+  expect(result.exitCode).toBe(1);
+  expect(JSON.parse(result.stderr as string).error).toBe('missing-args');
+});
+
+test('parsePlanVerb: unknown slug -> project-not-found', () => {
+  const result = parsePlanVerb(['2026-01-01-nope'], baseCtx());
+  expect(result.exitCode).toBe(1);
+  expect(JSON.parse(result.stderr as string).error).toBe('project-not-found');
+});
+
+test('parsePlanVerb: a dir without PLAN.md is not a plan project -> project-not-found', () => {
+  // resolveProjectByPlan only resolves PLAN-bearing projects, so a
+  // PLAN-less directory never reaches the (race-guard) plan-not-found
+  // branch — it is simply not a plan project.
+  mkdirSync(join(projectsRoot, '2026-05-15-no-plan'), { recursive: true });
+  const result = parsePlanVerb(['2026-05-15-no-plan'], baseCtx());
+  expect(result.exitCode).toBe(1);
+  expect(JSON.parse(result.stderr as string).error).toBe('project-not-found');
 });

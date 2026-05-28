@@ -4,18 +4,26 @@ import {
   existsSync,
   mkdirSync,
   readFileSync,
+  renameSync,
   writeFileSync,
 } from 'node:fs';
 import { join } from 'node:path';
 import { LoomError } from '../../lib/errors.ts';
 import { createSlug } from '../../lib/project.ts';
 import { resolveProjectByPlan } from '../../lib/project.ts';
+import { parsePlan } from '../../lib/plan.ts';
 import { type GitRunner, defaultGitRunner } from '../../lib/git.ts';
 import {
   writeLoomSubstrate,
   synthesizeManifestInit,
   synthesizeConfig,
 } from '../../lib/adopt.ts';
+import {
+  appendRevision,
+  manifestPath as manifestPathFor,
+  readManifestFile,
+  writeManifest,
+} from '../../lib/manifest-toml.ts';
 
 // Shared context for the plan/revise verbs. Tests inject
 // `projectsRoot` (a temp dir), `today` (deterministic slug
@@ -160,13 +168,12 @@ export function planVerb(
     );
   }
 
-  // Auto-adopt loom substrate (manifest.json, config.json, events.jsonl,
-  // checkins/, sessions/) by default. Skipped when --no-loom is passed
-  // or when manifest.json already exists (recovery case where the plan
-  // verb is re-run and loom is already set up).
+  // Auto-adopt loom substrate (the single manifest.toml) by default.
+  // Skipped when --no-loom is passed or when manifest.toml already exists
+  // (recovery case where the plan verb is re-run and loom is already set up).
   const filesToCommit = [planMdPath, interviewMdPath];
-  const manifestPath = join(targetDir, 'manifest.json');
-  const adoptLoom = !noLoom && !existsSync(manifestPath);
+  const manifestFilePath = manifestPathFor(targetDir);
+  const adoptLoom = !noLoom && !existsSync(manifestFilePath);
   if (adoptLoom) {
     try {
       writeLoomSubstrate({
@@ -175,11 +182,7 @@ export function planVerb(
         config: synthesizeConfig(),
         manifestInit: synthesizeManifestInit(slug, todayString(ctx)),
       });
-      filesToCommit.push(
-        manifestPath,
-        join(targetDir, 'config.json'),
-        join(targetDir, 'events.jsonl'),
-      );
+      filesToCommit.push(manifestFilePath);
     } catch (err: unknown) {
       return errToResult(
         new LoomError(
@@ -316,8 +319,37 @@ export function reviseVerb(
   const date = todayString(ctx);
   const composed = appendRevisionLogEntry(revisionContent, date, rationale);
 
+  // Manifest-first dual-write. When the project is loom-adopted, append the
+  // machine-side [[revisions]] entry to manifest.toml FIRST — writeManifest
+  // verifies-before-rename and writes atomically, so a failure here leaves
+  // PLAN.md untouched (no drift). A plan-only project (no manifest.toml, e.g.
+  // pre-adoption) gets the PLAN.md ## Revision log line only. PLAN.md is then
+  // written via temp+rename so its commit is near-atomic too.
+  const manifestFilePath = manifestPathFor(targetDir);
+  if (existsSync(manifestFilePath)) {
+    try {
+      const { manifest, token } = readManifestFile(manifestFilePath);
+      const next = appendRevision(manifest, {
+        timestamp: new Date().toISOString(),
+        target: 'PLAN.md',
+        seq: manifest.revisions.length + 1,
+      });
+      writeManifest(manifestFilePath, next, { expect: token });
+    } catch (err: unknown) {
+      if (err instanceof LoomError) return errToResult(err);
+      return errToResult(
+        new LoomError(
+          'revise-manifest-write-failed',
+          `writing manifest.toml [[revisions]] failed: ${(err as Error).message}`,
+        ),
+      );
+    }
+  }
+
   try {
-    writeFileSync(planMdPath, composed);
+    const planTmp = `${planMdPath}.tmp`;
+    writeFileSync(planTmp, composed);
+    renameSync(planTmp, planMdPath);
   } catch (err: unknown) {
     return errToResult(
       new LoomError(
@@ -357,13 +389,71 @@ export function reviseVerb(
   };
 }
 
+const PARSE_PLAN_OPTIONS = {
+  pretty: { type: 'boolean' as const },
+};
+
+// `loom parse-plan <slug>` — read the project's PLAN.md and emit the
+// parsed tree + diagnostics as JSON. The bridge skills (ev-loop,
+// ev-run) shell to instead of re-parsing PLAN.md prose. A thin wrapper:
+// it owns the file read (mirroring readManifest's path/text split) and
+// delegates all parsing to the pure parsePlan() lib.
+export function parsePlanVerb(
+  rest: string[],
+  ctx: PlanCliContext,
+): DispatchResult {
+  const { values, positionals } = parseArgs({
+    args: rest,
+    options: PARSE_PLAN_OPTIONS,
+    allowPositionals: true,
+    strict: false,
+  });
+  const slug = positionals[0];
+  const pretty = values.pretty === true;
+
+  if (slug === undefined) {
+    return errToResult(
+      new LoomError(
+        'missing-args',
+        'parse-plan requires a <slug> positional argument',
+      ),
+    );
+  }
+
+  try {
+    const projectPath = resolveProjectByPlan(slug, ctx.projectsRoot);
+    const planPath = join(projectPath, 'PLAN.md');
+    let text: string;
+    try {
+      text = readFileSync(planPath, 'utf8');
+    } catch (err: unknown) {
+      const e = err as { code?: string };
+      if (e.code === 'ENOENT') {
+        throw new LoomError('plan-not-found', `PLAN.md not found at ${planPath}`);
+      }
+      throw new LoomError(
+        'plan-unreadable',
+        `PLAN.md unreadable at ${planPath}: ${(err as Error).message}`,
+      );
+    }
+    const result = parsePlan(text);
+    return { stdout: emit(result, pretty), exitCode: 0 };
+  } catch (err) {
+    return errToResult(err);
+  }
+}
+
 // Verbless-namespace registries for cli/loom.ts. Each loom top-level
-// verb (`loom plan`, `loom revise-plan`) is wired as its own
-// single-handler namespace — same pattern doctor uses.
+// verb (`loom plan`, `loom revise-plan`, `loom parse-plan`) is wired as
+// its own single-handler namespace — same pattern doctor uses.
 export const PLAN_VERBS = {
   plan: planVerb,
 };
 
 export const REVISE_PLAN_VERBS = {
   'revise-plan': reviseVerb,
+};
+
+export const PARSE_PLAN_VERBS = {
+  'parse-plan': parsePlanVerb,
 };

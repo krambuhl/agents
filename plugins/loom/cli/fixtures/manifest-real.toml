@@ -1,0 +1,74 @@
+# Hand-authored real-artifact regression fixture for readManifest.
+#
+# Mirrors this project's (substrate-consolidation) actual state shape —
+# NOT a synthetic minimal sample. It carries the cases the testing-strategy
+# whiteboard demanded: a fully-populated [[checkins]] contract whose `goal`
+# holds the torture characters (# / embedded quote / */ sequence / commas),
+# an [[events]] with EMPTY detail (project-initialized) and one with
+# POPULATED detail (pr-opened), a phase with a nested `pr` inline table, and
+# a phase that omits its optional fields. There is no real manifest.toml
+# corpus during Phase 2, so this hand-authored genuine artifact is the
+# regression target until the glob-floor test lands post-migration.
+
+[meta]
+schema_version = 1
+title = "Substrate Consolidation"
+slug = "2026-05-26-substrate-consolidation"
+started = "2026-05-26"
+status = "active"
+current_branch = "ev-agent.substrate-consolidation.manifest-toml-read"
+latest_checkin = "06"
+strategy = "interactive"
+
+[config]
+base_branch = "main"
+reviewers = []
+labels = []
+verification = []
+worker_bindings = { default = "ev-loop-interactive" }
+
+[[phases]]
+number = 1
+name = "Shared plan-parser lib"
+status = "completed"
+branch = "ev-agent.substrate-consolidation.consumer-migration"
+pr = { number = 71, url = "https://github.com/krambuhl/agents/pull/71", state = "merged" }
+
+[[phases]]
+number = 2
+name = "Single-file TOML state"
+status = "in-progress"
+branch = "ev-agent.substrate-consolidation.manifest-toml-read"
+
+[[events]]
+at = "2026-05-26T22:17:48.789Z"
+event = "project-initialized"
+detail = {}
+
+[[events]]
+at = "2026-05-27T03:43:07.309Z"
+event = "pr-opened"
+detail = { pr = 72, url = "https://github.com/krambuhl/agents/pull/72" }
+
+[[checkins]]
+number = "05"
+created = "2026-05-27T02:50:00Z"
+branch = "ev-agent.substrate-consolidation.toml-parser"
+unit = "Generic hand-rolled TOML parser + serializer"
+changes_since_previous = "First unit of Phase 2. Adds the generic TOML value-tree layer."
+phase = { number = 2, name = "Single-file TOML state" }
+contract = { goal = "torture: a # hash, a \"quoted\" phrase, a */ close sequence, and commas, all in one goal", acceptance_criteria = ["parseToml + stringifyToml exported, pure, generic", "round-trip: parse(stringify(t)) deep-equals t"], rules_applied = ["harvest mechanism, not coupling"], disqualifiers = ["parameter properties or */-in-JSDoc"], inputs = ["plugins/jelly-loom/cli/lib/manifest.ts", "plugins/loom/cli/lib/types.ts"] }
+execution = { actions = ["wrote toml.ts", "wrote toml.smoke.ts + toml.test.ts"], files_touched = ["plugins/loom/cli/lib/toml.ts"], corrections = [] }
+verdict = { result = "approved", reasons = [] }
+scope = ["plugins/loom/cli/lib/toml.ts"]
+notes_for_pr = ["Panel = contract-fit + test-unit + naming", "Round-trip invariant rests on no header-vs-inline provenance in the tree"]
+
+[[sessions]]
+date = "2026-05-27"
+letter = "a"
+phases_touched = [1, 2]
+checkins_written = ["01", "02", "03", "04"]
+pr_activity = ["#68 merged into .plan", "#71 merged (closes Phase 1)"]
+what_happened = ["Phase 1 completed: 4 units, 4 PRs"]
+open_threads = ["build U1 — generic TOML parser/serializer"]
+notes = ["APPROVED U1 CONTRACT carried in handoff"]

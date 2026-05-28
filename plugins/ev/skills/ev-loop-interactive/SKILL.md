@@ -39,7 +39,8 @@ calls the `Agent` tool directly.
 
 ## Preflight
 
-Before doing anything else, verify the substrate CLIs are on PATH.
+**Tier 1 — presence.** Before doing anything else, verify the
+substrate CLIs are on PATH.
 The marketplace `dependencies` cascade handles install-time + enable-
 time correctness; this skill-body check catches the runtime case
 where a user disabled a dep plugin mid-session.
@@ -52,6 +53,31 @@ Bash("command -v loom guild griot >/dev/null 2>&1 || { echo 'ev-loop-interactive
 
 If exit code is non-zero, stop and surface the message to the
 operator verbatim — do not proceed with any other step.
+
+**Tier 2 — format-skew.** Tier 1 confirms the binaries are *present*;
+it does not confirm the *installed* `loom` is new enough to read this
+project's `manifest.toml`. A binary that predates a state-format
+cutover answers `command -v` yes while silently failing every read —
+the false-green this substrate has lived inside. Probe readability
+with `loom doctor`, where `<slug>` is the `<project-slug-or-path>`
+argument:
+
+```
+Bash("loom doctor <slug> 2>/dev/null | grep -q '\"ok\":true' || echo 'installed loom cannot read this project manifest (format/version skew) — fall back to repo-local node plugins/loom/cli/loom.ts (and node plugins/guild/cli/guild.ts) for all loom/guild operations this session' >&2")
+```
+
+`loom doctor` reports an unreadable manifest as an `ok:false` issue
+but still exits 0, so the probe keys on `"ok":true` in stdout, not
+the exit code — this catches both the stale-CLI `project-not-found`
+(non-zero exit, empty stdout) and the wrong-schema
+`manifest-unreadable` (exit 0, `ok:false`) cases in one check.
+
+Tier 2 is **advisory, not blocking**: on failure, surface the message
+and switch to the repo-local `node` entries for substrate ops — do
+NOT stop. A false-positive hard stop would train operators to bypass
+preflight, making the gate decorative. Tier 2 probes loom's project
+manifest only; guild's panel manifest and codegen freshness are a
+separate gate, out of scope here.
 
 ## Substrate compositions
 
@@ -74,14 +100,18 @@ verb shapes and event vocabulary, see `docs/LOOM-CONVENTIONS.md`.
 
 ## Ordering
 
-Read the phase entry in PLAN.md to determine ordering:
+PLAN.md does not enumerate a phase's deliverables — it states the
+phase's `goal` and `exitCriteria`, which the loop decomposes into
+deliverables at runtime (see Step 1). The loop owns ordering:
 
-- **Sequential** — deliverables are numbered and must run in order.
-  The loop picks the next one automatically.
-- **Free** — deliverables are a set. The loop presents them and asks
-  the user to pick.
+- **Sequential** — deliverables form a dependency chain (each builds on
+  the last). The loop runs them in order. This is the default when the
+  phase's exit criteria describe a progression.
+- **Free** — deliverables are independent. The loop presents the
+  decomposed set and asks the user to pick the next one.
 
-If PLAN.md doesn't specify, default to **free** and ask.
+When the decomposition is ambiguous between the two, default to
+**free** and ask.
 
 ## Phase-level process
 
@@ -92,25 +122,41 @@ Every phase runs a multi-engineer design pass **once before Step 1**
 reference material for every unit in the phase (cited in each unit's
 contract `Inputs:` line). This step is **always-on**: the loop
 invokes `/guild-whiteboard` at phase start regardless of explicit
-configuration; an optional PLAN.md block overrides defaults.
+configuration; an optional `**Whiteboard**:` override from the parsed
+plan overrides defaults.
 
-**Default behavior** (no `**Whiteboard**:` block in PLAN.md):
+**Default behavior** (no `**Whiteboard**:` override in the parsed plan):
 - `engineers` = all currently registered `whiteboard-*` agents,
   resolved via glob of `.claude/agents/whiteboard-*.md`.
 - `topic` = the phase name (e.g. "Whiteboard mechanism + engineers"
   for Phase 3).
 - `rounds` = 1.
 
-**Override** — optional PLAN.md block, placed immediately under the
-phase's prose paragraph:
+**Override** — read the phase's `whiteboard` field from
+`loom parse-plan <slug>` (a phase-level `**Whiteboard**:` block wins
+over the plan-level one). `loom parse-plan` hands off the raw block
+string as the single source; do not re-grep PLAN.md. This loop parses
+the semicolon-delimited DSL:
 
 ```
-**Whiteboard**: engineers=<comma-separated names>; topic=<one-line topic>; rounds=<N>
+engineers=<comma-separated names>; recipe=<name>; topic=<one-line topic>; rounds=<N>
 ```
 
 Any field in the block overrides the corresponding default. Partial
 blocks are allowed (e.g. only `topic=` overrides the topic; engineers
 and rounds keep their defaults).
+
+**Recipe citation** — `recipe=<name>` names a panel recipe instead of
+inlining its members: the loop resolves it via `guild recipe <name>`
+(which emits `{name, members}`) and uses `members` as the engineer
+list. Prefer this for a known multi-domain panel —
+`recipe=design-systems` rather than spelling out
+`engineers=whiteboard-composition,whiteboard-abstraction,...`.
+`recipe=` and `engineers=` are mutually exclusive; if both appear, stop
+and surface a contract error. `guild recipe` fails loud on an unknown
+name (`recipe-not-found`, non-zero exit) — surface it and stop, never
+fall back to the glob or an empty panel (a mis-cited recipe must not
+silently degrade to a thin whiteboard).
 
 **Whiteboard artifact path**:
 `projects/<slug>/whiteboards/<phase-number>-<topic-slug>.md`. Create
@@ -154,11 +200,18 @@ Claude Code process start; `/clear` is NOT a session boundary.
 
 ### Step 1. Enumerate deliverables
 
-Parse the phase's deliverables from PLAN.md. Each deliverable becomes
-one unit. If the phase names 5 deliverables, you expect 5 checkins.
+Run `Bash("loom parse-plan <slug>")` and read this phase from the parsed
+plan (`plan.phasesById[<phase-number>]`). PLAN.md does NOT enumerate a
+phase's deliverables — it gives the phase's `goal` and `exitCriteria`.
+The loop decomposes those into deliverables at runtime: each deliverable
+is one conceptual change that moves the phase toward its exit criteria
+(the count is the loop's judgment, not a number read from PLAN.md). Do
+not parse PLAN.md prose for a deliverable list — `loom parse-plan` is
+the single source for the phase's structure.
 
-Show the list to the user with status markers (done, in-progress, not
-started) pulled from existing checkins on this branch.
+Show the decomposed list to the user with status markers (done,
+in-progress, not started) pulled from existing checkins on this branch,
+and confirm the decomposition before Step 2.
 
 ### Step 2. Unit loop
 

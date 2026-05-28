@@ -11,7 +11,11 @@ import { SESSION_VERBS } from './verbs/loom/session.ts';
 import { RETRO_VERBS } from './verbs/loom/retro.ts';
 import { DOCTOR_VERBS } from './verbs/loom/doctor.ts';
 import { PR_VERBS } from './verbs/loom/pr.ts';
-import { PLAN_VERBS, REVISE_PLAN_VERBS } from './verbs/loom/plan.ts';
+import {
+  PLAN_VERBS,
+  REVISE_PLAN_VERBS,
+  PARSE_PLAN_VERBS,
+} from './verbs/loom/plan.ts';
 import { RESEARCH_VERBS } from './verbs/loom/research.ts';
 import type { CliContext, DispatchResult } from './verbs/loom/project.ts';
 
@@ -32,6 +36,7 @@ export const NAMESPACES: Record<string, string> = {
   'revise-plan':
     'Replace PLAN.md with a revision and append to ## Revision log',
   research: 'Create a new research dossier (writes RESEARCH.md + RESEARCH-NOTES.md)',
+  'parse-plan': 'Parse a project PLAN.md into a typed tree + diagnostics (JSON)',
 };
 
 // Namespaces with wired-up verb handlers as of this unit. Recognized
@@ -49,6 +54,7 @@ const VERBS_BY_NAMESPACE: Record<string, Record<string, VerbHandler>> = {
   plan: PLAN_VERBS,
   'revise-plan': REVISE_PLAN_VERBS,
   research: RESEARCH_VERBS,
+  'parse-plan': PARSE_PLAN_VERBS,
 };
 
 // Verbless namespaces are single-handler namespaces (per
@@ -61,6 +67,7 @@ const VERBLESS_NAMESPACES: ReadonlySet<string> = new Set([
   'plan',
   'revise-plan',
   'research',
+  'parse-plan',
 ]);
 
 // ---------- Pure helpers (exported for direct unit tests) ----------

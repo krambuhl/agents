@@ -18,14 +18,9 @@ export type PhaseStatus =
   | 'blocked'
   | 'completed';
 
-export type PhasePRState = 'open' | 'merged' | 'closed';
-
-export type PhasePR = {
-  number: number;
-  url: string;
-  state: PhasePRState;
-};
-
+// No `pr` field on a phase: PR open/merged state is derived on demand from
+// gh via `loom pr discover` (commit-discipline option (d)), never stored in
+// the manifest. Storing it would reintroduce the staleness deriving solved.
 export type ManifestPhase = {
   number: number;
   name: string;
@@ -33,7 +28,6 @@ export type ManifestPhase = {
   branch?: string;
   latest_checkin?: string;
   blocked_reason?: string;
-  pr?: PhasePR;
 };
 
 export type Manifest = {
@@ -86,14 +80,10 @@ export type CheckinCreatedEvent = EventBase<
   { number: string; branch: string }
 >;
 
-export type PrOpenedEvent = EventBase<
-  'pr-opened',
-  { pr: number; url: string }
->;
-
-export type PrUpdatedEvent = EventBase<'pr-updated', { pr: number }>;
-
-export type PrMergedEvent = EventBase<'pr-merged', { pr: number }>;
+// PR open/merged/updated state is derived on demand via `loom pr discover`
+// (gh pr view + the checkin marker), not recorded as events — so there are
+// no pr-* event types. Fossil pr-* events already in [[events]] still parse
+// (reconstructEvent casts the event-name string to EventName leniently).
 
 export type SessionSavedEvent = EventBase<
   'session-saved',
@@ -365,9 +355,6 @@ export type Event =
   | PhaseBlockedEvent
   | PhaseUnblockedEvent
   | CheckinCreatedEvent
-  | PrOpenedEvent
-  | PrUpdatedEvent
-  | PrMergedEvent
   | SessionSavedEvent
   | RetroWrittenEvent
   | ArchivedEvent
@@ -472,6 +459,55 @@ export type Session = {
   notes: string[];
 };
 
+// ---------- Consolidated manifest.toml (Phase 2) ----------
+//
+// Phase 2 collapses manifest.json + config.json + events.jsonl +
+// checkins/ + sessions/ into one sectioned manifest.toml. ManifestToml is
+// the typed view of that file: a [meta] table of scalars, the [config]
+// table, and the [[phases]] / [[events]] / [[checkins]] / [[sessions]]
+// array-of-table sections. It COMPOSES the existing per-record types
+// rather than redefining them — the records did not change shape, only
+// their storage location. The legacy single-file Manifest/Config types
+// above stay in place until the U5 dogfood migration removes the old read
+// paths; this is purely additive.
+
+// The scalar identity + mutable-status fields that live in [meta] —
+// exactly today's Manifest fields minus `phases` (which becomes the
+// [[phases]] section). schema_version lives here once for the whole file;
+// [config] does not repeat it (readManifest synthesizes
+// Config.schema_version from meta).
+export type ManifestMeta = {
+  schema_version: SchemaVersion;
+  title: string;
+  slug: string;
+  started: string;
+  status: ManifestStatus;
+  current_branch: string | null;
+  latest_checkin: string | null;
+  strategy: string;
+};
+
+// A plan revision's machine record (Phase 3). The human rationale lives in
+// PLAN.md's `## Revision log`; this is its manifest-side counterpart, written
+// in the same revise-plan operation so the two never drift. `seq` is the
+// 1-based revision number; `target` is the revised artifact (currently always
+// "PLAN.md", kept as a field so future revisions can target other artifacts).
+export type Revision = {
+  timestamp: string;
+  target: string;
+  seq: number;
+};
+
+export type ManifestToml = {
+  meta: ManifestMeta;
+  config: Config;
+  phases: ManifestPhase[];
+  events: Event[];
+  checkins: Checkin[];
+  sessions: Session[];
+  revisions: Revision[];
+};
+
 // ---------- Retro ----------
 
 export type RetroFindingCategory =
@@ -505,3 +541,77 @@ export type ProjectRetro = {
 export type Retro = SessionRetro | ProjectRetro;
 
 export type RetroType = Retro['type'];
+
+// ---------- Plan parsing (Phase 1: shared plan-parser lib) ----------
+//
+// parsePlan() reads PLAN.md text and returns this typed tree plus a
+// list of diagnostics. The tree is a flat, level-tolerant view of the
+// plan's phases; milestones are an optional grouping annotation over
+// those phases, never a mandatory nesting layer (a plan with no
+// milestone headers still returns a full phase list). PLAN.md is the
+// human-authored source; this parser is tolerant-read-only and is NOT
+// the authority on phase existence once manifest.toml ships (Phase 2).
+
+export type DiagnosticSeverity = 'structural' | 'cosmetic';
+
+// A diagnostic the parser surfaces instead of throwing. `structural`
+// diagnostics mean the tree is missing something a consumer relies on
+// (no phases, a dependency pointing at a nonexistent phase); `cosmetic`
+// diagnostics mean an optional section was absent. Callers decide
+// whether to treat a given code as fatal. `code` reuses the LoomError
+// kebab-case vocabulary so verbs classify diagnostics the same way they
+// classify thrown errors. `line` is 1-based (0 when not line-anchored).
+export type Diagnostic = {
+  code: string;
+  line: number;
+  severity: DiagnosticSeverity;
+  message: string;
+};
+
+export type PlanMilestoneRef = {
+  id: string;
+  name: string;
+};
+
+// A phase as parsed from PLAN.md. `id` is the literal heading id kept
+// as a string ("1", "1.1") — never coerced to a number, because dotted
+// ids ("1.1"/"1.2") would collide under integer coercion.
+// `exitCriteria` are the raw `**Exit**:`/`**Output**:` bullet strings,
+// opaque and not sub-parsed (consumers decompose units from them at
+// runtime). `dependsOn` is resolved to phase-id strings with ranges
+// expanded. `whiteboard` carries the raw `**Whiteboard**:` override
+// string when present at this phase (overrides the plan-level default).
+export type ParsedPhase = {
+  id: string;
+  name: string;
+  milestone?: PlanMilestoneRef;
+  goal?: string;
+  exitCriteria: string[];
+  dependsOn: string[];
+  whiteboard?: string;
+};
+
+export type Milestone = {
+  id: string;
+  name: string;
+  phases: ParsedPhase[];
+};
+
+// `phases` is the canonical flat list in document order; `phasesById`
+// indexes it for the dependency resolver and for ev-run's actionability
+// math (lookup by id, not by walking the milestone nesting). `milestones`
+// is present only when the plan has milestone headers. `loopStrategy`
+// and `whiteboard` are plan-level raw strings, captured but not
+// sub-parsed.
+export type ParsedPlan = {
+  phases: ParsedPhase[];
+  phasesById: Record<string, ParsedPhase>;
+  milestones?: Milestone[];
+  loopStrategy?: string;
+  whiteboard?: string;
+};
+
+export type ParsePlanResult = {
+  plan: ParsedPlan;
+  diagnostics: Diagnostic[];
+};

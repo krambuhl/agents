@@ -33,7 +33,8 @@ mean `Bash("loom project read <args>")`.
 
 ## Preflight
 
-Before doing anything else, verify the substrate CLIs are on PATH.
+**Tier 1 — presence.** Before doing anything else, verify the
+substrate CLIs are on PATH.
 The marketplace `dependencies` cascade handles install-time + enable-
 time correctness; this skill-body check catches the runtime case
 where a user disabled a dep plugin mid-session.
@@ -46,6 +47,31 @@ Bash("command -v loom guild griot >/dev/null 2>&1 || { echo 'ev-run requires loo
 
 If exit code is non-zero, stop and surface the message to the
 operator verbatim — do not dispatch to any loop.
+
+**Tier 2 — format-skew.** Tier 1 confirms the binaries are *present*;
+it does not confirm the *installed* `loom` is new enough to read this
+project's `manifest.toml`. A binary that predates a state-format
+cutover answers `command -v` yes while silently failing every read —
+the false-green this substrate has lived inside. The slug isn't known
+until § 0 parses arguments, so run this probe as the first action
+after the slug resolves (before § 1 Orient's `loom project read`):
+
+```
+Bash("loom doctor <slug> 2>/dev/null | grep -q '\"ok\":true' || echo 'installed loom cannot read this project manifest (format/version skew) — fall back to repo-local node plugins/loom/cli/loom.ts (and node plugins/guild/cli/guild.ts) for all loom/guild operations this session' >&2")
+```
+
+`loom doctor` reports an unreadable manifest as an `ok:false` issue
+but still exits 0, so the probe keys on `"ok":true` in stdout, not
+the exit code — this catches both the stale-CLI `project-not-found`
+(non-zero exit, empty stdout) and the wrong-schema
+`manifest-unreadable` (exit 0, `ok:false`) cases in one check.
+
+Tier 2 is **advisory, not blocking**: on failure, surface the message
+and switch to the repo-local `node` entries for substrate ops — do
+NOT stop. A false-positive hard stop would train operators to bypass
+preflight, making the gate decorative. Tier 2 probes loom's project
+manifest only; guild's panel manifest and codegen freshness are a
+separate gate, out of scope here.
 
 ## Process
 
@@ -100,29 +126,36 @@ Take in the manifest, recent events, and the latest session handoff.
 This tells you:
 - Current phase status (from `phases[].status`)
 - Latest checkin (from manifest's `latest_checkin`)
-- Open PRs (from `pr-opened` / `pr-updated` / `pr-merged` events; the
-  latest event for each phase's branch is authoritative)
+- Open/merged PR state — derived on demand via `loom pr discover
+  <slug> --branch=<phase-branch>`, which reports the PR `number`, `url`,
+  and gh merge `state` (`OPEN` / `MERGED` / `CLOSED`) plus the
+  checkin-marker reconciliation. No `pr-*` events are read; PR state
+  lives in `gh`, not the manifest.
 - Suggested next action (inferable from phase statuses)
 - Open threads from the last session handoff (read it via
   `bin/loom session read <slug> --filename=<latest>`)
 
-**PR-merged reconciliation**: if a PR was merged between sessions but
-no `pr-merged` event has been recorded, the router should append one
-via the upstream loop's checkpoint flow rather than auto-emit. (Loom
-emits `pr-merged` only from explicit reconciliation, not a CLI verb
-today — see the open question in projects/2026-05-15-trout-sunset/PLAN.md
-about whether `bin/loom pr reconcile` should ship.) For now, surface
-suspected drift as a one-line warning and let the user decide.
+**PR state is derived, not reconciled**: because open/merged PR state
+comes from `loom pr discover` (live `gh` state), a PR merged between
+sessions needs no reconciliation event — `discover` reports
+`state: MERGED` directly. The router reads that to decide the next
+action (e.g. a phase-branch PR that is `MERGED` with all its checkins
+covered means the phase can advance and the next unit's branch can cut
+off a freshly pulled base). This is why the `pr-opened` / `pr-merged`
+event vocabulary was retired: their reconcile-time timestamps were
+fiction, and `gh` is the actual source of truth.
 
-**Griot write on drift detection**: alongside the drift warning,
-write a session-note via § Capture finding documenting the drift
-shape (manifest-says-X vs git-says-Y). Substrate-wide signal
-worth keeping: "what kinds of drift happen in practice." The
-classification gap is the same as other Phase-7-wired captures
-(no precise classification today for "manifest-vs-git drift
-shape"); intent recorded; the event-stream + the warning surface
-are the substrate trace until the verb supports a finer
-classification.
+**Griot write on drift detection**: the remaining drift class is the
+manifest's phase status disagreeing with git/gh reality (e.g. a phase
+marked `in-progress` whose branch PR is `MERGED` with no successor unit
+started). Surface the discrepancy as a one-line warning and write a
+session-note via § Capture finding documenting the drift shape
+(manifest-says-X vs git-says-Y). Substrate-wide signal worth keeping:
+"what kinds of drift happen in practice." The classification gap is the
+same as other Phase-7-wired captures (no precise classification today
+for "manifest-vs-git drift shape"); intent recorded; the event-stream +
+the warning surface are the substrate trace until the verb supports a
+finer classification.
 
 ### 1.5. Load learnings
 
@@ -173,7 +206,12 @@ With no message, pick the phase using this policy:
 
 1. If any phase is `in-progress`, that's the next phase.
 2. Otherwise, pick the lowest-numbered `not-started` phase whose
-   dependencies are all satisfied (all named prior PRs merged).
+   dependencies are all satisfied. Read each phase's dependencies from
+   `loom parse-plan <slug>` (`plan.phasesById[<n>].dependsOn`, a list of
+   phase-id strings) rather than parsing PLAN.md prose; a dependency is
+   satisfied when that phase's manifest status is `completed` (its PR
+   merged). `loom parse-plan` is the single source for dependencies — do
+   not re-derive them from the plan text.
 3. If no phase qualifies, surface the blocker: "waiting on PR #X to
    merge" or "all phases completed — run `/loom-archive`."
 

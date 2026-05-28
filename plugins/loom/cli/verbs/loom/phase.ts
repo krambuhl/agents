@@ -1,11 +1,15 @@
 import { parseArgs } from 'node:util';
-import { join } from 'node:path';
 import { resolveProject } from '../../lib/project.ts';
-import { readManifest, writeManifest } from '../../lib/manifest.ts';
-import { appendEvent } from '../../lib/events.ts';
+import {
+  appendEvent,
+  manifestPath,
+  readManifestFile,
+  updatePhase,
+  writeManifest,
+} from '../../lib/manifest-toml.ts';
 import { LoomError } from '../../lib/errors.ts';
-import type { CliContext, DispatchResult } from './project.ts';
 import type { Event, ManifestPhase, PhaseStatus } from '../../lib/types.ts';
+import type { CliContext, DispatchResult } from './project.ts';
 
 function emit(value: unknown, pretty: boolean): string {
   return pretty ? JSON.stringify(value, null, 2) : JSON.stringify(value);
@@ -43,7 +47,7 @@ export function phaseRead(rest: string[], ctx: CliContext): DispatchResult {
   }
   try {
     const path = resolveProject(slug, ctx.projectsRoot);
-    const manifest = readManifest(join(path, 'manifest.json'));
+    const { manifest } = readManifestFile(manifestPath(path));
     const phase = manifest.phases.find((p) => p.number === phaseNum);
     if (phase === undefined) {
       return errToResult(
@@ -74,7 +78,7 @@ export function phaseList(rest: string[], ctx: CliContext): DispatchResult {
   }
   try {
     const path = resolveProject(slug, ctx.projectsRoot);
-    const manifest = readManifest(join(path, 'manifest.json'));
+    const { manifest } = readManifestFile(manifestPath(path));
     return { stdout: emit(manifest.phases, values.pretty === true), exitCode: 0 };
   } catch (err) {
     return errToResult(err);
@@ -119,8 +123,6 @@ const PHASE_STATUSES: ReadonlySet<PhaseStatus> = new Set([
   'completed',
 ]);
 
-const PR_STATES: ReadonlySet<string> = new Set(['open', 'merged', 'closed']);
-
 export function phaseUpdate(rest: string[], ctx: CliContext): DispatchResult {
   const { values, positionals } = parseArgs({
     args: rest,
@@ -128,9 +130,6 @@ export function phaseUpdate(rest: string[], ctx: CliContext): DispatchResult {
       pretty: { type: 'boolean' },
       status: { type: 'string' },
       branch: { type: 'string' },
-      pr: { type: 'string' },
-      url: { type: 'string' },
-      'pr-state': { type: 'string' },
       reason: { type: 'string' },
     },
     allowPositionals: true,
@@ -166,39 +165,9 @@ export function phaseUpdate(rest: string[], ctx: CliContext): DispatchResult {
       new LoomError('missing-args', 'status=blocked requires --reason'),
     );
   }
-  let prNum: number | undefined;
-  if (values.pr !== undefined) {
-    const parsed = Number.parseInt(values.pr, 10);
-    if (Number.isNaN(parsed) || parsed < 0) {
-      return errToResult(
-        new LoomError('invalid-pr', `--pr must be a non-negative integer: ${values.pr}`),
-      );
-    }
-    prNum = parsed;
-  }
-  const prUrl = values.url;
-  const prStateArg = values['pr-state'];
-  if (prStateArg !== undefined && !PR_STATES.has(prStateArg)) {
-    return errToResult(
-      new LoomError(
-        'invalid-pr-state',
-        `--pr-state must be one of: open | merged | closed (got: ${prStateArg})`,
-      ),
-    );
-  }
-  if ((prUrl !== undefined || prStateArg !== undefined) && prNum === undefined) {
-    return errToResult(
-      new LoomError(
-        'missing-args',
-        '--url and --pr-state require --pr to identify the PR being updated',
-      ),
-    );
-  }
-
   try {
     const path = resolveProject(slug, ctx.projectsRoot);
-    const manifestPath = join(path, 'manifest.json');
-    const manifest = readManifest(manifestPath);
+    const { manifest, token } = readManifestFile(manifestPath(path));
     const phase = manifest.phases.find((p) => p.number === phaseNum);
     if (phase === undefined) {
       return errToResult(
@@ -212,22 +181,7 @@ export function phaseUpdate(rest: string[], ctx: CliContext): DispatchResult {
     const updated: ManifestPhase = { ...phase, status: status as PhaseStatus };
     if (values.branch !== undefined) updated.branch = values.branch;
     if (status === 'blocked') updated.blocked_reason = values.reason;
-    if (prNum !== undefined) {
-      // URL defaults to a placeholder when --url isn't passed; the
-      // placeholder is recognizable so callers know to set the real
-      // value. Once a URL is set, --url is required to change it
-      // (the verb is monotonic by default).
-      const placeholderUrl = `https://github.com/example/example/pull/${prNum}`;
-      updated.pr = {
-        number: prNum,
-        url: prUrl ?? phase.pr?.url ?? placeholderUrl,
-        state: (prStateArg ?? phase.pr?.state ?? 'open') as 'open' | 'merged' | 'closed',
-      };
-    }
-    manifest.phases = manifest.phases.map((p) =>
-      p.number === phaseNum ? updated : p,
-    );
-    writeManifest(manifestPath, manifest);
+    let next = updatePhase(manifest, phaseNum, updated);
     const event = eventForTransition(
       prior,
       status as PhaseStatus,
@@ -236,8 +190,9 @@ export function phaseUpdate(rest: string[], ctx: CliContext): DispatchResult {
       values.reason,
     );
     if (event !== null) {
-      appendEvent(join(path, 'events.jsonl'), event);
+      next = appendEvent(next, event);
     }
+    writeManifest(manifestPath(path), next, { expect: token });
     return { stdout: emit(updated, values.pretty === true), exitCode: 0 };
   } catch (err) {
     return errToResult(err);

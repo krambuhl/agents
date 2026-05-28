@@ -4,13 +4,13 @@ import {
   mkdirSync,
   rmSync,
   copyFileSync,
-  readFileSync,
   writeFileSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { retroList, retroRead, retroWrite } from './retro.ts';
+import { manifestPath, readManifestFile } from '../../lib/manifest-toml.ts';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const FIXTURES = join(__dirname, '..', '..', 'fixtures');
@@ -21,9 +21,10 @@ beforeEach(() => {
   projectsRoot = mkdtempSync(join(tmpdir(), 'loom-verbs-retro-'));
   const projectPath = join(projectsRoot, '2026-05-15-test-loom');
   mkdirSync(projectPath);
+  // Retros stay file-per-record; the manifest is the single state file.
   copyFileSync(
-    join(FIXTURES, 'manifest-basic.json'),
-    join(projectPath, 'manifest.json'),
+    join(FIXTURES, 'manifest-basic.toml'),
+    join(projectPath, 'manifest.toml'),
   );
   const retrosDir = join(projectPath, 'retros');
   mkdirSync(retrosDir);
@@ -109,16 +110,15 @@ test('retroWrite: writes a session retro and appends retro-written event', () =>
   const written = JSON.parse(result.stdout as string);
   expect(written.filename).toBe('phase-4-tier-5.json');
 
-  const eventsRaw = readFileSync(
-    join(projectsRoot, '2026-05-15-test-loom', 'events.jsonl'),
-    'utf8',
+  const { manifest } = readManifestFile(
+    manifestPath(join(projectsRoot, '2026-05-15-test-loom')),
   );
-  const lastLine = eventsRaw.trim().split('\n').pop() as string;
-  const event = JSON.parse(lastLine);
-  expect(event.event).toBe('retro-written');
-  expect(event.detail.type).toBe('session');
-  expect(event.detail.phase).toBe(4);
-  expect(event.detail.tier).toBe(5);
+  const event = manifest.events[manifest.events.length - 1];
+  expect(event?.event).toBe('retro-written');
+  const detail = event?.detail as { type: string; phase: number; tier: number };
+  expect(detail.type).toBe('session');
+  expect(detail.phase).toBe(4);
+  expect(detail.tier).toBe(5);
 });
 
 test('retroWrite: missing --retro-file returns missing-args', () => {

@@ -19,6 +19,7 @@ import {
   projectAdopt,
   projectArchive,
 } from './project.ts';
+import { manifestPath, readManifestFile } from '../../lib/manifest-toml.ts';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const FIXTURES = join(__dirname, '..', '..', 'fixtures');
@@ -31,15 +32,15 @@ beforeEach(() => {
   projectPath = join(projectsRoot, '2026-05-15-test-loom');
   mkdirSync(projectPath);
   copyFileSync(
-    join(FIXTURES, 'manifest-basic.json'),
-    join(projectPath, 'manifest.json'),
+    join(FIXTURES, 'manifest-basic.toml'),
+    join(projectPath, 'manifest.toml'),
   );
-  // Add an archived project too (with manifest marker)
+  // Add an archived project too (with the manifest.toml marker)
   const archivePath = join(projectsRoot, 'archive', '2026-04-01-old');
   mkdirSync(archivePath, { recursive: true });
   copyFileSync(
-    join(FIXTURES, 'manifest-basic.json'),
-    join(archivePath, 'manifest.json'),
+    join(FIXTURES, 'manifest-basic.toml'),
+    join(archivePath, 'manifest.toml'),
   );
 });
 
@@ -162,30 +163,27 @@ test('projectScaffold: creates the full project tree with date prefix', () => {
   const out = JSON.parse(result.stdout as string);
   // Date-less slug → today's date prepended
   expect(out.slug).toMatch(/^\d{4}-\d{2}-\d{2}-my-new-project$/);
-  expect(existsSync(join(out.path, 'manifest.json'))).toBe(true);
-  expect(existsSync(join(out.path, 'config.json'))).toBe(true);
-  expect(existsSync(join(out.path, 'events.jsonl'))).toBe(true);
+  // One state file now — manifest.toml; PLAN.md alongside. The old
+  // config.json / events.jsonl / checkins/ / sessions/ are gone (folded in).
+  expect(existsSync(join(out.path, 'manifest.toml'))).toBe(true);
+  expect(existsSync(join(out.path, 'config.json'))).toBe(false);
+  expect(existsSync(join(out.path, 'events.jsonl'))).toBe(false);
   expect(existsSync(join(out.path, 'PLAN.md'))).toBe(true);
-  expect(existsSync(join(out.path, 'checkins'))).toBe(true);
-  expect(existsSync(join(out.path, 'sessions'))).toBe(true);
 
-  // Events.jsonl has the project-initialized event
-  const events = readFileSync(join(out.path, 'events.jsonl'), 'utf8')
-    .trim()
-    .split('\n')
-    .map((l) => JSON.parse(l));
-  expect(events).toHaveLength(1);
-  expect(events[0].event).toBe('project-initialized');
-
-  // Manifest contains the merged init + slug + defaults
-  const m = JSON.parse(readFileSync(join(out.path, 'manifest.json'), 'utf8'));
-  expect(m.schema_version).toBe(1);
-  expect(m.slug).toBe(out.slug);
-  expect(m.title).toBe('Test Project');
-  expect(m.status).toBe('active');
-  expect(m.current_branch).toBeNull();
-  expect(m.latest_checkin).toBeNull();
-  expect(m.phases).toHaveLength(2);
+  const { manifest } = readManifestFile(manifestPath(out.path));
+  // The project-initialized event is in [[events]].
+  expect(manifest.events).toHaveLength(1);
+  expect(manifest.events[0].event).toBe('project-initialized');
+  // [config] folded the scaffold config in.
+  expect(manifest.config.worker_bindings).toEqual({ default: 'ev-loop-interactive' });
+  // [meta] carries the merged init + slug + defaults; [[phases]] the phases.
+  expect(manifest.meta.schema_version).toBe(1);
+  expect(manifest.meta.slug).toBe(out.slug);
+  expect(manifest.meta.title).toBe('Test Project');
+  expect(manifest.meta.status).toBe('active');
+  expect(manifest.meta.current_branch).toBeNull();
+  expect(manifest.meta.latest_checkin).toBeNull();
+  expect(manifest.phases).toHaveLength(2);
 });
 
 test('projectScaffold: accepts full slug form verbatim', () => {
@@ -309,22 +307,20 @@ test('projectAdopt: writes loom files alongside existing PLAN.md', () => {
   expect(result.exitCode).toBe(0);
   const out = JSON.parse(result.stdout as string);
   expect(out.slug).toBe(slug);
-  // Loom files now exist
-  expect(existsSync(join(path, 'manifest.json'))).toBe(true);
-  expect(existsSync(join(path, 'config.json'))).toBe(true);
-  expect(existsSync(join(path, 'events.jsonl'))).toBe(true);
-  expect(existsSync(join(path, 'checkins'))).toBe(true);
-  expect(existsSync(join(path, 'sessions'))).toBe(true);
+  // The single manifest.toml now exists alongside the draft files.
+  expect(existsSync(join(path, 'manifest.toml'))).toBe(true);
+  expect(existsSync(join(path, 'config.json'))).toBe(false);
+  expect(existsSync(join(path, 'events.jsonl'))).toBe(false);
   // Draft files preserved untouched
   expect(readFileSync(join(path, 'PLAN.md'), 'utf8')).toBe('# Plan\n');
   expect(readFileSync(join(path, 'INTERVIEW.md'), 'utf8')).toBe(
     '# Interview\n',
   );
   // Manifest carries the init values
-  const m = JSON.parse(readFileSync(join(path, 'manifest.json'), 'utf8'));
-  expect(m.slug).toBe(slug);
-  expect(m.title).toBe('Adopted Project');
-  expect(m.status).toBe('active');
+  const { manifest } = readManifestFile(manifestPath(path));
+  expect(manifest.meta.slug).toBe(slug);
+  expect(manifest.meta.title).toBe('Adopted Project');
+  expect(manifest.meta.status).toBe('active');
 });
 
 test('projectAdopt: refuses if project dir is missing', () => {
@@ -359,11 +355,11 @@ test('projectAdopt: refuses if PLAN.md is missing', () => {
   expect(JSON.parse(result.stderr as string).error).toBe('plan-not-found');
 });
 
-test('projectAdopt: refuses if manifest.json already exists', () => {
+test('projectAdopt: refuses if manifest.toml already exists', () => {
   const slug = '2026-05-15-already-adopted';
   const path = makeDraftProject(slug);
-  // Pre-existing loom marker
-  writeFileSync(join(path, 'manifest.json'), '{}', 'utf8');
+  // Pre-existing loom marker (existence is the check; content is not read)
+  writeFileSync(join(path, 'manifest.toml'), '', 'utf8');
   const inputs = writeAdoptInputs(projectsRoot);
   const result = projectAdopt(
     [
@@ -405,10 +401,7 @@ test('projectAdopt: missing slug returns missing-args', () => {
 // ---------- Archive tests ----------
 
 test('projectArchive: relocates project to archive/ and flips manifest status', () => {
-  // projectPath exists from beforeEach (with manifest.json)
-  // Add events.jsonl so archive can append
-  writeFileSync(join(projectPath, 'events.jsonl'), '', 'utf8');
-
+  // projectPath exists from beforeEach (with manifest.toml; events live in it)
   const result = projectArchive(['test-loom'], { projectsRoot });
   expect(result.exitCode).toBe(0);
   const out = JSON.parse(result.stdout as string);
@@ -416,25 +409,16 @@ test('projectArchive: relocates project to archive/ and flips manifest status', 
 
   // Old location no longer exists
   expect(existsSync(projectPath)).toBe(false);
-  // New location exists with manifest
+  // New location exists with the manifest
   expect(existsSync(out.destination)).toBe(true);
-  expect(existsSync(join(out.destination, 'manifest.json'))).toBe(true);
+  expect(existsSync(join(out.destination, 'manifest.toml'))).toBe(true);
 
-  // Manifest now says archived
-  const m = JSON.parse(
-    readFileSync(join(out.destination, 'manifest.json'), 'utf8'),
-  );
-  expect(m.status).toBe('archived');
-
+  const { manifest } = readManifestFile(manifestPath(out.destination));
+  expect(manifest.meta.status).toBe('archived');
   // Last event is `archived`
-  const events = readFileSync(join(out.destination, 'events.jsonl'), 'utf8')
-    .trim()
-    .split('\n')
-    .filter((l) => l.length > 0)
-    .map((l) => JSON.parse(l));
-  const last = events[events.length - 1];
-  expect(last.event).toBe('archived');
-  expect(last.detail.destination).toContain('archive');
+  const last = manifest.events[manifest.events.length - 1];
+  expect(last?.event).toBe('archived');
+  expect((last?.detail as { destination: string }).destination).toContain('archive');
 });
 
 test('projectArchive: nonexistent slug returns project-not-found', () => {
