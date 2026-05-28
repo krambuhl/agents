@@ -3,6 +3,12 @@ import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { isTomlTable, parseToml, type TomlTable } from './cli/lib/toml.ts';
+import {
+  planAgents,
+  readRecipes,
+  resolveRecipe,
+  RecipeNotFoundError,
+} from './cli/verbs/guild/generate.ts';
 
 // Real-artifact consistency guard for the Phase 4 wiring.
 //
@@ -103,5 +109,44 @@ describe('panel.manifest.toml references resolve', () => {
     expect(
       existsSync(join(here, 'agents', 'evaluator-contract-fit.md')),
     ).toBe(true);
+  });
+});
+
+describe('recipe resolution (guild recipe)', () => {
+  it('resolveRecipe(design-systems) returns exactly its four member agents', () => {
+    // Exactness, not containment: the recipe's contract is precisely these
+    // four planner-phase agents, in domains order.
+    expect(resolveRecipe(manifest, 'design-systems')).toEqual([
+      'whiteboard-composition',
+      'whiteboard-abstraction',
+      'whiteboard-tokens',
+      'whiteboard-naming',
+    ]);
+  });
+
+  it('resolveRecipe fails loud (RecipeNotFoundError, never empty) on an unknown name', () => {
+    // A mis-cited recipe must error, not degrade to a silently thin panel.
+    expect(() => resolveRecipe(manifest, 'no-such-recipe')).toThrow(
+      RecipeNotFoundError,
+    );
+  });
+
+  it('every recipe resolves to real generated agents (no drift from codegen)', () => {
+    // The anti-drift guard: resolveRecipe and planAgents must agree on agent
+    // names, or the runtime roster names agents the generated files never
+    // emit. Both go through nameFor, so this pins they stay in lockstep.
+    const generatedNames = new Set(
+      planAgents(manifest, toolsMap).map((p) => p.name),
+    );
+    const recipes = readRecipes(manifest);
+    expect(recipes.length).toBeGreaterThan(0); // floor: never pass vacuously
+    for (const recipe of recipes) {
+      for (const member of resolveRecipe(manifest, recipe.name)) {
+        expect(
+          generatedNames.has(member),
+          `recipe '${recipe.name}' member '${member}' is not a generated agent`,
+        ).toBe(true);
+      }
+    }
   });
 });

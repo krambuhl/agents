@@ -24,6 +24,8 @@ export const VERBS: Record<string, string> = {
     'Compile the 3-axis source into scoped agent files (--source-dir, --out)',
   'parse-and-aggregate':
     'Aggregate evaluator outputs into a structured verdict (JSON stdin → JSON stdout)',
+  recipe:
+    'Resolve a named panel recipe to its member agent names (read-only; fails loud on unknown)',
   whiteboard:
     'Compose multi-round design whiteboards. Subverbs: init, detect-round, append, read-state',
 };
