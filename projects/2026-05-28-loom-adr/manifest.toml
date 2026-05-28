@@ -1,0 +1,42 @@
+checkins = []
+sessions = []
+
+[meta]
+schema_version = 1
+title = "Loom Adr"
+slug = "2026-05-28-loom-adr"
+started = "2026-05-28"
+status = "active"
+strategy = "interactive"
+
+[config]
+base_branch = "main"
+reviewers = []
+labels = []
+verification = []
+worker_bindings = {}
+
+[[phases]]
+number = 1
+name = "loom adr verb + tests + kebabCase factor"
+status = "not-started"
+
+[[phases]]
+number = 2
+name = "loom-adr skill + CONVENTIONS.md note + dogfood ADR"
+status = "not-started"
+
+[[phases]]
+number = 3
+name = "ev-loop-interactive ADR-emit hook"
+status = "not-started"
+
+[[events]]
+at = "2026-05-28T07:59:42.810Z"
+event = "project-initialized"
+detail = {}
+
+[[revisions]]
+timestamp = "2026-05-28T08:05:29.356Z"
+target = "PLAN.md"
+seq = 1
