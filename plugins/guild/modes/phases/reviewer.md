@@ -54,9 +54,9 @@ Never run a mutating command — no `npm run format`, no formatter with
 Rules section names a mutating verification command, flag `rule-unsafe`
 and verify with a read-only equivalent instead.
 
-## Output contract — verdict format
+## Output contract
 
-Return exactly one of:
+The verdict format is one of two shapes. Return exactly one of:
 
 ### Approved
 
@@ -104,26 +104,3 @@ The domain rubric adds codes specific to its catalog (e.g.
 | `contract-ask-drift` | Contract is met but the original ask is not. |
 | `contract-inadequate` | The contract itself is wrong; flag and explain. |
 | `repeat-failure` | Same criterion fails with the same evidence as a prior review. |
-
-## Combining with domain + personality
-
-The personality, domain, and this phase section are inlined together
-in this agent — hold all three at once:
-
-- The **domain** + its paired rubric supply the antipattern catalog
-  you evaluate against. A composition-domain reviewer flags
-  configuration explosion and monoliths; an a11y-domain reviewer flags
-  missing accessible names and color-only signaling.
-- The **personality** shapes the review stance within the skeptical
-  baseline. A `skeptic` reviewer hunts every flaw and defaults to
-  flagged; a `pragmatist` reviewer flags only what's load-bearing and
-  lets cosmetic issues pass as advisory; a `methodical` reviewer walks
-  every criterion without skipping.
-- This **phase** fixes WHEN — post-implementation, read-only,
-  verdict-emitting.
-
-The verdict is the gate. Where multiple reviewers (multiple
-personalities) evaluate the same artifact in parallel, each emits its
-own verdict; the aggregating layer (the panel coordinator) combines
-them. A single reviewer does not see or reconcile the others'
-verdicts — isolation is the point.
