@@ -564,8 +564,8 @@ export function writeManifest(
 // proves a mutation touches only its own section.
 
 // Append an event, idempotently. A no-op when an existing event has the
-// same `event` name and deep-equal `detail` (ignoring `at`) — so re-running
-// e.g. `pr merged 71` does not append a second pr-merged event. Idempotency
+// same `event` name and deep-equal `detail` (ignoring `at`) — so re-emitting
+// an identical event (a verb re-run) does not append a duplicate. Idempotency
 // is APPEND-TIME ONLY: historical duplicates already in the log (the real
 // events.jsonl carries repeated phase-started events) are untouched, and
 // U5's conversion bulk-loads history rather than re-appending it.

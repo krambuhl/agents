@@ -86,14 +86,10 @@ export type CheckinCreatedEvent = EventBase<
   { number: string; branch: string }
 >;
 
-export type PrOpenedEvent = EventBase<
-  'pr-opened',
-  { pr: number; url: string }
->;
-
-export type PrUpdatedEvent = EventBase<'pr-updated', { pr: number }>;
-
-export type PrMergedEvent = EventBase<'pr-merged', { pr: number }>;
+// PR open/merged/updated state is derived on demand via `loom pr discover`
+// (gh pr view + the checkin marker), not recorded as events — so there are
+// no pr-* event types. Fossil pr-* events already in [[events]] still parse
+// (reconstructEvent casts the event-name string to EventName leniently).
 
 export type SessionSavedEvent = EventBase<
   'session-saved',
@@ -365,9 +361,6 @@ export type Event =
   | PhaseBlockedEvent
   | PhaseUnblockedEvent
   | CheckinCreatedEvent
-  | PrOpenedEvent
-  | PrUpdatedEvent
-  | PrMergedEvent
   | SessionSavedEvent
   | RetroWrittenEvent
   | ArchivedEvent
