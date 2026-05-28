@@ -24,7 +24,7 @@ test('isManifestStatePath: code, docs, and response files are NOT state', () => 
   expect(isManifestStatePath('projects/x/PLAN.md')).toBe(false);
   expect(isManifestStatePath('projects/x/INTERVIEW.md')).toBe(false);
   // A response file is a separate address-feedback artifact, not state.
-  expect(isManifestStatePath('projects/x/checkins/branch/responses/response-01.json')).toBe(false);
+  expect(isManifestStatePath('projects/x/responses/branch/response-01.json')).toBe(false);
   // A bare manifest.toml outside a projects/<slug>/ dir is not loom state.
   expect(isManifestStatePath('manifest.toml')).toBe(false);
   // The slug is a single path segment — a deeper path does not match.

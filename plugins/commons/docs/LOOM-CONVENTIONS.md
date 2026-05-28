@@ -30,10 +30,10 @@ projects/<slug>/
 │   └── project.json
 ├── whiteboards/
 │   └── <phase>-<topic-slug>.md      # multi-perspective design artifacts
-└── checkins/                  # the only residual of the pre-M1
-    └── <branch>/              #   per-file state model; created on-
-        └── responses/         #   demand by `bin/loom pr respond` for
-            └── <id>.md        #   PR-comment response markdowns
+└── responses/                 # PR-comment response markdowns; created
+    └── <branch>/              #   on-demand by `bin/loom pr respond`
+        └── <id>.md            #   when an `address feedback on #N`
+                               #   redirect triages comments
 ```
 
 After a project is archived, the entire directory is moved to
@@ -43,10 +43,12 @@ After a project is archived, the entire directory is moved to
 project state lived in five separate files (`manifest.json`,
 `config.json`, `events.jsonl`, `checkins/<branch>/<NN>.json`,
 `sessions/<YYYY-MM-DD>-<letter>.json`). Phase 2 collapsed them into
-one sectioned `manifest.toml`. The legacy paths are gone except
-for `checkins/<branch>/responses/<id>.md`, which `bin/loom pr
-respond` still writes on-demand (substrate follow-up: relocate or
-fold into `manifest.toml`).
+one sectioned `manifest.toml`. The `checkins/` directory is gone
+entirely; `bin/loom pr respond` writes to `responses/<branch>/<id>.md`
+(see the layout tree above). PR-comment response markdowns are the
+one residual of the pre-M1 per-file state model, but they live
+alongside `manifest.toml` rather than nested inside the (deleted)
+`checkins/` tree.
 
 ## Branch naming
 

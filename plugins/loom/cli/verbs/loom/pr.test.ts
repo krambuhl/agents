@@ -333,7 +333,7 @@ test('prComments: gh failure surfaces as gh-failed', () => {
 
 // ---------- prRespond tests ----------
 
-test('prRespond: writes one file per response under checkins/<branch>/responses/', () => {
+test('prRespond: writes one file per response under responses/<branch>/', () => {
   setupProjectWithCheckins(['01']);
   const responsesFile = join(projectsRoot, 'responses.json');
   writeFileSync(
@@ -356,7 +356,7 @@ test('prRespond: writes one file per response under checkins/<branch>/responses/
   const out = JSON.parse(result.stdout as string);
   expect(out.paths).toHaveLength(2);
   // Both files exist
-  expect(out.paths[0]).toContain('checkins/loom-cli/test-branch/responses');
+  expect(out.paths[0]).toContain('responses/loom-cli/test-branch');
   // Re-read first file
   const written = JSON.parse(readFileSync(out.paths[0], 'utf8'));
   expect(written.comment_id).toBe(1);

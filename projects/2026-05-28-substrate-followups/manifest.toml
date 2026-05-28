@@ -24,13 +24,14 @@ branch = "substrate-followups.doctor-exit-flip"
 [[phases]]
 number = 2
 name = "CI hash check for the 3-copy docs"
-status = "in-progress"
+status = "completed"
 branch = "substrate-followups.ci-hash-check"
 
 [[phases]]
 number = 3
 name = "L332 responses path relocation"
-status = "not-started"
+status = "in-progress"
+branch = "substrate-followups.responses-path"
 
 [[phases]]
 number = 4
@@ -97,6 +98,21 @@ at = "2026-05-28T16:20:37.273Z"
 event = "phase-started"
 detail = { phase = 2, name = "CI hash check for the 3-copy docs" }
 
+[[events]]
+at = "2026-05-28T16:41:43.973Z"
+event = "phase-completed"
+detail = { phase = 2 }
+
+[[events]]
+at = "2026-05-28T16:48:16.705Z"
+event = "checkin-created"
+detail = { number = "03", branch = "substrate-followups.responses-path" }
+
+[[events]]
+at = "2026-05-28T16:48:18.766Z"
+event = "phase-started"
+detail = { phase = 3, name = "L332 responses path relocation" }
+
 [[checkins]]
 schema_version = 1
 number = "01"
@@ -124,6 +140,20 @@ scope = ["plugins/commons/docs/LOOM-CONVENTIONS.md", "plugins/commons/docs/SUBST
 changes_since_previous = "Single-unit phase 2 close. The original 'sync script + hash check' framing was largely fulfilled by sync-shared.ts/sync-shared.test.ts already in tree from substrate-consolidation; this unit fills the missing real-FS gate and reconciles the stale commons docs. Phase 1 (PR #103) closed the loom doctor exit-code gap; phase 2 closes the silent doc-drift gap with the surviving substrate infrastructure."
 verdict = { result = "approved", reasons = [] }
 notes_for_pr = ["Antagonist panel: evaluator-contract-fit approved with zero findings (single-evaluator panel; guild derive-panel scoped substrate-only files to contract-fit per docs/PANEL-COMPOSITION.md).", "signal: user-comment: PLAN.md § Phase 2's 'loom-canonical, by convention' framing turned out to be stale (substrate-consolidation landed commons-canonical first). Reframed in place during execution; the new direction is captured in this checkin's corrections. (Single signal; no revise offered. PLAN.md eventual touch-up is a future-revision candidate, not blocking.)", "Phase 2 closes as a single-unit phase (same shape as Phase 1). The reverse-sync also touched griot, which PLAN.md's '3-copy' framing missed; the new gate caught griot on first run — gate working as intended at author time.", "Carries forward in this PR: (1) phase-1 reconciliation commit landing on main (status=completed + phase-completed event from PR #103 close); (2) hand-seeded [[phases]] entries for 6/7/8 (since loom revise-plan doesn't seed manifest phases — see [[feedback_loom_revise_plan_skips_manifest]]).", "Substrate observations during execution (memory-only; not addressed here): (a) loom parse-plan only extracts the first **Exit**: bullet per phase (truncates AC lists); (b) the 24-record full sync-shared drift includes lib-file divergence + orphan files in loom that look like substrate-mid-migration state — explicitly out of scope per the unit's disqualifiers."]
+
+[[checkins]]
+schema_version = 1
+number = "03"
+created = "2026-05-28T09:50:00Z"
+phase = { number = 3, name = "L332 responses path relocation" }
+branch = "substrate-followups.responses-path"
+unit = "Phase 3 — responses path relocation"
+contract = { goal = "Flip bin/loom pr respond's output from checkins/<branch>/responses/<id>.md to responses/<branch>/<id>.md, removing the last checkins/ directory residual from active loom projects.", acceptance_criteria = ["plugins/loom/cli/verbs/loom/pr.ts:364 writes to join(projectPath, 'responses', parsed.branch)", "plugins/loom/cli/verbs/loom/pr.test.ts test name + line 359 assertion updated to new path", "plugins/loom/cli/lib/commit-discipline.test.ts:27 literal path argument updated (test semantic unchanged)", "LOOM-CONVENTIONS.md § Project layout: drop checkins/ block, add responses/<branch>/<id>.md", "LOOM-CONVENTIONS.md § Pre-M1 paragraph: reframe to 'checkins/ directory is gone entirely'", "All 5 plugin copies of LOOM-CONVENTIONS.md (commons + griot/guild/loom/ev) byte-identical after propagation", "Targeted tests (pr.test.ts + commit-discipline.test.ts + Phase-2 byte-identity gate) green", "Full repo npx vitest run green modulo known Phase-8 plan.real.test.ts failure", "Real-CLI smoke: pr respond against a fixture project lands file at responses/<branch>/<id>.md, no checkins/ directory created"], rules_applied = ["PLAN.md § Phase 3 verbatim exit criteria", "Disqualifier: touch only pr.ts:364 + tests + LOOM-CONVENTIONS.md edits + their doc-propagation"], disqualifiers = ["Touching existing checkins/ directories (active or archived) — pre-existing residue, harmless", "Modifying prRespond beyond the single path change", "Running bare `node scripts/sync-shared.ts` — overreaches for narrow edits (caught + recovered mid-flight; see [[feedback_sync_shared_bare_run_overreaches]])"], inputs = ["plugins/loom/cli/verbs/loom/pr.ts:364-370", "plugins/loom/cli/verbs/loom/pr.test.ts:336-360", "plugins/loom/cli/lib/commit-discipline.test.ts:27", "plugins/commons/docs/LOOM-CONVENTIONS.md:33-49", "Phase 2's plugins/commons/cli/doc-copies-byte-identity.test.ts (validates doc propagation)", "projects/2026-05-28-substrate-followups/PLAN.md § Phase 3"] }
+execution = { actions = ["Edited plugins/loom/cli/verbs/loom/pr.ts:364: join(projectPath, 'checkins', parsed.branch, 'responses') -> join(projectPath, 'responses', parsed.branch). Downstream responsesDir consumers (mkdirSync, nextResponseNumber, join-with-filename) unchanged.", "Edited plugins/loom/cli/verbs/loom/pr.test.ts: test name (line 336) + .toContain assertion (line 359) updated to new path.", "Edited plugins/loom/cli/lib/commit-discipline.test.ts:27: literal path argument updated to 'projects/x/responses/branch/response-01.json'. isManifestStatePath logic unchanged.", "Edited plugins/commons/docs/LOOM-CONVENTIONS.md: § Project layout tree diagram (replaced checkins/ block with responses/<branch>/<id>.md at same level); § Pre-M1 paragraph (reframed 'except for checkins/...' -> 'checkins/ directory is gone entirely').", "FIRST sync attempt: ran bare `node scripts/sync-shared.ts` — overreached, deleted 10 substrate-mid-migration files (loom-cli-lib + guild/cli/lib/toml.ts + guild/docs/AGENT-CODEGEN.md) and added 4 commons-sourced files into loom/cli/lib/. Recovered via `git checkout HEAD --` across 14 paths + `rm` of 4 untracked files. Captured the papercut as [[feedback_sync_shared_bare_run_overreaches]].", "SECOND attempt: hand-copied plugins/commons/docs/LOOM-CONVENTIONS.md → plugins/{ev,griot,guild,loom}/docs/LOOM-CONVENTIONS.md (4 cp). Phase-2 byte-identity gate confirms all 5 share one hash.", "Ran targeted vitest (pr.test.ts + commit-discipline.test.ts + doc-copies-byte-identity.test.ts) -> 34/34 passed.", "Ran full repo vitest -> 804 passed, 1 failed (the known Phase-8 plan.real.test.ts failure; pre-existing on origin/main).", "Real-CLI smoke: built a temp-dir fixture project (2026-05-28-smoke-test slug), set LOOM_PROJECTS_ROOT, ran `node plugins/loom/cli/loom.ts pr respond ...`. Output paths included `responses/smoke-test/test-branch/response-01.json`; `ls .../checkins` returned 'No such file or directory'.", "Antagonist panel: evaluator-contract-fit approved with zero findings."], files_touched = ["plugins/loom/cli/verbs/loom/pr.ts", "plugins/loom/cli/verbs/loom/pr.test.ts", "plugins/loom/cli/lib/commit-discipline.test.ts", "plugins/commons/docs/LOOM-CONVENTIONS.md", "plugins/ev/docs/LOOM-CONVENTIONS.md", "plugins/griot/docs/LOOM-CONVENTIONS.md", "plugins/guild/docs/LOOM-CONVENTIONS.md", "plugins/loom/docs/LOOM-CONVENTIONS.md"], corrections = ["correction: bare `node scripts/sync-shared.ts` is dangerous for narrow doc edits — it syncs all commons content AND removes orphans, which clobbers substrate-mid-migration files in loom-cli-lib (commit-discipline.ts, manifest-toml.ts, plan.ts, toml.ts, smoke variants) and even deletes plugins/guild/docs/AGENT-CODEGEN.md. For narrow doc edits, hand-copy commons -> 4 consumers instead. Caught + reverted in-flight via `git checkout HEAD --`; memory [[feedback_sync_shared_bare_run_overreaches]] documents the recipe."] }
+scope = ["plugins/loom/cli/verbs/loom/pr.ts", "plugins/loom/cli/verbs/loom/pr.test.ts", "plugins/loom/cli/lib/commit-discipline.test.ts", "plugins/commons/docs/LOOM-CONVENTIONS.md", "plugins/ev/docs/LOOM-CONVENTIONS.md", "plugins/griot/docs/LOOM-CONVENTIONS.md", "plugins/guild/docs/LOOM-CONVENTIONS.md", "plugins/loom/docs/LOOM-CONVENTIONS.md"]
+changes_since_previous = "Single-unit phase 3 close. Removes the last pre-M1 vestige named in PLAN.md (checkins/<branch>/responses/<id>.md). The checkins/ directory now disappears entirely from active loom projects — all per-record state lives in manifest.toml's sections; on-demand PR-response markdowns live under responses/<branch>/<id>.md."
+verdict = { result = "approved", reasons = [] }
+notes_for_pr = ["Antagonist panel: evaluator-contract-fit approved with zero findings (single-evaluator panel per derive-panel output).", "signal: phase-boundary: this unit closes Phase 3 in full (single-unit phase, same shape as Phases 1-2) — single signal, no revise offered.", "Carries forward in this PR: phase-2 PR #110 reconciliation commit (status flip in-progress -> completed + phase-completed event).", "Substrate observation memorialized during execution: bare `node scripts/sync-shared.ts` is unsafe for narrow edits — see [[feedback_sync_shared_bare_run_overreaches]]. Recovery worked but cost roughly 14 file restores + 4 untracked deletes.", "Existing on-disk checkins/ directories in two projects (2026-05-21-loom-linear-memory-boundary and archive/2026-05-25-jelly) were NOT touched — pre-existing residue, harmless. Future archive of those projects will sweep them away naturally."]
 
 [[revisions]]
 timestamp = "2026-05-28T08:27:16.909Z"
