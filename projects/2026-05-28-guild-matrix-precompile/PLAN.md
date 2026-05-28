@@ -97,7 +97,7 @@ The matrix becomes a true cross-product: at each (phase, domain) cell, *every* p
 
 **Depends on**: 1.1.
 
-**Risks**: stage boundaries chosen on paper may not survive contact with the LLM fusion stage's input requirements (e.g. fusion may want richer per-cell metadata than `resolve` currently surfaces). Mitigation: 1.3 explicitly revisits the `resolve → compose` boundary before fusion lands.
+**Risks**: stage boundaries chosen on paper may not survive contact with the LLM fusion stage's input requirements (e.g. fusion may want richer per-cell metadata than `resolve` currently surfaces). Mitigation: 2.1 explicitly revisits the `resolve → compose` boundary before fusion lands.
 
 ### M2 — Voice fusion
 
@@ -160,9 +160,18 @@ These were left unresolved by the grill-me interview and need answers before or 
 1. **Exact `axes.toml` schema.** The high-level sections are decided; the field names, nested-table shape (e.g. `personality_per_phase` vs. separate per-phase blocks), and how `tool_grants` express phase-specificity all need to be drafted and pressure-tested against the conversion script's output in 1.1.
 2. **LLM fusion prompt design.** The fusion prompt template at `plugins/guild/skills/guild-compile/fusion-prompt.md` is the load-bearing artifact of the whole system. Initial draft will need iteration; budget for it in 2.1. Open: does the prompt receive the three fragments as raw text, as structured slots, or as a pre-rendered concat? Does it see the cell's `(phase, domain, personality)` triple as metadata or only as embedded context? Does it have access to the operator's intent ("this is the cell where the skeptic voice reviews react code") as a separate framing?
 3. **Cache file shape.** Single `agents/generated/.cache.toml` mapping cell-id → hashes, or per-cell sidecar `agents/generated/<cell-id>.cache.toml`? Single-file is simpler to read; per-cell-sidecar is friendlier to git diffs when one cell refuses. Decide in 2.1 from a few sample diffs.
-4. **Today's roster's fate as a snapshot.** Before deleting `agents/generated/`, snapshot it to `projects/2026-05-28-guild-matrix-precompile/before/` so the retro (3.1) can diff old voice vs. new voice qualitatively. Not load-bearing for correctness — load-bearing for the learning capture.
-5. **`bin/guild derive-panel` callers.** Confirm the CLI surface used by `/loom-plan` and document any other callers before reimplementing — the contract test for this verb is its current behavior, not a spec doc.
+4. **Today's roster's fate as a snapshot.** Before deleting `agents/generated/`, snapshot it to `projects/2026-05-28-guild-matrix-precompile/before/` so the retro (3.1) can diff old voice vs. new voice qualitatively. Not load-bearing for correctness — load-bearing for the learning capture. **Owner**: 2.2 (snapshot precedes deletion); referenced again in 3.1 (diffed in retro).
+5. **`bin/guild derive-panel` callers.** Confirm the CLI surface used by `/loom-plan` and document any other callers before reimplementing — the contract test for this verb is its current behavior, not a spec doc. **Owner**: 2.2 (reimplementation lands there).
 
 ## Provenance
 
-This plan was drafted from a grill-me interview conducted in a Claude Code session on 2026-05-28. Decisions locked via `AskUserQuestion` multiple-choice; the full decision trail is preserved in the session transcript. No `RESEARCH.md` dossier exists; the research-phase work above stands in for one. The `/loom-plan` skill's normal post-draft evaluator-panel pass (`bin/guild derive-panel + /guild-validate`) was **not** run — out-of-band, since `/loom-plan` itself is not installed in this session.
+This plan was drafted from a grill-me interview conducted in a Claude Code session on 2026-05-28. Decisions locked via `AskUserQuestion` multiple-choice; the full decision trail is preserved in the session transcript. No `RESEARCH.md` dossier exists; the research-phase work above stands in for one.
+
+A `/loom-plan`-style pre-adoption evaluator-panel pass (`evaluator-contract-fit`) was run on 2026-05-28 against the as-drafted PLAN.md. Three plan-shape findings landed:
+- **Phase 1.2 risk mitigation** referenced a non-existent "Phase 1.3" — corrected in this revision to point at 2.1.
+- **Open questions Q4 and Q5** lacked explicit owner-phases — annotated in this revision.
+- **Phase 2.1 sizing**: the panel flagged 2.1 as bundling the `/guild-compile` skill landing, the real `compose` dedup (replacing the 1.2 stub), the `guild compile --check` CI gate, and the no-op smoke test as five conceptually separable units. The plan author's stance is that LLM fusion without check-mode would be a CI regression and that the dedup is the same stage as the stub it replaces, so 2.1 is intentionally a single landing. Deferred to phase-execution time: when the work actually starts, the operator may split 2.1 into sub-phases if execution evidence warrants it.
+
+## Revision log
+
+- 2026-05-28 — evaluator-contract-fit panel (pre-adoption): fix Phase 1.3 stale reference (1.3 → 2.1); annotate Q4/Q5 owner-phases; record Phase 2.1 sizing flag as deferred-to-execution in Provenance

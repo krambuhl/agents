@@ -1,0 +1,53 @@
+checkins = []
+sessions = []
+revisions = []
+
+[meta]
+schema_version = 1
+title = "Guild Matrix Precompile"
+slug = "2026-05-28-guild-matrix-precompile"
+started = "2026-05-28"
+status = "active"
+strategy = "interactive"
+
+[config]
+base_branch = "main"
+reviewers = []
+labels = []
+verification = []
+worker_bindings = {}
+
+[[phases]]
+number = 1
+name = "1.0 — Rewrite fragments as labeled-section markdown"
+status = "not-started"
+
+[[phases]]
+number = 2
+name = "1.1 — Author axes.toml schema"
+status = "not-started"
+
+[[phases]]
+number = 3
+name = "1.2 — Multi-stage pipeline skeleton"
+status = "not-started"
+
+[[phases]]
+number = 4
+name = "2.1 — /guild-compile skill + LLM fusion"
+status = "not-started"
+
+[[phases]]
+number = 5
+name = "2.2 — Delete and replace"
+status = "not-started"
+
+[[phases]]
+number = 6
+name = "3.1 — Retro + learnings capture"
+status = "not-started"
+
+[[events]]
+at = "2026-05-28T08:17:17.609Z"
+event = "project-initialized"
+detail = {}
