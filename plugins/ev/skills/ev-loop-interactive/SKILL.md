@@ -496,8 +496,8 @@ For each deliverable (picked per the ordering rule):
       operator + continue (the unit just completed is still valid;
       subsequent units will pick up the new shape).
    6. Emit `rpi-inner-completed` with detail `{slug, phase}`.
-      Proceed to step 6 (Phase update). Do not re-execute the
-      current unit.
+      Proceed to step 5.5 (ADR-emit), then step 6 (Phase update).
+      Do not re-execute the current unit.
 
    **Sub-agent failure flow**: if either `/loom-research` or
    `/loom-revise-plan` exits non-zero OR writes
@@ -532,6 +532,95 @@ For each deliverable (picked per the ordering rule):
    alongside the offer.
 
    **On zero signals**: no action. Loop continues.
+
+5.5. **ADR-emit (operator-opt-in).** Runs on every approved unit
+     after step 5 (scope-shift detection) completes — including
+     the inner-RPI accept path. The hook is **operator-opt-in**: it
+     never auto-emits — every candidate surfaces an
+     `AskUserQuestion` before any ADR file is written. The scan
+     runs on the **just-committed** checkin, so the marker only
+     counts once the operator has approved the unit (no draft
+     scanning, no pre-commit speculation).
+
+     **Scan**: read the just-committed checkin's `notes_for_pr`
+     array (the same array step 4.5 appended threshold-triggered
+     corrections into) and find each entry containing the literal
+     substring `[adr-candidate]` (case-sensitive,
+     bracketed-literal — picked for unambiguity against natural
+     prose). Skip entries lacking the marker.
+
+     **Per match**:
+
+     a. Surface a single `AskUserQuestion` with two options
+        — "write ADR now" / "skip this marker" — and the matching
+        entry text as context for the operator. Pass the entry
+        verbatim (with the `[adr-candidate]` marker left in for
+        unambiguous identification) so the operator can re-read
+        the decision they tagged.
+
+     b. **On decline**: emit `adr-emit-declined` with detail
+        `{slug, phase, unit, marker_excerpt}` and move to the
+        next match. No file write, no further prompts.
+
+     c. **On accept**: prompt the operator for an ADR title via
+        a second `AskUserQuestion` (single short question; seed
+        suggestions from the first ~7-10 words of the marked
+        entry). The operator can also type a custom title via
+        the "Other" affordance.
+
+     d. Compose a candidate ADR body in this shape:
+        - **Context**: a paraphrase of the marked entry (1-3
+          sentences) + the unit's contract `goal` (one line),
+          establishing why the decision came up in this unit.
+        - **Decision**: the decision the operator named in the
+          entry, lifted as a structured statement.
+        - **Consequences**: a single literal `TODO: operator to
+          fill before commit` line — the body is intentionally
+          incomplete so the operator hand-edits before the
+          checkin's git commit step runs.
+
+     e. Write the composed body to
+        `/tmp/loom-adr-<slug>-<n>.md` (where `<n>` is the
+        match index within this unit, 1-based).
+
+     f. Invoke
+        `Bash("node plugins/loom/cli/loom.ts adr \"<title>\" --body-file=<tmp> --no-commit --pretty")`
+        and capture the returned ADR path from the JSON output.
+        Use `node plugins/loom/cli/loom.ts` rather than bare
+        `loom` — the cached-PATH-binary lag (documented in
+        2026-05-28-loom-adr's P2D2 checkin under
+        `notes_for_pr`) means the bare invocation can fail with
+        `unknown-verb` even after the marketplace dependency
+        has shipped.
+
+     g. Stage the returned ADR path for the unit's git-add list
+        so the ADR commits in the same commit as the checkin
+        write. The `--no-commit` flag suppresses the verb's
+        auto-commit specifically so the ADR can ride the
+        checkin commit — bundling the two avoids a race between
+        sibling commits and gives the operator one revertable
+        unit if the ADR turns out wrong.
+
+     h. Emit `adr-emitted` with detail `{slug, phase, unit,
+        adr_number, adr_path, marker_excerpt}` (the marker
+        excerpt enables forensic cross-reference between the
+        ADR and the originating `notes_for_pr` entry).
+
+     **Idempotency posture**: step 5.5 runs once per unit close,
+     as part of the unit's close path. Re-running the loop on
+     the same already-committed unit does NOT re-surface markers
+     (the close path only fires once per unit). The hook does
+     NOT re-scan prior units' checkins — a missed candidate is
+     captured manually via the `/loom-adr` skill rather than
+     swept up by a future unit's hook.
+
+     **Auto-mode**: in `--mode=auto`, the per-match
+     `AskUserQuestion` is replaced by `evaluator-contract-fit`
+     reading the marked entry against ADR-0001's conventions —
+     `approved` is treated as accept, `flagged` as decline. The
+     title prompt has no auto-mode equivalent — auto-mode
+     synthesizes a title from the first ~7 words of the marked
+     entry and proceeds. Events fire identically.
 
 6. **Phase update.** After a checkin lands, the checkin-created event
    auto-fires from § Checkin write. Then update phase state per
