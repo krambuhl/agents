@@ -1,0 +1,28 @@
+schema_version = 1
+
+[axis.domain.foo]
+phases = ["reviewer"]
+tool_grants = []
+
+# skeptic's phases doesn't include planner but singleton places it there.
+[axis.personality.skeptic]
+phases = ["reviewer"]
+disposition = "doubt by default"
+
+[axis.phase.reviewer]
+base_tools = ["Read", "Glob", "Grep"]
+writes = false
+default_personality = "skeptic"
+
+[axis.phase.planner]
+base_tools = ["Read", "Glob", "Grep"]
+writes = false
+default_personality = "skeptic"
+
+[[singletons]]
+name = "whiteboard-skeptic"
+phase = "planner"
+personality = "skeptic"
+
+[[retained]]
+name = "contract-fit"
