@@ -3,7 +3,7 @@ schema_version = 1
 title = "Substrate Consolidation"
 slug = "2026-05-26-substrate-consolidation"
 started = "2026-05-26"
-status = "active"
+status = "archived"
 strategy = "interactive"
 
 [config]
@@ -514,6 +514,16 @@ detail = { phase = 7 }
 at = "2026-05-28T03:59:30.681Z"
 event = "checkin-created"
 detail = { number = "29", branch = "ev-agent.substrate-consolidation.salt-earth" }
+
+[[events]]
+at = "2026-05-28T06:09:05.136Z"
+event = "retro-written"
+detail = { type = "project" }
+
+[[events]]
+at = "2026-05-28T06:09:05.222Z"
+event = "archived"
+detail = { destination = "/Users/krambuhl/Sites/agents/projects/archive/2026-05-26-substrate-consolidation" }
 
 [[checkins]]
 schema_version = 1
