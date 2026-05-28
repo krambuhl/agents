@@ -48,7 +48,7 @@ branch = "substrate-followups.phase-add"
 [[phases]]
 number = 6
 name = "loom phase update PR-fields persistence"
-status = "in-progress"
+status = "completed"
 branch = "substrate-followups.pr-fields"
 
 [[phases]]
@@ -160,6 +160,11 @@ detail = { number = "06", branch = "substrate-followups.pr-fields" }
 at = "2026-05-28T18:07:51.670Z"
 event = "phase-started"
 detail = { phase = 6, name = "loom phase update PR-fields persistence" }
+
+[[events]]
+at = "2026-05-28T18:25:23.286Z"
+event = "phase-completed"
+detail = { phase = 6 }
 
 [[checkins]]
 schema_version = 1
