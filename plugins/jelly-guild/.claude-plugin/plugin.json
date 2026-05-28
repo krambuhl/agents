@@ -1,4 +1,0 @@
-{
-  "name": "jelly-guild",
-  "description": "Subagent registry for /goal-shaped projects under the jelly substrate family. Three-axis decomposition (personality HOW + domain WHAT + phase WHEN): 5 personality subagents (skeptic, methodical, generative, pragmatist, synthesizer) read 5 domain + 4 phase mode files at dispatch time to construct their identity per task. Paired domain rubrics expose the same content to Outcomes-callable auto-provisioned graders. A project-scoped CLAUDE.md template carries substrate posture to /goal's lead agent and dispatched fleet via @-import composition."
-}

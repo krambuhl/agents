@@ -12,9 +12,9 @@
 // Validation posture — STRUCTURE strict, SEMANTICS lenient:
 //   - Structure (is the key present? is it a string / a string-array / a
 //     table?) is validated LOUDLY: a missing required key or a wrong-typed
-//     value throws a LoomError naming the section + key. This is the
-//     jelly-loom requireString/requireStringArray posture, adapted to the
-//     generic TomlValue tree.
+//     value throws a LoomError naming the section + key. The
+//     `requireString` / `requireStringArray` validator family expresses
+//     that posture on the generic TomlValue tree.
 //   - Semantics (is `status` one of the allowed literals? does an event's
 //     `detail` match its variant?) are TRUSTED, not re-validated. The
 //     writer produced this file; string-literal-union fields are read as

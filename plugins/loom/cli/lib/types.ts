@@ -575,7 +575,7 @@ export type PlanMilestoneRef = {
 
 // A phase as parsed from PLAN.md. `id` is the literal heading id kept
 // as a string ("1", "1.1") — never coerced to a number, because dotted
-// ids (jelly's "1.1"/"1.2") would collide under integer coercion.
+// ids ("1.1"/"1.2") would collide under integer coercion.
 // `exitCriteria` are the raw `**Exit**:`/`**Output**:` bullet strings,
 // opaque and not sub-parsed (consumers decompose units from them at
 // runtime). `dependsOn` is resolved to phase-id strings with ranges

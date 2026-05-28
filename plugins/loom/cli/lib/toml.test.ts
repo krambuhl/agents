@@ -86,7 +86,7 @@ test('round-trips deeply nested inline tables mirroring a real Checkin', () => {
           goal: 'pure TOML parser + serializer',
           acceptance_criteria: ['parseToml + stringifyToml exported', 'round-trip holds'],
           disqualifiers: [],
-          inputs: ['jelly-loom/cli/lib/manifest.ts', 'loom/cli/lib/types.ts'],
+          inputs: ['src/lib/manifest.ts', 'loom/cli/lib/types.ts'],
         },
         verdict: { result: 'approved', reasons: [] },
         notes: { detail: { phase: 2, signals: [] } },
