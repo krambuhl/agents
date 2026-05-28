@@ -58,24 +58,19 @@ test('every real PLAN.md parses without throwing and has no dangling deps', () =
   expect(plansWithPhases).toBeGreaterThanOrEqual(4);
 });
 
-test('parses the substrate-consolidation PLAN.md into the expected structure', () => {
-  const path = join(
-    PROJECTS_ROOT,
-    '2026-05-26-substrate-consolidation',
-    'PLAN.md',
-  );
-  const { plan } = parsePlan(readFileSync(path, 'utf8'));
-
-  // Stable structural facts that survive prose edits — the phase /
-  // milestone / dependency skeleton holds even as goal/exit text changes.
-  expect(plan.phases.map((p) => p.id)).toEqual(['1', '2', '3', '4', '5', '6', '7']);
-  expect(plan.milestones?.map((m) => m.id)).toEqual(['M1', 'M2', 'M3', 'M4']);
-
-  // Range expansion on a REAL plan: phase 7 "Depends on: Phases 1-6".
-  expect(plan.phasesById['7'].dependsOn).toEqual(['1', '2', '3', '4', '5', '6']);
-  // Comma list on a real plan: phase 3 "Depends on: Phase 1, Phase 2".
-  expect(plan.phasesById['3'].dependsOn).toEqual(['1', '2']);
-});
+// The previous test here pinned structural assertions to the
+// `2026-05-26-substrate-consolidation` PLAN.md (phase IDs 1-7,
+// milestones M1-M4, range expansion on phase 7, comma list on phase 3).
+// PR #101 archived that project, the test went red on origin/main, and
+// stayed red until Phase 8 of substrate-followups (this commit) removed
+// the pin. The parser features it covered are redundantly tested:
+// `plan.test.ts` lines 114-156 exercise range expansion + comma-list
+// dependency parsing against synthetic fixtures the test owns; the
+// corpus-wide tests above iterate every real PLAN.md and catch
+// real-artifact regressions on phase-name and dangling-dep shape. The
+// pinned test was vestigial real-artifact anchoring; deleting it cuts
+// the archive-time coupling without losing signal.
+// Memory: [[feedback_plan_real_test_breaks_on_project_archive]].
 
 test('plan.ts loads and runs under the real node strip-only loader', () => {
   // The only tier that exercises Node's type-stripping loader; vitest's
