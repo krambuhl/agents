@@ -5,7 +5,7 @@ schema_version = 1
 title = "Loom Adr"
 slug = "2026-05-28-loom-adr"
 started = "2026-05-28"
-status = "active"
+status = "archived"
 strategy = "interactive"
 
 [config]
@@ -102,6 +102,16 @@ detail = { number = "01", branch = "loom-adr.meta-dogfood" }
 at = "2026-05-28T19:11:16.905Z"
 event = "phase-completed"
 detail = { phase = 3 }
+
+[[events]]
+at = "2026-05-28T19:42:08.455Z"
+event = "retro-written"
+detail = { type = "project" }
+
+[[events]]
+at = "2026-05-28T19:42:16.300Z"
+event = "archived"
+detail = { destination = "/Users/krambuhl/Sites/agents-boulder/projects/archive/2026-05-28-loom-adr" }
 
 [[checkins]]
 schema_version = 1

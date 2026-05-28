@@ -1,0 +1,57 @@
+{
+  "schema_version": 1,
+  "type": "project",
+  "created": "2026-05-28T20:15:00Z",
+  "findings": [
+    {
+      "category": "kept-well",
+      "description": "Real-corpus markers outperformed synthetic fixtures in D4's dogfood — the substrate friction surfaced while building the hook became the input to the hook's first execution, producing 4 high-signal ADRs (0002-0005) instead of one synthetic-fixture-driven ADR.",
+      "evidence": "D4 evaluator-contract-fit verdict: 'a meaningful upgrade in signal, not drift — real markers test the hook's purpose while synthetic ones would only test the wiring'. PLAN.md § Phase 3 exit criterion #7 asked for one synthetic marker; actual delivered 4 real markers from P3D1 + P3D3 notes_for_pr."
+    },
+    {
+      "category": "kept-well",
+      "description": "Three-layer staged build (verb → skill → loop hook) shipped cleanly with zero rework between phases — each layer merged before the next started, 4 PRs total (#108, #111, #117+#122, #125), all evaluator panels approved on first run with zero blocking findings.",
+      "evidence": "Phase 1 PR #108 (loom adr verb), Phase 2 PR #111 (loom-adr skill + ADR-0001 dogfood), Phase 3 PRs #117 (hook + test), #122 (cross-skill docs), #125 (meta-dogfood 4 ADRs)."
+    },
+    {
+      "category": "improvement",
+      "description": "Substrate friction discovered mid-execution rather than at /loom-plan time — both the loom-checkin-write full-schema enforcement (P3D1) and the sync-shared docs+cli/lib all-or-nothing blast radius (P3D3) were unknowns until the unit was running. A verb-contract dry-run or rigorous substrate-verb skim during planning would have caught both.",
+      "evidence": "P3D1 correction: 'loom checkin write rejects checkin files missing the [execution] table'. P3D3 correction: 'node scripts/sync-shared.ts pulls in pre-existing drift between commons/cli/lib and consumer cli/lib copies. The full sync triggered 17 test failures cascading through ~20 verb files.'"
+    },
+    {
+      "category": "improvement",
+      "description": "Skill-body prose drifted from substrate verb behavior — ev-loop-interactive's 'contract-only intermediate-write' negotiate step described a substrate shape `loom checkin write` doesn't support. Cross-skill prose↔implementation consistency should be lint-asserted or test-covered, not maintained by hand.",
+      "evidence": "P3D1 [adr-candidate] marker that became ADR-0002 (Loom checkin write requires full schema). The mismatch was caught at first dogfood attempt; a contract test of the skill body against the verb's accepted inputs would have caught it at plan-merge time."
+    },
+    {
+      "category": "process-change",
+      "description": "Substrate fix for `guild derive-panel`'s panel-spec-unreadable fallback is overdue — seven consecutive observations across this project alone (every checkin recorded `derive-panel-error: panel-spec-unreadable (using fallback)` on stderr). The fallback silently collapses panels to evaluator-contract-fit-only even for artifact types (e.g. .test.ts files) where the spec demands specialist evaluators.",
+      "evidence": "Recorded in every notes_for_pr of this project: P1 checkin 01/02, P2D1, P2D2, P3D1, P3D2, P3D3, P3D4. P3D2 manually overrode the fallback to include evaluator-test-unit alongside contract-fit."
+    },
+    {
+      "category": "process-change",
+      "description": "Codify 'prefer real-corpus markers over synthetic fixtures for dogfood units when the corpus is available' as a substrate convention. The D4 pattern (4 real markers from prior project checkins beat 1 synthetic marker on signal) should be the default for future dogfood-shaped units; synthetic markers stay as the fallback when no corpus exists yet.",
+      "evidence": "D4 panel commentary: real markers test the hook's purpose (lifting load-bearing decisions out of PR bodies into searchable ADRs); synthetic markers only test the wiring. The convention belongs in projects/CONVENTIONS.md or AGENT-CONVENTIONS.md."
+    },
+    {
+      "category": "follow-up",
+      "description": "ADRs 0002-0005 carry literal `TODO: operator to fill before commit` Consequences sections — the hook intentionally drafts incomplete bodies. Operator should hand-edit before the next reflective pass, or explicitly accept the as-is paraphrase as the canonical record by removing the TODO marker.",
+      "evidence": "Step 5.5's body-composition spec: 'Consequences = a single literal TODO: operator to fill before commit line — the body is intentionally incomplete so the operator hand-edits before the checkin's git commit step runs.' All 4 ADRs from D4 currently carry this marker."
+    },
+    {
+      "category": "follow-up",
+      "description": "Pre-existing cli/lib drift between commons and consumer plugins (commons did a substrate-wide refactor of manifest-toml.ts/plan.ts/toml.ts; consumer verb files still reference old paths) — out of scope for this project; addressed in a separate substrate-followups task. Intersects with ADR-0004's per-tier sync-shared split.",
+      "evidence": "D3 sync attempt cascaded 17 test failures via this drift; D3 was scoped down to docs-only and the cli/lib churn reverted. CI's `sync --check` will continue to flag the drift until substrate-followups lands."
+    },
+    {
+      "category": "follow-up",
+      "description": "L-004 first-runtime auto-trigger of step 5.5 still pending — the hook spec was exercised manually in D4 because the active session predated D1's edit. A fresh session (post-/clear or restart that reloads the ev-loop-interactive skill body) needs to fire the hook once on a real unit-close for end-to-end runtime validation. Not blocking the archive.",
+      "evidence": "D4 correction: 'the active ev-loop-interactive skill body in this Claude session was loaded at session start (before D1 added step 5.5). D4's meta-dogfood was therefore a manual execution of step 5.5's spec rather than a runtime trigger by the loop.'"
+    },
+    {
+      "category": "follow-up",
+      "description": "Cached-PATH-binary lag (the `loom` binary in plugin cache doesn't auto-sync with merged main) mitigated via the `node plugins/loom/cli/loom.ts` invocation convention in step 5.5 and loom-adr SKILL.md, but the underlying plugin-cache-lifecycle issue remains. Future ev-loop surfaces invoking loom verbs should continue to prefer the node-path invocation until the cache lifecycle is fixed.",
+      "evidence": "P2D2 correction: 'cached PATH `loom` binary at /Users/krambuhl/.claude/plugins/cache/krambuhl/loom/ didn't have the adr namespace registered even though PR #108 was merged on origin/main. Fell back to node plugins/loom/cli/loom.ts adr ... from local source.' Pattern documented across P2D2, P3D1, and the SUBSTRATE-COMPOSITIONS § ADR-emit hook recipe."
+    }
+  ]
+}
