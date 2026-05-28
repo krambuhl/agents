@@ -103,7 +103,10 @@ export function doctor(rest: string[], ctx: CliContext): DispatchResult {
     return errToResult(err);
   }
   const report = checkProject(projectPath, slug);
-  return { stdout: emit(report, values.pretty === true), exitCode: 0 };
+  return {
+    stdout: emit(report, values.pretty === true),
+    exitCode: report.ok ? 0 : 1,
+  };
 }
 
 export const DOCTOR_VERBS = {

@@ -57,14 +57,8 @@ until § 0 parses arguments, so run this probe as the first action
 after the slug resolves (before § 1 Orient's `loom project read`):
 
 ```
-Bash("loom doctor <slug> 2>/dev/null | grep -q '\"ok\":true' || echo 'installed loom cannot read this project manifest (format/version skew) — fall back to repo-local node plugins/loom/cli/loom.ts (and node plugins/guild/cli/guild.ts) for all loom/guild operations this session' >&2")
+Bash("loom doctor <slug> 2>/dev/null || echo 'installed loom cannot read this project manifest (format/version skew) — fall back to repo-local node plugins/loom/cli/loom.ts (and node plugins/guild/cli/guild.ts) for all loom/guild operations this session' >&2")
 ```
-
-`loom doctor` reports an unreadable manifest as an `ok:false` issue
-but still exits 0, so the probe keys on `"ok":true` in stdout, not
-the exit code — this catches both the stale-CLI `project-not-found`
-(non-zero exit, empty stdout) and the wrong-schema
-`manifest-unreadable` (exit 0, `ok:false`) cases in one check.
 
 Tier 2 is **advisory, not blocking**: on failure, surface the message
 and switch to the repo-local `node` entries for substrate ops — do

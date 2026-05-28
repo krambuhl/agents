@@ -1,4 +1,3 @@
-checkins = []
 sessions = []
 revisions = []
 
@@ -20,7 +19,8 @@ worker_bindings = {}
 [[phases]]
 number = 1
 name = "loom doctor exit-code flip"
-status = "not-started"
+status = "in-progress"
+branch = "substrate-followups.doctor-exit-flip"
 
 [[phases]]
 number = 2
@@ -56,3 +56,27 @@ detail = { slug = "2026-05-28-substrate-followups", topic = "substrate-followups
 at = "2026-05-28T06:47:20.405Z"
 event = "research-completed"
 detail = { slug = "2026-05-28-substrate-followups", research_path = "RESEARCH.md", notes_path = "RESEARCH-NOTES.md" }
+
+[[events]]
+at = "2026-05-28T08:01:09.692Z"
+event = "checkin-created"
+detail = { number = "01", branch = "substrate-followups.doctor-exit-flip" }
+
+[[events]]
+at = "2026-05-28T08:01:19.711Z"
+event = "phase-started"
+detail = { phase = 1, name = "loom doctor exit-code flip" }
+
+[[checkins]]
+schema_version = 1
+number = "01"
+created = "2026-05-28T07:05:00Z"
+phase = { number = 1, name = "loom doctor exit-code flip" }
+branch = "substrate-followups.doctor-exit-flip"
+unit = "loom doctor exit-code flip + ev preflight Tier 2 simplification"
+contract = { goal = "Make `loom doctor` exit non-zero when `report.ok` is false, so shell consumers can use `loom doctor <slug> || <fallback>` instead of the `grep -q '\"ok\":true'` workaround.", acceptance_criteria = ["plugins/loom/cli/verbs/loom/doctor.ts returns exitCode: report.ok ? 0 : 1", "doctor.test.ts exit-code assertions: healthy 0, manifest-missing 1, manifest-unreadable 1", "Tier 2 Bash one-liner in all 3 plugins/ev/skills/*/SKILL.md simplified to drop the grep -q '\"ok\":true' pipe", "Explanatory paragraph about the exit-0/ok:false quirk removed in all 3 SKILL.md files", "Full repo npx vitest run green", "Real-CLI smoke confirms exit 0 / exit 1 split across healthy / nonexistent / missing-manifest cases"], rules_applied = ["PLAN.md § Phase 1 verbatim exit criteria", "Disqualifier: no non-Phase-1 files touched", "Disqualifier: no other exit-code behavior changes in doctor.ts"], disqualifiers = ["Touches non-Phase-1 files (Phase 2 hash check, Phase 3 responses path, etc.)", "Changes other exit-code behavior in doctor.ts (e.g. the not-in-project case which already exits 1)", "Leaves stale exit-0/ok:false prose anywhere in ev SKILL.md bodies"], inputs = ["plugins/loom/cli/verbs/loom/doctor.ts", "plugins/loom/cli/verbs/loom/doctor.test.ts", "plugins/ev/skills/ev-run/SKILL.md", "plugins/ev/skills/ev-loop-interactive/SKILL.md", "plugins/ev/skills/ev-loop-confidence/SKILL.md", "projects/2026-05-28-substrate-followups/PLAN.md"] }
+execution = { actions = ["Edited doctor.ts return statement: exitCode: 0 -> exitCode: report.ok ? 0 : 1", "Edited doctor.test.ts: flipped missing-manifest .toBe(0) -> .toBe(1); added .toBe(1) to unparseable test", "Edited 3 SKILL.md files: removed `grep -q '\"ok\":true' |` from Tier 2 Bash one-liner and deleted the trailing 5-line explanatory paragraph about the exit-0/ok:false quirk", "Ran targeted vitest on doctor.test.ts -> 4 passed (4)", "Ran full repo vitest -> 780 passed, 1 pre-existing failure (plan.real.test.ts unrelated to this unit; confirmed via stash on origin/main)", "Real-CLI smoke: healthy slug -> exit 0; nonexistent slug -> exit 1; empty-dir path -> exit 1 with manifest-missing"], files_touched = ["plugins/loom/cli/verbs/loom/doctor.ts", "plugins/loom/cli/verbs/loom/doctor.test.ts", "plugins/ev/skills/ev-run/SKILL.md", "plugins/ev/skills/ev-loop-interactive/SKILL.md", "plugins/ev/skills/ev-loop-confidence/SKILL.md"], corrections = [] }
+scope = ["plugins/loom/cli/verbs/loom/doctor.ts", "plugins/loom/cli/verbs/loom/doctor.test.ts", "plugins/ev/skills/ev-run/SKILL.md", "plugins/ev/skills/ev-loop-interactive/SKILL.md", "plugins/ev/skills/ev-loop-confidence/SKILL.md"]
+changes_since_previous = "First unit of substrate-followups; replaces the grep -q '\"ok\":true' workaround documented in [[feedback_loom_doctor_exit_zero_on_unreadable]] with a proper exit-code contract."
+verdict = { result = "approved", reasons = [] }
+notes_for_pr = ["Antagonist panel: evaluator-contract-fit + evaluator-test-unit + evaluator-naming all approved. evaluator-react-api dropped from derive-panel output (Node CLI .ts files, no React/JSX; per [[feedback_derive_panel_react_api_misderivation]]).", "Pre-existing test failure flagged for substrate follow-up: plugins/loom/cli/lib/plan.real.test.ts fails on origin/main (confirmed via clean-stash reproduction) because PR #101 archived projects/2026-05-26-substrate-consolidation without updating the test's hardcoded path. Unrelated to this unit; should be filed as a separate cleanup.", "signal: phase-boundary: this unit closes Phase 1 in full (single-unit phase) — single signal, no revise offered.", "Resolves the workaround named in memory [[feedback_loom_doctor_exit_zero_on_unreadable]]; future shell consumers can use `loom doctor <slug> || <fallback>` directly."]

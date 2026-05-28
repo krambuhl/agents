@@ -43,7 +43,7 @@ test('doctor: missing manifest.toml is reported as an issue and ok=false', () =>
   // Resolve by explicit path (the slug filter requires manifest.toml to
   // even see the project; an explicit path reaches a dir that lacks it).
   const result = doctor([projectPath], { projectsRoot });
-  expect(result.exitCode).toBe(0);
+  expect(result.exitCode).toBe(1);
   const report = JSON.parse(result.stdout as string);
   expect(report.ok).toBe(false);
   const codes = report.issues.map((i: { code: string }) => i.code);
@@ -74,6 +74,7 @@ test('doctor: an unparseable / unsupported-version manifest is reported', () => 
     ].join('\n'),
   );
   const result = doctor(['test-loom'], { projectsRoot });
+  expect(result.exitCode).toBe(1);
   const report = JSON.parse(result.stdout as string);
   expect(report.ok).toBe(false);
   const codes = report.issues.map((i: { code: string }) => i.code);
