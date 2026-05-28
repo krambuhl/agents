@@ -41,6 +41,21 @@ number = 5
 name = "loom phase add verb"
 status = "not-started"
 
+[[phases]]
+number = 6
+name = "loom phase update PR-fields persistence"
+status = "not-started"
+
+[[phases]]
+number = 7
+name = "griot capture out-of-band pathway"
+status = "not-started"
+
+[[phases]]
+number = 8
+name = "plan.real.test.ts archived-project resilience"
+status = "not-started"
+
 [[events]]
 at = "2026-05-28T06:47:20.375Z"
 event = "project-initialized"
