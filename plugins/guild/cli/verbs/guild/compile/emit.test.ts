@@ -80,7 +80,7 @@ describe('emit: .cache.toml', () => {
     expect(cache).toContain('cell_id = "evaluator-foo"');
     expect(cache).toContain(`fused_at = "${FUSED_AT}"`);
     expect(cache).toContain('output_hash = "');
-    expect(cache).toContain(`phase = "${'a'.repeat(64)}"`);
+    expect(cache).toContain(`source_hash_phase = "${'a'.repeat(64)}"`);
     expect(result.cache_entries.length).toBe(1);
     expect(result.cache_entries[0]!.cell_id).toBe('evaluator-foo');
   });
