@@ -18,7 +18,17 @@ worker_bindings = {}
 
 [[phases]]
 number = 1
-name = "Phase 1"
+name = "loom adr verb + tests + kebabCase factor"
+status = "not-started"
+
+[[phases]]
+number = 2
+name = "loom-adr skill + CONVENTIONS.md note + dogfood ADR"
+status = "not-started"
+
+[[phases]]
+number = 3
+name = "ev-loop-interactive ADR-emit hook"
 status = "not-started"
 
 [[events]]
