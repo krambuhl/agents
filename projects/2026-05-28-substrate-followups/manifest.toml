@@ -19,7 +19,22 @@ worker_bindings = {}
 
 [[phases]]
 number = 1
-name = "Phase 1"
+name = "loom doctor exit-code flip"
+status = "not-started"
+
+[[phases]]
+number = 2
+name = "CI hash check for the 3-copy docs"
+status = "not-started"
+
+[[phases]]
+number = 3
+name = "L332 responses path relocation"
+status = "not-started"
+
+[[phases]]
+number = 4
+name = "Live-spawn smoke checklist"
 status = "not-started"
 
 [[events]]
