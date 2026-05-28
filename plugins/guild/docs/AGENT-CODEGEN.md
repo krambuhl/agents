@@ -295,17 +295,138 @@ deleting baked, both addressed in Phase 7 U1:
 
 Tool-set equivalence and freshness are checked in CI; the one thing CI
 cannot check is that a generated agent actually spawns and emits a
-conformant verdict through a real LLM. Run this once after the
-guild plugin re-installs downstream from the U1 cutover, and record
-the result in a session-note or follow-up checkin:
+conformant verdict through a real LLM. Run this once after the guild
+plugin re-installs downstream from the U1 cutover, and once again
+after any subsequent codegen run that meaningfully changes fragment
+shape.
 
-1. In a session, `Agent`-dispatch one generated reviewer (e.g.
-   `evaluator-a11y`) and one generated planner (e.g. `whiteboard-react`)
-   against a tiny known-bad sample diff.
-2. Confirm a real `VERDICT:` comes back through `guild parse-and-aggregate`
-   (not just a parse check) — the line-anchored `VERDICT:` regex is the
-   gotcha to mind.
+### Prerequisite
 
-A green smoke is the final proof that the collapse preserved a working
-panel. (This session continues to run the stale installed guild copy,
-so the smoke can't be run here; it gates on a fresh post-U1 session.)
+Confirm the installed guild copy is fresh:
+
+- `~/.claude/plugins/cache/krambuhl/guild/<commit>/agents/evaluator-a11y.md`
+  exists.
+- `bin/guild` is on PATH (`command -v guild`).
+- Today's session has not previously dispatched either of the agents
+  named below — agent definitions are loaded once per Claude Code
+  process; a session that already cached the pre-cutover version of
+  `evaluator-a11y` will spawn the stale one regardless of what's now on
+  disk.
+
+### Step 1 — Dispatch one generated reviewer
+
+In a fresh Claude Code session, invoke `Agent` with
+`subagent_type: evaluator-a11y` and the brief below. The sample diff
+is a synthetic profile-badge component that legitimately fails a11y
+(no `alt` on the `img`, click-only `div` with no keyboard handler,
+literal color in `style`):
+
+```
+## How to evaluate efficiently
+
+Tight budget. Spot-check then emit `VERDICT:` immediately.
+
+## Contract (paraphrased)
+
+Goal: a ProfileBadge component for the directory page. Must pass
+accessibility lint and use the project's design tokens.
+
+Acceptance criteria:
+1. Image has accessible text alternative
+2. Interactive surface is keyboard-reachable
+3. Colors come from the design-token palette, not literals
+
+## Artifact
+
+**Files:** + src/components/ProfileBadge.tsx (new, 7 lines)
+
+```tsx
+export function ProfileBadge({ src, name }: { src: string; name: string }) {
+  return (
+    <div onClick={() => console.log('click')}>
+      <img src={src} />
+      <span style={{ color: '#888' }}>{name}</span>
+    </div>
+  );
+}
+```
+
+## Original ask
+
+"Build a small ProfileBadge for the directory page that meets a11y
+and uses our design tokens."
+```
+
+Expected: a `VERDICT: flagged` response naming the missing `alt`,
+the click-only `div`, and the `#888` literal as reasons.
+
+### Step 2 — Dispatch one generated planner
+
+In the same session, invoke `Agent` with
+`subagent_type: whiteboard-react` and the same artifact + a brief
+asking for an API-shape review. Expected: an architectural note
+calling out the prop shape, the missing semantic role, and a
+suggested composition.
+
+The planner's output is free-form prose, not VERDICT-shaped — it
+participates in `guild-whiteboard`, not `guild-validate`. Confirm it
+produced *something* substantive about the sample artifact.
+
+### Step 3 — Verify the verdict line is parseable
+
+Save the reviewer's full output to a temp file and run:
+
+```
+guild parse-and-aggregate <<'GUILD_INPUT'
+[{"agent": "evaluator-a11y", "output": "<verbatim reviewer output>"}]
+GUILD_INPUT
+```
+
+Expected output (abbreviated): a JSON document with
+`"verdict": "flagged"` and at least one entry in `blocking_findings`.
+
+The line-anchored `VERDICT:` regex is the gotcha to mind — see
+`[[feedback_guild_aggregate_verdict_line_anchored]]`. A summarized
+output with `VERDICT: …` appearing mid-line will read as a parse
+failure even though the verdict was emitted. The verdict line MUST
+start at column 0.
+
+### Step 4 — Record the result
+
+Write a one-shot session-note at:
+
+```
+learnings/session-notes/<YYYY-MM-DD>-guild-smoke-postcutover.md
+```
+
+Capture: which agents were dispatched, the verdict line each emitted
+verbatim, the parse-and-aggregate output, and whether the smoke is
+green. Commit alongside the session it ran in; the substrate trail
+survives even if `/griot-compact` later does not promote the note
+into the rollup.
+
+### What "green" looks like
+
+- Step 1's reviewer emits a `VERDICT: flagged` with reasons covering
+  at least one of the three intentional defects.
+- Step 2's planner emits substantive prose about the artifact (no
+  refusal, no apology, no "I don't see any issues").
+- Step 3's `parse-and-aggregate` returns a structured aggregate with
+  `"verdict": "flagged"` and the matching findings.
+
+### If the smoke fails
+
+- **Step 1 emits `VERDICT: approved` on a known-bad artifact**: the
+  generated reviewer is missing rubric criteria or the fragment-fold
+  dropped them. Re-run codegen and re-spawn the smoke.
+- **Step 1 produces no `VERDICT:` line at all**: the generated
+  evaluator's body skipped the verdict-format section. Diff against
+  `evaluator-base.md` § Verdict format.
+- **Step 2's planner refuses or apologizes**: the personality fragment
+  may be mis-bundled. Diff against `personalities/<name>.md`.
+- **Step 3's parse-and-aggregate reports `parse-failure`**: check the
+  verdict-line column-anchoring per
+  `[[feedback_guild_aggregate_verdict_line_anchored]]`.
+
+A green smoke is the final proof that the collapse (or any subsequent
+codegen sweep) preserved a working panel.
