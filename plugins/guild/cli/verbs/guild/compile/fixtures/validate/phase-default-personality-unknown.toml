@@ -1,0 +1,18 @@
+schema_version = 1
+
+[axis.domain.foo]
+phases = ["reviewer"]
+tool_grants = []
+
+[axis.personality.skeptic]
+phases = ["reviewer"]
+disposition = "doubt by default"
+
+# default_personality "ghost" doesn't exist in axis.personality.*
+[axis.phase.reviewer]
+base_tools = ["Read", "Glob", "Grep"]
+writes = false
+default_personality = "ghost"
+
+[[retained]]
+name = "contract-fit"

@@ -1,0 +1,28 @@
+schema_version = 1
+
+[axis.domain.foo]
+phases = ["reviewer"]
+tool_grants = []
+
+[axis.personality.skeptic]
+phases = ["reviewer"]
+disposition = "doubt by default"
+
+[axis.phase.reviewer]
+base_tools = ["Read", "Glob", "Grep"]
+writes = false
+default_personality = "skeptic"
+
+[[recipes]]
+name = "reviewer-default"
+phase = "reviewer"
+personality = "skeptic"
+domains = ["foo"]
+
+[[singletons]]
+name = "whiteboard-skeptic"
+phase = "reviewer"
+personality = "skeptic"
+
+[[retained]]
+name = "contract-fit"
