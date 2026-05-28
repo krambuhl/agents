@@ -54,7 +54,7 @@ branch = "substrate-followups.pr-fields"
 [[phases]]
 number = 7
 name = "griot capture out-of-band pathway"
-status = "in-progress"
+status = "completed"
 branch = "substrate-followups.griot-capture"
 
 [[phases]]
@@ -176,6 +176,11 @@ detail = { number = "07", branch = "substrate-followups.griot-capture" }
 at = "2026-05-28T18:31:11.386Z"
 event = "phase-started"
 detail = { phase = 7, name = "griot capture out-of-band pathway" }
+
+[[events]]
+at = "2026-05-28T18:45:09.810Z"
+event = "phase-completed"
+detail = { phase = 7 }
 
 [[checkins]]
 schema_version = 1
