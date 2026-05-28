@@ -5,7 +5,7 @@ schema_version = 1
 title = "Substrate Followups"
 slug = "2026-05-28-substrate-followups"
 started = "2026-05-28"
-status = "active"
+status = "archived"
 strategy = "interactive"
 
 [config]
@@ -197,6 +197,16 @@ detail = { phase = 8, name = "plan.real.test.ts archived-project resilience" }
 at = "2026-05-28T19:01:08.394Z"
 event = "phase-completed"
 detail = { phase = 8 }
+
+[[events]]
+at = "2026-05-28T19:25:19.355Z"
+event = "retro-written"
+detail = { type = "project" }
+
+[[events]]
+at = "2026-05-28T19:25:25.266Z"
+event = "archived"
+detail = { destination = "/Users/krambuhl/Sites/agents/projects/archive/2026-05-28-substrate-followups" }
 
 [[checkins]]
 schema_version = 1
