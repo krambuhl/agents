@@ -1,4 +1,3 @@
-checkins = []
 sessions = []
 
 [meta]
@@ -19,7 +18,8 @@ worker_bindings = {}
 [[phases]]
 number = 1
 name = "loom adr verb + tests + kebabCase factor"
-status = "not-started"
+status = "in-progress"
+branch = "loom-adr.adr-verb-port"
 
 [[phases]]
 number = 2
@@ -35,6 +35,30 @@ status = "not-started"
 at = "2026-05-28T07:59:42.810Z"
 event = "project-initialized"
 detail = {}
+
+[[events]]
+at = "2026-05-28T08:29:14.353Z"
+event = "checkin-created"
+detail = { number = "01", branch = "loom-adr.adr-verb-port" }
+
+[[events]]
+at = "2026-05-28T08:29:21.257Z"
+event = "phase-started"
+detail = { phase = 1, name = "loom adr verb + tests + kebabCase factor" }
+
+[[checkins]]
+schema_version = 1
+number = "01"
+created = "2026-05-28T08:30:00Z"
+phase = { number = 1, name = "loom adr verb + tests + kebabCase factor" }
+branch = "loom-adr.adr-verb-port"
+unit = "kebabCase factor extracted from createSlug (D1 of Phase 1)"
+contract = { goal = "Pure refactor extracting `kebabCase` from `createSlug`'s inline slugification in `plugins/loom/cli/lib/project.ts`. Sets up Phase 1's D2 (`loom adr` verb) to share slugification with `createSlug` — rule-of-three.", acceptance_criteria = ["plugins/loom/cli/lib/project.ts exports kebabCase(input: string): string as top-level helper — total (never throws), lowercases, collapses non-alphanumerics to single `-`, trims leading/trailing `-`", "createSlug calls kebabCase(topic) instead of inlining the chain; 2-char floor + LoomError('invalid-topic', ...) stays in createSlug", "New plugins/loom/cli/lib/project.test.ts with ≥3 byte-identity tests including a byte-identity-with-the-inlined-chain assertion across 10 representative inputs", "Existing createSlug tests in plan.test.ts:213 + research.test.ts stay unmodified and green", "Full repo npx vitest run green"], rules_applied = ["PLAN.md § Phase 1 exit criterion #2 (kebabCase factor)", "User CLAUDE.md three-phase pattern: behavioral change is separate from a cleanup — pure refactor lands first as its own checkin so D2 verb-port reads cleanly", "Disqualifier: no public-API change to createSlug", "Disqualifier: kebabCase totality (never throws)", "Disqualifier: no out-of-scope file edits (adr.ts/loom.ts are D2)"], disqualifiers = ["Any change to createSlug's public API (signature, error class, error code, edge-case behavior)", "kebabCase throwing on any input (must be total — empty input returns empty string)", "Touching non-D1 files (adr.ts, loom.ts wiring, manifest scaffolding — those are D2)"], inputs = ["plugins/loom/cli/lib/project.ts (lines 119-137, pre-refactor inline at 126-129)", "plugins/loom/cli/verbs/loom/plan.test.ts:213 (must stay green)", "plugins/loom/cli/verbs/loom/research.test.ts (must stay green)", "projects/2026-05-28-loom-adr/PLAN.md § Phase 1"] }
+execution = { actions = ["Edited plugins/loom/cli/lib/project.ts: hoisted the `.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')` chain from createSlug's body (pre-refactor lines 126-129) into a new exported `kebabCase(input: string): string` helper above createSlug; added doc-comment naming the totality contract and the caller-side floor-check responsibility", "Replaced createSlug's inline chain with `const slug = kebabCase(topic);` — the floor check + invalid-topic LoomError preserved verbatim", "Created plugins/loom/cli/lib/project.test.ts with 6 tests: typical input, special-chars collapse, leading/trailing trim, empty input totality, all-special-char input, and the byte-identity-with-the-inlined-chain test across 10 representative samples (the PLAN § Risks mitigation)", "Ran `npx vitest run plugins/loom/cli/lib/project.test.ts` → 6 passed", "Ran `npx vitest run` (full suite) → 786 passed / 1 failed; the single failure is the pre-existing plan.real.test.ts ENOENT on the archived 2026-05-26-substrate-consolidation/PLAN.md, already documented in substrate-followups checkin 01 — unrelated to D1"], files_touched = ["plugins/loom/cli/lib/project.ts", "plugins/loom/cli/lib/project.test.ts"], corrections = [] }
+scope = ["plugins/loom/cli/lib/project.ts", "plugins/loom/cli/lib/project.test.ts"]
+changes_since_previous = "First unit of phase 1 (loom-adr.adr-verb-port branch). Sets up D2's loom adr verb to share slugification with createSlug."
+verdict = { result = "approved", reasons = [] }
+notes_for_pr = ["Antagonist panel: evaluator-contract-fit + evaluator-test-unit + evaluator-naming — all approved first run. evaluator-react-api dropped from the derive-panel output manually per the substrate-followups precedent (Node CLI .ts files, no React/JSX); cross-references [[feedback_derive_panel_react_api_misderivation]].", "Panel composition note: `guild derive-panel` emitted `derive-panel-error: panel-spec-unreadable (using fallback)` on stderr alongside its agent list. The substrate's panel spec doc is unreadable to derive-panel in this fork — the fallback heuristic produced the panel. Worth filing as a separate substrate finding.", "Pre-existing test failure carried forward: plugins/loom/cli/lib/plan.real.test.ts fails on origin/main because PR #101 archived projects/2026-05-26-substrate-consolidation/ without updating the test's hardcoded path. Confirmed pre-existing via substrate-followups checkin 01 (same failure flagged there). Should be filed as a separate cleanup; not D1's surface.", "signal: not-a-phase-boundary: D1 is unit 1 of 2 in phase 1; D2 (loom adr verb + tests + wiring) is next. No scope-shift offered (zero signals)."]
 
 [[revisions]]
 timestamp = "2026-05-28T08:05:29.356Z"

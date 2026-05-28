@@ -105,10 +105,22 @@ export function resolveProject(slugOrPath: string, projectsRoot: string): string
   );
 }
 
+// Slugify a free-form string into kebab-case: lowercase, runs of
+// non-alphanumeric collapsed to a single `-`, leading/trailing `-`
+// trimmed. Total function — never throws; empty / all-special-char
+// input returns `""`. Callers that need a minimum-length invariant
+// (e.g. `createSlug`, `loom adr`'s title-to-slug) check the result's
+// length themselves.
+export function kebabCase(input: string): string {
+  return input
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
 // Build a project slug from a free-form topic and a YYYY-MM-DD date.
 //
-// Slugifies `topic` (lowercase, runs of non-alphanumeric collapsed to a
-// single `-`, leading/trailing `-` trimmed) and prefixes with `today`,
+// Slugifies `topic` via `kebabCase` and prefixes with `today`,
 // producing `<YYYY-MM-DD>-<slug>` matching `SLUG_RE` exactly.
 //
 // Throws `LoomError`:
@@ -123,10 +135,7 @@ export function createSlug(topic: string, today: string): string {
       `today '${today}' does not match YYYY-MM-DD`,
     );
   }
-  const slug = topic
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '');
+  const slug = kebabCase(topic);
   if (slug.length < 2) {
     throw new LoomError(
       'invalid-topic',
