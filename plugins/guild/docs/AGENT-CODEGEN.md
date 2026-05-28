@@ -123,47 +123,14 @@ Required, in order:
 Any other `## ` heading in a personality fragment (other than
 `personality-base.md`) fails the schema.
 
-#### Migration map (Phase 1.0 U2 / U3 input)
+#### Enforcement
 
-The current shape of each fragment relative to the canonical set.
-"✓" means no rewrite required.
-
-**Domains (`plugins/guild/modes/domains/`):**
-
-| File | Migration |
-|---|---|
-| `a11y.md` | ✓ |
-| `abstraction.md` | ✓ |
-| `composition.md` | ✓ |
-| `css-architecture.md` | ✓ (carries optional `## Carve-outs` at canonical position) |
-| `naming.md` | ✓ |
-| `nextjs.md` | reorder: move `## Detection` from between `## Scope` and `## Concerns` to between `## Antipattern catalog` and `## Good patterns` |
-| `performance.md` | add `## Antipattern catalog` stub (design-phase-only) |
-| `react.md` | ✓ |
-| `substrate.md` | add `## Antipattern catalog` stub (design-phase-only) |
-| `test-integration.md` | rename `## Shared testing concerns` → `## Concerns` |
-| `test-unit.md` | rename `## Shared testing concerns` → `## Concerns` |
-| `tokens.md` | fold `## Project context` into `## Scope`; keep `## Carve-outs` (optional, canonical position) |
-
-**Phases (`plugins/guild/modes/phases/`):**
-
-| File | Migration |
-|---|---|
-| `implementer.md` | add `## Stance` (split from `## Mandate`); drop `## Combining with domain + personality` |
-| `planner.md` | add `## Stance` (split from `## Mandate`); drop `## Combining with domain + personality` |
-| `researcher.md` | add `## Stance` (split from `## Mandate`); drop `## Combining with domain + personality` |
-| `reviewer.md` | rename `## Output contract — verdict format` → `## Output contract` (verdict format moves into the body); drop `## Combining with domain + personality`; already has `## Stance` |
-
-**Personalities (`plugins/guild/agents/personalities/`):**
-
-| File | Migration |
-|---|---|
-| `generative.md` | rename `## Your disposition` → `## Disposition`; add `## Voice cues` (new content); rename `## How your disposition modulates across the phases` → `## Phase modulation` |
-| `methodical.md` | same shape as `generative.md` |
-| `pragmatist.md` | same shape as `generative.md` |
-| `skeptic.md` | same shape as `generative.md` |
-| `synthesizer.md` | same shape as `generative.md` |
-| `personality-base.md` | exempt (documentation root) |
+`plugins/guild/fragment-schema.test.ts` walks each axis's directory
+and asserts every fragment file matches its canonical set
+(presence, order, optional-position, no extras). Drift fails the
+test with a localized message naming the offending file. The
+canonical sets above and the test's `*_REQUIRED` / `*_OPTIONAL`
+constants change together — if one shifts, both shift.
 
 ### Retained hand-authored agents
 
