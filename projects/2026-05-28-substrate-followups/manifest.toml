@@ -42,13 +42,14 @@ branch = "substrate-followups.smoke-checklist"
 [[phases]]
 number = 5
 name = "loom phase add verb"
-status = "in-progress"
+status = "completed"
 branch = "substrate-followups.phase-add"
 
 [[phases]]
 number = 6
 name = "loom phase update PR-fields persistence"
-status = "not-started"
+status = "in-progress"
+branch = "substrate-followups.pr-fields"
 
 [[phases]]
 number = 7
@@ -145,6 +146,21 @@ at = "2026-05-28T17:48:12.348Z"
 event = "phase-started"
 detail = { phase = 5, name = "loom phase add verb" }
 
+[[events]]
+at = "2026-05-28T17:53:32.801Z"
+event = "phase-completed"
+detail = { phase = 5 }
+
+[[events]]
+at = "2026-05-28T18:07:51.586Z"
+event = "checkin-created"
+detail = { number = "06", branch = "substrate-followups.pr-fields" }
+
+[[events]]
+at = "2026-05-28T18:07:51.670Z"
+event = "phase-started"
+detail = { phase = 6, name = "loom phase update PR-fields persistence" }
+
 [[checkins]]
 schema_version = 1
 number = "01"
@@ -214,6 +230,20 @@ scope = ["plugins/loom/cli/lib/manifest-toml.ts", "plugins/loom/cli/verbs/loom/p
 changes_since_previous = "Single-unit phase 5 close. The substrate gap this session hit twice (hand-seeded phases 6-8 mid-session in PR #107 follow-up commit `6803dbd`, and noted again in PR #110's body) is now closed: any project can populate manifest phases via `loom phase add`. The loom revise-plan / loom plan callers can be wired through in a follow-up to eliminate the hand-edit step entirely."
 verdict = { result = "approved", reasons = [] }
 notes_for_pr = ["Antagonist panel: evaluator-contract-fit approved with zero blocking findings. Single-evaluator panel (Node CLI .ts files; per [[feedback_derive_panel_react_api_misderivation]] react-api correctly dropped).", "signal: phase-boundary: this unit closes Phase 5 in full (single-unit phase, same shape as Phases 1-4) — single signal, no revise offered.", "Follow-up substrate work (NOT in scope here): wire loom plan + loom revise-plan to auto-call phase add for each phase declared in PLAN.md, eliminating the hand-seed step that [[feedback_loom_revise_plan_skips_manifest]] documents.", "Carries forward: phase-4 PR #114 reconciliation commit (status flip in-progress -> completed + phase-completed event).", "Validation that the verb closes the right gap: this very project hand-seeded phases 6-8 in commit `6803dbd` (substrate-followups.ci-hash-check branch, PR #110) because the verb didn't exist yet. With this PR merged, a future invocation could replace that hand-edit with `loom phase add <slug> --number=6 --name=...` × 3."]
+
+[[checkins]]
+schema_version = 1
+number = "06"
+created = "2026-05-28T11:10:00Z"
+phase = { number = 6, name = "loom phase update PR-fields persistence" }
+branch = "substrate-followups.pr-fields"
+unit = "Phase 6 — phase update rejects PR flags (fail-loud reframe)"
+contract = { goal = "Make `loom phase update` reject --pr/--url/--pr-state with pr-flags-unsupported rather than silently accepting and dropping them. Aligns the verb contract with the substrate's existing architecture (manifest-toml.ts:299-302 + types.ts:83-86: derive-don't-store; PR state queried via `loom pr discover`). Closes [[feedback_loom_phase_update_drops_pr_fields]] by fail-loud rejection, not by adding storage. Significant reframe from PLAN.md's original storage-based framing.", acceptance_criteria = ["phaseUpdate returns pr-flags-unsupported with message naming `loom pr discover` + manifest-toml.ts:299-302 + types.ts:83-86 markers when ANY of --pr/--url/--pr-state is supplied", "Tests: each of the 3 flags triggers the error individually; PR-flag rejection fires BEFORE phase-lookup (more informative error wins); happy-path phase update without PR flags still works", "SUBSTRATE-COMPOSITIONS.md § Phase update updated (drops PR flags from wraps + adds derive-don't-store paragraph + pr-flags-unsupported failure mode + removes unreachable invalid-pr/invalid-pr-state); hand-copied to all 5 consumer plugins", "[[feedback_loom_phase_update_drops_pr_fields]] memory updated to RESOLVED stub with resolution narrative", "Full repo vitest green modulo known Phase 8 failure"], rules_applied = ["Existing architecture markers: manifest-toml.ts:299-302 + types.ts:83-86 (derive-don't-store)", "Reframe from PLAN.md storage-based exit criteria to fail-loud (recorded as corrections)", "Hand-copy doc propagation, not bare sync-shared per [[feedback_sync_shared_bare_run_overreaches]]"], disqualifiers = ["Adding a pr subfield to phase rows (violates manifest-toml.ts:299-302)", "Emitting pr-* events (violates types.ts:83-86)", "Modifying phaseAdd/phaseRead/phaseList/loom pr discover", "Running bare `node scripts/sync-shared.ts`"], inputs = ["plugins/loom/cli/verbs/loom/phase.ts:127-200 (phaseUpdate)", "plugins/loom/cli/lib/manifest-toml.ts:299-302 (architecture marker — pr table intentionally not read)", "plugins/loom/cli/lib/types.ts:83-86 (architecture marker — no pr-* event types)", "plugins/commons/docs/SUBSTRATE-COMPOSITIONS.md § Phase update", "plugins/loom/cli/verbs/loom/phase.test.ts (test scaffolding)", "[[feedback_loom_phase_update_drops_pr_fields]] (papercut + resolution)", "projects/2026-05-28-substrate-followups/PLAN.md § Phase 6"] }
+execution = { actions = ["Added --pr / --url / --pr-state to phaseUpdate's parseArgs options block (so they're recognized, not unknown).", "Added PR-flag-rejection block at the top of phaseUpdate (immediately after parseArgs, BEFORE the slug/positional/status validation). Returns LoomError('pr-flags-unsupported', '...') when any of the three flags is supplied. Message names `loom pr discover` + manifest-toml.ts:299-302 + types.ts:83-86 markers.", "Added 4 tests to phase.test.ts: --pr rejection, --url rejection, --pr-state rejection, and a precedence test confirming the PR-flag check fires BEFORE phase-not-found (so an operator passing both bad-phase + PR flag gets the more informative pr-flags-unsupported error).", "Rewrote plugins/commons/docs/SUBSTRATE-COMPOSITIONS.md § Phase update: dropped --pr/--url/--pr-state from the wraps block; added a 'PR state is intentionally NOT recorded here' paragraph citing the architecture markers; added pr-flags-unsupported to failure modes; removed invalid-pr and invalid-pr-state (no longer reachable codes).", "Hand-copied plugins/commons/docs/SUBSTRATE-COMPOSITIONS.md → plugins/{ev,griot,guild,loom}/docs/SUBSTRATE-COMPOSITIONS.md (4 cp). Phase 2 byte-identity gate confirms all 5 share one hash (684f2beb...).", "Rewrote feedback_loom_phase_update_drops_pr_fields memory: top RESOLVED stub with resolution narrative + reasoning + how-to-apply for future sessions; historical body retained for wikilink resolution.", "Ran targeted vitest plugins/loom/cli/verbs/loom/phase.test.ts -> 23/23 passed (19 pre-existing + 4 new).", "Ran full repo vitest -> 839 passed, 1 failed (known Phase-8 plan.real.test.ts; pre-existing on origin/main).", "Real-CLI smoke against temp-fixture: 4 invocations — happy path (no PR flags, status flip succeeds), 3 reject paths (--pr / --url / --pr-state each individually returns exit 1 with the helpful message).", "Antagonist panel: evaluator-contract-fit approved with zero blocking findings; noted the reframe's drift is explicit + well-justified by pre-existing architecture (not stealth scope-shift)."], files_touched = ["plugins/loom/cli/verbs/loom/phase.ts", "plugins/loom/cli/verbs/loom/phase.test.ts", "plugins/commons/docs/SUBSTRATE-COMPOSITIONS.md", "plugins/ev/docs/SUBSTRATE-COMPOSITIONS.md", "plugins/griot/docs/SUBSTRATE-COMPOSITIONS.md", "plugins/guild/docs/SUBSTRATE-COMPOSITIONS.md", "plugins/loom/docs/SUBSTRATE-COMPOSITIONS.md"], corrections = ["correction: PLAN.md § Phase 6 exit criteria asked for (a) a pr subfield on the phase row and (b) pr-opened/pr-merged/pr-closed events. Both would violate the substrate's existing architecture: manifest-toml.ts:299-302 says 'a pr table on a phase is intentionally not read — PR state is derived via loom pr discover ... harmless (the data was never authoritative)'; types.ts:83-86 says 'PR open/merged/updated state is derived on demand ... not recorded as events — so there are no pr-* event types.' Reframed to fail-loud rejection instead. Same papercut closed (silent-drop is gone); opposite mechanism (rejection rather than storage). Surfaced via TWO AskUserQuestion rounds: first asked about subfield+events, then re-asked when I found the types.ts comment broadening the decision to events. User picked the aligned-with-architecture option both times. PLAN.md isn't formally revised here; the reframe is captured in this checkin's corrections, the updated memory stub, and SUBSTRATE-COMPOSITIONS.md's now-accurate failure modes."] }
+scope = ["plugins/loom/cli/verbs/loom/phase.ts", "plugins/loom/cli/verbs/loom/phase.test.ts", "plugins/commons/docs/SUBSTRATE-COMPOSITIONS.md", "plugins/ev/docs/SUBSTRATE-COMPOSITIONS.md", "plugins/griot/docs/SUBSTRATE-COMPOSITIONS.md", "plugins/guild/docs/SUBSTRATE-COMPOSITIONS.md", "plugins/loom/docs/SUBSTRATE-COMPOSITIONS.md"]
+changes_since_previous = "Single-unit phase 6 close with major reframe. The silent-drop papercut documented in [[feedback_loom_phase_update_drops_pr_fields]] is closed — not by adding the storage PLAN.md anticipated, but by fail-loud rejection aligned with the substrate-consolidation architecture decision. The SUBSTRATE-COMPOSITIONS § Phase update doc now matches what the verb actually does. Memory file flipped to RESOLVED stub for wikilink continuity."
+verdict = { result = "approved", reasons = [] }
+notes_for_pr = ["Antagonist panel: evaluator-contract-fit approved with zero blocking findings. Specifically noted: 'reframe's drift is explicit and well-justified by pre-existing architecture decision, not stealth scope-shift.'", "signal: phase-boundary: this unit closes Phase 6 (single-unit phase, same shape as Phases 1-5).", "signal: user-comment: PLAN.md § Phase 6's storage-based exit criteria turned out to be stale relative to the substrate-consolidation derive-don't-store decision. Two AskUserQuestion rounds during execution shifted to fail-loud rejection. Recorded as correction in this checkin. (Two signals — user-comment + phase-boundary — but they don't point at the SAME shift, so the two-signal-concurrence rule for inner-RPI doesn't fire. PLAN.md will eventually want revision at archive time or via /loom-revise-plan; not blocking.)", "Carries forward: phase-5 PR #116 reconciliation commit (status flip + phase-completed event).", "Self-validating: this very reconciliation commit (`7b5113b`) tried to set --pr=116 --url=... --pr-state=merged and the flags were silently dropped (per the old behavior). After PR #117 merges, the NEXT reconciliation would fail loud on those flags — and operators would learn to use the clean `loom phase update <slug> <N> --status=completed` shape that this unit normalizes.", "Substrate observation: SUBSTRATE-COMPOSITIONS.md had been documenting the pre-decision PR-flag behavior since substrate-consolidation. Phase 6's doc rewrite is itself a small substrate-consolidation cleanup — the doc was lying about what the verb accepted. Caught + fixed in this unit."]
 
 [[revisions]]
 timestamp = "2026-05-28T08:27:16.909Z"

@@ -88,9 +88,17 @@ mutates local working tree.
 
 **Purpose**: Update a phase's status (`not-started` →
 `in-progress` → `completed`, with `blocked` as an off-path
-state), and optionally record the branch + PR reference. Emits
-the matching event (`phase-started`, `phase-completed`, etc) as
-a side effect.
+state) and optionally record the branch. Emits the matching
+event (`phase-started`, `phase-completed`, etc) as a side
+effect.
+
+**PR state is intentionally NOT recorded here**: loom's design
+treats PR state as derived-on-demand via `bin/loom pr discover`
+(gh pr view + the checkin marker), not cached in the manifest
+and not emitted as events — see `manifest-toml.ts:299-302` and
+`types.ts:83-86` for the architecture markers. Calling `phase
+update` with `--pr` / `--url` / `--pr-state` returns
+`pr-flags-unsupported` rather than silently dropping them.
 
 **Wraps**:
 
@@ -98,7 +106,6 @@ a side effect.
 bin/loom phase update <slug> <phase-number> \
   --status=(not-started|in-progress|blocked|completed) \
   [--branch=<branch>] \
-  [--pr=<number> --url=<url> --pr-state=(open|merged|closed)] \
   [--reason=<text>]   # required when --status=blocked
 ```
 
@@ -116,13 +123,11 @@ that distinction matters.
 **Failure modes**:
 
 - `missing-args` → required field absent (slug, phase number,
-  status; or `--reason` when status=blocked, or `--pr` when
-  `--url`/`--pr-state` supplied). Operator error; loop should
-  surface to operator.
+  status; or `--reason` when status=blocked). Operator error;
+  loop should surface to operator.
 - `invalid-phase` (non-integer phase number) → operator error.
-- `invalid-pr` (non-numeric pr value) → operator error.
-- `invalid-pr-state` (not one of open/merged/closed) →
-  operator error.
+- `pr-flags-unsupported` → operator supplied `--pr` / `--url` /
+  `--pr-state`; use `bin/loom pr discover` instead.
 - `project-not-found` → forward the loom error verbatim.
 - `phase-not-in-manifest` (the phase number doesn't exist on
   this project) → forward verbatim; likely indicates plan drift.
