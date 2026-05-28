@@ -166,6 +166,23 @@ test('dispatch: verbless namespace (research) routes to researchVerb (missing-ar
   rmSync(ctx.projectsRoot, { recursive: true, force: true });
 });
 
+test('dispatch: verbless namespace (adr) routes to adrVerb (missing-args surfaces)', () => {
+  const ctx = makeCtx();
+  // The wired-namespace tripwire for `loom adr` — if adr is removed
+  // from NAMESPACES / VERBS_BY_NAMESPACE / VERBLESS_NAMESPACES, this
+  // test fails loud (unknown-verb or not-implemented instead of
+  // missing-args). Same shape as the plan / revise-plan / research
+  // tests above.
+  const result = dispatch(
+    { kind: 'verb', namespace: 'adr', rest: [] },
+    ctx,
+  );
+  expect(result.exitCode).toBe(1);
+  const parsed = JSON.parse(result.stderr as string);
+  expect(parsed.error).toBe('missing-args');
+  rmSync(ctx.projectsRoot, { recursive: true, force: true });
+});
+
 test('dispatch: pr namespace wired (no unwired namespaces remain)', () => {
   const ctx = makeCtx();
   // pr is wired now (Phase 4 unit 01). Missing verb returns missing-verb,
