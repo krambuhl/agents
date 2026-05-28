@@ -42,7 +42,7 @@ branch = "substrate-followups.smoke-checklist"
 [[phases]]
 number = 5
 name = "loom phase add verb"
-status = "in-progress"
+status = "completed"
 branch = "substrate-followups.phase-add"
 
 [[phases]]
@@ -144,6 +144,11 @@ detail = { number = "05", branch = "substrate-followups.phase-add" }
 at = "2026-05-28T17:48:12.348Z"
 event = "phase-started"
 detail = { phase = 5, name = "loom phase add verb" }
+
+[[events]]
+at = "2026-05-28T17:53:32.801Z"
+event = "phase-completed"
+detail = { phase = 5 }
 
 [[checkins]]
 schema_version = 1
