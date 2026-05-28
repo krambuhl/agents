@@ -18,7 +18,7 @@ worker_bindings = {}
 [[phases]]
 number = 1
 name = "loom doctor exit-code flip"
-status = "in-progress"
+status = "completed"
 branch = "substrate-followups.doctor-exit-flip"
 
 [[phases]]
@@ -65,6 +65,11 @@ detail = { number = "01", branch = "substrate-followups.doctor-exit-flip" }
 at = "2026-05-28T08:01:19.711Z"
 event = "phase-started"
 detail = { phase = 1, name = "loom doctor exit-code flip" }
+
+[[events]]
+at = "2026-05-28T08:06:37.149Z"
+event = "phase-completed"
+detail = { phase = 1 }
 
 [[checkins]]
 schema_version = 1
