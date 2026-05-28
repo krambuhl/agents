@@ -42,7 +42,8 @@ branch = "substrate-followups.smoke-checklist"
 [[phases]]
 number = 5
 name = "loom phase add verb"
-status = "not-started"
+status = "in-progress"
+branch = "substrate-followups.phase-add"
 
 [[phases]]
 number = 6
@@ -134,6 +135,16 @@ at = "2026-05-28T17:43:38.981Z"
 event = "phase-completed"
 detail = { phase = 4 }
 
+[[events]]
+at = "2026-05-28T17:48:12.263Z"
+event = "checkin-created"
+detail = { number = "05", branch = "substrate-followups.phase-add" }
+
+[[events]]
+at = "2026-05-28T17:48:12.348Z"
+event = "phase-started"
+detail = { phase = 5, name = "loom phase add verb" }
+
 [[checkins]]
 schema_version = 1
 number = "01"
@@ -189,6 +200,20 @@ scope = ["plugins/guild/docs/AGENT-CODEGEN.md", "plugins/guild/CLAUDE.md"]
 changes_since_previous = "Single-unit phase 4 close. The post-install verification protocol for guild's generated agents is now operator-runnable: a fresh session can follow the checklist after install (or after a codegen sweep) and confirm the panel is live. The 'one-line pointer in guild's CLAUDE.md' that PLAN.md asked for is satisfied by a new top-level plugin file (no prior plugins/<plugin>/CLAUDE.md convention existed; this creates one for guild specifically since the smoke is the operator-facing artifact)."
 verdict = { result = "approved", reasons = [] }
 notes_for_pr = ["Antagonist panel: evaluator-contract-fit approved with zero blocking findings (single-evaluator panel; substrate-only files reduce to contract-fit per docs/PANEL-COMPOSITION.md).", "Advisory observation from the evaluator: the agent-definition caching prerequisite ('Today's session has not previously dispatched either of the agents named below') is correctly named as a failure mode — agent definitions are loaded once per Claude Code process per [[feedback_project_subdir_claude_md_at_import_only]] / L-004 session-boundary. Not a flag, just a positive nod.", "signal: phase-boundary: this unit closes Phase 4 in full (single-unit phase, same shape as Phases 1-3) — single signal, no revise offered.", "Carries forward: phase-3 PR #112 reconciliation commit (status flip in-progress -> completed + phase-completed event).", "Convention nudge: plugins/guild/CLAUDE.md is the first per-plugin CLAUDE.md in the marketplace. If we like the shape, plugins/loom/CLAUDE.md, plugins/ev/CLAUDE.md, plugins/griot/CLAUDE.md, plugins/commons/CLAUDE.md could follow with similar 10-15 line overviews. Not in scope here; flagged for the operator's call."]
+
+[[checkins]]
+schema_version = 1
+number = "05"
+created = "2026-05-28T10:50:00Z"
+phase = { number = 5, name = "loom phase add verb" }
+branch = "substrate-followups.phase-add"
+unit = "Phase 5 — loom phase add verb (CLI + helper + tests)"
+contract = { goal = "Add `loom phase add <slug> --number=<N> --name=<name>` verb so projects can populate manifest phases via CLI rather than hand-editing TOML. Closes the gap this very session hit when hand-seeding phases 6-8 after /loom-revise-plan.", acceptance_criteria = ["manifest-toml.ts exports appendPhase(m, phase) — sibling of appendCheckin/appendSession; fails loud phase-already-exists on duplicate number; pure function", "phase.ts exports phaseAdd(rest, ctx): positional slug, required --number=<N> (integer) + --name=<name>, optional --status (default not-started) + --branch + --pretty; fails loud missing-args / invalid-phase / invalid-status / phase-already-exists via appendPhase; reads via readManifestFile, mutates via appendPhase, writes via writeManifest (atomic + token)", "PHASE_VERBS includes add: phaseAdd", "phase.test.ts adds 3+ assertions: clean add (length+round-trip), duplicate-number fail (manifest unchanged), missing-args fail", "Real-CLI smoke confirms verb + loom project read shows new phase", "Full repo vitest green modulo known Phase-8 failure"], rules_applied = ["PLAN.md § Phase 5 verbatim exit criteria", "Disqualifier: no phase-added event (PLAN.md silent; symmetric with seed-pattern)", "Disqualifier: no modifications to phaseUpdate/phaseRead/phaseList"], disqualifiers = ["Emitting a phase-added event (PLAN.md doesn't ask; symmetric with how loom plan doesn't event-on-seed)", "Modifying phaseUpdate, phaseRead, or phaseList", "Touching other manifest-toml.ts exports (only add appendPhase)", "Running bare `node scripts/sync-shared.ts` (no shared lib content touched; per [[feedback_sync_shared_bare_run_overreaches]])"], inputs = ["plugins/loom/cli/verbs/loom/phase.ts (existing verb patterns to mirror)", "plugins/loom/cli/lib/manifest-toml.ts:564-614 (appendEvent/appendCheckin/appendSession/updatePhase patterns)", "plugins/loom/cli/lib/types.ts (ManifestPhase shape)", "plugins/loom/cli/verbs/loom/phase.test.ts (existing test scaffolding to mirror)", "projects/2026-05-28-substrate-followups/PLAN.md § Phase 5"] }
+execution = { actions = ["Added appendPhase(m, phase) to plugins/loom/cli/lib/manifest-toml.ts just above updateMeta. Mirrors appendCheckin/appendSession exactly: dup-detect on `number`, throws LoomError('phase-already-exists') on collision, returns new ManifestToml (pure function).", "Added phaseAdd(rest, ctx) to plugins/loom/cli/verbs/loom/phase.ts below phaseUpdate. Validates slug → --number (integer; same guard as phaseUpdate against floats) → --name (non-empty) → --status (default not-started, validated against PHASE_STATUSES). Optional --branch attaches if present. Uses readManifestFile + appendPhase + writeManifest({expect: token}) — same atomic+token concurrency pattern as phaseUpdate.", "Registered add: phaseAdd in PHASE_VERBS map.", "Added 7 new tests to phase.test.ts: clean add (length 4→5 + round-trip via readManifestFile shows the entry), duplicate-number returns phase-already-exists AND manifest length is unchanged (verified before/after via readManifestFile), missing --number → missing-args, missing --name → missing-args, invalid --status=bogus → invalid-status, --status=in-progress propagates, --branch propagates.", "Ran targeted vitest: plugins/loom/cli/verbs/loom/phase.test.ts → 19/19 passed (12 pre-existing + 7 new).", "Ran full repo vitest: 835 passed, 1 failed (the known Phase-8 plan.real.test.ts failure; pre-existing on origin/main).", "Real-CLI smoke (3 invocations in a temp-fixture project): (a) `loom phase add 2026-05-28-smoke --number=99 --name=smoke` → exit 0, stdout {\"number\":99,...}; (b) `loom project read 2026-05-28-smoke` shows the new phase in the phases array; (c) re-running the add → exit 1, stderr {\"error\":\"phase-already-exists\",...}.", "Antagonist panel: evaluator-contract-fit approved with zero blocking findings."], files_touched = ["plugins/loom/cli/lib/manifest-toml.ts", "plugins/loom/cli/verbs/loom/phase.ts", "plugins/loom/cli/verbs/loom/phase.test.ts"], corrections = [] }
+scope = ["plugins/loom/cli/lib/manifest-toml.ts", "plugins/loom/cli/verbs/loom/phase.ts", "plugins/loom/cli/verbs/loom/phase.test.ts"]
+changes_since_previous = "Single-unit phase 5 close. The substrate gap this session hit twice (hand-seeded phases 6-8 mid-session in PR #107 follow-up commit `6803dbd`, and noted again in PR #110's body) is now closed: any project can populate manifest phases via `loom phase add`. The loom revise-plan / loom plan callers can be wired through in a follow-up to eliminate the hand-edit step entirely."
+verdict = { result = "approved", reasons = [] }
+notes_for_pr = ["Antagonist panel: evaluator-contract-fit approved with zero blocking findings. Single-evaluator panel (Node CLI .ts files; per [[feedback_derive_panel_react_api_misderivation]] react-api correctly dropped).", "signal: phase-boundary: this unit closes Phase 5 in full (single-unit phase, same shape as Phases 1-4) — single signal, no revise offered.", "Follow-up substrate work (NOT in scope here): wire loom plan + loom revise-plan to auto-call phase add for each phase declared in PLAN.md, eliminating the hand-seed step that [[feedback_loom_revise_plan_skips_manifest]] documents.", "Carries forward: phase-4 PR #114 reconciliation commit (status flip in-progress -> completed + phase-completed event).", "Validation that the verb closes the right gap: this very project hand-seeded phases 6-8 in commit `6803dbd` (substrate-followups.ci-hash-check branch, PR #110) because the verb didn't exist yet. With this PR merged, a future invocation could replace that hand-edit with `loom phase add <slug> --number=6 --name=...` × 3."]
 
 [[revisions]]
 timestamp = "2026-05-28T08:27:16.909Z"

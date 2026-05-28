@@ -613,6 +613,21 @@ export function updatePhase(
   return { ...m, phases };
 }
 
+// Append a new [[phases]] entry, rejecting a duplicate `number` loudly.
+// Sibling of appendCheckin / appendSession — same shape, different table.
+// Used by `loom phase add` to populate phases declared in PLAN.md without
+// hand-editing manifest.toml.
+export function appendPhase(m: ManifestToml, phase: ManifestPhase): ManifestToml {
+  const exists = m.phases.some((p) => p.number === phase.number);
+  if (exists) {
+    throw new LoomError(
+      'phase-already-exists',
+      `phase ${phase.number} already exists`,
+    );
+  }
+  return { ...m, phases: [...m.phases, phase] };
+}
+
 // Merge a patch into [meta] (current_branch / latest_checkin / status / …).
 export function updateMeta(
   m: ManifestToml,
