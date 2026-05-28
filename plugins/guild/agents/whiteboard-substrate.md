@@ -222,6 +222,16 @@ is written.
   right place (invocation-time, session-time, write-time) and matches
   the value.
 
+## Antipattern catalog
+
+No reviewer-cell catalog — this is a design-phase domain (researcher
+and planner only). The `contract-fit` lens covers after-the-fact
+correctness of substrate changes, and the concerns above shape the
+contract before code is written. See § Cross-domain notes for the
+boundaries that downstream reviewer-cell domains (`naming` for verb
+names, `test-unit` / `test-integration` for verifying substrate
+verbs) own once a substrate change ships.
+
 ## Good patterns
 
 - **Append-only over mutate-in-place.** Event-log shape over

@@ -22,8 +22,6 @@ blocking only with explicit, in-diff evidence of regression — a diff
 that converts a `token()` call back to a literal, or introduces a
 literal in a rule that previously used a token.
 
-## Project context
-
 The token system has three load-bearing pieces a reader should be
 oriented to:
 

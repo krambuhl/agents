@@ -237,7 +237,7 @@ This domain is **blocking by default**: a flaky or leaky integration
 test poisons CI signal, so most entries gate. The locator, retry,
 auth-duplication, breadth, and snapshot-threshold entries are advisory.
 
-## Shared testing concerns
+## Concerns
 
 These tier-agnostic principles govern both the unit and integration
 tiers; they read identically in `test-unit` and `test-integration`.

@@ -238,7 +238,7 @@ This domain is **blocking by default**: a malformed unit test is a
 liability that masks real failures, so most entries gate. The naming,
 nesting, snapshot, and `expect.any` entries are advisory.
 
-## Shared testing concerns
+## Concerns
 
 These tier-agnostic principles govern both the unit and integration
 tiers; they read identically in `test-unit` and `test-integration`.

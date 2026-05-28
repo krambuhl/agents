@@ -40,6 +40,16 @@ reviewer catches afterward what the recommendation didn't prevent.
 - **Asset weight.** Images, fonts, custom CSS. A 4MB hero image needs a
   different conversation than a 40KB one.
 
+## Antipattern catalog
+
+No reviewer-cell catalog — this is a design-phase domain (researcher
+and planner only). Framework-correctness on shipped code (an
+unneeded `'use client'`, a raw `<img>`) is the `nextjs` domain's
+reviewer lane; the concerns above shape the contract before code is
+written. See § Cross-domain notes for the boundaries that downstream
+reviewer-cell domains (`nextjs`) own once a performance-shaped
+recommendation lands as code.
+
 ## Good patterns
 
 - **Server-component first.** Pure-render UI with no interactivity

@@ -231,19 +231,6 @@ This domain is **blocking by default**: most entries are correctness
 bugs that fail the build or break hydration, and they gate the unit. A
 few performance/refactor entries are advisory (noted per entry).
 
-## Detection
-
-A static analyzer covers the most mechanical entries:
-`npm run lint:nextjs` runs `scripts/check-nextjs.ts`, a TypeScript-AST
-walker over `.tsx`/`.jsx` in `app/`, `components/`, and `sketches/`. It
-emits `<file>:<line>: <code>: <message>` and covers catalog entries 1–6
-(use-client correctness, the two directives, `<img>`, `<a href>`,
-Pages-Router APIs, `<head>` JSX); `--json` emits findings as an array.
-This analyzer is why the `nextjs` domain earns the
-`Bash(npm run lint:nextjs:*)` grant. Entries 7–15 are detected by
-inspection — the hydration, env-var, boundary, config, and DOM-access
-patterns the AST walker does not cover.
-
 ## Concerns
 
 - **The Server/Client boundary is explicit and minimal.** Files that
@@ -346,6 +333,19 @@ patterns the AST walker does not cover.
     function body (before mount) rather than inside `useEffect`, in a
     path that may execute server-side or pre-hydration. Runtime crash
     on first render. Severity: **blocking**. Flag: `nextjs-dom-in-render`.
+
+## Detection
+
+A static analyzer covers the most mechanical entries:
+`npm run lint:nextjs` runs `scripts/check-nextjs.ts`, a TypeScript-AST
+walker over `.tsx`/`.jsx` in `app/`, `components/`, and `sketches/`. It
+emits `<file>:<line>: <code>: <message>` and covers catalog entries 1–6
+(use-client correctness, the two directives, `<img>`, `<a href>`,
+Pages-Router APIs, `<head>` JSX); `--json` emits findings as an array.
+This analyzer is why the `nextjs` domain earns the
+`Bash(npm run lint:nextjs:*)` grant. Entries 7–15 are detected by
+inspection — the hydration, env-var, boundary, config, and DOM-access
+patterns the AST walker does not cover.
 
 ## Good patterns
 
