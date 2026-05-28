@@ -127,3 +127,29 @@ Examples:
   declared consumer plugins. The CI drift-detection check catches
   forgotten re-runs by mutating a per-plugin file post-sync and
   asserting non-zero exit.
+
+## Architectural Decisions
+
+Architectural Decision Records (ADRs) live at workspace level in
+`projects/adr-log/`. One log per workspace — ADRs span projects,
+and the per-project numbering schemes that alternative shapes
+encourage diverge in practice. One searchable place beats N
+searchable places.
+
+- **Location**: `projects/adr-log/NNNN-<title-slug>.md`.
+- **Creation**: `loom adr "<title>" [--body-file=<path>]
+  [--status=<status>] [--no-commit]`. The verb writes the file with
+  the conventional Context / Decision / Consequences shape (TODO
+  stub if no `--body-file`) and commits with
+  `[loom] adr NNNN: <title>`. See `plugins/loom/skills/loom-adr/SKILL.md`
+  for the agent-facing skill.
+- **Numbering**: load-bearing invariant — the next number is
+  `max(existing NNNN) + 1`, **not** `count + 1`. Numbers are never
+  reused. A deleted or moved ADR leaves a permanent gap; the next
+  number keeps climbing. Cross-references to "ADR-0007" in commit
+  messages, PRs, and other ADRs must never silently re-point to a
+  different decision.
+- **Revision**: ADRs are append-only. To revise a decision, write a
+  NEW ADR with `--status=superseded` body-linking to the prior
+  number. Do not edit the old file. There is no `loom adr
+  supersede` sub-verb in v1; the convention is the contract.
