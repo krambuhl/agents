@@ -24,7 +24,7 @@ branch = "substrate-followups.doctor-exit-flip"
 [[phases]]
 number = 2
 name = "CI hash check for the 3-copy docs"
-status = "in-progress"
+status = "completed"
 branch = "substrate-followups.ci-hash-check"
 
 [[phases]]
@@ -96,6 +96,11 @@ detail = { number = "02", branch = "substrate-followups.ci-hash-check" }
 at = "2026-05-28T16:20:37.273Z"
 event = "phase-started"
 detail = { phase = 2, name = "CI hash check for the 3-copy docs" }
+
+[[events]]
+at = "2026-05-28T16:41:43.973Z"
+event = "phase-completed"
+detail = { phase = 2 }
 
 [[checkins]]
 schema_version = 1
