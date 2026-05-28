@@ -60,7 +60,7 @@ branch = "substrate-followups.griot-capture"
 [[phases]]
 number = 8
 name = "plan.real.test.ts archived-project resilience"
-status = "in-progress"
+status = "completed"
 branch = "substrate-followups.real-test-resilience"
 
 [[events]]
@@ -192,6 +192,11 @@ detail = { number = "08", branch = "substrate-followups.real-test-resilience" }
 at = "2026-05-28T18:50:41.925Z"
 event = "phase-started"
 detail = { phase = 8, name = "plan.real.test.ts archived-project resilience" }
+
+[[events]]
+at = "2026-05-28T19:01:08.394Z"
+event = "phase-completed"
+detail = { phase = 8 }
 
 [[checkins]]
 schema_version = 1
