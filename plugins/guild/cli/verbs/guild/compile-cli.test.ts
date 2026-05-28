@@ -278,6 +278,69 @@ describe('compile CLI: --stage=emit', () => {
   });
 });
 
+describe('compile CLI: --check', () => {
+  it('a fresh compile followed by --check exits 0 with ok=true', () => {
+    // First do a full compile to seed the sandbox.
+    const seed = compileVerb([], makeCtx(sandbox.cwd));
+    expect(seed.exitCode).toBe(0);
+    // Now run --check against the same sandbox.
+    const result = compileVerb(['--check'], makeCtx(sandbox.cwd));
+    expect(result.exitCode).toBe(0);
+    const out = JSON.parse(result.stdout ?? '{}');
+    expect(out.ok).toBe(true);
+    expect(out.drift.cells_with_source_drift).toEqual([]);
+    expect(out.drift.cells_with_output_drift).toEqual([]);
+    expect(out.drift.cells_with_prompt_drift).toEqual([]);
+    expect(out.drift.cells_missing_cache_entry).toEqual([]);
+    expect(out.drift.cells_missing_on_disk).toEqual([]);
+    expect(out.drift.stale_cache_entries).toEqual([]);
+  });
+
+  it('--check on a tampered agent file exits 1 with output_drift in the report', () => {
+    const seed = compileVerb([], makeCtx(sandbox.cwd));
+    expect(seed.exitCode).toBe(0);
+    const generatedDir = join(sandbox.cwd, sandbox.outputDirRel);
+    writeFileSync(join(generatedDir, 'evaluator-a11y.md'), '---\ntampered\n---\n');
+    const result = compileVerb(['--check'], makeCtx(sandbox.cwd));
+    expect(result.exitCode).toBe(1);
+    const out = JSON.parse(result.stdout ?? '{}');
+    expect(out.ok).toBe(false);
+    expect(out.drift.cells_with_output_drift).toContain('evaluator-a11y');
+  });
+
+  it('--check + --stage returns bad-args (mutually exclusive)', () => {
+    const result = compileVerb(
+      ['--check', '--stage=parse,validate,derive,resolve'],
+      makeCtx(sandbox.cwd),
+    );
+    expect(result.exitCode).toBe(1);
+    expect(result.stderr).toContain('bad-args');
+    expect(result.stderr).toContain('mutually exclusive');
+  });
+
+  it('--check on a sandbox with no .cache.toml reports every cell as missing-cache-entry', () => {
+    // No prior compile() call. Just run --check directly.
+    const result = compileVerb(['--check'], makeCtx(sandbox.cwd));
+    expect(result.exitCode).toBe(1);
+    const out = JSON.parse(result.stdout ?? '{}');
+    expect(out.ok).toBe(false);
+    expect(out.drift.cells_missing_cache_entry.length).toBeGreaterThan(0);
+  });
+
+  it('--check honors --prompt-hash: passing a hash different from the cache reports prompt drift', () => {
+    const seed = compileVerb(['--prompt-hash=baseline'], makeCtx(sandbox.cwd));
+    expect(seed.exitCode).toBe(0);
+    const result = compileVerb(
+      ['--check', '--prompt-hash=different'],
+      makeCtx(sandbox.cwd),
+    );
+    expect(result.exitCode).toBe(1);
+    const out = JSON.parse(result.stdout ?? '{}');
+    expect(out.ok).toBe(false);
+    expect(out.drift.cells_with_prompt_drift.length).toBeGreaterThan(0);
+  });
+});
+
 describe('compile CLI: error cases', () => {
   it('errors loud on unknown --stage', () => {
     const result = compileVerb(['--stage=mystery'], makeCtx(sandbox.cwd));
