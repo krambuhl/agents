@@ -101,6 +101,46 @@ function isCacheHit(cell: ResolvedCell, cache: Map<string, CacheEntry>): boolean
 }
 
 export function compile(opts: CompileOptions): CompileReport {
+  const { resolved, cache_hits, cache_misses } = compileThroughResolveCore(opts);
+  const composed: ComposedAgent[] = resolved.map((cell) => compose(cell));
+  // v0: always compose; cache_hits/misses reported for caller
+  // awareness. Phase 2.1 will branch on isCacheHit and short-
+  // circuit LLM fusion for the hits.
+
+  const emitResult = emit(
+    composed,
+    opts.outputDir,
+    opts.fileWriter,
+    opts.fusedAt,
+  );
+
+  return {
+    cells_total: composed.length,
+    cache_hits,
+    cache_misses,
+    emit: emitResult,
+  };
+}
+
+// Partial-stage variants for the /guild-compile skill (Phase 2.1).
+// The skill drives in-session LLM fusion between these two calls:
+//   1. compileThroughResolve → ResolvedCell[] (skill consumes via JSON).
+//   2. Skill performs fusion → ComposedAgent[].
+//   3. compileEmitOnly(agents) → writes files + cache.
+
+export interface ThroughResolveOptions {
+  axesToml: string;
+  fragmentReader: FragmentReader;
+  cacheToml?: string;
+}
+
+export interface ThroughResolveResult {
+  resolved: ResolvedCell[];
+  cache_hits: string[];
+  cache_misses: string[];
+}
+
+function compileThroughResolveCore(opts: ThroughResolveOptions): ThroughResolveResult {
   const data = parse(opts.axesToml);
   const validation: ValidationResult = validate(data);
   if (!validation.ok) {
@@ -117,31 +157,29 @@ export function compile(opts: CompileOptions): CompileReport {
   const cache = readCache(opts.cacheToml);
   const cache_hits: string[] = [];
   const cache_misses: string[] = [];
-  const composed: ComposedAgent[] = [];
-
   for (const cell of resolved) {
     if (isCacheHit(cell, cache)) {
       cache_hits.push(cell.id);
     } else {
       cache_misses.push(cell.id);
     }
-    // v0: always compose; cache_hits/misses reported for caller
-    // awareness. Phase 2.1 will branch on isCacheHit and short-
-    // circuit LLM fusion for the hits.
-    composed.push(compose(cell));
   }
+  return { resolved, cache_hits, cache_misses };
+}
 
-  const emitResult = emit(
-    composed,
-    opts.outputDir,
-    opts.fileWriter,
-    opts.fusedAt,
-  );
+export function compileThroughResolve(
+  opts: ThroughResolveOptions,
+): ThroughResolveResult {
+  return compileThroughResolveCore(opts);
+}
 
-  return {
-    cells_total: composed.length,
-    cache_hits,
-    cache_misses,
-    emit: emitResult,
-  };
+export interface EmitOnlyOptions {
+  agents: ComposedAgent[];
+  outputDir: string;
+  fileWriter: FileWriter;
+  fusedAt?: string;
+}
+
+export function compileEmitOnly(opts: EmitOnlyOptions): EmitResult {
+  return emit(opts.agents, opts.outputDir, opts.fileWriter, opts.fusedAt);
 }
