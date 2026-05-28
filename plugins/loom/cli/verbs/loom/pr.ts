@@ -361,7 +361,7 @@ export function prRespond(rest: string[], ctx: CliContext): DispatchResult {
   } catch (err) {
     return errToResult(err);
   }
-  const responsesDir = join(projectPath, 'checkins', parsed.branch, 'responses');
+  const responsesDir = join(projectPath, 'responses', parsed.branch);
   mkdirSync(responsesDir, { recursive: true });
   let nextN = nextResponseNumber(responsesDir);
   const paths: string[] = [];
