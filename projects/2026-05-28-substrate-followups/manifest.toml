@@ -30,13 +30,14 @@ branch = "substrate-followups.ci-hash-check"
 [[phases]]
 number = 3
 name = "L332 responses path relocation"
-status = "in-progress"
+status = "completed"
 branch = "substrate-followups.responses-path"
 
 [[phases]]
 number = 4
 name = "Live-spawn smoke checklist"
-status = "not-started"
+status = "in-progress"
+branch = "substrate-followups.smoke-checklist"
 
 [[phases]]
 number = 5
@@ -113,6 +114,21 @@ at = "2026-05-28T16:48:18.766Z"
 event = "phase-started"
 detail = { phase = 3, name = "L332 responses path relocation" }
 
+[[events]]
+at = "2026-05-28T17:23:37.245Z"
+event = "phase-completed"
+detail = { phase = 3 }
+
+[[events]]
+at = "2026-05-28T17:27:26.104Z"
+event = "checkin-created"
+detail = { number = "04", branch = "substrate-followups.smoke-checklist" }
+
+[[events]]
+at = "2026-05-28T17:27:26.187Z"
+event = "phase-started"
+detail = { phase = 4, name = "Live-spawn smoke checklist" }
+
 [[checkins]]
 schema_version = 1
 number = "01"
@@ -154,6 +170,20 @@ scope = ["plugins/loom/cli/verbs/loom/pr.ts", "plugins/loom/cli/verbs/loom/pr.te
 changes_since_previous = "Single-unit phase 3 close. Removes the last pre-M1 vestige named in PLAN.md (checkins/<branch>/responses/<id>.md). The checkins/ directory now disappears entirely from active loom projects — all per-record state lives in manifest.toml's sections; on-demand PR-response markdowns live under responses/<branch>/<id>.md."
 verdict = { result = "approved", reasons = [] }
 notes_for_pr = ["Antagonist panel: evaluator-contract-fit approved with zero findings (single-evaluator panel per derive-panel output).", "signal: phase-boundary: this unit closes Phase 3 in full (single-unit phase, same shape as Phases 1-2) — single signal, no revise offered.", "Carries forward in this PR: phase-2 PR #110 reconciliation commit (status flip in-progress -> completed + phase-completed event).", "Substrate observation memorialized during execution: bare `node scripts/sync-shared.ts` is unsafe for narrow edits — see [[feedback_sync_shared_bare_run_overreaches]]. Recovery worked but cost roughly 14 file restores + 4 untracked deletes.", "Existing on-disk checkins/ directories in two projects (2026-05-21-loom-linear-memory-boundary and archive/2026-05-25-jelly) were NOT touched — pre-existing residue, harmless. Future archive of those projects will sweep them away naturally."]
+
+[[checkins]]
+schema_version = 1
+number = "04"
+created = "2026-05-28T10:30:00Z"
+phase = { number = 4, name = "Live-spawn smoke checklist" }
+branch = "substrate-followups.smoke-checklist"
+unit = "Phase 4 — Live-spawn smoke checklist (prose-only)"
+contract = { goal = "Expand the sparse plugins/guild/docs/AGENT-CODEGEN.md § Live-spawn smoke into a step-by-step checklist with concrete sample inputs (synthetic known-bad diff, expected VERDICT shape, named log location), and add a new plugins/guild/CLAUDE.md with a one-line pointer to the checklist. Prose-only.", acceptance_criteria = ["AGENT-CODEGEN.md § Live-spawn smoke expanded with prerequisite check + 4 numbered steps + green/fail diagnostics", "Known-bad sample diff is concrete synthetic JSX (ProfileBadge.tsx with 3 intentional defects: missing alt, click-only div, literal #888 color)", "Expected VERDICT shape cites evaluator-base.md grammar with sample", "Named log location: learnings/session-notes/<YYYY-MM-DD>-guild-smoke-postcutover.md", "New plugins/guild/CLAUDE.md with brief project purpose + one-line pointer to smoke checklist", "No code change (prose-only per PLAN.md)", "Full repo npx vitest run green modulo known Phase-8 plan.real.test.ts failure"], rules_applied = ["PLAN.md § Phase 4 verbatim exit criteria", "PLAN.md § Open questions: 'synthetic (small, focused, no external dependency)' for the sample diff", "Disqualifier: prose-only — no code touched"], disqualifiers = ["Touching code (prose-only phase)", "Editing AGENT-CODEGEN.md beyond the § Live-spawn smoke section", "Trying to commons-sync AGENT-CODEGEN.md (it's plugin-authoritative for guild; cross-plugin sync is a separate substrate question)"], inputs = ["plugins/guild/docs/AGENT-CODEGEN.md:294-311 (sparse smoke section)", "plugins/guild/agents/evaluator-base.md:78-109 (VERDICT grammar)", "plugins/guild/agents/evaluator-a11y.md + whiteboard-react.md (real generated agent names cited in checklist)", "[[feedback_guild_aggregate_verdict_line_anchored]] (cross-reference for known parse gotcha)", "projects/2026-05-28-substrate-followups/PLAN.md § Phase 4"] }
+execution = { actions = ["Edited plugins/guild/docs/AGENT-CODEGEN.md § Live-spawn smoke: expanded from ~15 lines to ~120 lines with Prerequisite + Step 1 (Dispatch reviewer evaluator-a11y) + Step 2 (Dispatch planner whiteboard-react) + Step 3 (Verify verdict via parse-and-aggregate) + Step 4 (Record result at named session-note path) + 'What green looks like' + 'If smoke fails' diagnostics.", "Synthetic known-bad sample diff is a ProfileBadge.tsx with 3 intentional defects: missing alt on <img>, click-only <div> with no keyboard handler, literal #888 color in style. Each defect targets one of the AC bullets in the embedded brief.", "Expected VERDICT shape: 'VERDICT: flagged' line-anchored at column 0 with reasons covering the defects; cross-referenced to [[feedback_guild_aggregate_verdict_line_anchored]] for the known regex-anchoring gotcha.", "Wrote new plugins/guild/CLAUDE.md (13 lines): brief project purpose (antagonist-panel substrate, parallel evaluators + whiteboard engineers) + one-line pointer to docs/AGENT-CODEGEN.md § Live-spawn smoke + named session-note path.", "Ran full repo vitest -> 806 passed, 1 failed (the known Phase-8 plan.real.test.ts failure; pre-existing on origin/main).", "git status --porcelain confirms only the 2 prose files modified — no code change.", "Antagonist panel: evaluator-contract-fit approved with zero blocking findings (one advisory observation noting the agent-definition caching prerequisite as a sharp catch; no action needed)."], files_touched = ["plugins/guild/docs/AGENT-CODEGEN.md", "plugins/guild/CLAUDE.md"], corrections = [] }
+scope = ["plugins/guild/docs/AGENT-CODEGEN.md", "plugins/guild/CLAUDE.md"]
+changes_since_previous = "Single-unit phase 4 close. The post-install verification protocol for guild's generated agents is now operator-runnable: a fresh session can follow the checklist after install (or after a codegen sweep) and confirm the panel is live. The 'one-line pointer in guild's CLAUDE.md' that PLAN.md asked for is satisfied by a new top-level plugin file (no prior plugins/<plugin>/CLAUDE.md convention existed; this creates one for guild specifically since the smoke is the operator-facing artifact)."
+verdict = { result = "approved", reasons = [] }
+notes_for_pr = ["Antagonist panel: evaluator-contract-fit approved with zero blocking findings (single-evaluator panel; substrate-only files reduce to contract-fit per docs/PANEL-COMPOSITION.md).", "Advisory observation from the evaluator: the agent-definition caching prerequisite ('Today's session has not previously dispatched either of the agents named below') is correctly named as a failure mode — agent definitions are loaded once per Claude Code process per [[feedback_project_subdir_claude_md_at_import_only]] / L-004 session-boundary. Not a flag, just a positive nod.", "signal: phase-boundary: this unit closes Phase 4 in full (single-unit phase, same shape as Phases 1-3) — single signal, no revise offered.", "Carries forward: phase-3 PR #112 reconciliation commit (status flip in-progress -> completed + phase-completed event).", "Convention nudge: plugins/guild/CLAUDE.md is the first per-plugin CLAUDE.md in the marketplace. If we like the shape, plugins/loom/CLAUDE.md, plugins/ev/CLAUDE.md, plugins/griot/CLAUDE.md, plugins/commons/CLAUDE.md could follow with similar 10-15 line overviews. Not in scope here; flagged for the operator's call."]
 
 [[revisions]]
 timestamp = "2026-05-28T08:27:16.909Z"
