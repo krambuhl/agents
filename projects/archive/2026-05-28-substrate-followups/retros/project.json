@@ -1,0 +1,52 @@
+{
+  "schema_version": 1,
+  "type": "project",
+  "created": "2026-05-28T19:10:00Z",
+  "findings": [
+    {
+      "category": "kept-well",
+      "description": "'State rides the feature commit' PR cadence — one PR per phase, base=main, no .plan integration branch — held across all 8 phase PRs without operational drag",
+      "evidence": "8 phase PRs (#103, #110, #112, #114, #116, #118, #120, #123) + 1 plan-revision PR (#107); cadence decided upfront in § Decisions, settled substrate-consolidation's biggest operational pain at project birth"
+    },
+    {
+      "category": "kept-well",
+      "description": "AskUserQuestion scope-shift reframe pattern surfaced PLAN-vs-substrate-reality divergence cleanly in phases 2, 6, and 8 — each reframe found the right move via grill-me rather than literal PLAN-following",
+      "evidence": "Checkin 02 (Phase 2 commons-canonical reframe, 3 corrections); checkin 06 (Phase 6 derive-don't-store reframe, 2 AskUserQuestion rounds); checkin 08 (Phase 8 deletion vs PLAN.md options 8a/8b, 1 correction)"
+    },
+    {
+      "category": "improvement",
+      "description": "PLAN.md was stale at execution time for 4 of 8 phases — substrate-consolidation's architecture decisions (commons-canonical sync, derive-don't-store PR state, catalog-gap classification) weren't reflected in the original framing",
+      "evidence": "Phases 2 (loom-canonical vs commons-canonical), 6 (subfield+events vs derive-don't-store), 7 (catalog-gap was already implementable, not 'not-yet-supported' from architecture's view), 8 (temp-dir-fixture defeats real-artifact-tier purpose)"
+    },
+    {
+      "category": "improvement",
+      "description": "Bare `node scripts/sync-shared.ts` mid-phase-3 overreached and deleted 10 substrate-mid-migration files including guild's AGENT-CODEGEN.md; recovery via `git checkout HEAD --` worked but cost real cognitive overhead and required exiting the unit's normal flow",
+      "evidence": "Phase 3 checkin 03 correction; memory [[feedback_sync_shared_bare_run_overreaches]]"
+    },
+    {
+      "category": "process-change",
+      "description": "Wire `loom plan` and `loom revise-plan` to call `phase add` internally when seeding manifest phases from PLAN.md — eliminates the hand-edit step substrate-followups hit twice (project birth + after /loom-revise-plan in PR #107)",
+      "evidence": "Phase 5 shipped `loom phase add` (PR #116); the auto-seed wiring is the natural follow-up. Memory [[feedback_loom_revise_plan_skips_manifest]] documents the second face of this gap"
+    },
+    {
+      "category": "follow-up",
+      "description": "`loom project archive` should grep `**/*.test.ts` for archived-slug references and warn or refuse when matches exist — catches Phase-8-shape breakage at archive time rather than at next-test-run",
+      "evidence": "PLAN.md option 8b deferred. Memory [[feedback_plan_real_test_breaks_on_project_archive]] § Substrate-fix candidate"
+    },
+    {
+      "category": "follow-up",
+      "description": "`griot-compact` SKILL.md catalog-gap routing — capture pathway shipped in phase 7 but downstream still routes catalog-gap notes to a 'not-yet-supported classifications' run-summary list rather than promoting to rollup",
+      "evidence": "Phase 7 checkin 07 notes_for_pr; griot-compact SKILL.md:147-151; memory [[feedback_griot_capture_no_pathway_for_one_off]] § promotion"
+    },
+    {
+      "category": "follow-up",
+      "description": "`scripts/sync-shared.ts --only=<glob>` (or `--exclude-lib`) for narrow doc edits — would have prevented phase 3's bare-run overreach without requiring the operator to inspect the full 24-record drift before deciding what to touch",
+      "evidence": "Memory [[feedback_sync_shared_bare_run_overreaches]] § Substrate-fix candidate"
+    },
+    {
+      "category": "follow-up",
+      "description": "PLAN.md formal revision deferred — 4 corrections worth of stale framings (commons-canonical vs loom-canonical, derive-don't-store vs subfield+events, catalog-gap implementability, deletion vs 8a/8b) recorded in checkin corrections + memory stubs + this retro but not flowed back into PLAN.md prose",
+      "evidence": "Corrections in checkins 02, 06, 08; checkin notes_for_pr arrays document the reframes; PLAN.md § Revision log doesn't yet name the post-execution corrections"
+    }
+  ]
+}

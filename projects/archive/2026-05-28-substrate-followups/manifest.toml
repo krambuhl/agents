@@ -5,7 +5,7 @@ schema_version = 1
 title = "Substrate Followups"
 slug = "2026-05-28-substrate-followups"
 started = "2026-05-28"
-status = "active"
+status = "archived"
 strategy = "interactive"
 
 [config]
@@ -60,7 +60,7 @@ branch = "substrate-followups.griot-capture"
 [[phases]]
 number = 8
 name = "plan.real.test.ts archived-project resilience"
-status = "in-progress"
+status = "completed"
 branch = "substrate-followups.real-test-resilience"
 
 [[events]]
@@ -192,6 +192,21 @@ detail = { number = "08", branch = "substrate-followups.real-test-resilience" }
 at = "2026-05-28T18:50:41.925Z"
 event = "phase-started"
 detail = { phase = 8, name = "plan.real.test.ts archived-project resilience" }
+
+[[events]]
+at = "2026-05-28T19:01:08.394Z"
+event = "phase-completed"
+detail = { phase = 8 }
+
+[[events]]
+at = "2026-05-28T19:25:19.355Z"
+event = "retro-written"
+detail = { type = "project" }
+
+[[events]]
+at = "2026-05-28T19:25:25.266Z"
+event = "archived"
+detail = { destination = "/Users/krambuhl/Sites/agents/projects/archive/2026-05-28-substrate-followups" }
 
 [[checkins]]
 schema_version = 1
