@@ -16,6 +16,8 @@ export type { DispatchResult, GuildCliContext };
 // operation in the antagonist-panel substrate. Matches bin/griot's
 // flat-verb shape.
 export const VERBS: Record<string, string> = {
+  compile:
+    'Run the multi-stage axes.toml → agents pipeline. --stage=<comma list> for partial execution (parse,validate,derive,resolve emits ResolvedCell JSON; emit consumes ComposedAgent JSON from stdin).',
   'derive-panel':
     'Compute the evaluator panel for a file list (--files=<csv> or newline-stdin)',
   findings:

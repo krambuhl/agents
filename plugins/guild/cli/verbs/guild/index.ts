@@ -4,6 +4,7 @@
 // parse-and-aggregate, whiteboard composition). Matches bin/griot's
 // flat-verb shape.
 
+import { compileVerb } from './compile-cli.ts';
 import { derivePanelVerb } from './derive-panel.ts';
 import { findingsVerb } from './findings.ts';
 import { generateVerb } from './generate.ts';
@@ -37,6 +38,7 @@ export type GuildVerbHandler = (
 ) => DispatchResult;
 
 export const GUILD_VERBS: Record<string, GuildVerbHandler> = {
+  compile: compileVerb,
   'derive-panel': derivePanelVerb,
   findings: findingsVerb,
   generate: generateVerb,
