@@ -64,6 +64,52 @@ Signals an ADR does NOT fit:
   in-flight discussions belong in the project's research artifacts
   or a PR thread until they crystallize.
 
+## When invoked from within `ev-loop-interactive`
+
+The `ev-loop-interactive` skill's unit loop includes an ADR-emit
+hook (step 5.5, between scope-shift detection and phase update)
+that fires once per unit close. The hook scans the just-written
+checkin's `notes_for_pr` array for entries containing the literal
+`[adr-candidate]` marker (case-sensitive, bracketed-literal) and,
+per match, offers the operator the chance to lift the entry into a
+real ADR via this verb. The marker convention is the operator's
+intent; the hook is the offer.
+
+When invoked from that path, the calling pattern is fixed:
+
+```bash
+node plugins/loom/cli/loom.ts adr "<title>" \
+  --body-file=<tmp-path> \
+  --no-commit
+```
+
+Three things matter about that invocation, and downstream agents
+following this skill from within the loop should preserve all
+three:
+
+- **`--body-file`** carries a body composed by the loop (Context =
+  paraphrase of the marked entry + the unit's contract goal,
+  Decision = the decision the operator named, Consequences = a
+  literal `TODO: operator to fill before commit` line). The body
+  is intentionally incomplete so the operator hand-edits before
+  the checkin's git commit step runs.
+- **`--no-commit`** is mandatory. The verb's default auto-commit
+  would race the checkin commit; the hook stages the returned ADR
+  path for the unit's git-add list so the ADR rides the same git
+  commit as the manifest update — one revertable bundle if the
+  ADR turns out wrong.
+- **`node plugins/loom/cli/loom.ts`** (not bare `loom`) is the
+  encoded invocation. The cached-PATH-binary lag pattern documented
+  in `2026-05-28-loom-adr`'s P2D2 `notes_for_pr` means the bare
+  `loom adr` invocation can still fail with `unknown-verb` in fresh
+  sessions even after the marketplace dependency has shipped. The
+  `node …/loom.ts` form is the substrate's working path until the
+  cache-lifecycle issue is resolved.
+
+See `plugins/ev/skills/ev-loop-interactive/SKILL.md` § Step 2 unit
+loop, sub-step 5.5 for the full hook semantics (scan, per-match
+flow, event vocabulary, idempotency posture, auto-mode behavior).
+
 ## Process
 
 ### 1. Confirm the decision is worth an ADR
