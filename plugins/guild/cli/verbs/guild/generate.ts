@@ -485,7 +485,13 @@ export const generateVerb: GuildVerbHandler = (rest) => {
   const sourceDir = values['source-dir'] ?? defaultSourceDir();
   const projectDir = values['project-dir'];
   const manifestDir = projectDir ?? sourceDir;
-  const outDir = values.out ?? join(manifestDir, 'agents', 'generated');
+  // Post-Phase-7 (substrate-consolidation U1 of M4): codegen writes
+  // in-place against the runtime agents/ tree alongside the small set
+  // of retained hand-authored files (evaluator-base, evaluator-
+  // contract-fit, whiteboard-base). The legacy agents/generated/
+  // staging subdir was the interim during the baked-vs-generated
+  // coexistence; it no longer exists once cutover lands.
+  const outDir = values.out ?? join(manifestDir, 'agents');
 
   try {
     const manifest = parseToml(
