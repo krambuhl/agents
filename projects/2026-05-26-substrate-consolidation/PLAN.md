@@ -100,9 +100,10 @@ The forks were a testbed. The point of the testbed was always to find the good i
 **Goal**: Adapt ev's loops to the new state model and harvested patterns.
 
 **Exit**:
-- ev-loop unit commits fold `manifest.toml` state mutations into the same commit as the code — no state-only commits (kills the orphan-event-carries-into-next-unit papercut; state and work now share a clock).
+- ev-loop unit commits fold `manifest.toml` state mutations into the same commit as the code — no state-only commits (kills the orphan-event-carries-into-next-unit papercut; state and work now share a clock). Achieved via commit-discipline option (d) **derive-on-demand**: the `pr-opened` / `pr-merged` / `pr-updated` event vocabulary is retired and PR open/merged state is derived from `gh` via `loom pr discover` — there are no pr-events to carry, so the recurring phase-tail-carry wart is dissolved.
 - ev skill bodies reference recipes by name rather than inlining ad-hoc dispatch.
 - ev skill bodies run preflight `command -v loom guild` checks to fail fast on missing dependencies.
+- `docs/SUBSTRATE-COMPOSITIONS.md` and `LOOM-CONVENTIONS.md` are swept from the pre-M1 JSON state model (`manifest.json` / `events.jsonl` / `checkins/` / `sessions/`) to the single-file `manifest.toml` model. The ev loops resolve every `§ Recipe` against `SUBSTRATE-COMPOSITIONS.md` as authoritative, so this doc-drift is load-bearing, not cosmetic.
 
 **Depends on**: Phase 2 (manifest.toml), Phase 5 (recipes + generated panel).
 
@@ -145,3 +146,7 @@ The forks were a testbed. The point of the testbed was always to find the good i
 ## Decisions
 
 See [INTERVIEW.md](./INTERVIEW.md) for the full decision tree (13 resolved decisions, each with the recommendation, the answer, and the rationale).
+
+## Revision log
+
+- 2026-05-27 — Phase 6 gains a 4th exit criterion: sweep the load-bearing pre-M1 doc-drift in SUBSTRATE-COMPOSITIONS.md + LOOM-CONVENTIONS.md to the manifest.toml model. Also records the commit-discipline decision: option (d) derive-on-demand, retiring the pr-opened/pr-merged/pr-updated event vocabulary in favor of loom pr discover.

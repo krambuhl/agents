@@ -54,13 +54,14 @@ test('prDiscover: no existing PR returns marker_state=new', () => {
   expect(out.pr).toBeNull();
 });
 
-test('prDiscover: PR body marker matches disk → fresh', () => {
+test('prDiscover: PR body marker matches disk → fresh, surfaces gh state', () => {
   setupProjectWithCheckins(['01', '02']);
   const ghRunner = () =>
     JSON.stringify({
       number: 42,
       url: 'https://github.com/x/y/pull/42',
       body: '<!-- loom-pr-checkins: 01,02 -->\n\n## Body',
+      state: 'MERGED',
     });
   const result = prDiscover(
     ['test-loom', '--branch=loom-cli/test-branch'],
@@ -70,6 +71,40 @@ test('prDiscover: PR body marker matches disk → fresh', () => {
   const out = JSON.parse(result.stdout as string);
   expect(out.marker_state).toBe('fresh');
   expect(out.pr.number).toBe(42);
+  // gh merge state surfaces — orientation's open/merged signal under (d).
+  expect(out.pr.state).toBe('MERGED');
+});
+
+test('prDiscover: invokes `gh pr view <branch>` positionally with state field', () => {
+  // Pins the gh invocation. `gh pr view` takes the branch as a POSITIONAL;
+  // `--head` is a `gh pr list` flag and `gh pr view --head` errors out — a
+  // regression to it would make discover silently report "no PR" (the catch
+  // swallows the gh error). The mock here returns valid JSON, so only an
+  // assertion on the args themselves catches the mistake fixtures otherwise
+  // mask.
+  setupProjectWithCheckins(['01']);
+  const ghCalls: string[][] = [];
+  const ghRunner = (args: string[]) => {
+    ghCalls.push(args);
+    return JSON.stringify({
+      number: 7,
+      url: 'https://github.com/x/y/pull/7',
+      body: '<!-- loom-pr-checkins: 01 -->\n\n## Body',
+      state: 'OPEN',
+    });
+  };
+  const result = prDiscover(
+    ['test-loom', '--branch=feature/x'],
+    { projectsRoot, ghRunner },
+  );
+  expect(result.exitCode).toBe(0);
+  const args = ghCalls[0] as string[];
+  expect(args.slice(0, 2)).toEqual(['pr', 'view']);
+  expect(args).toContain('feature/x');
+  expect(args).not.toContain('--head');
+  // state is requested from gh so orientation can read open/merged.
+  const jsonIdx = args.indexOf('--json');
+  expect(args[jsonIdx + 1]).toContain('state');
 });
 
 test('prDiscover: PR marker is subset of disk → stale', () => {
@@ -115,7 +150,7 @@ test('prDiscover: missing --branch returns missing-args', () => {
 
 // ---------- prOpen tests ----------
 
-test('prOpen: composes gh pr create, parses URL, appends event', () => {
+test('prOpen: composes gh pr create, parses URL, records no event', () => {
   setupProjectWithCheckins(['01']);
   const projectPath = join(projectsRoot, '2026-05-15-test-loom');
   const bodyFile = join(projectsRoot, 'body.md');
@@ -147,13 +182,11 @@ test('prOpen: composes gh pr create, parses URL, appends event', () => {
   expect(ghCalls[0]).toContain('--title');
   expect(ghCalls[0]).toContain('Test PR');
 
-  // pr-opened event appended to [[events]]
+  // No event recorded: PR state is derived on demand via `loom pr discover`,
+  // so `pr open` makes no manifest write. `pr-opened` is gone from the
+  // EventName union, so cast through string to assert it is absent at runtime.
   const { manifest } = readManifestFile(manifestPath(projectPath));
-  const event = manifest.events[manifest.events.length - 1];
-  expect(event?.event).toBe('pr-opened');
-  const detail = event?.detail as { pr: number; url: string };
-  expect(detail.pr).toBe(77);
-  expect(detail.url).toBe('https://github.com/owner/repo/pull/77');
+  expect(manifest.events.some((e) => (e.event as string) === 'pr-opened')).toBe(false);
 });
 
 test('prOpen: gh failure surfaces as gh-failed', () => {
@@ -205,7 +238,7 @@ test('prOpen: invalid gh URL output returns invalid-pr-url', () => {
 
 // ---------- prUpdate tests ----------
 
-test('prUpdate: composes gh pr edit, appends pr-updated event', () => {
+test('prUpdate: composes gh pr edit, records no event', () => {
   setupProjectWithCheckins(['01']);
   const projectPath = join(projectsRoot, '2026-05-15-test-loom');
   const bodyFile = join(projectsRoot, 'body.md');
@@ -230,11 +263,10 @@ test('prUpdate: composes gh pr edit, appends pr-updated event', () => {
   expect(ghCalls[0]).toContain('edit');
   expect(ghCalls[0]).toContain('42');
 
-  // pr-updated event in [[events]]
+  // No event recorded: PR body refresh is gh-only (no manifest write).
+  // `pr-updated` is gone from EventName; cast through string to assert absence.
   const { manifest } = readManifestFile(manifestPath(projectPath));
-  const event = manifest.events[manifest.events.length - 1];
-  expect(event?.event).toBe('pr-updated');
-  expect((event?.detail as { pr: number }).pr).toBe(42);
+  expect(manifest.events.some((e) => (e.event as string) === 'pr-updated')).toBe(false);
 });
 
 test('prUpdate: missing --pr returns missing-args', () => {

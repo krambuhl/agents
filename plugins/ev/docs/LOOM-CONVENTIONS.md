@@ -239,9 +239,6 @@ Event vocabulary (current set):
 | `phase-blocked` | `{ phase, reason }` | `bin/loom phase update --status=blocked --reason=...` |
 | `phase-unblocked` | `{ phase }` | `bin/loom phase update --status=in-progress` (from blocked) |
 | `checkin-created` | `{ number, branch }` | `bin/loom checkin write` |
-| `pr-opened` | `{ pr, url }` | `bin/loom pr open` |
-| `pr-updated` | `{ pr }` | `bin/loom pr update` |
-| `pr-merged` | `{ pr }` | reconciliation (when a merge is detected) |
 | `session-saved` | `{ filename }` | `bin/loom session write` |
 | `retro-written` | `{ type, phase?, tier? }` | `bin/loom retro write` |
 | `archived` | `{ destination }` | `bin/loom project archive` |
@@ -252,6 +249,13 @@ types in clusters (`research-*`, `plan-*`, `rpi-*`,
 `auto-mode-*`). The vocabulary is **additive** — new event names
 may appear, but existing consumers read events by name and ignore
 unknown ones, so the schema does not need a version bump.
+
+PR open/merged/updated state is **not** an event. It is derived on
+demand from `gh` via `bin/loom pr discover`, which reads
+`gh pr view <branch>` (number, url, and merge state) plus the checkin
+marker in the PR body. `bin/loom pr open` and `bin/loom pr update` are
+thin `gh` wrappers that record nothing — there are no `pr-opened`,
+`pr-merged`, or `pr-updated` events.
 
 ### `checkins/<branch>/<NN>.json`
 
