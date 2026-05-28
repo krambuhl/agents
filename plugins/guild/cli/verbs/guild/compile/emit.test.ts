@@ -72,7 +72,7 @@ describe('emit: .cache.toml', () => {
     expect((cache!.match(/\[\[cells\]\]/g) || []).length).toBe(2);
   });
 
-  it('cache entries record cell_id + source_hashes + output_hash + fused_at', () => {
+  it('cache entries record cell_id + source_hashes + output_hash + fused_at + prompt_hash', () => {
     const agents = [makeAgent({ id: 'evaluator-foo' })];
     const { fileWriter, writes } = makeWriter();
     const result = emit(agents, 'out', fileWriter, FUSED_AT);
@@ -80,9 +80,11 @@ describe('emit: .cache.toml', () => {
     expect(cache).toContain('cell_id = "evaluator-foo"');
     expect(cache).toContain(`fused_at = "${FUSED_AT}"`);
     expect(cache).toContain('output_hash = "');
+    expect(cache).toContain('prompt_hash = "');
     expect(cache).toContain(`source_hash_phase = "${'a'.repeat(64)}"`);
     expect(result.cache_entries.length).toBe(1);
     expect(result.cache_entries[0]!.cell_id).toBe('evaluator-foo');
+    expect(result.cache_entries[0]!.prompt_hash).toBe('');
   });
 
   it('cache entries are sorted by cell_id (deterministic output)', () => {
@@ -123,6 +125,30 @@ describe('emit: output_hash', () => {
     const a = emit([makeAgent({ composed_body: 'A' })], 'out', () => {}, FUSED_AT);
     const b = emit([makeAgent({ composed_body: 'B' })], 'out', () => {}, FUSED_AT);
     expect(a.cache_entries[0]!.output_hash).not.toBe(b.cache_entries[0]!.output_hash);
+  });
+});
+
+describe('emit: prompt_hash', () => {
+  it('writes the passed promptHash into every cache entry', () => {
+    const agents = [
+      makeAgent({ id: 'a' }),
+      makeAgent({ id: 'b' }),
+    ];
+    const { fileWriter, writes } = makeWriter();
+    const result = emit(agents, 'out', fileWriter, FUSED_AT, 'deadbeef'.repeat(8));
+    const cache = writes.get('out/.cache.toml')!;
+    expect((cache.match(new RegExp(`prompt_hash = "${'deadbeef'.repeat(8)}"`, 'g')) || []).length).toBe(2);
+    for (const entry of result.cache_entries) {
+      expect(entry.prompt_hash).toBe('deadbeef'.repeat(8));
+    }
+  });
+
+  it('defaults to empty string when promptHash is not passed', () => {
+    const agents = [makeAgent()];
+    const { fileWriter, writes } = makeWriter();
+    const result = emit(agents, 'out', fileWriter, FUSED_AT);
+    expect(writes.get('out/.cache.toml')).toContain('prompt_hash = ""');
+    expect(result.cache_entries[0]!.prompt_hash).toBe('');
   });
 });
 

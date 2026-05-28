@@ -119,6 +119,133 @@ describe('compile: end-to-end smoke against the real seed axes.toml', () => {
   });
 });
 
+describe('compile: prompt_hash threading', () => {
+  it('same sources + same promptHash → cache_hit on second run', () => {
+    const axesToml = readFileSync(join(pluginRoot, 'axes.toml'), 'utf8');
+    const fragmentReader = (relPath: string) =>
+      readFileSync(join(pluginRoot, relPath), 'utf8');
+
+    const firstWrites = new Map<string, string>();
+    compile({
+      axesToml,
+      outputDir: 'out',
+      fragmentReader,
+      fileWriter: inMemoryWriter(firstWrites),
+      fusedAt: FUSED_AT,
+      promptHash: 'abc123',
+    });
+    const cacheToml = firstWrites.get('out/.cache.toml')!;
+
+    const secondWrites = new Map<string, string>();
+    const secondReport = compile({
+      axesToml,
+      outputDir: 'out',
+      cacheToml,
+      fragmentReader,
+      fileWriter: inMemoryWriter(secondWrites),
+      fusedAt: FUSED_AT,
+      promptHash: 'abc123',
+    });
+    expect(secondReport.cache_hits.length).toBe(secondReport.cells_total);
+    expect(secondReport.cache_misses.length).toBe(0);
+  });
+
+  it('same sources + different promptHash → cache_miss for every cell', () => {
+    const axesToml = readFileSync(join(pluginRoot, 'axes.toml'), 'utf8');
+    const fragmentReader = (relPath: string) =>
+      readFileSync(join(pluginRoot, relPath), 'utf8');
+
+    const firstWrites = new Map<string, string>();
+    compile({
+      axesToml,
+      outputDir: 'out',
+      fragmentReader,
+      fileWriter: inMemoryWriter(firstWrites),
+      fusedAt: FUSED_AT,
+      promptHash: 'old-prompt',
+    });
+    const cacheToml = firstWrites.get('out/.cache.toml')!;
+
+    const secondWrites = new Map<string, string>();
+    const secondReport = compile({
+      axesToml,
+      outputDir: 'out',
+      cacheToml,
+      fragmentReader,
+      fileWriter: inMemoryWriter(secondWrites),
+      fusedAt: FUSED_AT,
+      promptHash: 'new-prompt',
+    });
+    expect(secondReport.cache_misses.length).toBe(secondReport.cells_total);
+    expect(secondReport.cache_hits.length).toBe(0);
+  });
+
+  it('empty-string promptHash matches an empty-string entry (legacy-compat default)', () => {
+    const axesToml = readFileSync(join(pluginRoot, 'axes.toml'), 'utf8');
+    const fragmentReader = (relPath: string) =>
+      readFileSync(join(pluginRoot, relPath), 'utf8');
+
+    // First run with no explicit promptHash — defaults to ''.
+    const firstWrites = new Map<string, string>();
+    compile({
+      axesToml,
+      outputDir: 'out',
+      fragmentReader,
+      fileWriter: inMemoryWriter(firstWrites),
+      fusedAt: FUSED_AT,
+    });
+    const cacheToml = firstWrites.get('out/.cache.toml')!;
+
+    // Second run also default — both sides empty. All cache_hits.
+    const secondWrites = new Map<string, string>();
+    const secondReport = compile({
+      axesToml,
+      outputDir: 'out',
+      cacheToml,
+      fragmentReader,
+      fileWriter: inMemoryWriter(secondWrites),
+      fusedAt: FUSED_AT,
+    });
+    expect(secondReport.cache_hits.length).toBe(secondReport.cells_total);
+  });
+
+  it('legacy cache entry without prompt_hash field reads as empty string', () => {
+    const axesToml = readFileSync(join(pluginRoot, 'axes.toml'), 'utf8');
+    const fragmentReader = (relPath: string) =>
+      readFileSync(join(pluginRoot, relPath), 'utf8');
+
+    // Synthesize a legacy cache.toml WITHOUT prompt_hash on each cell
+    // (pre-U2 shape). Use a real cell_id that exists in the seed
+    // axes.toml so source_hashes match.
+    const seedWrites = new Map<string, string>();
+    compile({
+      axesToml,
+      outputDir: 'out',
+      fragmentReader,
+      fileWriter: inMemoryWriter(seedWrites),
+      fusedAt: FUSED_AT,
+    });
+    const legacyCache = seedWrites
+      .get('out/.cache.toml')!
+      .split('\n')
+      .filter((line) => !line.startsWith('prompt_hash'))
+      .join('\n');
+
+    const replayWrites = new Map<string, string>();
+    const report = compile({
+      axesToml,
+      outputDir: 'out',
+      cacheToml: legacyCache,
+      fragmentReader,
+      fileWriter: inMemoryWriter(replayWrites),
+      fusedAt: FUSED_AT,
+      // Default promptHash = '' — matches the synthesized
+      // empty-string from the legacy reader.
+    });
+    expect(report.cache_hits.length).toBe(report.cells_total);
+  });
+});
+
 describe('compile: validate gates the pipeline', () => {
   it('throws ComposeError when axes.toml has a validate-stage finding', () => {
     // Construct a tiny axes.toml whose recipe references an unknown phase.

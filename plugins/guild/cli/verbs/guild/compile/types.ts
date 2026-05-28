@@ -151,11 +151,17 @@ export interface ComposedAgent extends ResolvedCell {
 }
 
 // Cache entry written to .cache.toml per cell. fused_at is an ISO
-// timestamp; output_hash is SHA-256 of composed_body.
+// timestamp; output_hash is SHA-256 of composed_body. prompt_hash is
+// SHA-256 of the fusion-prompt template content (Phase 2.1 U3 wires
+// the real prompt; U2 ships the plumbing with empty-string as the
+// pre-U3 default sentinel). Changing prompt_hash invalidates every
+// cell's cache entry, since the fused output is a function of the
+// prompt.
 export interface CacheEntry {
   cell_id: string;
   source_hashes: SourceHashes;
   output_hash: string;
+  prompt_hash: string;
   fused_at: string;
 }
 

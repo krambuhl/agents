@@ -6,35 +6,49 @@ import type {
   SourceHashes,
 } from './types.ts';
 
-// compose v0: ResolvedCell → ComposedAgent.
+// compose: ResolvedCell → ComposedAgent.
 //
-// Per PLAN.md § Phase 1.2 exit criterion 6:
-//   "compose v0: concatenate the three fragments with section
-//   headers; emit dedup-marker comments where overlap is detected
-//   (real dedup lands in M2)."
+// Per PLAN.md § Phase 2.1 exit criterion 3:
+//   "compose dedup is real: overlapping guidance between personality
+//    + domain fragments is collapsed in the input bundle before
+//    fusion sees it, so the LLM operates on minimal non-redundant
+//    source material."
 //
-// v0 is a deterministic text-concat fallback. Real LLM-driven fusion
-// lands in Phase 2.1 via the /guild-compile skill, gated on the
-// committed cache. Until then, every cell's composed body is:
+// U2 implements identical-line dedup (mechanical, deterministic):
+// any non-blank line (after trim) appearing verbatim in 2+ fragments
+// is emitted only in the FIRST-OCCURRING axis section (phase >
+// personality > domain) and dropped from later sections. Semantic
+// overlap (different wording, same idea) stays — that's what U3's
+// LLM fusion is for.
+//
+// Each cell's composed body is:
 //
 //   1. YAML frontmatter (name, role, description, tools, model, maxTurns).
 //   2. A provenance comment (do-not-edit; regenerate via guild compile).
-//   3. The personality fragment, under a section marker.
-//   4. The phase fragment, under a section marker.
-//   5. The domain fragment (if any), under a section marker.
-//   6. Dedup-candidate comments wherever a ## heading appears in
-//      more than one of the fragments — surfacing overlap that
-//      Phase 2.1's real dedup will collapse.
+//   3. Per axis (personality, phase, domain):
+//      a. A `<!-- DEDUP: dropped N line(s) ... -->` annotation when
+//         dedup pulled lines out of this axis (omitted when N=0).
+//         The annotation names the other axes that contributed each
+//         shared line — fusion uses it as context.
+//      b. `<!-- @section: <axis> -->` section marker.
+//      c. The (possibly deduped) fragment body.
 //
-// SHA-256 source hashes are computed from the raw fragment bodies
-// (before composition) so the cache can fingerprint each input. The
-// output hash (committed separately as the cache entry's
-// output_hash) is computed by emit.
+// Empty axes after dedup still emit their @section marker so the
+// bundle shape is uniform; the dropped-N annotation tells fusion
+// the section was emptied.
+//
+// SHA-256 source hashes are computed from the RAW fragment bodies
+// (before dedup) so the cache fingerprint is independent of dedup
+// behavior. The output hash (committed separately as the cache
+// entry's output_hash) is computed by emit.
 
 const PHASE_ROLE: Record<string, string> = {
   reviewer: 'evaluator',
   planner: 'whiteboard',
 };
+
+const AXIS_ORDER = ['phase', 'personality', 'domain'] as const;
+type Axis = (typeof AXIS_ORDER)[number];
 
 function roleForPhase(phase: string): string {
   return PHASE_ROLE[phase] ?? phase;
@@ -61,39 +75,100 @@ function frontmatter(cell: ResolvedCell): string {
   ].join('\n');
 }
 
-function extractHeadings(body: string): string[] {
-  return body
-    .split('\n')
-    .filter((line: string) => /^## /.test(line))
-    .map((line: string) => line.trimEnd());
+interface DedupResult {
+  bodies: Record<Axis, string>;
+  drops: Record<Axis, { count: number; sharedWith: Axis[] }>;
 }
 
-function dedupMarkers(cell: ResolvedCell): string[] {
-  // For every `## ` heading that appears in two or more of the three
-  // fragments, surface a dedup-candidate comment naming where the
-  // overlap was detected. v0 detection: heading-level only; real
-  // body-level dedup arrives in Phase 2.1.
-  const buckets: Array<{ source: string; headings: Set<string> }> = [
-    { source: 'phase', headings: new Set(extractHeadings(cell.phase_fragment)) },
-    { source: 'personality', headings: new Set(extractHeadings(cell.personality_fragment)) },
-    { source: 'domain', headings: new Set(extractHeadings(cell.domain_fragment)) },
-  ];
-  const allHeadings = new Set<string>();
-  for (const b of buckets) {
-    for (const h of b.headings) allHeadings.add(h);
-  }
-  const markers: string[] = [];
-  for (const h of allHeadings) {
-    const sources = buckets
-      .filter((b) => b.headings.has(h))
-      .map((b) => b.source);
-    if (sources.length >= 2) {
-      markers.push(
-        `<!-- DEDUP candidate: heading "${h}" appears in ${sources.join(' + ')} fragments. Real dedup lands in Phase 2.1. -->`,
-      );
+function dedupFragments(cell: ResolvedCell): DedupResult {
+  // First-occurrence wins by axis order (phase > personality > domain).
+  // A line is "shared" if its trimmed text is non-empty and appears
+  // verbatim in 2+ fragments. The owning axis keeps it; later axes
+  // drop the line and accumulate a sharedWith entry naming the
+  // axes that also had it.
+  const fragmentsByAxis: Record<Axis, string> = {
+    phase: cell.phase_fragment,
+    personality: cell.personality_fragment,
+    domain: cell.domain_fragment,
+  };
+
+  // Build line-presence map: trimmed line → set of axes it appears in.
+  const presence = new Map<string, Set<Axis>>();
+  for (const axis of AXIS_ORDER) {
+    const lines = fragmentsByAxis[axis].split('\n');
+    for (const raw of lines) {
+      const trimmed = raw.trim();
+      if (trimmed.length === 0) continue;
+      let set = presence.get(trimmed);
+      if (set === undefined) {
+        set = new Set();
+        presence.set(trimmed, set);
+      }
+      set.add(axis);
     }
   }
-  return markers;
+
+  const bodies: Record<Axis, string> = {
+    phase: '',
+    personality: '',
+    domain: '',
+  };
+  const drops: Record<Axis, { count: number; sharedWith: Axis[] }> = {
+    phase: { count: 0, sharedWith: [] },
+    personality: { count: 0, sharedWith: [] },
+    domain: { count: 0, sharedWith: [] },
+  };
+  const droppedByAxis: Record<Axis, Set<Axis>> = {
+    phase: new Set(),
+    personality: new Set(),
+    domain: new Set(),
+  };
+
+  for (const axis of AXIS_ORDER) {
+    const lines = fragmentsByAxis[axis].split('\n');
+    const kept: string[] = [];
+    for (const raw of lines) {
+      const trimmed = raw.trim();
+      if (trimmed.length === 0) {
+        kept.push(raw);
+        continue;
+      }
+      const shareSet = presence.get(trimmed)!;
+      if (shareSet.size < 2) {
+        kept.push(raw);
+        continue;
+      }
+      // Shared line. First-occurring axis in AXIS_ORDER wins.
+      const owner = AXIS_ORDER.find((a) => shareSet.has(a))!;
+      if (owner === axis) {
+        kept.push(raw);
+      } else {
+        drops[axis].count += 1;
+        droppedByAxis[axis].add(owner);
+        for (const other of shareSet) {
+          if (other !== axis && other !== owner) {
+            droppedByAxis[axis].add(other);
+          }
+        }
+      }
+    }
+    bodies[axis] = kept.join('\n');
+  }
+
+  for (const axis of AXIS_ORDER) {
+    drops[axis].sharedWith = AXIS_ORDER.filter((a) => droppedByAxis[axis].has(a));
+  }
+
+  return { bodies, drops };
+}
+
+function dedupAnnotation(
+  axis: Axis,
+  drop: { count: number; sharedWith: Axis[] },
+): string | null {
+  if (drop.count === 0) return null;
+  const shared = drop.sharedWith.join(', ');
+  return `<!-- DEDUP: dropped ${drop.count} line(s) from ${axis} (also present in ${shared}) -->`;
 }
 
 export function compose(cell: ResolvedCell): ComposedAgent {
@@ -103,30 +178,31 @@ export function compose(cell: ResolvedCell): ComposedAgent {
     domain: sha256(cell.domain_fragment),
   };
 
+  const { bodies, drops } = dedupFragments(cell);
+
   const fm = frontmatter(cell);
   const provenance =
     '<!-- COMPOSED by `guild compile` from axes.toml + source fragments. Do not edit by hand; regenerate with `/guild-compile`. -->';
-  const dedups = dedupMarkers(cell);
 
-  const sections: string[] = [
-    fm,
-    '',
-    provenance,
-  ];
-  if (dedups.length > 0) {
+  const sections: string[] = [fm, '', provenance];
+
+  // Emit per-axis sections in the bundle order: personality, phase,
+  // domain (the order the LLM will see them in). This preserves the
+  // v0 ordering; dedup ownership is independent of emission order
+  // (ownership is phase > personality > domain by AXIS_ORDER).
+  const emitOrder: Axis[] = ['personality', 'phase', 'domain'];
+  for (const axis of emitOrder) {
+    if (axis === 'domain' && (!cell.domain || cell.domain_fragment.length === 0)) {
+      // Singletons (no domain): skip the domain section entirely.
+      continue;
+    }
     sections.push('');
-    sections.push(...dedups);
-  }
-  sections.push('');
-  sections.push('<!-- @section: personality -->');
-  sections.push(cell.personality_fragment.trim());
-  sections.push('');
-  sections.push('<!-- @section: phase -->');
-  sections.push(cell.phase_fragment.trim());
-  if (cell.domain && cell.domain_fragment.length > 0) {
-    sections.push('');
-    sections.push('<!-- @section: domain -->');
-    sections.push(cell.domain_fragment.trim());
+    const annotation = dedupAnnotation(axis, drops[axis]);
+    if (annotation !== null) {
+      sections.push(annotation);
+    }
+    sections.push(`<!-- @section: ${axis} -->`);
+    sections.push(bodies[axis].trim());
   }
   // Trailing newline so emit's file write ends cleanly.
   const composed_body = `${sections.join('\n')}\n`;

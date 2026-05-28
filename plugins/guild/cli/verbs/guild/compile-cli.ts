@@ -31,6 +31,10 @@ import type { ComposedAgent } from './compile/types.ts';
 //   --axes-toml=<path>    Default: plugins/guild/axes.toml (cwd-relative).
 //   --output-dir=<path>   Default: plugins/guild/agents/generated (cwd-relative).
 //   --cache-toml=<path>   Default: <output-dir>/.cache.toml.
+//   --prompt-hash=<hex>   Default: empty string. The U3 /guild-compile
+//                         skill computes SHA-256 of fusion-prompt.md and
+//                         passes it here; an empty value matches legacy
+//                         cache entries written before U3 lands.
 
 const THROUGH_RESOLVE_STAGE = 'parse,validate,derive,resolve';
 const EMIT_ONLY_STAGE = 'emit';
@@ -43,6 +47,7 @@ const OPTIONS = {
   'axes-toml': { type: 'string' as const },
   'output-dir': { type: 'string' as const },
   'cache-toml': { type: 'string' as const },
+  'prompt-hash': { type: 'string' as const },
 };
 
 function errorResult(name: string, message: string, exitCode = 1): DispatchResult {
@@ -78,6 +83,7 @@ function makeFragmentReader(pluginRoot: string): (relPath: string) => string {
 interface EmitInput {
   schema_version: number;
   agents: ComposedAgent[];
+  prompt_hash: string;
 }
 
 function parseEmitStdin(stdin: string): EmitInput {
@@ -101,17 +107,32 @@ function parseEmitStdin(stdin: string): EmitInput {
   if (!Array.isArray(obj.agents)) {
     throw new Error('--stage=emit: agents: expected array');
   }
+  // prompt_hash is optional on stdin: absent or non-string → empty
+  // string. The U3 skill always sends a value; pre-U3 callers
+  // (manual /tests) can omit the field.
+  const rawPromptHash = obj.prompt_hash;
+  const prompt_hash = typeof rawPromptHash === 'string' ? rawPromptHash : '';
   // Trust the agents array shape — emit() will throw on its own if
   // the entries are malformed during write. Validating each field
   // here would duplicate that logic.
-  return { schema_version: 1, agents: obj.agents as ComposedAgent[] };
+  return {
+    schema_version: 1,
+    agents: obj.agents as ComposedAgent[],
+    prompt_hash,
+  };
 }
 
 export function compileVerb(
   rest: string[],
   ctx: GuildCliContext,
 ): DispatchResult {
-  let values: { stage?: string; 'axes-toml'?: string; 'output-dir'?: string; 'cache-toml'?: string };
+  let values: {
+    stage?: string;
+    'axes-toml'?: string;
+    'output-dir'?: string;
+    'cache-toml'?: string;
+    'prompt-hash'?: string;
+  };
   try {
     ({ values } = parseArgs({
       args: rest,
@@ -133,6 +154,7 @@ export function compileVerb(
   const fragmentReader = makeFragmentReader(pluginRoot);
   const fileWriter = makeFileWriter();
   const stage = values.stage;
+  const promptHash = values['prompt-hash'] ?? '';
 
   try {
     if (stage === THROUGH_RESOLVE_STAGE) {
@@ -142,11 +164,13 @@ export function compileVerb(
         axesToml,
         fragmentReader,
         cacheToml,
+        promptHash,
       });
       return {
         stdout: JSON.stringify(
           {
             schema_version: 1,
+            prompt_hash: promptHash,
             cells: result.resolved,
             cache_hits: result.cache_hits,
             cache_misses: result.cache_misses,
@@ -167,10 +191,17 @@ export function compileVerb(
         );
       }
       const input = parseEmitStdin(stdin);
+      // The flag wins when both are supplied — caller's explicit
+      // intent overrides the stdin echo. When the flag is empty
+      // (default), the stdin value is used; when stdin omits it,
+      // both default to empty.
+      const effectivePromptHash =
+        values['prompt-hash'] !== undefined ? promptHash : input.prompt_hash;
       const result = compileEmitOnly({
         agents: input.agents,
         outputDir: resolvePath(ctx.cwd, outputDir),
         fileWriter,
+        promptHash: effectivePromptHash,
       });
       return {
         stdout: JSON.stringify(result, null, 2),
@@ -194,6 +225,7 @@ export function compileVerb(
       cacheToml,
       fragmentReader,
       fileWriter,
+      promptHash,
     });
     return {
       stdout: JSON.stringify(report, null, 2),

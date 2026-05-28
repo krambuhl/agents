@@ -24,10 +24,11 @@ import { EmitError } from './types.ts';
 //
 // Per PLAN § Exit requirements (line 29 of the global Exit
 // requirements): each cache entry records {source_hashes: {phase,
-// domain, personality}, output_hash, fused_at}. This module
-// records exactly that shape; the long-term cache evolution
-// (per-cell cache files vs. monolithic, prompt-hash inclusion in
-// Phase 2.1) is downstream concern.
+// domain, personality}, output_hash, fused_at, prompt_hash}. The
+// prompt_hash captures the fusion-prompt template version; changing
+// the prompt invalidates every cell's cache entry. Phase 2.1 U2
+// landed the plumbing with empty-string as the pre-U3 default
+// sentinel; U3 ships fusion-prompt.md and wires real hashing.
 
 export type FileWriter = (relPath: string, content: string) => void;
 
@@ -64,12 +65,14 @@ function emitCacheToml(entries: CacheEntry[]): string {
   // intentionally minimal and doesn't support nested sub-tables
   // under array-of-tables. source_hashes go inline as
   // source_hash_{phase,personality,domain} keys, reassembled by the
-  // orchestrator's readCache.
+  // orchestrator's readCache. prompt_hash is a top-level scalar on
+  // the entry — it's not part of the source-fragment trio.
   for (const e of sorted) {
     out.push(`[[cells]]`);
     out.push(`cell_id = ${tomlString(e.cell_id)}`);
     out.push(`fused_at = ${tomlString(e.fused_at)}`);
     out.push(`output_hash = ${tomlString(e.output_hash)}`);
+    out.push(`prompt_hash = ${tomlString(e.prompt_hash)}`);
     out.push(`source_hash_phase = ${tomlString(e.source_hashes.phase)}`);
     out.push(`source_hash_personality = ${tomlString(e.source_hashes.personality)}`);
     out.push(`source_hash_domain = ${tomlString(e.source_hashes.domain)}`);
@@ -83,6 +86,7 @@ export function emit(
   outputDir: string,
   fileWriter: FileWriter,
   fusedAt: string = new Date().toISOString(),
+  promptHash: string = '',
 ): EmitResult {
   if (agents.length === 0) {
     throw new EmitError('emit: agents list is empty (nothing to write)');
@@ -103,6 +107,7 @@ export function emit(
       cell_id: agent.id,
       source_hashes: agent.source_hashes,
       output_hash: sha256(agent.composed_body),
+      prompt_hash: promptHash,
       fused_at: fusedAt,
     });
   }
