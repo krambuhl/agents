@@ -30,7 +30,7 @@ branch = "substrate-followups.ci-hash-check"
 [[phases]]
 number = 3
 name = "L332 responses path relocation"
-status = "in-progress"
+status = "completed"
 branch = "substrate-followups.responses-path"
 
 [[phases]]
@@ -112,6 +112,11 @@ detail = { number = "03", branch = "substrate-followups.responses-path" }
 at = "2026-05-28T16:48:18.766Z"
 event = "phase-started"
 detail = { phase = 3, name = "L332 responses path relocation" }
+
+[[events]]
+at = "2026-05-28T17:23:37.245Z"
+event = "phase-completed"
+detail = { phase = 3 }
 
 [[checkins]]
 schema_version = 1
