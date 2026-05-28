@@ -113,12 +113,24 @@ string as the single source; do not re-grep PLAN.md. This loop parses
 the semicolon-delimited DSL:
 
 ```
-engineers=<comma-separated names>; topic=<one-line topic>; rounds=<N>
+engineers=<comma-separated names>; recipe=<name>; topic=<one-line topic>; rounds=<N>
 ```
 
 Any field in the block overrides the corresponding default. Partial
 blocks are allowed (e.g. only `topic=` overrides the topic; engineers
 and rounds keep their defaults).
+
+**Recipe citation** — `recipe=<name>` names a panel recipe instead of
+inlining its members: the loop resolves it via `guild recipe <name>`
+(which emits `{name, members}`) and uses `members` as the engineer
+list. Prefer this for a known multi-domain panel —
+`recipe=design-systems` rather than spelling out
+`engineers=whiteboard-composition,whiteboard-abstraction,...`.
+`recipe=` and `engineers=` are mutually exclusive; if both appear, stop
+and surface a contract error. `guild recipe` fails loud on an unknown
+name (`recipe-not-found`, non-zero exit) — surface it and stop, never
+fall back to the glob or an empty panel (a mis-cited recipe must not
+silently degrade to a thin whiteboard).
 
 **Whiteboard artifact path**:
 `projects/<slug>/whiteboards/<phase-number>-<topic-slug>.md`. Create
