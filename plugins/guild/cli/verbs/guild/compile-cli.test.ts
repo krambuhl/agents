@@ -88,6 +88,18 @@ describe('compile CLI: full pipeline default', () => {
       'schema_version = 1',
     );
   });
+
+  it('--prompt-hash flag threads through to the .cache.toml entries', () => {
+    const result = compileVerb(
+      ['--prompt-hash=0a0a0a0a'],
+      makeCtx(sandbox.cwd),
+    );
+    expect(result.exitCode).toBe(0);
+    const generatedDir = join(sandbox.cwd, sandbox.outputDirRel);
+    const cache = readFileSync(join(generatedDir, '.cache.toml'), 'utf8');
+    expect(cache).toContain('prompt_hash = "0a0a0a0a"');
+    expect(cache).not.toContain('prompt_hash = ""');
+  });
 });
 
 describe('compile CLI: --stage=parse,validate,derive,resolve', () => {
@@ -110,6 +122,19 @@ describe('compile CLI: --stage=parse,validate,derive,resolve', () => {
     expect(Array.isArray(a11y.tools)).toBe(true);
     expect(Array.isArray(out.cache_hits)).toBe(true);
     expect(Array.isArray(out.cache_misses)).toBe(true);
+    // U2: top-level prompt_hash is echoed back so the skill knows
+    // which cache key the partial run computed against.
+    expect(out.prompt_hash).toBe('');
+  });
+
+  it('echoes --prompt-hash back as top-level prompt_hash on stdout', () => {
+    const result = compileVerb(
+      ['--stage=parse,validate,derive,resolve', '--prompt-hash=cafef00d'],
+      makeCtx(sandbox.cwd),
+    );
+    expect(result.exitCode).toBe(0);
+    const out = JSON.parse(result.stdout ?? '{}');
+    expect(out.prompt_hash).toBe('cafef00d');
   });
 });
 
@@ -141,6 +166,90 @@ describe('compile CLI: --stage=emit', () => {
     const generatedDir = join(sandbox.cwd, sandbox.outputDirRel);
     const written = readFileSync(join(generatedDir, 'evaluator-test.md'), 'utf8');
     expect(written).toContain('name: evaluator-test');
+  });
+
+  it('reads top-level prompt_hash from stdin and writes it into the cache', () => {
+    const composedAgent = {
+      id: 'evaluator-x',
+      phase: 'reviewer',
+      personality: 'skeptic',
+      domain: 'foo',
+      source: 'recipe',
+      source_name: 'r',
+      phase_fragment: 'p',
+      personality_fragment: 'q',
+      domain_fragment: 'd',
+      tools: ['Read'],
+      composed_body: 'body',
+      source_hashes: { phase: 'a', personality: 'b', domain: 'c' },
+    };
+    const stdin = JSON.stringify({
+      schema_version: 1,
+      prompt_hash: 'feedbabe',
+      agents: [composedAgent],
+    });
+    const result = compileVerb(['--stage=emit'], makeCtx(sandbox.cwd, stdin));
+    expect(result.exitCode).toBe(0);
+    const generatedDir = join(sandbox.cwd, sandbox.outputDirRel);
+    const cache = readFileSync(join(generatedDir, '.cache.toml'), 'utf8');
+    expect(cache).toContain('prompt_hash = "feedbabe"');
+  });
+
+  it('--prompt-hash flag overrides stdin prompt_hash', () => {
+    const composedAgent = {
+      id: 'evaluator-y',
+      phase: 'reviewer',
+      personality: 'skeptic',
+      domain: 'foo',
+      source: 'recipe',
+      source_name: 'r',
+      phase_fragment: 'p',
+      personality_fragment: 'q',
+      domain_fragment: 'd',
+      tools: ['Read'],
+      composed_body: 'body',
+      source_hashes: { phase: 'a', personality: 'b', domain: 'c' },
+    };
+    const stdin = JSON.stringify({
+      schema_version: 1,
+      prompt_hash: 'from-stdin',
+      agents: [composedAgent],
+    });
+    const result = compileVerb(
+      ['--stage=emit', '--prompt-hash=from-flag'],
+      makeCtx(sandbox.cwd, stdin),
+    );
+    expect(result.exitCode).toBe(0);
+    const generatedDir = join(sandbox.cwd, sandbox.outputDirRel);
+    const cache = readFileSync(join(generatedDir, '.cache.toml'), 'utf8');
+    expect(cache).toContain('prompt_hash = "from-flag"');
+    expect(cache).not.toContain('prompt_hash = "from-stdin"');
+  });
+
+  it('omitting prompt_hash on both stdin and flag → empty string default', () => {
+    const composedAgent = {
+      id: 'evaluator-z',
+      phase: 'reviewer',
+      personality: 'skeptic',
+      domain: 'foo',
+      source: 'recipe',
+      source_name: 'r',
+      phase_fragment: 'p',
+      personality_fragment: 'q',
+      domain_fragment: 'd',
+      tools: ['Read'],
+      composed_body: 'body',
+      source_hashes: { phase: 'a', personality: 'b', domain: 'c' },
+    };
+    const stdin = JSON.stringify({
+      schema_version: 1,
+      agents: [composedAgent],
+    });
+    const result = compileVerb(['--stage=emit'], makeCtx(sandbox.cwd, stdin));
+    expect(result.exitCode).toBe(0);
+    const generatedDir = join(sandbox.cwd, sandbox.outputDirRel);
+    const cache = readFileSync(join(generatedDir, '.cache.toml'), 'utf8');
+    expect(cache).toContain('prompt_hash = ""');
   });
 
   it('errors loud on malformed JSON stdin', () => {

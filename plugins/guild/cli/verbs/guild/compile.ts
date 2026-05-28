@@ -40,6 +40,7 @@ export interface CompileOptions {
   fragmentReader: FragmentReader;
   fileWriter: FileWriter;
   fusedAt?: string;
+  promptHash?: string;
 }
 
 export interface CompileReport {
@@ -80,20 +81,33 @@ function readCache(cacheToml: string | undefined): Map<string, CacheEntry> {
     if (typeof phase !== 'string') continue;
     if (typeof personality !== 'string') continue;
     if (typeof domain !== 'string') continue;
+    // Legacy entries written before U2 landed have no prompt_hash
+    // field. Reading them as empty string matches an empty-string
+    // caller (the pre-U3 default), so existing .cache.toml files
+    // stay valid until U3 ships a real prompt and changes the
+    // value. A non-string prompt_hash falls through the same way.
+    const rawPromptHash = entry.prompt_hash;
+    const prompt_hash = typeof rawPromptHash === 'string' ? rawPromptHash : '';
     map.set(cell_id, {
       cell_id,
       fused_at,
       output_hash,
+      prompt_hash,
       source_hashes: { phase, personality, domain },
     });
   }
   return map;
 }
 
-function isCacheHit(cell: ResolvedCell, cache: Map<string, CacheEntry>): boolean {
+function isCacheHit(
+  cell: ResolvedCell,
+  cache: Map<string, CacheEntry>,
+  promptHash: string,
+): boolean {
   const entry = cache.get(cell.id);
   if (entry === undefined) return false;
   return (
+    entry.prompt_hash === promptHash &&
     entry.source_hashes.phase === sha256(cell.phase_fragment) &&
     entry.source_hashes.personality === sha256(cell.personality_fragment) &&
     entry.source_hashes.domain === sha256(cell.domain_fragment)
@@ -112,6 +126,7 @@ export function compile(opts: CompileOptions): CompileReport {
     opts.outputDir,
     opts.fileWriter,
     opts.fusedAt,
+    opts.promptHash ?? '',
   );
 
   return {
@@ -127,11 +142,17 @@ export function compile(opts: CompileOptions): CompileReport {
 //   1. compileThroughResolve → ResolvedCell[] (skill consumes via JSON).
 //   2. Skill performs fusion → ComposedAgent[].
 //   3. compileEmitOnly(agents) → writes files + cache.
+//
+// promptHash threads through both partials. The skill computes it
+// once from fusion-prompt.md (U3) and passes it to both calls — to
+// through-resolve so cache hits/misses key on it, and to emit-only
+// so the .cache.toml entries record it.
 
 export interface ThroughResolveOptions {
   axesToml: string;
   fragmentReader: FragmentReader;
   cacheToml?: string;
+  promptHash?: string;
 }
 
 export interface ThroughResolveResult {
@@ -155,10 +176,11 @@ function compileThroughResolveCore(opts: ThroughResolveOptions): ThroughResolveR
   );
 
   const cache = readCache(opts.cacheToml);
+  const promptHash = opts.promptHash ?? '';
   const cache_hits: string[] = [];
   const cache_misses: string[] = [];
   for (const cell of resolved) {
-    if (isCacheHit(cell, cache)) {
+    if (isCacheHit(cell, cache, promptHash)) {
       cache_hits.push(cell.id);
     } else {
       cache_misses.push(cell.id);
@@ -178,8 +200,15 @@ export interface EmitOnlyOptions {
   outputDir: string;
   fileWriter: FileWriter;
   fusedAt?: string;
+  promptHash?: string;
 }
 
 export function compileEmitOnly(opts: EmitOnlyOptions): EmitResult {
-  return emit(opts.agents, opts.outputDir, opts.fileWriter, opts.fusedAt);
+  return emit(
+    opts.agents,
+    opts.outputDir,
+    opts.fileWriter,
+    opts.fusedAt,
+    opts.promptHash ?? '',
+  );
 }
