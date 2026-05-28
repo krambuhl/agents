@@ -50,6 +50,16 @@ doesn't recur.
   `responses/<branch>/<id>.md` (option (a) from RESEARCH.md § Follow-up
   #4); update `LOOM-CONVENTIONS.md` § Project layout to drop the
   legacy `checkins/` directory note.
+- **Follow-up #5 — `loom phase add` verb** (added mid-session by
+  amendment; see § Revision log). Add a `loom phase add <slug>
+  --number=<N> --name="<name>"` verb so projects can populate
+  manifest phases via the CLI rather than hand-editing
+  `manifest.toml`. Closes the long-standing gap documented in
+  [[feedback_loom_phase_and_checkin_gaps]]: `loom plan`'s auto-adopt
+  seeds a single placeholder phase, and without a `phase add` verb
+  the operator hand-edits the manifest to declare real phases — the
+  exact friction this project surfaced at its own `/ev-run`
+  orientation.
 
 ### Out / deferred
 
@@ -163,9 +173,41 @@ after the guild plugin re-installs downstream.
 
 **Depends on**: nothing.
 
+### Phase 5 — `loom phase add` verb
+
+**Goal**: Add a `loom phase add <slug> --number=<N> --name="<name>"`
+verb so a project can populate manifest phases via the CLI rather
+than hand-editing `manifest.toml`. Closes the substrate gap that
+surfaced at this project's `/ev-run` orientation: `loom plan`'s
+auto-adopt seeds a single placeholder phase, and without `phase
+add` the operator has to manually add `[[phases]]` entries.
+
+**Exit**:
+- `plugins/loom/cli/verbs/loom/phase.ts` (or sibling) exports a new
+  `phaseAdd(rest, ctx)` handler accepting positional `<slug>` plus
+  `--number=<N>` + `--name=<name>` + optional `--status=<status>`
+  (default `not-started`).
+- The verb appends a `[[phases]]` entry to `manifest.toml` (atomic
+  temp + rename); fails loud on duplicate `number` collision
+  (`phase-already-exists`); fails loud on missing required args.
+- `phase.test.ts` adds at least three assertions: (1) clean add of a
+  new phase increments the phases array length and the entry round-
+  trips through `readManifestFile`; (2) duplicate-number add fails
+  with `phase-already-exists` (no manifest mutation); (3) missing
+  args fail with `missing-args`.
+- The verb is registered in the loom CLI's verb dispatcher
+  (`phase.ts`'s `PHASE_VERBS` map) so `loom phase add ...` reaches
+  it.
+- A real-CLI smoke: `node plugins/loom/cli/loom.ts phase add
+  <real-slug> --number=99 --name="smoke"` against a temp-fixture
+  project succeeds and shows up in `loom project read`.
+- Full repo suite green.
+
+**Depends on**: nothing.
+
 ## Dependencies
 
-None of the 4 phases depend on each other. They share no code seams
+None of the 5 phases depend on each other. They share no code seams
 that conflict; they touch different files or different sections of
 the same files (Phase 1 + Phase 3 both touch `plugins/loom/cli/verbs/loom/`
 files but different ones; Phase 2 + Phase 3 both touch
@@ -193,6 +235,12 @@ across the 3 copies (a small triplicated edit, manageable).
 - **Phase 4-specific**: no code change; verification is the prose
   itself reading correctly to an operator who doesn't have parent-
   project context.
+- **Phase 5-specific**: a real-CLI smoke (`node plugins/loom/cli/loom.ts
+  phase add <fixture-slug> --number=99 --name="smoke"`) against a
+  throwaway fixture project succeeds and the new phase appears in
+  `loom project read`. Also: rerun this project's own `/ev-run` after
+  Phase 5 lands and confirm a future amendment could use `loom phase
+  add` instead of the manifest-edit workaround used here.
 
 ## Risks
 
@@ -236,9 +284,9 @@ across the 3 copies (a small triplicated edit, manageable).
   the parent project's biggest operational drag upfront.
 - **Phase ordering**: smallest-first to build confidence: Phase 1
   (`loom doctor` flip) → Phase 2 (doc hash check) → Phase 3
-  (responses relocation) → Phase 4 (smoke checklist). The operator
-  may re-sequence at `/ev-run` time if a different phase becomes
-  urgent.
+  (responses relocation) → Phase 4 (smoke checklist) → Phase 5
+  (`loom phase add` verb, added mid-session). The operator may
+  re-sequence at `/ev-run` time if a different phase becomes urgent.
 - **Per-follow-up option**: each phase adopts the RESEARCH.md
   recommendation (1d / 2a / 3a / 4a). Overrides possible at unit
   contract negotiation but the research's case for each is the
@@ -250,3 +298,12 @@ across the 3 copies (a small triplicated edit, manageable).
   substrate-followups research foundation was authored manually
   (the `/loom-research` auto-path was unreachable; logged as an
   out-of-scope substrate gap).
+- 2026-05-28 — Phase 5 added mid-session by hand-amendment (NOT via
+  `/loom-revise-plan`). Trigger: during this project's first
+  `/ev-run` orientation, the missing `loom phase add` verb forced a
+  hand-edit of `manifest.toml` to declare the 4 phases PLAN.md
+  named. The friction surfaced the gap as worth fixing inside this
+  project rather than deferred. Phase 5 = ship the verb. Amendment
+  is informal (hand-edit + this revision-log entry) because the plan
+  was minutes old; future amendments after real execution should go
+  through `/loom-revise-plan`.

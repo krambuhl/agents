@@ -37,6 +37,11 @@ number = 4
 name = "Live-spawn smoke checklist"
 status = "not-started"
 
+[[phases]]
+number = 5
+name = "loom phase add verb"
+status = "not-started"
+
 [[events]]
 at = "2026-05-28T06:47:20.375Z"
 event = "project-initialized"
