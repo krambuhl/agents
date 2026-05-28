@@ -36,7 +36,7 @@ branch = "substrate-followups.responses-path"
 [[phases]]
 number = 4
 name = "Live-spawn smoke checklist"
-status = "in-progress"
+status = "completed"
 branch = "substrate-followups.smoke-checklist"
 
 [[phases]]
@@ -128,6 +128,11 @@ detail = { number = "04", branch = "substrate-followups.smoke-checklist" }
 at = "2026-05-28T17:27:26.187Z"
 event = "phase-started"
 detail = { phase = 4, name = "Live-spawn smoke checklist" }
+
+[[events]]
+at = "2026-05-28T17:43:38.981Z"
+event = "phase-completed"
+detail = { phase = 4 }
 
 [[checkins]]
 schema_version = 1
