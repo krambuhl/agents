@@ -38,7 +38,8 @@ calls the `Agent` tool directly.
 
 ## Preflight
 
-Before doing anything else, verify the substrate CLIs are on PATH.
+**Tier 1 — presence.** Before doing anything else, verify the
+substrate CLIs are on PATH.
 The marketplace `dependencies` cascade handles install-time + enable-
 time correctness; this skill-body check catches the runtime case
 where a user disabled a dep plugin mid-session.
@@ -51,6 +52,31 @@ Bash("command -v loom guild griot >/dev/null 2>&1 || { echo 'ev-loop-confidence 
 
 If exit code is non-zero, stop and surface the message to the
 operator verbatim — do not proceed with any other step.
+
+**Tier 2 — format-skew.** Tier 1 confirms the binaries are *present*;
+it does not confirm the *installed* `loom` is new enough to read this
+project's `manifest.toml`. A binary that predates a state-format
+cutover answers `command -v` yes while silently failing every read —
+the false-green this substrate has lived inside. Probe readability
+with `loom doctor`, where `<slug>` is the `<project-slug-or-path>`
+argument:
+
+```
+Bash("loom doctor <slug> 2>/dev/null | grep -q '\"ok\":true' || echo 'installed loom cannot read this project manifest (format/version skew) — fall back to repo-local node plugins/loom/cli/loom.ts (and node plugins/guild/cli/guild.ts) for all loom/guild operations this session' >&2")
+```
+
+`loom doctor` reports an unreadable manifest as an `ok:false` issue
+but still exits 0, so the probe keys on `"ok":true` in stdout, not
+the exit code — this catches both the stale-CLI `project-not-found`
+(non-zero exit, empty stdout) and the wrong-schema
+`manifest-unreadable` (exit 0, `ok:false`) cases in one check.
+
+Tier 2 is **advisory, not blocking**: on failure, surface the message
+and switch to the repo-local `node` entries for substrate ops — do
+NOT stop. A false-positive hard stop would train operators to bypass
+preflight, making the gate decorative. Tier 2 probes loom's project
+manifest only; guild's panel manifest and codegen freshness are a
+separate gate, out of scope here.
 
 ## Substrate compositions
 
