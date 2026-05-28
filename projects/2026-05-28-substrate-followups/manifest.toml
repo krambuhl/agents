@@ -1,0 +1,58 @@
+checkins = []
+sessions = []
+revisions = []
+
+[meta]
+schema_version = 1
+title = "Substrate Followups"
+slug = "2026-05-28-substrate-followups"
+started = "2026-05-28"
+status = "active"
+strategy = "interactive"
+
+[config]
+base_branch = "main"
+reviewers = []
+labels = []
+verification = []
+worker_bindings = {}
+
+[[phases]]
+number = 1
+name = "loom doctor exit-code flip"
+status = "not-started"
+
+[[phases]]
+number = 2
+name = "CI hash check for the 3-copy docs"
+status = "not-started"
+
+[[phases]]
+number = 3
+name = "L332 responses path relocation"
+status = "not-started"
+
+[[phases]]
+number = 4
+name = "Live-spawn smoke checklist"
+status = "not-started"
+
+[[phases]]
+number = 5
+name = "loom phase add verb"
+status = "not-started"
+
+[[events]]
+at = "2026-05-28T06:47:20.375Z"
+event = "project-initialized"
+detail = {}
+
+[[events]]
+at = "2026-05-28T06:47:20.375Z"
+event = "research-started"
+detail = { slug = "2026-05-28-substrate-followups", topic = "substrate-followups" }
+
+[[events]]
+at = "2026-05-28T06:47:20.405Z"
+event = "research-completed"
+detail = { slug = "2026-05-28-substrate-followups", research_path = "RESEARCH.md", notes_path = "RESEARCH-NOTES.md" }
