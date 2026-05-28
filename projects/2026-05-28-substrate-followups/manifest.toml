@@ -1,5 +1,4 @@
 sessions = []
-revisions = []
 
 [meta]
 schema_version = 1
@@ -80,3 +79,8 @@ scope = ["plugins/loom/cli/verbs/loom/doctor.ts", "plugins/loom/cli/verbs/loom/d
 changes_since_previous = "First unit of substrate-followups; replaces the grep -q '\"ok\":true' workaround documented in [[feedback_loom_doctor_exit_zero_on_unreadable]] with a proper exit-code contract."
 verdict = { result = "approved", reasons = [] }
 notes_for_pr = ["Antagonist panel: evaluator-contract-fit + evaluator-test-unit + evaluator-naming all approved. evaluator-react-api dropped from derive-panel output (Node CLI .ts files, no React/JSX; per [[feedback_derive_panel_react_api_misderivation]]).", "Pre-existing test failure flagged for substrate follow-up: plugins/loom/cli/lib/plan.real.test.ts fails on origin/main (confirmed via clean-stash reproduction) because PR #101 archived projects/2026-05-26-substrate-consolidation without updating the test's hardcoded path. Unrelated to this unit; should be filed as a separate cleanup.", "signal: phase-boundary: this unit closes Phase 1 in full (single-unit phase) — single signal, no revise offered.", "Resolves the workaround named in memory [[feedback_loom_doctor_exit_zero_on_unreadable]]; future shell consumers can use `loom doctor <slug> || <fallback>` directly."]
+
+[[revisions]]
+timestamp = "2026-05-28T08:27:16.909Z"
+target = "PLAN.md"
+seq = 1
