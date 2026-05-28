@@ -50,6 +50,21 @@ The matrix becomes a true cross-product: at each (phase, domain) cell, *every* p
 
 ### M1 — Matrix data model
 
+#### Phase 1.0 — Rewrite fragments as labeled-section markdown
+
+**Goal**: Convert today's prose-to-be-concat'd fragments under `plugins/guild/modes/{domains,phases}/*.md` and `plugins/guild/agents/personalities/*.md` into structured markdown with stable section headings, so LLM fusion + dedup operate on a labeled-section signal rather than free prose.
+
+**Exit**:
+- Every domain fragment exposes the same heading set (e.g. `## Identity`, `## Watch for`, `## Output shape`, `## Common failure modes`). Heading set is documented in `docs/AGENT-CODEGEN.md`.
+- Every phase fragment exposes its own stable heading set (e.g. `## Posture`, `## Responsibilities`, `## Tool envelope`).
+- Every personality fragment exposes its own (`## Disposition`, `## Voice cues`, `## When this voice helps`).
+- A fragment-schema test asserts every file under `modes/` and `agents/personalities/` carries the required headings for its axis.
+- `compose` dedup keys on heading + body so cross-fragment overlap is identifiable mechanically before LLM fusion sees the bundle.
+
+**Depends on**: nothing (can run before or in parallel with 1.1).
+
+**Risks**: rewriting voice while preserving meaning is the kind of work that quietly loses nuance. Mitigation: do this phase BEFORE the conversion script + LLM fusion land, so the human-authored rewrite is the authoritative source the rest of the pipeline operates on. Treat the diff vs. today's fragments as the deliverable — review per-fragment.
+
 #### Phase 1.1 — Author `axes.toml` schema
 
 **Goal**: Lock the TOML shape that replaces `panel.manifest.toml` + `tools-map.toml` and folds in per-axis-value declarative constraints.
