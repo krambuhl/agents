@@ -44,6 +44,11 @@ import type { DispatchResult, GuildVerbHandler } from './index.ts';
 
 class GenerateError extends Error {}
 
+// Thrown by resolveRecipe when no [[recipes]] entry matches the requested
+// name. Typed (not a bare GenerateError) so the `guild recipe` verb can map
+// it to a `recipe-not-found` exit and never degrade to a silent empty panel.
+export class RecipeNotFoundError extends Error {}
+
 // phase -> generated-name prefix. Reviewer combinations replace the
 // baked evaluator-* agents; planner combinations replace the baked
 // whiteboard-* engineers. The name equals the baked name on the
@@ -73,6 +78,11 @@ export type Combination = {
   personality: string;
   domains: string[];
 };
+
+// A recipe is a Combination with a co-dispatch name. Codegen folds it
+// identically to a combination (the name is dropped); resolveRecipe keeps the
+// name so a recipe can be looked up at invocation time.
+export type Recipe = Combination & { name: string };
 
 export type Singleton = {
   phase: string;
@@ -357,6 +367,56 @@ export function planAgents(
     seen.add(plan.name);
   }
   return plans;
+}
+
+// ---------- Recipe resolution ----------
+
+// Read the [[recipes]] section preserving each recipe's `name` (the codegen
+// reader, readCombinationLike, drops it). Validates the same combination
+// shape so the recipe interpretation stays one definition.
+export function readRecipes(manifest: TomlTable): Recipe[] {
+  const raw = manifest.recipes;
+  if (raw === undefined) return [];
+  if (!Array.isArray(raw)) {
+    throw new GenerateError('panel.manifest.toml: recipes is not an array');
+  }
+  return raw.map((entry, i) => {
+    if (!isTomlTable(entry)) {
+      throw new GenerateError(`recipes[${i}] is not a table`);
+    }
+    const { name, phase, personality, domains } = entry;
+    if (typeof name !== 'string') {
+      throw new GenerateError(`recipes[${i}] has no string 'name'`);
+    }
+    if (typeof phase !== 'string') {
+      throw new GenerateError(`recipes[${i}] has no string 'phase'`);
+    }
+    if (typeof personality !== 'string') {
+      throw new GenerateError(`recipes[${i}] has no string 'personality'`);
+    }
+    if (!Array.isArray(domains) || !domains.every((d) => typeof d === 'string')) {
+      throw new GenerateError(`recipes[${i}] has no string[] 'domains'`);
+    }
+    return { name, phase, personality, domains: domains as string[] };
+  });
+}
+
+// Resolve a recipe by name to its member agent names — the runtime
+// counterpart to codegen's fan. Maps each of the recipe's domains through the
+// SAME `nameFor(phase, domain)` codegen uses, so the resolved roster and the
+// generated files cannot name different agents (the panel-manifest-consistency
+// test pins this: every member is a real generated agent). Fails LOUD on an
+// unknown name (RecipeNotFoundError) — never an empty roster, which would let
+// a mis-cited recipe degrade to a silently thin panel.
+export function resolveRecipe(manifest: TomlTable, name: string): string[] {
+  const recipe = readRecipes(manifest).find((r) => r.name === name);
+  if (recipe === undefined) {
+    const known = readRecipes(manifest).map((r) => r.name).join(', ');
+    throw new RecipeNotFoundError(
+      `recipe-not-found: no recipe named '${name}'${known ? ` (known: ${known})` : ''}`,
+    );
+  }
+  return recipe.domains.map((domain) => nameFor(recipe.phase, domain));
 }
 
 // ---------- Verb ----------
