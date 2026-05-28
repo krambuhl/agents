@@ -1,0 +1,28 @@
+checkins = []
+sessions = []
+revisions = []
+
+[meta]
+schema_version = 1
+title = "Loom Adr"
+slug = "2026-05-28-loom-adr"
+started = "2026-05-28"
+status = "active"
+strategy = "interactive"
+
+[config]
+base_branch = "main"
+reviewers = []
+labels = []
+verification = []
+worker_bindings = {}
+
+[[phases]]
+number = 1
+name = "Phase 1"
+status = "not-started"
+
+[[events]]
+at = "2026-05-28T07:59:42.810Z"
+event = "project-initialized"
+detail = {}
