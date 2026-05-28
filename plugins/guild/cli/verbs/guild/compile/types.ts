@@ -131,3 +131,52 @@ export class ResolveError extends Error {
     this.name = 'ResolveError';
   }
 }
+
+// ComposedAgent — ResolvedCell + the v0 composed body (frontmatter +
+// concatenated fragments with section markers + dedup-candidate
+// comments) + the SHA-256 source hashes that feed the cache entry.
+//
+// compose produces this for every ResolvedCell; emit writes the body
+// to disk + records the cache entry.
+
+export interface SourceHashes {
+  phase: string;
+  personality: string;
+  domain: string;
+}
+
+export interface ComposedAgent extends ResolvedCell {
+  composed_body: string;
+  source_hashes: SourceHashes;
+}
+
+// Cache entry written to .cache.toml per cell. fused_at is an ISO
+// timestamp; output_hash is SHA-256 of composed_body.
+export interface CacheEntry {
+  cell_id: string;
+  source_hashes: SourceHashes;
+  output_hash: string;
+  fused_at: string;
+}
+
+// EmitResult — what emit produces back to the orchestrator:
+// the list of written file paths + the cache entries written.
+
+export interface EmitResult {
+  written_files: string[];
+  cache_entries: CacheEntry[];
+}
+
+export class ComposeError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'ComposeError';
+  }
+}
+
+export class EmitError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'EmitError';
+  }
+}
