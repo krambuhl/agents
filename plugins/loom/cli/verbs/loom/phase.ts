@@ -2,6 +2,7 @@ import { parseArgs } from 'node:util';
 import { resolveProject } from '../../lib/project.ts';
 import {
   appendEvent,
+  appendPhase,
   manifestPath,
   readManifestFile,
   updatePhase,
@@ -199,8 +200,73 @@ export function phaseUpdate(rest: string[], ctx: CliContext): DispatchResult {
   }
 }
 
+export function phaseAdd(rest: string[], ctx: CliContext): DispatchResult {
+  const { values, positionals } = parseArgs({
+    args: rest,
+    options: {
+      pretty: { type: 'boolean' },
+      number: { type: 'string' },
+      name: { type: 'string' },
+      status: { type: 'string' },
+      branch: { type: 'string' },
+    },
+    allowPositionals: true,
+    strict: false,
+  });
+  const slug = positionals[0];
+  if (slug === undefined) {
+    return errToResult(new LoomError('missing-args', 'phase add requires <slug>'));
+  }
+  const numberArg = values.number;
+  if (numberArg === undefined) {
+    return errToResult(
+      new LoomError('missing-args', 'phase add requires --number=<N>'),
+    );
+  }
+  const phaseNum = Number.parseInt(numberArg, 10);
+  if (Number.isNaN(phaseNum) || String(phaseNum) !== numberArg) {
+    return errToResult(
+      new LoomError(
+        'invalid-phase',
+        `phase number must be an integer: ${numberArg}`,
+      ),
+    );
+  }
+  const name = values.name;
+  if (name === undefined || name === '') {
+    return errToResult(
+      new LoomError('missing-args', 'phase add requires --name=<name>'),
+    );
+  }
+  const status = values.status ?? 'not-started';
+  if (!PHASE_STATUSES.has(status as PhaseStatus)) {
+    return errToResult(
+      new LoomError(
+        'invalid-status',
+        `--status must be one of not-started|in-progress|blocked|completed: ${status}`,
+      ),
+    );
+  }
+  try {
+    const path = resolveProject(slug, ctx.projectsRoot);
+    const { manifest, token } = readManifestFile(manifestPath(path));
+    const newPhase: ManifestPhase = {
+      number: phaseNum,
+      name,
+      status: status as PhaseStatus,
+    };
+    if (values.branch !== undefined) newPhase.branch = values.branch;
+    const next = appendPhase(manifest, newPhase);
+    writeManifest(manifestPath(path), next, { expect: token });
+    return { stdout: emit(newPhase, values.pretty === true), exitCode: 0 };
+  } catch (err) {
+    return errToResult(err);
+  }
+}
+
 export const PHASE_VERBS = {
   read: phaseRead,
   list: phaseList,
   update: phaseUpdate,
+  add: phaseAdd,
 };

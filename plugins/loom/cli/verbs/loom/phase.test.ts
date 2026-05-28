@@ -3,7 +3,7 @@ import { mkdtempSync, mkdirSync, rmSync, copyFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { phaseRead, phaseList, phaseUpdate } from './phase.ts';
+import { phaseAdd, phaseRead, phaseList, phaseUpdate } from './phase.ts';
 import { manifestPath, readManifestFile } from '../../lib/manifest-toml.ts';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -150,4 +150,81 @@ test('phaseUpdate: nonexistent phase returns phase-not-found', () => {
   );
   expect(result.exitCode).toBe(1);
   expect(JSON.parse(result.stderr as string).error).toBe('phase-not-found');
+});
+
+test('phaseAdd: clean add appends a new phase that round-trips', () => {
+  const result = phaseAdd(
+    ['test-loom', '--number=99', '--name=smoke phase'],
+    { projectsRoot },
+  );
+  expect(result.exitCode).toBe(0);
+  const added = JSON.parse(result.stdout as string);
+  expect(added.number).toBe(99);
+  expect(added.name).toBe('smoke phase');
+  expect(added.status).toBe('not-started');
+
+  const projectPath = join(projectsRoot, '2026-05-15-test-loom');
+  const { manifest } = readManifestFile(manifestPath(projectPath));
+  expect(manifest.phases).toHaveLength(5);
+  const fetched = manifest.phases.find((p) => p.number === 99);
+  expect(fetched).toBeDefined();
+  expect(fetched?.name).toBe('smoke phase');
+  expect(fetched?.status).toBe('not-started');
+});
+
+test('phaseAdd: duplicate number returns phase-already-exists and leaves manifest unchanged', () => {
+  const projectPath = join(projectsRoot, '2026-05-15-test-loom');
+  const before = readManifestFile(manifestPath(projectPath)).manifest.phases.length;
+
+  // Phase 1 exists in the fixture
+  const result = phaseAdd(
+    ['test-loom', '--number=1', '--name=duplicate'],
+    { projectsRoot },
+  );
+  expect(result.exitCode).toBe(1);
+  expect(JSON.parse(result.stderr as string).error).toBe('phase-already-exists');
+
+  const after = readManifestFile(manifestPath(projectPath)).manifest.phases.length;
+  expect(after).toBe(before);
+});
+
+test('phaseAdd: missing --number returns missing-args', () => {
+  const result = phaseAdd(['test-loom', '--name=only-name'], { projectsRoot });
+  expect(result.exitCode).toBe(1);
+  expect(JSON.parse(result.stderr as string).error).toBe('missing-args');
+});
+
+test('phaseAdd: missing --name returns missing-args', () => {
+  const result = phaseAdd(['test-loom', '--number=42'], { projectsRoot });
+  expect(result.exitCode).toBe(1);
+  expect(JSON.parse(result.stderr as string).error).toBe('missing-args');
+});
+
+test('phaseAdd: invalid --status returns invalid-status', () => {
+  const result = phaseAdd(
+    ['test-loom', '--number=99', '--name=smoke', '--status=bogus'],
+    { projectsRoot },
+  );
+  expect(result.exitCode).toBe(1);
+  expect(JSON.parse(result.stderr as string).error).toBe('invalid-status');
+});
+
+test('phaseAdd: --status=in-progress propagates', () => {
+  const result = phaseAdd(
+    ['test-loom', '--number=88', '--name=in-flight', '--status=in-progress'],
+    { projectsRoot },
+  );
+  expect(result.exitCode).toBe(0);
+  const added = JSON.parse(result.stdout as string);
+  expect(added.status).toBe('in-progress');
+});
+
+test('phaseAdd: --branch propagates into the new phase row', () => {
+  const result = phaseAdd(
+    ['test-loom', '--number=77', '--name=branched', '--branch=foo/bar'],
+    { projectsRoot },
+  );
+  expect(result.exitCode).toBe(0);
+  const added = JSON.parse(result.stdout as string);
+  expect(added.branch).toBe('foo/bar');
 });
