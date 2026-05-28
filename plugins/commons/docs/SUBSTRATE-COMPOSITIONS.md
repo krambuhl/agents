@@ -104,7 +104,7 @@ bin/loom phase update <slug> <phase-number> \
 
 The verb is **single-writer-serialized** per
 `projects/CONVENTIONS.md` § Category 3 (target:
-`projects/<slug>/manifest.json`).
+`projects/<slug>/manifest.toml`'s `[[phases]]` section).
 
 **Idempotency**: `safe` when the target state matches current
 state (the verb is a no-op write). `not-idempotent` across
@@ -132,10 +132,11 @@ that distinction matters.
 
 ## § Checkin write
 
-**Purpose**: Record a unit of work as an immutable JSON checkin
-under `projects/<slug>/checkins/<branch>/<NN>.json`. The checkin
-captures contract + execution + verdict + corrections + notes
-for the PR. Auto-emits a `checkin-created` event.
+**Purpose**: Record a unit of work as an immutable checkin entry
+appended to `projects/<slug>/manifest.toml`'s `[[checkins]]`
+section. The checkin captures contract + execution + verdict +
+corrections + notes for the PR. Auto-emits a `checkin-created`
+event.
 
 **Wraps**:
 
@@ -144,10 +145,10 @@ bin/loom checkin write <slug> --checkin-file=<path-to-json>
 ```
 
 The JSON file at `<path-to-json>` is the full Checkin record (see
-[`LOOM-CONVENTIONS.md`](./LOOM-CONVENTIONS.md) § `checkins/<branch>/<NN>.json`
-for shape). Loops compose the JSON in-memory or in a temp file,
-pass the path here, and the verb writes it under the canonical
-location.
+[`LOOM-CONVENTIONS.md`](./LOOM-CONVENTIONS.md) § `[[checkins]]` for
+shape). Loops compose the JSON in-memory or in a temp file, pass
+the path here, and the verb appends it to the manifest's
+`[[checkins]]` section under atomic temp + rename.
 
 **Partitioned** per `projects/CONVENTIONS.md` § Category 2 — the
 partition is `(branch, number)`.
@@ -445,11 +446,11 @@ evidence into separate args.
 
 ## § Save session
 
-**Purpose**: Compose and write a session handoff under
-`projects/<slug>/sessions/<YYYY-MM-DD>-<letter>.json`. The
-handoff summarizes what happened in this working session, lists
-open threads, and is the artifact the next session's `/ev-run`
-reads to know what's in flight.
+**Purpose**: Compose and write a session handoff appended to
+`projects/<slug>/manifest.toml`'s `[[sessions]]` section (keyed
+on `(date, letter)`). The handoff summarizes what happened in this
+working session, lists open threads, and is the artifact the next
+session's `/ev-run` reads to know what's in flight.
 
 **Wraps**:
 
@@ -465,7 +466,7 @@ bin/loom session write <slug> --session-file=<path>
 ```
 
 The loop assembles the Session JSON (shape in
-[`LOOM-CONVENTIONS.md`](./LOOM-CONVENTIONS.md) § `sessions/`)
+[`LOOM-CONVENTIONS.md`](./LOOM-CONVENTIONS.md) § `[[sessions]]`)
 from the corrections + events reads + its own working memory of
 what happened, then passes the in-memory shape via the
 `--session-file=<path>` flag.
