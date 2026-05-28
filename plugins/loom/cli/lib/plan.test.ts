@@ -55,7 +55,7 @@ test('keeps dotted phase ids as strings and lets Goal (updated) win', () => {
   expect(diagnostics).toEqual([]);
 });
 
-// ---------- Flat, no milestones, Output alias (linear-loom shape) ----------
+// ---------- Flat, no milestones, Output as an Exit alias ----------
 
 test('parses the no-milestone shape with Output as an Exit alias', () => {
   const { plan, diagnostics } = parsePlan(fixture('plan-flat-output'));

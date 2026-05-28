@@ -45,12 +45,14 @@ const PHASE_RE = /^#{2,4}\s+Phase\s+([\d.]+)\s*[—–:-]\s*(.+?)\s*$/;
 // end section-collection (Loop strategy prose, exit bullet lists).
 const HEADING_RE = /^(#{1,6})\s+(.+?)\s*$/;
 
-// `**Goal**:` and the `**Goal (updated)**:` variant jelly uses. The last
-// occurrence within a phase wins (an updated goal supersedes the original).
+// `**Goal**:` and the `**Goal (updated)**:` variant — the parenthetical
+// shape lets a plan revision supersede the original goal in-place. The
+// last occurrence within a phase wins.
 const GOAL_RE = /^\*\*Goal(?:\s*\([^)]*\))?\*\*:\s*(.+?)\s*$/;
 
-// `**Exit**:` or its `**Output**:` alias (linear-loom uses Output). The
-// value may be inline on the same line and/or a following bullet list.
+// `**Exit**:` or its `**Output**:` alias — both forms are accepted to
+// match the two PLAN.md conventions seen in the wild. The value may be
+// inline on the same line and/or a following bullet list.
 const EXIT_RE = /^\*\*(?:Exit|Output)\*\*:\s*(.*?)\s*$/;
 
 const DEPENDS_RE = /^\*\*Depends on\*\*:\s*(.+?)\s*$/;

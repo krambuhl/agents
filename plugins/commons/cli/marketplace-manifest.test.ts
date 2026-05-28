@@ -55,13 +55,7 @@ const EXPECTED_PLUGIN_NAMES = [
   'griot',
   'guild',
   'loom',
-  'linear-loom',
-  'jelly-guild',
-  'jelly-loom',
-  'jelly-run',
-  'jelly',
   'ev',
-  'ev-linear',
   'agent-loop-full',
 ] as const;
 
@@ -213,15 +207,6 @@ describe('marketplace manifest: declared dependency edges (per PLAN)', () => {
       'loom',
     ]);
   });
-
-  test('jelly meta-bundle cascade-installs the full jelly family', () => {
-    expect([...depsOf('jelly')].sort()).toEqual([
-      'commons',
-      'jelly-guild',
-      'jelly-loom',
-      'jelly-run',
-    ]);
-  });
 });
 
 describe('marketplace manifest: substrate-first dependency ordering', () => {
@@ -244,7 +229,7 @@ describe('marketplace manifest: substrate-first dependency ordering', () => {
     return entry.dependencies.map((d) => (typeof d === 'string' ? d : d.name));
   }
 
-  for (const pluginName of ['griot', 'guild', 'loom', 'ev', 'agent-loop-full', 'jelly'] as const) {
+  for (const pluginName of ['griot', 'guild', 'loom', 'ev', 'agent-loop-full'] as const) {
     test(`${pluginName} lists commons as its first dependency`, () => {
       const deps = rawDepsOf(pluginName);
       expect(deps.length).toBeGreaterThan(0);

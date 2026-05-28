@@ -7,15 +7,14 @@
 // `parseToml`/`stringifyToml`, so this file knows nothing about manifests,
 // checkins, or events — only about TOML values.
 //
-// The mechanism (comment-stripping that respects strings, symmetric
-// escape/unescape, comma-splitting that respects strings, and the
-// loud-rejection posture) is harvested from jelly-loom's
-// `manifest.ts`. What is NEW here is generality: jelly-loom hard-codes
-// `[config]` and `[[phases]]` and supports only flat scalars + string
-// arrays. loom's state needs arbitrary `[table]` / `[[array-of-table]]`
-// headers AND nestable inline tables (the encoding for a Checkin's
-// `contract` object or an Event's `detail`), so the value parser here is
-// recursive rather than line-flat.
+// The core mechanism — comment-stripping that respects strings,
+// symmetric escape/unescape, comma-splitting that respects strings, and
+// the loud-rejection posture — is intentionally simple and stays in this
+// one file. Generality is what makes this version load-bearing: arbitrary
+// `[table]` / `[[array-of-table]]` headers AND nestable inline tables
+// (the encoding for a Checkin's `contract` object or an Event's
+// `detail`) are supported, so the value parser here is recursive rather
+// than line-flat.
 //
 // Supported subset:
 //   - top-level `key = value` scalars (basic strings, integers, booleans)
