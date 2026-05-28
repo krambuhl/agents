@@ -152,6 +152,46 @@ test('phaseUpdate: nonexistent phase returns phase-not-found', () => {
   expect(JSON.parse(result.stderr as string).error).toBe('phase-not-found');
 });
 
+test('phaseUpdate: --pr returns pr-flags-unsupported', () => {
+  const result = phaseUpdate(
+    ['test-loom', '2', '--status=completed', '--pr=123'],
+    { projectsRoot },
+  );
+  expect(result.exitCode).toBe(1);
+  const payload = JSON.parse(result.stderr as string);
+  expect(payload.error).toBe('pr-flags-unsupported');
+  expect(payload.message).toContain('loom pr discover');
+});
+
+test('phaseUpdate: --url returns pr-flags-unsupported', () => {
+  const result = phaseUpdate(
+    ['test-loom', '2', '--status=completed', '--url=https://github.com/o/r/pull/1'],
+    { projectsRoot },
+  );
+  expect(result.exitCode).toBe(1);
+  expect(JSON.parse(result.stderr as string).error).toBe('pr-flags-unsupported');
+});
+
+test('phaseUpdate: --pr-state returns pr-flags-unsupported', () => {
+  const result = phaseUpdate(
+    ['test-loom', '2', '--status=completed', '--pr-state=merged'],
+    { projectsRoot },
+  );
+  expect(result.exitCode).toBe(1);
+  expect(JSON.parse(result.stderr as string).error).toBe('pr-flags-unsupported');
+});
+
+test('phaseUpdate: --pr rejection takes precedence over phase-not-found', () => {
+  // Confirms the PR-flag check fires BEFORE the phase-lookup, so operators
+  // get the more informative error even with an invalid phase number.
+  const result = phaseUpdate(
+    ['test-loom', '99', '--status=in-progress', '--pr=42'],
+    { projectsRoot },
+  );
+  expect(result.exitCode).toBe(1);
+  expect(JSON.parse(result.stderr as string).error).toBe('pr-flags-unsupported');
+});
+
 test('phaseAdd: clean add appends a new phase that round-trips', () => {
   const result = phaseAdd(
     ['test-loom', '--number=99', '--name=smoke phase'],

@@ -132,10 +132,30 @@ export function phaseUpdate(rest: string[], ctx: CliContext): DispatchResult {
       status: { type: 'string' },
       branch: { type: 'string' },
       reason: { type: 'string' },
+      pr: { type: 'string' },
+      url: { type: 'string' },
+      'pr-state': { type: 'string' },
     },
     allowPositionals: true,
     strict: false,
   });
+  // PR state is derived on demand via `loom pr discover` (gh pr view + the
+  // checkin marker), not stored on the phase row and not emitted as events —
+  // see manifest-toml.ts:299-302 and types.ts:83-86. Fail loud rather than
+  // accept-and-drop the flags, which would mislead operators into thinking
+  // the manifest tracks PR state.
+  if (
+    values.pr !== undefined
+    || values.url !== undefined
+    || values['pr-state'] !== undefined
+  ) {
+    return errToResult(
+      new LoomError(
+        'pr-flags-unsupported',
+        '--pr/--url/--pr-state are not stored on the phase or emitted as events; PR state is derived on demand via `loom pr discover` (see manifest-toml.ts:299-302 and types.ts:83-86 for the derive-don\'t-store decision)',
+      ),
+    );
+  }
   const slug = positionals[0];
   const phaseArg = positionals[1];
   if (slug === undefined || phaseArg === undefined) {
