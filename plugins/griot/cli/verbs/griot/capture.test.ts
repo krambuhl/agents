@@ -414,18 +414,90 @@ test('--evaluator-finding=recurring requires --frequency-count', () => {
   expect(res.stderr).toMatch(/--frequency-count=<N> is required when --evaluator-finding=recurring/);
 });
 
-test('--evaluator-finding=catalog-gap errors with not-yet-supported', () => {
+test('--evaluator-finding=catalog-gap writes state.json with classification and prose learning.md', () => {
   const res = captureVerb(
     [
       '--evaluator-finding=catalog-gap',
-      '--evaluator-name=e',
+      '--evaluator-name=session-observation',
+      '--code=substrate-gap',
+      '--evidence=loom revise-plan does not seed manifest [[phases]] entries from the revised PLAN.md',
+      '--slug=catgap-revise-plan-no-seed',
+    ],
+    ctx,
+  );
+  expect(res.exitCode).toBe(0);
+  expect(res.stdout).toMatch(/^captured: learnings\/session-notes\/\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}-catgap-revise-plan-no-seed/);
+  const folders = readdirSync(join(root, 'learnings', 'session-notes'));
+  expect(folders.length).toBe(1);
+  const folder = join(root, 'learnings', 'session-notes', folders[0]);
+  const state = JSON.parse(readFileSync(join(folder, 'state.json'), 'utf-8'));
+  expect(state).toEqual({
+    classification: 'catalog-gap',
+    evaluator: 'session-observation',
+    code: 'substrate-gap',
+    'frequency-count': null,
+    'file-line': null,
+    status: 'captured',
+    promoted_as: null,
+  });
+  const learning = readFileSync(join(folder, 'learning.md'), 'utf-8');
+  expect(learning.startsWith('---\n')).toBe(false);
+  expect(learning).toMatch(/^# Learning draft/);
+  expect(learning).toMatch(/Catalog gap/);
+  expect(learning).toMatch(/loom revise-plan does not seed manifest/);
+});
+
+test('--evaluator-finding=catalog-gap does NOT require --frequency-count', () => {
+  // catalog-gap is one-off by definition — passing no --frequency-count must succeed.
+  const res = captureVerb(
+    [
+      '--evaluator-finding=catalog-gap',
+      '--evaluator-name=session-observation',
+      '--code=substrate-gap',
+      '--evidence=x',
+    ],
+    ctx,
+  );
+  expect(res.exitCode).toBe(0);
+});
+
+test('--evaluator-finding=catalog-gap still requires --evaluator-name', () => {
+  const res = captureVerb(
+    [
+      '--evaluator-finding=catalog-gap',
       '--code=c',
       '--evidence=x',
     ],
     ctx,
   );
   expect(res.exitCode).toBe(1);
-  expect(res.stderr).toMatch(/capture-error: not-yet-supported: catalog-gap/);
+  expect(res.stderr).toMatch(/--evaluator-name=<name> is required/);
+});
+
+test('--evaluator-finding=catalog-gap still requires --code and --evidence', () => {
+  // missing --code
+  const missingCode = captureVerb(
+    [
+      '--evaluator-finding=catalog-gap',
+      '--evaluator-name=session-observation',
+      '--evidence=x',
+    ],
+    ctx,
+  );
+  expect(missingCode.exitCode).toBe(1);
+  expect(missingCode.stderr).toMatch(/--code=<code> is required/);
+
+  // missing --evidence
+  const missingEvidence = captureVerb(
+    [
+      '--evaluator-finding=catalog-gap',
+      '--evaluator-name=session-observation',
+      '--code=c',
+    ],
+    ctx,
+  );
+  expect(missingEvidence.exitCode).toBe(1);
+  expect(missingEvidence.stderr).toMatch(/--evidence=<text> is required/);
 });
 
 test('--evaluator-finding=evaluator-conflict errors with not-yet-supported', () => {

@@ -19,7 +19,7 @@ const ARG_HINT = [
   '  capture --evaluator-finding=<classification> --evaluator-name=<name> --code=<code> --evidence=<text>',
   '          [--slug=<slug>] [--file-line=<path:line>] [--frequency-count=<N>]',
   '          classifications: recurring | generator-antipattern | catalog-gap | evaluator-conflict | sanctioned-exception',
-  '          (recurring requires --frequency-count; catalog-gap | evaluator-conflict | sanctioned-exception are not-yet-supported)',
+  '          (recurring requires --frequency-count; evaluator-conflict | sanctioned-exception are not-yet-supported)',
 ].join('\n');
 
 const VALID_CLASSIFICATIONS = [
@@ -33,9 +33,9 @@ type Classification = (typeof VALID_CLASSIFICATIONS)[number];
 const IMPLEMENTED_CLASSIFICATIONS: ReadonlySet<Classification> = new Set([
   'recurring',
   'generator-antipattern',
+  'catalog-gap',
 ]);
 const NOT_YET_SUPPORTED: ReadonlySet<Classification> = new Set([
-  'catalog-gap',
   'evaluator-conflict',
   'sanctioned-exception',
 ]);
@@ -260,18 +260,28 @@ type EvaluatorFindingArgs = {
 
 function buildEvaluatorFindingLearningMd(args: EvaluatorFindingArgs): string {
   const heading = '# Learning draft';
-  const bodyKind =
-    args.classification === 'recurring'
-      ? `**Recurring evaluator finding** — \`${args.evaluatorName}\` flagged \`${args.code}\`${
-          args.frequencyCount !== undefined
-            ? ` on ${args.frequencyCount} occurrences`
-            : ''
-        }.\n\nEvidence: ${args.evidence}${
-          args.fileLine !== undefined ? `\n\nSource: \`${args.fileLine}\`` : ''
-        }\n\nThis pattern recurs in this project; future work in the same domain should avoid it.`
-      : `**Generator antipattern** — output flagged by \`${args.evaluatorName}\` as \`${args.code}\`.\n\nEvidence: ${args.evidence}${
-          args.fileLine !== undefined ? `\n\nSource: \`${args.fileLine}\`` : ''
-        }\n\nThis is a recurring shape in generator output for this project; future generator invocations in this domain should avoid it.`;
+  let bodyKind: string;
+  if (args.classification === 'recurring') {
+    bodyKind = `**Recurring evaluator finding** — \`${args.evaluatorName}\` flagged \`${args.code}\`${
+      args.frequencyCount !== undefined
+        ? ` on ${args.frequencyCount} occurrences`
+        : ''
+    }.\n\nEvidence: ${args.evidence}${
+      args.fileLine !== undefined ? `\n\nSource: \`${args.fileLine}\`` : ''
+    }\n\nThis pattern recurs in this project; future work in the same domain should avoid it.`;
+  } else if (args.classification === 'generator-antipattern') {
+    bodyKind = `**Generator antipattern** — output flagged by \`${args.evaluatorName}\` as \`${args.code}\`.\n\nEvidence: ${args.evidence}${
+      args.fileLine !== undefined ? `\n\nSource: \`${args.fileLine}\`` : ''
+    }\n\nThis is a recurring shape in generator output for this project; future generator invocations in this domain should avoid it.`;
+  } else {
+    // catalog-gap — a one-off observation that the substrate's catalog (verb
+    // surface, agent roster, schema, recipe set, etc) doesn't anticipate this
+    // case. Not recurring, not a generator output; one-shot signal that the
+    // catalog needs widening (or that the case is intentionally out of scope).
+    bodyKind = `**Catalog gap** — observation surfaced by \`${args.evaluatorName}\` as \`${args.code}\`. The substrate's catalog (verb surface / agent roster / schema / recipe set) doesn't anticipate this case.\n\nEvidence: ${args.evidence}${
+      args.fileLine !== undefined ? `\n\nSource: \`${args.fileLine}\`` : ''
+    }\n\nOne-off observation, not a recurring pattern. Future substrate evolution should decide whether to extend the catalog to cover this case OR explicitly carve it out of scope.`;
+  }
 
   const provenance = `\n\n_Draft auto-generated from an evaluator finding via \`capture --evaluator-finding=${args.classification}\`. Routing metadata lives in \`state.json\`; the compaction pipeline (\`/griot-compact\`) reads it to route classification-aware promotion._`;
 
