@@ -48,13 +48,14 @@ branch = "substrate-followups.phase-add"
 [[phases]]
 number = 6
 name = "loom phase update PR-fields persistence"
-status = "in-progress"
+status = "completed"
 branch = "substrate-followups.pr-fields"
 
 [[phases]]
 number = 7
 name = "griot capture out-of-band pathway"
-status = "not-started"
+status = "in-progress"
+branch = "substrate-followups.griot-capture"
 
 [[phases]]
 number = 8
@@ -161,6 +162,21 @@ at = "2026-05-28T18:07:51.670Z"
 event = "phase-started"
 detail = { phase = 6, name = "loom phase update PR-fields persistence" }
 
+[[events]]
+at = "2026-05-28T18:25:23.286Z"
+event = "phase-completed"
+detail = { phase = 6 }
+
+[[events]]
+at = "2026-05-28T18:31:11.301Z"
+event = "checkin-created"
+detail = { number = "07", branch = "substrate-followups.griot-capture" }
+
+[[events]]
+at = "2026-05-28T18:31:11.386Z"
+event = "phase-started"
+detail = { phase = 7, name = "griot capture out-of-band pathway" }
+
 [[checkins]]
 schema_version = 1
 number = "01"
@@ -244,6 +260,20 @@ scope = ["plugins/loom/cli/verbs/loom/phase.ts", "plugins/loom/cli/verbs/loom/ph
 changes_since_previous = "Single-unit phase 6 close with major reframe. The silent-drop papercut documented in [[feedback_loom_phase_update_drops_pr_fields]] is closed — not by adding the storage PLAN.md anticipated, but by fail-loud rejection aligned with the substrate-consolidation architecture decision. The SUBSTRATE-COMPOSITIONS § Phase update doc now matches what the verb actually does. Memory file flipped to RESOLVED stub for wikilink continuity."
 verdict = { result = "approved", reasons = [] }
 notes_for_pr = ["Antagonist panel: evaluator-contract-fit approved with zero blocking findings. Specifically noted: 'reframe's drift is explicit and well-justified by pre-existing architecture decision, not stealth scope-shift.'", "signal: phase-boundary: this unit closes Phase 6 (single-unit phase, same shape as Phases 1-5).", "signal: user-comment: PLAN.md § Phase 6's storage-based exit criteria turned out to be stale relative to the substrate-consolidation derive-don't-store decision. Two AskUserQuestion rounds during execution shifted to fail-loud rejection. Recorded as correction in this checkin. (Two signals — user-comment + phase-boundary — but they don't point at the SAME shift, so the two-signal-concurrence rule for inner-RPI doesn't fire. PLAN.md will eventually want revision at archive time or via /loom-revise-plan; not blocking.)", "Carries forward: phase-5 PR #116 reconciliation commit (status flip + phase-completed event).", "Self-validating: this very reconciliation commit (`7b5113b`) tried to set --pr=116 --url=... --pr-state=merged and the flags were silently dropped (per the old behavior). After PR #117 merges, the NEXT reconciliation would fail loud on those flags — and operators would learn to use the clean `loom phase update <slug> <N> --status=completed` shape that this unit normalizes.", "Substrate observation: SUBSTRATE-COMPOSITIONS.md had been documenting the pre-decision PR-flag behavior since substrate-consolidation. Phase 6's doc rewrite is itself a small substrate-consolidation cleanup — the doc was lying about what the verb accepted. Caught + fixed in this unit."]
+
+[[checkins]]
+schema_version = 1
+number = "07"
+created = "2026-05-28T11:35:00Z"
+phase = { number = 7, name = "griot capture out-of-band pathway" }
+branch = "substrate-followups.griot-capture"
+unit = "Phase 7 — griot capture catalog-gap classification (option 7a)"
+contract = { goal = "Implement the `catalog-gap` classification in `griot capture --evaluator-finding=catalog-gap` so substrate-gap observations have a capture pathway. PLAN.md option 7a (recommended). Closes [[feedback_griot_capture_no_pathway_for_one_off]].", acceptance_criteria = ["catalog-gap moves from NOT_YET_SUPPORTED to IMPLEMENTED_CLASSIFICATIONS in capture.ts", "Capture writes the 6 standard files at learnings/session-notes/<ts>-<slug>/", "--frequency-count NOT required for catalog-gap (existing recurring-only gate already accommodates this)", "learning.md gets a catalog-gap branch in buildEvaluatorFindingLearningMd describing 'substrate's catalog doesn't anticipate this case'", "ARG_HINT updated to drop catalog-gap from the not-yet-supported list", "Existing test at capture.test.ts:417 (catalog-gap -> not-yet-supported) updated to assert clean capture", "New tests: clean happy path (writes 6 files, learning.md prose), no --frequency-count required, still requires --evaluator-name + --code + --evidence", "Real-CLI smoke: capture 3 papercut memories ([[feedback_griot_capture_no_pathway_for_one_off]], [[feedback_plan_real_test_breaks_on_project_archive]], [[feedback_loom_phase_update_drops_pr_fields]]) via the new pathway", "Full repo vitest green modulo known Phase 8 plan.real.test.ts failure"], rules_applied = ["PLAN.md § Phase 7 option 7a verbatim", "Disqualifier discipline: catalog-gap only; evaluator-conflict/sanctioned-exception remain not-yet-supported", "Hand-copy doc propagation rule does not apply (no shared docs touched)"], disqualifiers = ["Implementing evaluator-conflict or sanctioned-exception (out of scope)", "Touching the from-checkin pathway (PLAN.md option 7b not chosen)", "Modifying griot-compact SKILL.md downstream routing (catalog-gap still routes to not-yet-supported list per SKILL.md:147-151; that's a separate future enhancement)", "Touching recurring or generator-antipattern flows", "Running bare `node scripts/sync-shared.ts` (per [[feedback_sync_shared_bare_run_overreaches]])"], inputs = ["plugins/griot/cli/verbs/griot/capture.ts:17-41 (ARG_HINT + classification sets)", "plugins/griot/cli/verbs/griot/capture.ts:261-279 (buildEvaluatorFindingLearningMd binary -> three-way branch)", "plugins/griot/cli/verbs/griot/capture.ts:339-423 (existing captureFromEvaluatorFinding flow; catalog-gap reuses it)", "plugins/griot/cli/verbs/griot/capture.test.ts:417 (test to rewrite)", "[[feedback_griot_capture_no_pathway_for_one_off]] (the papercut + its resolution)", "[[feedback_plan_real_test_breaks_on_project_archive]] (smoke target #2)", "[[feedback_loom_phase_update_drops_pr_fields]] (smoke target #3)", "plugins/griot/skills/griot-compact/SKILL.md:147-151 (downstream routing — informational only)", "projects/2026-05-28-substrate-followups/PLAN.md § Phase 7"] }
+execution = { actions = ["Edited capture.ts ARG_HINT: removed catalog-gap from the 'not-yet-supported' parenthetical (now reads 'evaluator-conflict | sanctioned-exception are not-yet-supported').", "Edited capture.ts classification sets: moved 'catalog-gap' from NOT_YET_SUPPORTED to IMPLEMENTED_CLASSIFICATIONS; NOT_YET_SUPPORTED now holds just {evaluator-conflict, sanctioned-exception}.", "Refactored buildEvaluatorFindingLearningMd from binary if/else (recurring vs generator-antipattern) to three-way if/else-if/else with a catalog-gap branch. The catalog-gap prose names the substrate's catalog dimensions (verb surface / agent roster / schema / recipe set) that failed to anticipate the case — concrete and architectural rather than generic.", "Rewrote existing test at capture.test.ts:417 from `--evaluator-finding=catalog-gap errors with not-yet-supported` to `writes state.json with classification and prose learning.md`. Asserts exit 0, state.json shape (catalog-gap classification, evaluator-name, code, no frequency-count, no file-line), learning.md content (catalog-gap branch, evidence text).", "Added 3 new tests for catalog-gap: (a) does NOT require --frequency-count (clean exit 0 without it); (b) still requires --evaluator-name; (c) still requires --code and --evidence (two sub-cases — missing code, missing evidence — each individually returns the expected error).", "Ran targeted vitest plugins/griot/cli/verbs/griot/capture.test.ts -> 32/32 passed (28 pre-existing + 4 new).", "Ran full repo vitest -> 842 passed, 1 failed (known Phase-8 plan.real.test.ts; pre-existing on origin/main).", "Real-CLI smoke: created a temp directory (no .git -> resolveProjectRoot falls back to cwd), ran 3 `griot capture --evaluator-finding=catalog-gap` invocations corresponding to the 3 papercut memories. Each landed a session-note folder with all 6 files (state.json + correction.md + full_transcript.md + learning.md + prompt.md + wrong.md).", "Updated [[feedback_griot_capture_no_pathway_for_one_off]] memory file to RESOLVED stub with resolution narrative + usage guide (when to use catalog-gap vs the other classifications); historical body retained for wikilink resolution.", "Updated MEMORY.md index entry for that memory to mark RESOLVED.", "Antagonist panel: evaluator-contract-fit approved with zero blocking findings. One advisory observation: the catalog-gap prose enumeration of substrate dimensions (verb surface / agent roster / schema / recipe set) is 'strictly more useful than a generic phrasing' (positive — not a flag, just a note that the implementation went slightly beyond AC 4's minimum)."], files_touched = ["plugins/griot/cli/verbs/griot/capture.ts", "plugins/griot/cli/verbs/griot/capture.test.ts"], corrections = [] }
+scope = ["plugins/griot/cli/verbs/griot/capture.ts", "plugins/griot/cli/verbs/griot/capture.test.ts"]
+changes_since_previous = "Single-unit phase 7 close. Closes the [[feedback_griot_capture_no_pathway_for_one_off]] papercut by implementing PLAN.md's recommended option 7a. The verb shipped here would have made it possible to capture this session's own papercut findings (manifest-vs-PLAN drift, sync-shared overreach, etc) via a single CLI invocation instead of falling back to memory files. Memory file flipped to RESOLVED stub for wikilink continuity."
+verdict = { result = "approved", reasons = [] }
+notes_for_pr = ["Antagonist panel: evaluator-contract-fit approved with zero blocking findings. Advisory observation: catalog-gap prose names substrate dimensions concretely (verb surface / agent roster / schema / recipe set) — 'strictly more useful for future readers' than a generic phrasing.", "signal: phase-boundary: this unit closes Phase 7 (single-unit phase, same shape as Phases 1-6). Single signal; no revise offered.", "No scope shift this time — unlike phases 2 and 6 — because no architecture marker against catalog-gap exists in the substrate. The classification was already in VALID_CLASSIFICATIONS and listed in griot-compact SKILL.md; just gated behind NOT_YET_SUPPORTED.", "Carries forward: phase-6 PR #118 reconciliation commit (status flip + phase-completed event). Note: this reconciliation used the new clean form `loom phase update --status=completed --branch=...` (no PR flags) — the contract phase 6 normalized.", "Downstream observation memorialized: griot-compact SKILL.md:147-151 still routes catalog-gap notes to a 'not-yet-supported classifications' run-summary list rather than promoting them to rollup. The capture pathway works; promotion is a separate future enhancement. The session-note still exists, attributed to the session that captured it. Substrate consumers reading the catalog-gap notes have to know to read learnings/session-notes/ directly until the SKILL implements catalog-gap Step A-C handling."]
 
 [[revisions]]
 timestamp = "2026-05-28T08:27:16.909Z"
