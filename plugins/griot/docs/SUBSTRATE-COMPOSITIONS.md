@@ -179,6 +179,89 @@ verdict), the loop writes a new checkin with a fresh `<NN>`.
 **Used by**: `/ev-loop-confidence` (lines 239, 320, 369),
 `/ev-loop-interactive` (line 309).
 
+## § ADR-emit hook
+
+**Purpose**: At unit close (between scope-shift detection and
+phase update), scan the just-written checkin's `notes_for_pr`
+array for entries containing the literal `[adr-candidate]` marker
+and, per match, offer the operator the chance to lift the entry
+into a real Architectural Decision Record via the `loom adr` verb.
+The marker is the operator's intent; the recipe is the offer
+mechanism. The emitted ADR rides the same git commit as the
+manifest update (one revertable bundle), produced by the verb's
+`--no-commit` flag and the loop's staging of the returned ADR
+path.
+
+**Wraps**:
+
+```bash
+node plugins/loom/cli/loom.ts adr "<title>" \
+  --body-file=<tmp-path> \
+  --no-commit
+```
+
+The body file at `<tmp-path>` is composed by the calling loop in
+three sections: Context (paraphrase of the marked entry + the
+unit's contract goal), Decision (the decision the operator named
+in the entry), Consequences (a literal `TODO: operator to fill
+before commit` line — the body is intentionally incomplete). The
+loop captures the verb's returned ADR path from the JSON output
+and stages it for the unit's git-add list so the ADR commits with
+the manifest.
+
+The `node plugins/loom/cli/loom.ts` invocation (rather than bare
+`loom`) is the encoded substrate path — see
+`2026-05-28-loom-adr`'s P2D2 `notes_for_pr` for the cached-PATH-
+binary lag pattern that drove the choice.
+
+**Idempotency**: `not-idempotent`. Each invocation produces a new
+ADR with the next available number (max + 1; gaps are not reused).
+The hook fires once per unit close, per match — re-running the
+loop on the same already-committed unit does not re-surface
+markers (the close path only fires once per unit), but a unit
+with three marker entries produces three ADRs in three
+invocations.
+
+**Events emitted by the calling loop** (not by the verb itself):
+
+- `adr-emitted` with detail `{slug, phase, unit, adr_number,
+  adr_path, marker_excerpt}` — fires after the verb returns
+  successfully and the ADR is staged for the unit's git-add list.
+- `adr-emit-declined` with detail `{slug, phase, unit,
+  marker_excerpt}` — fires when the operator picks "skip this
+  marker" on the `AskUserQuestion` offer. Captures the substrate
+  signal that a candidate was surfaced but declined, useful for
+  forensics on marker-usage patterns.
+
+**Failure modes**:
+
+- `unknown-verb` (from a stale cached `loom` binary, NOT from this
+  recipe's `node …/loom.ts` invocation) → would indicate the
+  encoded calling pattern was downgraded to bare `loom`; surface to
+  operator as a regression of the substrate convention.
+- `body-file-unreadable` → loop wrote a bad temp path or the file
+  disappeared; surface to operator.
+- `adr-log-write-failed` (filesystem error writing to
+  `projects/adr-log/`) → forward verbatim; the unit is not
+  committable until the operator resolves.
+- Marker present but operator declines on every match → no failure
+  (this is the normal decline path); only the `adr-emit-declined`
+  events fire.
+
+**Operator-opt-in posture**: the hook never auto-emits. Every
+candidate surfaces an `AskUserQuestion` before any ADR file is
+written. In auto-mode (`--mode=auto`), the per-match
+`AskUserQuestion` is replaced by `evaluator-contract-fit` reading
+the marked entry against `ADR-0001`'s conventions (`approved` →
+accept, `flagged` → decline); the title is synthesized from the
+first ~7 words of the marked entry.
+
+**Used by**: `/ev-loop-interactive` § Step 2 unit loop, sub-step
+5.5 (ADR-emit). Other loops (e.g. `/ev-loop-confidence`) do not
+cite this recipe today — bulk-transform shapes are out of scope
+for ADR emission (architectural decisions surface in
+human-paired work, not codemod sweeps).
+
 ## § Compose PR
 
 **Purpose**: Open the phase's pull request on first checkpoint,
