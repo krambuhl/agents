@@ -212,3 +212,140 @@ export function compileEmitOnly(opts: EmitOnlyOptions): EmitResult {
     opts.promptHash ?? '',
   );
 }
+
+// check — read-only drift detection between axes.toml, the source
+// fragments, the committed .cache.toml, and the committed agent
+// bodies on disk. Closes PLAN.md § Phase 2.1 exit criterion 4:
+// "guild compile --check ... verifies that every committed agent
+// file hashes to its cache output_hash and every source fragment
+// hashes to its cache entry. Passes without any API call; fails
+// loud on drift."
+//
+// check does NOT mutate; check does NOT call the LLM; check does
+// NOT regenerate. It runs parse → validate → derive → resolve to
+// learn the current cell set + fragment bodies, then compares
+// against the cache + on-disk bodies and reports drift across six
+// categories.
+
+export type AgentBodyReader = (cellId: string) => string | undefined;
+
+export interface CheckOptions {
+  axesToml: string;
+  cacheToml?: string;
+  fragmentReader: FragmentReader;
+  agentBodyReader: AgentBodyReader;
+  promptHash?: string;
+}
+
+export interface CheckSourceDrift {
+  id: string;
+  axis: 'phase' | 'personality' | 'domain';
+}
+
+export interface CheckResult {
+  ok: boolean;
+  drift: {
+    cells_with_source_drift: CheckSourceDrift[];
+    cells_with_output_drift: string[];
+    cells_with_prompt_drift: string[];
+    cells_missing_cache_entry: string[];
+    cells_missing_on_disk: string[];
+    stale_cache_entries: string[];
+  };
+}
+
+export function check(opts: CheckOptions): CheckResult {
+  // parse → validate → derive → resolve: same shape as
+  // compileThroughResolveCore, but we don't need the cache hit/miss
+  // bookkeeping (check has its own classification).
+  const data = parse(opts.axesToml);
+  const validation: ValidationResult = validate(data);
+  if (!validation.ok) {
+    throw new ComposeError(
+      `check: validate failed with ${validation.errors.length} finding(s); first: ${validation.errors[0]?.code} — ${validation.errors[0]?.message}`,
+    );
+  }
+  const cells = derive(data);
+  const resolved: ResolvedCell[] = cells.map((c) =>
+    resolve(data, c, opts.fragmentReader),
+  );
+
+  const cache = readCache(opts.cacheToml);
+  const promptHash = opts.promptHash ?? '';
+
+  const cells_with_source_drift: CheckSourceDrift[] = [];
+  const cells_with_output_drift: string[] = [];
+  const cells_with_prompt_drift: string[] = [];
+  const cells_missing_cache_entry: string[] = [];
+  const cells_missing_on_disk: string[] = [];
+
+  // Build a set of derived ids for the stale-entry check below.
+  const derivedIds = new Set<string>();
+
+  for (const cell of resolved) {
+    derivedIds.add(cell.id);
+    const entry = cache.get(cell.id);
+    if (entry === undefined) {
+      cells_missing_cache_entry.push(cell.id);
+      // Don't also check output/prompt/source drift for this cell —
+      // missing-cache subsumes them.
+      continue;
+    }
+
+    // Source drift: per-axis hash mismatch. Report each axis
+    // independently so the operator sees which fragment changed.
+    if (entry.source_hashes.phase !== sha256(cell.phase_fragment)) {
+      cells_with_source_drift.push({ id: cell.id, axis: 'phase' });
+    }
+    if (entry.source_hashes.personality !== sha256(cell.personality_fragment)) {
+      cells_with_source_drift.push({ id: cell.id, axis: 'personality' });
+    }
+    if (entry.source_hashes.domain !== sha256(cell.domain_fragment)) {
+      cells_with_source_drift.push({ id: cell.id, axis: 'domain' });
+    }
+
+    // Prompt drift: cache's prompt_hash differs from caller's.
+    if (entry.prompt_hash !== promptHash) {
+      cells_with_prompt_drift.push(cell.id);
+    }
+
+    // Output drift: the on-disk body's hash differs from the
+    // cache's recorded output_hash. Missing body is its own
+    // category (cells_missing_on_disk), not output drift.
+    const body = opts.agentBodyReader(cell.id);
+    if (body === undefined) {
+      cells_missing_on_disk.push(cell.id);
+    } else if (sha256(body) !== entry.output_hash) {
+      cells_with_output_drift.push(cell.id);
+    }
+  }
+
+  // Stale cache entries: cache has an id that's no longer in the
+  // derived cell set (likely a cell removed from axes.toml).
+  const stale_cache_entries: string[] = [];
+  for (const id of cache.keys()) {
+    if (!derivedIds.has(id)) {
+      stale_cache_entries.push(id);
+    }
+  }
+
+  const ok =
+    cells_with_source_drift.length === 0 &&
+    cells_with_output_drift.length === 0 &&
+    cells_with_prompt_drift.length === 0 &&
+    cells_missing_cache_entry.length === 0 &&
+    cells_missing_on_disk.length === 0 &&
+    stale_cache_entries.length === 0;
+
+  return {
+    ok,
+    drift: {
+      cells_with_source_drift,
+      cells_with_output_drift,
+      cells_with_prompt_drift,
+      cells_missing_cache_entry,
+      cells_missing_on_disk,
+      stale_cache_entries,
+    },
+  };
+}

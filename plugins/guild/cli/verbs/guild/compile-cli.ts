@@ -3,6 +3,7 @@ import { dirname, join, resolve as resolvePath } from 'node:path';
 import { parseArgs } from 'node:util';
 
 import {
+  check,
   compile,
   compileEmitOnly,
   compileThroughResolve,
@@ -27,6 +28,15 @@ import type { ComposedAgent } from './compile/types.ts';
 //     stdin, writes per-cell files + .cache.toml. The skill calls
 //     this after performing fusion on the cache-miss cells.
 //
+//   guild compile --check
+//     Read-only drift detection. Verifies every committed agent file
+//     hashes to its cache `output_hash`, every source fragment hashes
+//     to its cache entry's `source_hashes`, and (when --prompt-hash is
+//     passed) every cache entry's `prompt_hash` matches. Emits a JSON
+//     `{ok, drift}` report on stdout. Exit 0 on `ok=true`, exit 1
+//     when any drift is detected. Performs no fusion, no LLM call,
+//     no writes. Mutually exclusive with `--stage`.
+//
 // Flags:
 //   --axes-toml=<path>    Default: plugins/guild/axes.toml (cwd-relative).
 //   --output-dir=<path>   Default: plugins/guild/agents/generated (cwd-relative).
@@ -35,6 +45,7 @@ import type { ComposedAgent } from './compile/types.ts';
 //                         skill computes SHA-256 of fusion-prompt.md and
 //                         passes it here; an empty value matches legacy
 //                         cache entries written before U3 lands.
+//   --check               Run drift detection instead of the pipeline.
 
 const THROUGH_RESOLVE_STAGE = 'parse,validate,derive,resolve';
 const EMIT_ONLY_STAGE = 'emit';
@@ -48,6 +59,7 @@ const OPTIONS = {
   'output-dir': { type: 'string' as const },
   'cache-toml': { type: 'string' as const },
   'prompt-hash': { type: 'string' as const },
+  check: { type: 'boolean' as const },
 };
 
 function errorResult(name: string, message: string, exitCode = 1): DispatchResult {
@@ -132,6 +144,7 @@ export function compileVerb(
     'output-dir'?: string;
     'cache-toml'?: string;
     'prompt-hash'?: string;
+    check?: boolean;
   };
   try {
     ({ values } = parseArgs({
@@ -155,8 +168,38 @@ export function compileVerb(
   const fileWriter = makeFileWriter();
   const stage = values.stage;
   const promptHash = values['prompt-hash'] ?? '';
+  const checkMode = values.check === true;
+
+  if (checkMode && stage !== undefined) {
+    return errorResult(
+      'bad-args',
+      '--check is mutually exclusive with --stage',
+    );
+  }
 
   try {
+    if (checkMode) {
+      const axesToml = readFileSync(axesTomlPath, 'utf8');
+      const cacheToml = readCacheFile(cachePath);
+      const resolvedOutputDir = resolvePath(ctx.cwd, outputDir);
+      const agentBodyReader = (cellId: string): string | undefined => {
+        const filePath = join(resolvedOutputDir, `${cellId}.md`);
+        if (!existsSync(filePath)) return undefined;
+        return readFileSync(filePath, 'utf8');
+      };
+      const result = check({
+        axesToml,
+        cacheToml,
+        fragmentReader,
+        agentBodyReader,
+        promptHash,
+      });
+      return {
+        stdout: JSON.stringify(result, null, 2),
+        exitCode: result.ok ? 0 : 1,
+      };
+    }
+
     if (stage === THROUGH_RESOLVE_STAGE) {
       const axesToml = readFileSync(axesTomlPath, 'utf8');
       const cacheToml = readCacheFile(cachePath);
