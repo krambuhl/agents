@@ -38,6 +38,133 @@ grants apply **only at reviewer + implementer** — planner/researcher are
 base-only, even on a granted domain. A missing `[phase.X]` row is a
 fail-loud error; a missing `[domain.X]` row is base-only (a default).
 
+### Fragment heading sets
+
+Each fragment axis carries a **canonical heading set** so the
+labeled-section signal is mechanical: dedup and LLM fusion (Phase 2.1)
+operate on stable `(heading, body)` pairs rather than free prose.
+A fragment-schema test (Phase 1.0 U4) enforces presence and order at
+lint-time. Locked in by Phase 1.0 of `guild-matrix-precompile`;
+orthogonal to whether the panel manifest is `panel.manifest.toml`
+(today) or `axes.toml` (Phase 1.1 onward).
+
+#### Domain fragments (`plugins/guild/modes/domains/<name>.md`)
+
+Required, in order:
+
+1. `## Scope` — what this domain covers (1-2 paragraphs); for
+   design-phase-only domains, name the absence of a reviewer cell
+   here.
+2. `## Concerns` — bullet list of pressure points / antipattern
+   signals / questions the lens asks.
+3. `## Antipattern catalog` — the catalog the reviewer evaluator
+   walks. For design-phase-only domains (`performance`, `substrate`),
+   a stub paragraph noting "no reviewer cell — see § Cross-domain
+   notes for boundaries" satisfies the schema.
+4. `## Good patterns` — counter-examples / what doing it right looks
+   like.
+5. `## Vocabulary` — terms with one-line definitions. Grounds LLM
+   fusion in stable vocabulary.
+6. `## Cross-domain notes` — boundaries vs. adjacent domains.
+
+Optional, at canonical positions when present:
+
+- `## Detection` — runtime / static-analysis signals for catalog
+  entries. Position: between `## Antipattern catalog` and
+  `## Good patterns`.
+- `## Carve-outs` — what's deliberately not in this lens's scope.
+  Position: between `## Antipattern catalog` (or `## Detection` when
+  both present) and `## Good patterns`.
+
+Any other `## ` heading in a domain fragment fails the schema.
+
+#### Phase fragments (`plugins/guild/modes/phases/<name>.md`)
+
+Required, in order:
+
+1. `## Lifecycle position` — when in the unit-of-work flow this phase
+   fires + which of the legacy agent classes (researcher / planner /
+   reviewer / implementer = generator) it embodies.
+2. `## Stance` — the HOW posture for this phase (skeptical,
+   write-bounded, design-phase-pressure, etc.).
+3. `## Mandate` — the WHAT: bullet list of what the agent must do.
+4. `## Tool posture` — granted tools + read-vs-write capability
+   statement.
+5. `## Output contract` — what the agent emits; verdict shape (for
+   reviewer); deliverable shape (for others).
+
+Cross-axis composition guidance (formerly the per-phase
+`## Combining with domain + personality` section) is **not** a
+fragment-level section. The LLM fusion prompt in Phase 2.1
+(`fusion-prompt.md`) carries cross-axis assembly logic in one place;
+per-phase fragments stay axis-local.
+
+#### Personality fragments (`plugins/guild/agents/personalities/<name>.md`)
+
+Applies to the five personality fragments: `generative`,
+`methodical`, `pragmatist`, `skeptic`, `synthesizer`.
+**`personality-base.md` is exempt** — it is documentation root for
+the personality class (the inheritance / shared context every
+personality references), not a personality fragment per se; its
+content is inlined into every generated agent body via the fusion
+prompt.
+
+Required, in order:
+
+1. `## Disposition` — the HOW the personality brings: pace,
+   criticality, voice posture.
+2. `## Voice cues` — concrete phrases / output patterns that signal
+   this personality in artifact prose. New content for most files in
+   Phase 1.0; supports LLM fusion in Phase 2.1 with stable style
+   anchors.
+3. `## Phase modulation` — how the disposition expresses differently
+   across reviewer / researcher / planner / implementer phases.
+
+Any other `## ` heading in a personality fragment (other than
+`personality-base.md`) fails the schema.
+
+#### Migration map (Phase 1.0 U2 / U3 input)
+
+The current shape of each fragment relative to the canonical set.
+"✓" means no rewrite required.
+
+**Domains (`plugins/guild/modes/domains/`):**
+
+| File | Migration |
+|---|---|
+| `a11y.md` | ✓ |
+| `abstraction.md` | ✓ |
+| `composition.md` | ✓ |
+| `css-architecture.md` | ✓ (carries optional `## Carve-outs` at canonical position) |
+| `naming.md` | ✓ |
+| `nextjs.md` | reorder: move `## Detection` from between `## Scope` and `## Concerns` to between `## Antipattern catalog` and `## Good patterns` |
+| `performance.md` | add `## Antipattern catalog` stub (design-phase-only) |
+| `react.md` | ✓ |
+| `substrate.md` | add `## Antipattern catalog` stub (design-phase-only) |
+| `test-integration.md` | rename `## Shared testing concerns` → `## Concerns` |
+| `test-unit.md` | rename `## Shared testing concerns` → `## Concerns` |
+| `tokens.md` | fold `## Project context` into `## Scope`; keep `## Carve-outs` (optional, canonical position) |
+
+**Phases (`plugins/guild/modes/phases/`):**
+
+| File | Migration |
+|---|---|
+| `implementer.md` | add `## Stance` (split from `## Mandate`); drop `## Combining with domain + personality` |
+| `planner.md` | add `## Stance` (split from `## Mandate`); drop `## Combining with domain + personality` |
+| `researcher.md` | add `## Stance` (split from `## Mandate`); drop `## Combining with domain + personality` |
+| `reviewer.md` | rename `## Output contract — verdict format` → `## Output contract` (verdict format moves into the body); drop `## Combining with domain + personality`; already has `## Stance` |
+
+**Personalities (`plugins/guild/agents/personalities/`):**
+
+| File | Migration |
+|---|---|
+| `generative.md` | rename `## Your disposition` → `## Disposition`; add `## Voice cues` (new content); rename `## How your disposition modulates across the phases` → `## Phase modulation` |
+| `methodical.md` | same shape as `generative.md` |
+| `pragmatist.md` | same shape as `generative.md` |
+| `skeptic.md` | same shape as `generative.md` |
+| `synthesizer.md` | same shape as `generative.md` |
+| `personality-base.md` | exempt (documentation root) |
+
 ### Retained hand-authored agents
 
 Three files are deliberately retained hand-authored and never generated
