@@ -12,6 +12,7 @@ import {
   appendCheckin,
   appendEvent,
   appendSession,
+  backfillPhases,
   readManifestFile,
   updateMeta,
   updatePhase,
@@ -158,6 +159,58 @@ test('updateMeta merges a patch into [meta]', () => {
   expect(next.meta.current_branch).toBe('feat-x');
   expect(next.meta.latest_checkin).toBe('08');
   expect(m.meta.current_branch).toBeNull(); // input untouched
+});
+
+// ---------- backfillPhases ----------
+
+test('backfillPhases reconciles the placeholder: renames phase 1, adds the rest', () => {
+  const m: ManifestToml = {
+    ...baseManifest(),
+    phases: [{ number: 1, name: 'Phase 1', status: 'in-progress', branch: 'feat-x' }],
+  };
+  const next = backfillPhases(m, [
+    { id: '1', name: 'Setup' },
+    { id: '2', name: 'Migrate' },
+    { id: '3', name: 'Cleanup' },
+  ]);
+  expect(next.phases.map((p) => p.number)).toEqual([1, 2, 3]);
+  expect(next.phases.map((p) => p.name)).toEqual(['Setup', 'Migrate', 'Cleanup']);
+  // Phase 1's in-progress status + branch are preserved (only the name changed).
+  expect(next.phases[0].status).toBe('in-progress');
+  expect(next.phases[0].branch).toBe('feat-x');
+  // Newly added phases default to not-started.
+  expect(next.phases[1].status).toBe('not-started');
+  expect(next.phases[2].status).toBe('not-started');
+  expect(m.phases).toHaveLength(1); // input untouched
+});
+
+test('backfillPhases is idempotent — re-running with the same plan is a no-op', () => {
+  const m: ManifestToml = {
+    ...baseManifest(),
+    phases: [{ number: 1, name: 'Phase 1', status: 'not-started' }],
+  };
+  const plan = [
+    { id: '1', name: 'Setup' },
+    { id: '2', name: 'Migrate' },
+  ];
+  const once = backfillPhases(m, plan);
+  const twice = backfillPhases(once, plan);
+  expect(twice.phases).toEqual(once.phases);
+  expect(twice.phases).toHaveLength(2);
+});
+
+test('backfillPhases skips non-integer plan ids (manifest keys on integers)', () => {
+  const m: ManifestToml = {
+    ...baseManifest(),
+    phases: [{ number: 1, name: 'Phase 1', status: 'not-started' }],
+  };
+  const next = backfillPhases(m, [
+    { id: '1', name: 'Setup' },
+    { id: '1.1', name: 'Dotted sub-phase' },
+    { id: '2', name: 'Migrate' },
+  ]);
+  expect(next.phases.map((p) => p.number)).toEqual([1, 2]);
+  expect(next.phases.map((p) => p.name)).toEqual(['Setup', 'Migrate']);
 });
 
 // ---------- Harness: other-sections-untouched through a real write cycle ----------
