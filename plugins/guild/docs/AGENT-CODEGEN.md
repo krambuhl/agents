@@ -1,14 +1,21 @@
-# Agent codegen + the baked-to-generated cutover
+# Agent codegen + the LLM-fusion pipeline
 
-`guild generate` compiles guild's antagonist-panel and whiteboard agents
-from a 3-axis source model instead of ~21 hand-baked files. This doc is
-the reference for how that works and what Phase 7 U1 of
-substrate-consolidation did to complete the baked-to-generated cutover.
+`/guild-compile` compiles guild's antagonist-panel and whiteboard agents
+from a 3-axis source model (declared in `axes.toml`) via in-session LLM
+fusion against a checked-in `fusion-prompt.md`. This doc is the
+reference for how that works.
+
+History: the predecessor pipeline was `guild generate`, which read
+`panel.manifest.toml` + `tools-map.toml` and produced text-concatenated
+agent bodies. Phase 2 of `guild-matrix-precompile` (PRs #126-#133)
+replaced it with the declarative `axes.toml` + LLM-fusion model. The
+old verb, the old TOMLs, and the old hand-curated agent files are
+deleted as of PR #133; this doc reflects the post-cutover state.
 
 ## The model
 
 An agent's identity is **personality x domain x phase**, inlined at
-generate time:
+compose time by the LLM:
 
 - **personality** (HOW) — `agents/personalities/<p>.md` (skeptic,
   methodical, generative, pragmatist, synthesizer) + the shared
@@ -18,25 +25,31 @@ generate time:
 - **phase** (WHEN) — `modes/phases/<phase>.md` (researcher, planner,
   reviewer, implementer) — the lifecycle position + output contract.
 
-`panel.manifest.toml` names the **needed** agents (not the 5x12x4
-cross-product) across three section shapes:
+`axes.toml` declares the matrix in six sections:
 
-- `[[combinations]]` — a personality applied to a list of domains at a
-  phase. Reviewer combinations emit `evaluator-<domain>`; planner
-  combinations emit `whiteboard-<domain>`.
-- `[[recipes]]` — the same shape with a name; a named multi-domain
-  co-dispatch (e.g. `design-systems`). Folds into member agents
-  identically to a combination; the recipe name is consumed at dispatch
-  time (Phase 6 — see `guild recipe <name>` verb), not at codegen.
-- `[[singletons]]` — a personality at a phase with **no** domain (the
-  domain-agnostic `whiteboard-skeptic`). An explicit named exception,
-  never a silent `domains = []`.
+- `[axis.domain.<name>]` — domain axis-values with `phases = [...]`
+  (which phases this domain occupies) and `tool_grants = [...]`
+  (additive grants at verification phases).
+- `[axis.personality.<name>]` — personality axis-values with
+  `phases = [...]` (which phases this voice fits) and `disposition`
+  (free-text the fusion sees).
+- `[axis.phase.<name>]` — phase axis-values with `base_tools = [...]`,
+  `writes: bool`, and `default_personality` (for recipe defaults).
+- `[[recipes]]` — curated subsets of the cross-product for `guild-spawn`
+  dispatch. Each recipe names a `(phase, personality, domains[])`
+  triple. Consumed at dispatch time via `guild recipe <name>`; not
+  affecting the cell catalog or fusion.
+- `[[singletons]]` — `(phase, personality)` pairs with no domain
+  (the domain-agnostic `whiteboard-skeptic`). An explicit named
+  exception, never a silent empty domain.
+- `[[retained]]` — names hand-authored agents the codegen pipeline
+  never touches (e.g. `evaluator-contract-fit`). Lives at
+  `agents/retained/<name>.md`.
 
-`tools-map.toml` is the least-privilege fold: `agent.tools =
-phase.base [UNION domain.grants at verification phases only]`. Domain
-grants apply **only at reviewer + implementer** — planner/researcher are
-base-only, even on a granted domain. A missing `[phase.X]` row is a
-fail-loud error; a missing `[domain.X]` row is base-only (a default).
+The tool fold is computed at the `resolve` stage:
+`agent.tools = phase.base_tools ∪ domain.tool_grants` (at phases that
+declare verification — reviewer + implementer). Planner and
+researcher phases ignore `tool_grants` and use `phase.base_tools` only.
 
 ### Fragment heading sets
 
@@ -44,9 +57,8 @@ Each fragment axis carries a **canonical heading set** so the
 labeled-section signal is mechanical: dedup and LLM fusion (Phase 2.1)
 operate on stable `(heading, body)` pairs rather than free prose.
 A fragment-schema test (Phase 1.0 U4) enforces presence and order at
-lint-time. Locked in by Phase 1.0 of `guild-matrix-precompile`;
-orthogonal to whether the panel manifest is `panel.manifest.toml`
-(today) or `axes.toml` (Phase 1.1 onward).
+lint-time. Locked in by Phase 1.0 of `guild-matrix-precompile`; preserved
+through the Phase 2 LLM-fusion cutover.
 
 #### Domain fragments (`plugins/guild/modes/domains/<name>.md`)
 
@@ -134,60 +146,62 @@ constants change together — if one shifts, both shift.
 
 ### Retained hand-authored agents
 
-Three files are deliberately retained hand-authored and never generated
-(declared in `panel.manifest.toml`'s `[retained]` table and in this doc):
+`evaluator-contract-fit` is deliberately retained hand-authored and
+never fused. It lives at `agents/retained/evaluator-contract-fit.md`
+and is declared in `axes.toml`'s `[[retained]]` section. It's the
+always-on baseline reviewer — a panel-composition role, not a
+personality × domain combination; the one principled exception to
+the axis collapse.
 
-- `evaluator-contract-fit` — the always-on baseline reviewer. A
-  panel-composition role, not a personality x domain combination; the
-  one principled exception to the axis collapse.
-- `evaluator-base` — documentation root for the evaluator class.
-  Inheritance is codegen-internal (the base body is inlined at generate
-  time), so this file is documentation, not a runtime parent. Kept as a
-  clear entrypoint for "what does every evaluator share."
-- `whiteboard-base` — the same documentation-root rationale, for the
-  whiteboard class.
+The old `evaluator-base.md` and `whiteboard-base.md` files were
+deleted in Phase 2.2 U2. Their cross-cutting framing (read-only
+stance / packet handling / verdict format / section format /
+cross-perspective courtesy) is now carried by the phase fragments
+(`modes/phases/{reviewer,planner}.md` after Phase 1.0's rewrite)
+and inlined into every composed body by the fusion-prompt.
 
 ## Generated output is committed in-place
 
-Generated agents live committed alongside the retained hand-authored
-ones at `plugins/guild/agents/<name>.md`. Each generated file carries a
-do-not-edit provenance banner and is marked `linguist-generated` in
-`.gitattributes`. They are **not** gitignored-and-generated-on-install:
-the agents are the runtime artifact the marketplace ships, and
-generate-on-install would reintroduce the installed-vs-source split
-this consolidation exists to close, plus a failure mode where a
-stale/absent generate step silently runs an empty panel.
+Fused agents live committed at `plugins/guild/agents/generated/`.
+Each fused file carries a do-not-edit provenance banner and is
+marked `linguist-generated` in `.gitattributes`. They are **not**
+gitignored-and-generated-on-install: the agents are the runtime
+artifact the marketplace ships, and generate-on-install would
+reintroduce the installed-vs-source split this consolidation exists
+to close, plus the failure mode where a stale fusion run silently
+ships an empty panel.
 
-The guard against hand-edit drift is `generated-panel.test.ts`
-(regenerate to a tmpdir, assert every generated file in the committed
-tree is byte-identical) — the lockfile-freshness shape. The test
-filters by the regen's own emitted list, so the retained hand-authored
-files are ignored. Regenerate with `guild generate`; never hand-edit a
-file emitted by the codegen.
+The guard against hand-edit drift is `guild compile --check`. It
+verifies — without any LLM call — that every committed agent file
+hashes to its cache `output_hash` and every source fragment hashes
+to its cache `source_hashes`. Drift surfaces in six categories
+(source / output / prompt / missing-cache / missing-on-disk /
+stale-cache). Re-fuse with `/guild-compile`; never hand-edit a file
+emitted by the pipeline.
 
-**Codegen output directory**: `guild generate` writes to
-`<source-dir>/agents/` by default (the in-place runtime tree). The
-`--out=<path>` flag overrides this — tests use a tmpdir; the
-project-local escape hatch (below) typically targets a consumer's
-`.claude/agents/` tree.
+**Output directory**: `guild compile` and `/guild-compile` write to
+`plugins/guild/agents/generated/` by default. The `--output-dir=<path>`
+flag overrides this — tests use a tmpdir.
 
 ## Project-local domains (the off-rails escape hatch)
 
-A consumer project (e.g. aart.camp) adds its own domain without copying
-core fragments:
+A consumer project adds its own domain without copying core
+fragments by pointing `/guild-compile` at a project-local
+`axes.toml` augmenting the core:
 
 ```
-guild generate --project-dir=<project>/.guild --out=<project>/.claude/agents
+guild compile --axes-toml=<project>/.guild/axes.toml \
+              --output-dir=<project>/.claude/agents/generated
 ```
 
-`--project-dir` holds the project's own `panel.manifest.toml` +
-`domains/<d>.md`. Core base/phase/personality fragments + `tools-map.toml`
-resolve from the installed plugin (module-relative), so the consumer
-never names the plugin's internal install path. Only the project's
-agents are emitted (not the core panel). See
-`cli/fixtures/project-local-sketch/` for a worked example
-(`sketch-ideation` — the consumer-local replacement for what was the
-baked `whiteboard-sketch-ideation`).
+The project-local `axes.toml` declares only the project's domains;
+core base/phase/personality fragments and the canonical cross-product
+resolve from the installed plugin (module-relative). The fusion
+prompt at `plugins/guild/skills/guild-compile/fusion-prompt.md`
+applies to both core and project-local cells. See
+`cli/fixtures/project-local-sketch/` for the legacy worked example
+shape; it predates the LLM-fusion cutover and will be updated when
+the first consumer-local example lands under the new pipeline.
 
 ## The baked -> generated name mapping (historical record)
 
@@ -243,7 +257,7 @@ deleting baked, both addressed in Phase 7 U1:
 
 2. **The generator (implementer) agents were not generated.**
    `generator-css-codemod` was an implementer-phase, write-capable agent
-   with no `[[combinations]]` row, so `guild generate` emitted no
+   with no matching `axes.toml` recipe row, so the pipeline emitted no
    replacement, and it was not retained. **Resolved by U1 (operator-
    grilled)**: dropped entirely (both `generator-css-codemod` and
    `generator-base`). The 3-axis (personality x domain x phase) model
