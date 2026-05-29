@@ -38,8 +38,8 @@ import type { ComposedAgent } from './compile/types.ts';
 //     no writes. Mutually exclusive with `--stage`.
 //
 // Flags:
-//   --axes-toml=<path>    Default: plugins/guild/axes.toml (cwd-relative).
-//   --output-dir=<path>   Default: plugins/guild/agents/generated (cwd-relative).
+//   --axes-toml=<path>    Default: plugins/guild/modes/axes.toml (cwd-relative).
+//   --output-dir=<path>   Default: plugins/guild/agents (cwd-relative).
 //   --cache-toml=<path>   Default: <output-dir>/.cache.toml.
 //   --prompt-hash=<hex>   Default: empty string. The U3 /guild-compile
 //                         skill computes SHA-256 of fusion-prompt.md and
@@ -50,8 +50,8 @@ import type { ComposedAgent } from './compile/types.ts';
 const THROUGH_RESOLVE_STAGE = 'parse,validate,derive,resolve';
 const EMIT_ONLY_STAGE = 'emit';
 
-const DEFAULT_AXES_TOML = 'plugins/guild/axes.toml';
-const DEFAULT_OUTPUT_DIR = 'plugins/guild/agents/generated';
+const DEFAULT_AXES_TOML = 'plugins/guild/modes/axes.toml';
+const DEFAULT_OUTPUT_DIR = 'plugins/guild/agents';
 
 const OPTIONS = {
   stage: { type: 'string' as const },
@@ -163,7 +163,11 @@ export function compileVerb(
     ctx.cwd,
     values['cache-toml'] ?? join(outputDir, '.cache.toml'),
   );
-  const pluginRoot = dirname(axesTomlPath);
+  // axes.toml lives at <pluginRoot>/modes/axes.toml, but the fragment
+  // relPaths from resolve are <pluginRoot>-relative (modes/domains/*,
+  // modes/phases/*, modes/personalities/*). Climb out of modes/ so the
+  // fragment reader joins them against the real plugin root, not modes/.
+  const pluginRoot = dirname(dirname(axesTomlPath));
   const fragmentReader = makeFragmentReader(pluginRoot);
   const fileWriter = makeFileWriter();
   const stage = values.stage;

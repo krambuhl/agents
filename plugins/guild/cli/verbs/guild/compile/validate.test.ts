@@ -10,7 +10,7 @@ import { validate } from './validate.ts';
 const here = dirname(fileURLToPath(import.meta.url));
 const FIXTURE_DIR = join(here, 'fixtures', 'validate');
 const pluginRoot = dirname(dirname(dirname(dirname(here))));
-const AXES_PATH = join(pluginRoot, 'axes.toml');
+const AXES_PATH = join(pluginRoot, 'modes', 'axes.toml');
 
 function loadAndValidate(fixtureName: string) {
   const content = readFileSync(join(FIXTURE_DIR, fixtureName), 'utf8');

@@ -12,12 +12,14 @@ replaced it with the declarative `axes.toml` + LLM-fusion model. The
 old verb, the old TOMLs, and the old hand-curated agent files are
 deleted as of PR #133; this doc reflects the post-cutover state.
 
+Update (guild-workflow-coverage, 2026-05-29): the spawnable agents were flattened from `agents/{generated,retained}/` to a flat `agents/`, and all codegen *source* was consolidated under `modes/` — the personality fragments moved from `agents/personalities/` to `modes/personalities/` (joining `modes/{domains,phases}`), and `axes.toml` plus its schema tests (`axes-schema.test.ts`, `fragment-schema.test.ts`) moved from the plugin root into `modes/`. So the source/output split is now physical: everything codegen *reads* lives under `modes/`, everything it *writes* lives flat under `agents/`. The "where things live" paths below reflect that layout; the historical narration of earlier phases (Phase-7 U1 etc.) is left as-is.
+
 ## The model
 
 An agent's identity is **personality x domain x phase**, inlined at
 compose time by the LLM:
 
-- **personality** (HOW) — `agents/personalities/<p>.md` (skeptic,
+- **personality** (HOW) — `modes/personalities/<p>.md` (skeptic,
   methodical, generative, pragmatist, synthesizer) + the shared
   `personality-base.md`.
 - **domain** (WHAT) — `modes/domains/<d>.md` (the antipattern catalog /
@@ -43,8 +45,8 @@ compose time by the LLM:
   (the domain-agnostic `whiteboard-skeptic`). An explicit named
   exception, never a silent empty domain.
 - `[[retained]]` — names hand-authored agents the codegen pipeline
-  never touches (e.g. `evaluator-contract-fit`). Lives at
-  `agents/retained/<name>.md`.
+  never touches (e.g. `evaluator-contract-fit`). Lives flat at
+  `agents/<name>.md`.
 
 The tool fold is computed at the `resolve` stage:
 `agent.tools = phase.base_tools ∪ domain.tool_grants` (at phases that
@@ -111,7 +113,7 @@ fragment-level section. The LLM fusion prompt in Phase 2.1
 (`fusion-prompt.md`) carries cross-axis assembly logic in one place;
 per-phase fragments stay axis-local.
 
-#### Personality fragments (`plugins/guild/agents/personalities/<name>.md`)
+#### Personality fragments (`plugins/guild/modes/personalities/<name>.md`)
 
 Applies to the five personality fragments: `generative`,
 `methodical`, `pragmatist`, `skeptic`, `synthesizer`.
@@ -147,7 +149,7 @@ constants change together — if one shifts, both shift.
 ### Retained hand-authored agents
 
 `evaluator-contract-fit` is deliberately retained hand-authored and
-never fused. It lives at `agents/retained/evaluator-contract-fit.md`
+never fused. It lives flat at `agents/evaluator-contract-fit.md`
 and is declared in `axes.toml`'s `[[retained]]` section. It's the
 always-on baseline reviewer — a panel-composition role, not a
 personality × domain combination; the one principled exception to
@@ -162,7 +164,7 @@ and inlined into every composed body by the fusion-prompt.
 
 ## Generated output is committed in-place
 
-Fused agents live committed at `plugins/guild/agents/generated/`.
+Fused agents live committed flat at `plugins/guild/agents/`.
 Each fused file carries a do-not-edit provenance banner and is
 marked `linguist-generated` in `.gitattributes`. They are **not**
 gitignored-and-generated-on-install: the agents are the runtime
@@ -180,7 +182,7 @@ stale-cache). Re-fuse with `/guild-compile`; never hand-edit a file
 emitted by the pipeline.
 
 **Output directory**: `guild compile` and `/guild-compile` write to
-`plugins/guild/agents/generated/` by default. The `--output-dir=<path>`
+`plugins/guild/agents/` by default. The `--output-dir=<path>`
 flag overrides this — tests use a tmpdir.
 
 ## Project-local domains (the off-rails escape hatch)

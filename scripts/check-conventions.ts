@@ -193,7 +193,7 @@ export function extractCheckTargets(description: string): string[] {
 const rubricBodyCoherence: Convention = {
   name: 'rubric-body-coherence',
   appliesTo: (file) =>
-    /plugins\/[^/]+\/agents\/(retained|generated)\/evaluator-[^/]+\.md$/.test(
+    /plugins\/[^/]+\/agents\/evaluator-[^/]+\.md$/.test(
       file,
     ),
   check: (file, content) => {

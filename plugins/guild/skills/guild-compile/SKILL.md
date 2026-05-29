@@ -28,15 +28,15 @@ when you want real LLM-fused agent bodies.
 
 ## Inputs
 
-- `--axes-toml=<path>` — defaults to `plugins/guild/axes.toml`. The
+- `--axes-toml=<path>` — defaults to `plugins/guild/modes/axes.toml`. The
   authoritative source of the axis matrix.
-- `--output-dir=<path>` — defaults to `plugins/guild/agents/generated`.
+- `--output-dir=<path>` — defaults to `plugins/guild/agents`.
   Where the composed agent files land and where the `.cache.toml`
   lives.
 - `--dry-run` — optional. When set, the skill runs fusion for
   cache-miss cells and prints the resulting JSON bundle to stdout
   but does NOT call the emit stage. Useful for iterating on the
-  fusion prompt without polluting `agents/generated/`.
+  fusion prompt without polluting the `agents/` tree.
 
 ## Process
 

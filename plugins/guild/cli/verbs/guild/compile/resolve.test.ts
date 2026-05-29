@@ -9,7 +9,7 @@ import { resolve, type FragmentReader } from './resolve.ts';
 import { ResolveError, type AxesData, type Cell } from './types.ts';
 
 const pluginRoot = dirname(dirname(dirname(dirname(dirname(fileURLToPath(import.meta.url))))));
-const AXES_PATH = join(pluginRoot, 'axes.toml');
+const AXES_PATH = join(pluginRoot, 'modes', 'axes.toml');
 
 function realReader(): FragmentReader {
   return (relPath: string) => readFileSync(join(pluginRoot, relPath), 'utf8');

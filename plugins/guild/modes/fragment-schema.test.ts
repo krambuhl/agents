@@ -19,7 +19,8 @@ import { describe, expect, it } from 'vitest';
 // its content is inlined into every generated agent body via the
 // Phase 2.1 fusion prompt).
 
-const pluginRoot = dirname(fileURLToPath(import.meta.url));
+// This test now lives in modes/, so climb one level to the plugin root.
+const pluginRoot = join(dirname(fileURLToPath(import.meta.url)), '..');
 
 const DOMAIN_REQUIRED = [
   '## Scope',
@@ -142,7 +143,7 @@ describe('fragment-schema: phase fragments conform to canonical heading set', ()
 });
 
 describe('fragment-schema: personality fragments conform to canonical heading set', () => {
-  const dir = join(pluginRoot, 'agents', 'personalities');
+  const dir = join(pluginRoot, 'modes', 'personalities');
   const files = readdirSync(dir)
     .filter((f: string) => f.endsWith('.md'))
     .filter((f: string) => !PERSONALITY_EXEMPT.has(f))
@@ -164,7 +165,7 @@ describe('fragment-schema: personality fragments conform to canonical heading se
 // stale reference to a deleted file).
 describe('fragment-schema: personality-base.md exemption is documented and real', () => {
   it('personality-base.md exists', () => {
-    const dir = join(pluginRoot, 'agents', 'personalities');
+    const dir = join(pluginRoot, 'modes', 'personalities');
     const files = readdirSync(dir);
     expect(files).toContain('personality-base.md');
   });
