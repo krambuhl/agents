@@ -1,0 +1,57 @@
+{
+  "schema_version": 1,
+  "type": "project",
+  "created": "2026-05-29T05:30:00.000Z",
+  "findings": [
+    {
+      "category": "kept-well",
+      "description": "Phase 1's zero-code doc nudge was outsized leverage — surfaced a buried per-unit Panel: override affordance into discoverable use, and Phase 2 immediately dogfooded it (narrowed auto-derived [contract-fit, react-api, test-unit, naming] to [contract-fit, test-unit], saving 2 evaluator runs and validating the affordance is reachable in practice).",
+      "evidence": "PR #139 (Phase 1 ships PANEL-COMPOSITION.md § When to opt out + learning); PR #140 (Phase 2's notes_for_pr documents the first in-the-wild narrowing using the affordance)."
+    },
+    {
+      "category": "kept-well",
+      "description": "Writing Phase 2's checkin ONCE post-execution (rather than contract-only-first per the /ev-loop-interactive skill body) sidestepped the create-once CLI gap Phase 1 had to work around with a manual TOML edit — no substrate-bypass needed.",
+      "evidence": "Phase 2 checkin's execution.corrections records the deviation; checkin landed cleanly via `loom checkin write` with the full execution + verdict + notes in one shot."
+    },
+    {
+      "category": "improvement",
+      "description": "Substrate gaps surfaced repeatedly during execution that weren't visible from outside: manifest didn't backfill PLAN.md phases (Phase 2 entry had to be added manually before `loom phase update` worked); `loom checkin write` is create-once with no update verb (Phase 1 had to edit manifest.toml inline); /loom-plan emitted no plan-* events; parse-plan flags cosmetic plan-phase-missing-goal because PLAN.md uses **Deliverable**/**Verification** while parse-plan expects **Goal**/**Exit**.",
+      "evidence": "Phase 1 + Phase 2 checkins' corrections array; PR #139 + PR #140 body's 'Substrate observations' sections."
+    },
+    {
+      "category": "improvement",
+      "description": "Phase 3 framing over-promised: 'cross-project event aggregation' was named as the substrate-self-observation payoff in PLAN.md, but the load-bearing metrics (spawn-to-finding rate, non-applicability rate) require evaluator events (`evaluator-spawned`, `evaluator-finding-emitted`) that don't exist in the substrate yet. INTERVIEW.md Decision 4 narrowed Phase 3 mid-interview to generic lifecycle aggregation — plumbing, not the substrate-quality story. Closed at Phase 2 rather than ship plumbing whose payoff is gated on a future project.",
+      "evidence": "INTERVIEW.md Decision 4; RESEARCH.md § Substrate self-observation; this session's exchange where the user pushed back on Phase 3's point."
+    },
+    {
+      "category": "process-change",
+      "description": "The /ev-loop-interactive skill body's 'write contract-only first, fill in after' pattern doesn't compose with the CLI's create-once `loom checkin write`. Phase 2 landed on 'write once at end' which worked cleanly. Substrate should align: either revise the skill body to canonicalize write-once-at-end OR add a `loom checkin write --update` flag.",
+      "evidence": "Phase 1 correction (manual TOML edit as workaround); Phase 2 correction (write-once-at-end clean path)."
+    },
+    {
+      "category": "process-change",
+      "description": "/loom-research on substrate-on-substrate work earned its rent: the interview forced concretization of 'improve our agent system' into 7 specific next-steps with evidence-anchored findings. The dossier's own skeptical 'operator-is-the-researcher' framing was wrong about this — meta-research about the substrate IS legitimate /loom-research territory, not ceremony. Worth normalizing in future substrate-shape projects.",
+      "evidence": "RESEARCH.md was used to scope this entire project; the 7-item recommended-next-steps list became the basis for the Group A scope decision (items 1+2+5)."
+    },
+    {
+      "category": "follow-up",
+      "description": "Phase 3 deferred — cross-project event aggregation as substrate-self-observation needs evaluator event emission (`evaluator-spawned`, `evaluator-finding-emitted`, `evaluator-recused`) to exist first. That's its own focused project. Until then, what would ship is generic lifecycle telemetry (project-initialized, checkin-created, pr-opened counts) — useful for project-pipeline accounting but not for the substrate-quality regression detection the PLAN named.",
+      "evidence": "PLAN.md Phase 3; INTERVIEW.md Decision 4; testing-strategy whiteboard contribution in research-shift-03 names spawn-to-finding + non-applicability as the load-bearing metrics."
+    },
+    {
+      "category": "follow-up",
+      "description": "Five substrate gaps surfaced during execution remain open: (a) manifest doesn't backfill PLAN phases at `loom plan`; (b) /loom-plan skill doesn't emit plan-* events; (c) parse-plan uses **Goal**/**Exit** while project PLANs use **Deliverable**/**Verification**; (d) `loom checkin write` create-once with no update verb conflicts with /ev-loop-interactive's contract-then-fill pattern; (e) Graphite sync not enabled for this repo blocking `gt submit --stack`. Each is small but compounding.",
+      "evidence": "PR #139 body + Phase 2 notes_for_pr enumerate all five with specifics."
+    },
+    {
+      "category": "follow-up",
+      "description": "Whiteboard-* convention checks deferred from Phase 2 MVP: bullet-pair coherence (every 'what you lean toward' has a paired 'what you don't do' boundary) and sibling-engineer reference resolution. The Convention framework's extension pattern supports both as additive follow-ups via new exported Convention objects.",
+      "evidence": "scripts/check-conventions.ts top-of-file Extension pattern block; INTERVIEW.md Decision 3 explicitly defers whiteboard-* to a 2.1 follow-up."
+    },
+    {
+      "category": "follow-up",
+      "description": "check-conventions.ts surfaces 1 advisory finding on plugins/guild/agents/retained/evaluator-contract-fit.md — heuristic edge case where description's 'whether a unit of work meets its agreed contract' phrasing isn't literally in body. Operator triage: refine description, refine heuristic, or accept as substrate noise.",
+      "evidence": "Output of `node scripts/check-conventions.ts` against the live corpus; documented in Phase 2's notes_for_pr."
+    }
+  ]
+}
