@@ -264,11 +264,92 @@ human-paired work, not codemod sweeps).
 
 ## § Compose PR
 
-**Purpose**: Open the phase's pull request on first checkpoint,
-or update the existing PR's body and metadata on subsequent
-checkpoints to reflect the latest checkins and verification
-state. Composes the PR body from the phase's checkin record
-trail.
+**Purpose**: Open the phase's pull request on first checkpoint, or update the existing PR's body and metadata on subsequent checkpoints to reflect the latest checkins and verification state. Composes the PR body from the phase's checkin record trail under the body-shape spec below.
+
+### Title
+
+`[<area>] <descriptive verb>` — required bracket prefix. `<area>` is the project slug area or substrate area being touched (e.g. `loom-adr`, `guild-matrix-precompile`, `ev-loop-pr-flow`). Fallback `[meta]` is reserved for PRs that touch no plugin's authoritative content AND no shared `commons/` source — typically repo-wide chore / tooling / CI work. Most PRs have a real area; reaching for `[meta]` when uncertain is drift.
+
+### Body shape
+
+The body is composed top-to-bottom in three layers, preceded by a project-context callout.
+
+**Project-context callout** (first line, every PR): a GitHub `> [!NOTE]` block containing (i) a markdown link to the project's `PLAN.md` (e.g. `[2026-05-28-ev-loop-pr-flow](../tree/main/projects/2026-05-28-ev-loop-pr-flow/PLAN.md)`) and (ii) one sentence naming how this PR slots into the broader goal — which phase, which unit if applicable, what gets unblocked next. Worked example:
+
+```markdown
+> [!NOTE]
+> Part of [2026-05-28-ev-loop-pr-flow](../tree/main/projects/2026-05-28-ev-loop-pr-flow/PLAN.md) — closes Phase 1 (codify PR body shape in `§ Compose PR`), unblocks Phase 2 (auto-resume verb).
+```
+
+For the rare PR not tied to a loom-managed project (a one-off `[meta]` PR with no PLAN.md), the callout carries the orientation sentence alone; no broken link.
+
+**Core layer** (required, every PR): `## Motivation` → `## Rollout` → `## Checklist`. The minimal viable PR ships only the Core layer plus the project-context callout.
+
+**Body layer** (required when the PR has substantive code or observable verification): `## Solution` → `## Verification`. Pure-doc / pure-spec PRs may strike both. The action table (see below) renders inside `## Solution`. `## Verification` names observable claims a reviewer can re-run — *not* "we wrote tests" (that belongs in `## Checklist` as `Added tests`).
+
+**Coda layer** (optional, phase-transition PRs only): one of `## What's next` (forward-pointing context about the next phase or unit) or `## Substrate notes` (cross-cutting impact the reviewer should keep in mind). Other ad-hoc coda headings (`## Process notes`, `## Phase close`, etc) are drift — fold their content into one of these two named codas or into the Motivation paragraph; strike before merge.
+
+### Per-section content
+
+**`## Motivation`** — one paragraph naming why this change exists. State the diagnosed problem and its evidence, not what the diff does. Test: if the Motivation could have been written by reading PLAN.md alone without seeing the diff, it has drifted into exit-criteria-as-prose; rewrite to anchor in the specific friction this PR removes.
+
+**`## Solution`** — one short paragraph of connective tissue naming the through-line across units, followed by a markdown action table:
+
+```markdown
+| Action | Subject |
+|---|---|
+| Rewrite | § Compose PR body-shape spec |
+| Fix | stale `--pr-state=open` text at the post-open paragraph |
+| Sync | downstream consumer-plugin docs |
+```
+
+One row per unit. `Subject` names what the action is *about* at the conceptual level — a recipe, a verb, a section, a doc — *not* the file path. Concept references are short by nature; file dumps in the Subject column are an anti-pattern (the diff lists files; the table names concepts).
+
+**`## Verification`** — observable claims a reviewer can re-run. Example: a specific command they can execute, a specific URL they can hit, a specific log line they can grep for. "I ran `npm test` and it passed" belongs in `## Checklist` (`verified-solution-works`); "the new `bin/loom pr wait` verb exits zero on `state: MERGED` after a real merge" is a Verification claim.
+
+**`## Rollout`** — checklist of safety items, struck or N/A'd at compose time when inapplicable:
+
+```markdown
+- [ ] Safe to rollback — can be rolled back within 48 hours of merge without detrimental effects to users or systems
+- [ ] Behind a feature flag: `{name}`
+- [ ] Behind an experiment: `{name}` [variant1, variant2, ...]
+```
+
+Substrate-repo PRs typically tick only the rollback line and strike the other two; product-repo PRs may use all three.
+
+**`## Checklist`** — substrate-default items, every PR. Per-phase override via `**Checklist-extras**: i18n, a11y` block in the PLAN.md phase heading adds product-flavored items when needed.
+
+```markdown
+- [ ] Verified that the solution works
+- [ ] Added tests for new functionality
+- [ ] `sync-shared` ran (if `plugins/commons/cli/lib/` or `plugins/commons/docs/` was touched)
+- [ ] `npm test` green
+```
+
+Adapt-at-compose-time: strike items that don't apply (e.g. "Added tests" for a pure-doc PR). Mark with `~~` strikethrough rather than removing — preserves the spec footprint and surfaces the omission.
+
+### Voice and length
+
+Terse, direct, third-person. State what changed and why. Trust the reviewer to read the diff for the *how* — re-narrating file changes that the diff already shows is the dominant drift this spec is designed to catch.
+
+**Don't re-narrate the diff** (load-bearing rule):
+
+- Bad sentence: "Adds three sections to the recipe: Motivation, Solution, Verification, plus updates to Rollout and Checklist." (The diff shows this.)
+- Good sentence: "Codifies the body shape that PRs #123–#132 already converge on, removing the spec/practice gap." (Names the why; reviewer doesn't need the diff to verify the claim.)
+
+**Don't re-narrate the diff at paragraph scale either** — the failure mode is subtler than per-sentence drift. A Motivation paragraph can read WHY-shaped while being the PLAN.md exit criteria reworded as prose. Test: if the paragraph could have been written by reading PLAN.md alone without seeing the diff, it has drifted into exit-criteria-as-prose. Motivation says *why this problem matters now*, not *what this PR does*.
+
+Body length target: ~300 words, under 2 minutes to read. This is a *voice proxy*, not an enforced limit — terse third-person prose tends to hit it; confessional prose busts it. When a PR genuinely needs more (multi-domain phase, complex Verification claims), longer is fine. When over budget without good reason, cut: first per-unit prose that the action table covers, then Verification details that duplicate the action table, then Motivation that drifts into exit-criteria-as-prose.
+
+### Archetype
+
+Default: **Architectural**. In this substrate repo, most PRs land Architectural — substrate work is shape-defining by default. Refactor and Dependency apply on the margins; Migration and Bug fix are rare here. Per-phase override via `**Archetype**: <name>` block in the PLAN.md phase heading (convention-only; the loom CLI parser does not consume this block today — sub-agents read it from PLAN.md prose when composing the PR body).
+
+If the compose-time work shape doesn't match the declared archetype (e.g. Phase 2 declared Architectural but landed as Refactor), update the PLAN.md archetype block alongside the PR body, or accept the declared archetype as the frame and note the divergence in `## Substrate notes`. Don't silently mismatch.
+
+### After open
+
+After `pr open` succeeds, the loop calls `§ Phase update` with `--status=in-progress --branch=<branch>` to record that the phase is now in flight. PR state (number, URL, merge status) is **not** cached in the manifest — it is derived on-demand from `gh pr view` via `bin/loom pr discover` whenever a loop needs it. The retired `--pr=<number> --url=<url> --pr-state=open` flags (see § Phase update) reflect this design choice: PR state lives in `gh`, not in substrate state.
 
 **Wraps** — two-step composition (open-or-update):
 
@@ -283,14 +364,7 @@ bin/loom pr open <slug> --branch=<branch> --title=<title> --body-file=<path>
 bin/loom pr update <slug> --pr=<number> --body-file=<path>
 ```
 
-The `--body-file` is a markdown file the loop composes from the
-phase's checkin record (typically: `## Summary` + per-unit
-sections + `## Test plan` + `## Rollout` + `## Checklist`, per
-CLAUDE.md PR conventions).
-
-After open, the loop calls `§ Phase update` with `--pr=<number>
---url=<url> --pr-state=open` to record the PR reference in the
-manifest.
+The `--body-file` is a markdown file the loop composes per the **Body shape** spec above.
 
 **Idempotency**: `safe`. `pr discover` is read-only. `pr open`
 fails-loud with `pr-already-exists` if invoked when a PR is
