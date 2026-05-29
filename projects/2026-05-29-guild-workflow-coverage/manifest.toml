@@ -20,7 +20,8 @@ worker_bindings = {}
 [[phases]]
 number = 1
 name = "Restructure the guild agents directory"
-status = "not-started"
+status = "in-progress"
+branch = "ev-agent.guild-workflow-coverage.phase-1"
 
 [[phases]]
 number = 2
@@ -36,3 +37,8 @@ status = "not-started"
 at = "2026-05-29T18:59:42.382Z"
 event = "project-initialized"
 detail = {}
+
+[[events]]
+at = "2026-05-29T20:42:58.302Z"
+event = "phase-started"
+detail = { phase = 1, name = "Restructure the guild agents directory" }
