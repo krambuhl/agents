@@ -23,8 +23,15 @@ The marketplace ships as six self-contained Claude Code plugins:
 
 ### Recommended: turnkey install with `--scope user`
 
+Register the marketplace once per machine:
+
 ```bash
 claude plugin marketplace add krambuhl/agents
+```
+
+Then install the full family via the cascade meta-bundle:
+
+```bash
 claude plugin install agent-loop-full@krambuhl --scope user
 ```
 
@@ -45,14 +52,46 @@ consumer's `dependencies` array (substrate-first ordering convention).
 
 ### Granular install (cherry-pick a plugin)
 
+If the marketplace is already registered (see above), just install
+the plugin you want:
+
 ```bash
-claude plugin marketplace add krambuhl/agents
 claude plugin install loom@krambuhl --scope user
 ```
 
 Each plugin's `dependencies` are declared in the marketplace
-manifest, so installing `loom` also pulls in `guild` + `griot`.
-Installing `griot` alone is fine too — no deps.
+manifest, so installing `loom` also pulls in `commons` + `guild` +
+`griot`. Installing `griot` alone is fine too — pulls in `commons`.
+
+## Upgrade
+
+Most plugins in the krambuhl marketplace omit the `version` field in
+their `plugin.json` — per Claude Code's docs, "if you omit `version`
+and host this marketplace in git, every commit automatically counts
+as a new version." The marketplace adopted that posture so high-
+velocity dev doesn't require a version-bump ritual on every content
+change.
+
+To pull the latest commits across every plugin from every marketplace
+on this machine:
+
+```bash
+claude plugin update
+```
+
+To upgrade just this family's plugins (leaves other marketplaces
+alone):
+
+```bash
+claude plugin update agent-loop-full@krambuhl
+```
+
+Plugin updates **are version-gated** on the `version` field. If a
+specific plugin pins itself with `"version": "x.y.z"` in its
+`plugin.json` (none in this marketplace do today, but the upstream
+ev/guild/loom plugins could opt in later), `claude plugin update`
+is a no-op for that plugin unless the field changes. The auto-track
+posture above sidesteps this by leaving the field unset.
 
 ### Install scopes
 
