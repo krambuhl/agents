@@ -3,7 +3,7 @@ import { mkdtempSync, mkdirSync, rmSync, writeFileSync, readFileSync } from 'nod
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { prDiscover, prOpen, prUpdate, prComments, prRespond } from './pr.ts';
+import { prDiscover, prOpen, prUpdate, prComments, prRespond, prWait } from './pr.ts';
 import { manifestPath, readManifestFile, writeManifest } from '../../lib/manifest-toml.ts';
 import type { Checkin } from '../../lib/types.ts';
 
@@ -418,4 +418,293 @@ test('prRespond: malformed responses-file returns invalid-responses-file', () =>
   );
   expect(result.exitCode).toBe(1);
   expect(JSON.parse(result.stderr as string).error).toBe('invalid-responses-file');
+});
+
+// ---------------------------------------------------------------------------
+// prDiscover: mergedAt surfaces when gh reports it
+// ---------------------------------------------------------------------------
+
+test('prDiscover: surfaces mergedAt when gh reports it on MERGED PRs', () => {
+  setupProjectWithCheckins(['01']);
+  const ghRunner = () =>
+    JSON.stringify({
+      number: 42,
+      url: 'https://github.com/x/y/pull/42',
+      body: '<!-- loom-pr-checkins: 01 -->\n\n## Body',
+      state: 'MERGED',
+      mergedAt: '2026-05-29T01:23:45Z',
+    });
+  const result = prDiscover(
+    ['test-loom', '--branch=loom-cli/test-branch'],
+    { projectsRoot, ghRunner },
+  );
+  expect(result.exitCode).toBe(0);
+  const out = JSON.parse(result.stdout as string);
+  expect(out.pr.state).toBe('MERGED');
+  expect(out.pr.mergedAt).toBe('2026-05-29T01:23:45Z');
+});
+
+test('prDiscover: omits mergedAt when gh returns empty string (open PR)', () => {
+  setupProjectWithCheckins(['01']);
+  const ghRunner = () =>
+    JSON.stringify({
+      number: 42,
+      url: 'https://github.com/x/y/pull/42',
+      body: '<!-- loom-pr-checkins: 01 -->\n\n## Body',
+      state: 'OPEN',
+      mergedAt: '',
+    });
+  const result = prDiscover(
+    ['test-loom', '--branch=loom-cli/test-branch'],
+    { projectsRoot, ghRunner },
+  );
+  expect(result.exitCode).toBe(0);
+  const out = JSON.parse(result.stdout as string);
+  expect(out.pr.state).toBe('OPEN');
+  expect(out.pr.mergedAt).toBeUndefined();
+});
+
+// ---------------------------------------------------------------------------
+// prWait — polling lifecycle, exit reasons, force-push re-resolve
+// ---------------------------------------------------------------------------
+
+function setupWaitProject(): void {
+  setupProjectWithCheckins(['01']);
+}
+
+function makeWaitCtx(opts: {
+  ghResponses: Array<{ kind: 'pr'; value: unknown } | { kind: 'throw'; error: string } | { kind: 'null' }>;
+  nowSeed?: number;
+  intervalSec?: number;
+}) {
+  const ghCalls: string[][] = [];
+  const sleepCalls: number[] = [];
+  let pollIndex = 0;
+  const ghRunner = (args: string[]) => {
+    ghCalls.push(args);
+    const resp = opts.ghResponses[pollIndex];
+    pollIndex += 1;
+    if (resp === undefined) {
+      throw new Error('test ran past scripted gh responses');
+    }
+    if (resp.kind === 'throw') {
+      throw new Error(resp.error);
+    }
+    if (resp.kind === 'null') {
+      throw new Error('gh exits non-zero when PR absent');
+    }
+    return JSON.stringify(resp.value);
+  };
+  let now = opts.nowSeed ?? 1_000_000;
+  const nowMs = () => now;
+  const sleepMs = (ms: number) => {
+    sleepCalls.push(ms);
+    now += ms; // advance virtual clock
+  };
+  return { ghCalls, sleepCalls, ghRunner, nowMs, sleepMs, projectsRoot };
+}
+
+test('prWait: returns exitReason=merged with mergedAt on terminal MERGED state', () => {
+  setupWaitProject();
+  const ctx = makeWaitCtx({
+    ghResponses: [
+      { kind: 'pr', value: { number: 7, url: 'https://github.com/x/y/pull/7', body: '', state: 'OPEN' } },
+      { kind: 'pr', value: { number: 7, url: 'https://github.com/x/y/pull/7', body: '', state: 'OPEN' } },
+      { kind: 'pr', value: { number: 7, url: 'https://github.com/x/y/pull/7', body: '', state: 'MERGED', mergedAt: '2026-05-29T01:00:00Z' } },
+    ],
+  });
+  const result = prWait(
+    ['test-loom', '--branch=loom-cli/test-branch', '--interval=30', '--timeout=1800', '--quiet'],
+    ctx,
+  );
+  expect(result.exitCode).toBe(0);
+  const out = JSON.parse(result.stdout as string);
+  expect(out.exitReason).toBe('merged');
+  expect(out.state).toBe('MERGED');
+  expect(out.mergedAt).toBe('2026-05-29T01:00:00Z');
+  expect(out.number).toBe(7);
+  expect(ctx.sleepCalls.length).toBe(2); // slept after polls 1 and 2; exited on poll 3
+});
+
+test('prWait: returns exitReason=closed when PR closes without merging', () => {
+  setupWaitProject();
+  const ctx = makeWaitCtx({
+    ghResponses: [
+      { kind: 'pr', value: { number: 7, url: 'https://github.com/x/y/pull/7', body: '', state: 'OPEN' } },
+      { kind: 'pr', value: { number: 7, url: 'https://github.com/x/y/pull/7', body: '', state: 'CLOSED' } },
+    ],
+  });
+  const result = prWait(
+    ['test-loom', '--branch=loom-cli/test-branch', '--interval=30', '--timeout=1800', '--quiet'],
+    ctx,
+  );
+  expect(result.exitCode).toBe(0);
+  const out = JSON.parse(result.stdout as string);
+  expect(out.exitReason).toBe('closed');
+  expect(out.state).toBe('CLOSED');
+  expect(out.mergedAt).toBeUndefined();
+});
+
+test('prWait: returns exitReason=timeout when deadline passes without terminal state', () => {
+  setupWaitProject();
+  // 3 polls of OPEN, each followed by a 30s sleep — after the 3rd sleep,
+  // virtual clock advances 90s past the seed. Timeout=60s → exits after the
+  // poll that sees clock past deadline.
+  const ctx = makeWaitCtx({
+    ghResponses: [
+      { kind: 'pr', value: { number: 7, url: 'https://github.com/x/y/pull/7', body: '', state: 'OPEN' } },
+      { kind: 'pr', value: { number: 7, url: 'https://github.com/x/y/pull/7', body: '', state: 'OPEN' } },
+      { kind: 'pr', value: { number: 7, url: 'https://github.com/x/y/pull/7', body: '', state: 'OPEN' } },
+    ],
+  });
+  const result = prWait(
+    ['test-loom', '--branch=loom-cli/test-branch', '--interval=30', '--timeout=60', '--quiet'],
+    ctx,
+  );
+  expect(result.exitCode).toBe(0);
+  const out = JSON.parse(result.stdout as string);
+  expect(out.exitReason).toBe('timeout');
+  expect(out.state).toBe('OPEN');
+  expect(out.number).toBe(7);
+});
+
+test('prWait: returns exitReason=gh-failed after K=3 consecutive gh failures', () => {
+  setupWaitProject();
+  const ctx = makeWaitCtx({
+    ghResponses: [
+      { kind: 'pr', value: { number: 7, url: 'https://github.com/x/y/pull/7', body: '', state: 'OPEN' } }, // succeeds
+      { kind: 'throw', error: 'gh: network error 1' },
+      { kind: 'throw', error: 'gh: network error 2' },
+      { kind: 'throw', error: 'gh: network error 3' },
+    ],
+  });
+  const result = prWait(
+    ['test-loom', '--branch=loom-cli/test-branch', '--interval=30', '--timeout=1800', '--quiet'],
+    ctx,
+  );
+  expect(result.exitCode).toBe(0);
+  const out = JSON.parse(result.stdout as string);
+  expect(out.exitReason).toBe('gh-failed');
+  expect(out.lastError).toContain('network error 3');
+  expect(out.number).toBe(7); // last observed
+  expect(out.url).toBe('https://github.com/x/y/pull/7');
+});
+
+test('prWait: gh-failed counter resets on successful poll', () => {
+  setupWaitProject();
+  // gh fails twice, succeeds, fails twice → counter never hits 3.
+  // Then a MERGED poll exits cleanly.
+  const ctx = makeWaitCtx({
+    ghResponses: [
+      { kind: 'pr', value: { number: 7, url: 'https://github.com/x/y/pull/7', body: '', state: 'OPEN' } },
+      { kind: 'throw', error: 'gh fail 1' },
+      { kind: 'throw', error: 'gh fail 2' },
+      { kind: 'pr', value: { number: 7, url: 'https://github.com/x/y/pull/7', body: '', state: 'OPEN' } }, // resets counter
+      { kind: 'throw', error: 'gh fail 3' },
+      { kind: 'throw', error: 'gh fail 4' },
+      { kind: 'pr', value: { number: 7, url: 'https://github.com/x/y/pull/7', body: '', state: 'MERGED', mergedAt: '2026-05-29T02:00:00Z' } },
+    ],
+  });
+  const result = prWait(
+    ['test-loom', '--branch=loom-cli/test-branch', '--interval=30', '--timeout=1800', '--quiet'],
+    ctx,
+  );
+  expect(result.exitCode).toBe(0);
+  const out = JSON.parse(result.stdout as string);
+  expect(out.exitReason).toBe('merged');
+});
+
+test('prWait: pr-not-found on first poll fails loud', () => {
+  setupWaitProject();
+  const ghRunner = () => {
+    throw new Error('no pull requests found');
+  };
+  const result = prWait(
+    ['test-loom', '--branch=loom-cli/test-branch', '--quiet'],
+    { projectsRoot, ghRunner, sleepMs: () => undefined, nowMs: () => 0 },
+  );
+  expect(result.exitCode).toBe(1);
+  const err = JSON.parse(result.stderr as string);
+  expect(err.error).toBe('pr-not-found');
+});
+
+test('prWait: re-resolves PR on each poll (force-push edge — surfaces last observed PR number)', () => {
+  setupWaitProject();
+  // First poll resolves PR #7 (OPEN). Second poll: operator force-pushed; old
+  // PR is now CLOSED. The verb should return PR #7 with state CLOSED (the last
+  // observed), not cache PR #7 OPEN from the first poll.
+  const ctx = makeWaitCtx({
+    ghResponses: [
+      { kind: 'pr', value: { number: 7, url: 'https://github.com/x/y/pull/7', body: '', state: 'OPEN' } },
+      { kind: 'pr', value: { number: 7, url: 'https://github.com/x/y/pull/7', body: '', state: 'CLOSED' } },
+    ],
+  });
+  const result = prWait(
+    ['test-loom', '--branch=loom-cli/test-branch', '--interval=30', '--timeout=1800', '--quiet'],
+    ctx,
+  );
+  expect(result.exitCode).toBe(0);
+  const out = JSON.parse(result.stdout as string);
+  expect(out.exitReason).toBe('closed');
+  expect(out.state).toBe('CLOSED');
+  // Critical: ghRunner was called on every poll, not just the first.
+  expect(ctx.ghCalls.length).toBe(2);
+});
+
+test('prWait: flag validation — --interval=0 → invalid-interval', () => {
+  setupWaitProject();
+  const ghRunner = () => '';
+  const result = prWait(
+    ['test-loom', '--branch=loom-cli/test-branch', '--interval=0'],
+    { projectsRoot, ghRunner, sleepMs: () => undefined, nowMs: () => 0 },
+  );
+  expect(result.exitCode).toBe(1);
+  expect(JSON.parse(result.stderr as string).error).toBe('invalid-interval');
+});
+
+test('prWait: flag validation — --timeout=-5 → invalid-timeout', () => {
+  setupWaitProject();
+  const ghRunner = () => '';
+  const result = prWait(
+    ['test-loom', '--branch=loom-cli/test-branch', '--timeout=-5'],
+    { projectsRoot, ghRunner, sleepMs: () => undefined, nowMs: () => 0 },
+  );
+  expect(result.exitCode).toBe(1);
+  expect(JSON.parse(result.stderr as string).error).toBe('invalid-timeout');
+});
+
+test('prWait: missing --branch → missing-args', () => {
+  setupWaitProject();
+  const result = prWait(
+    ['test-loom'],
+    { projectsRoot, ghRunner: () => '', sleepMs: () => undefined, nowMs: () => 0 },
+  );
+  expect(result.exitCode).toBe(1);
+  expect(JSON.parse(result.stderr as string).error).toBe('missing-args');
+});
+
+test('prWait: missing slug → missing-slug', () => {
+  setupWaitProject();
+  const result = prWait(
+    ['--branch=loom-cli/test-branch'],
+    { projectsRoot, ghRunner: () => '', sleepMs: () => undefined, nowMs: () => 0 },
+  );
+  expect(result.exitCode).toBe(1);
+  expect(JSON.parse(result.stderr as string).error).toBe('missing-slug');
+});
+
+test('prWait: requests mergedAt from gh in the --json field list', () => {
+  setupWaitProject();
+  const ctx = makeWaitCtx({
+    ghResponses: [
+      { kind: 'pr', value: { number: 7, url: 'https://github.com/x/y/pull/7', body: '', state: 'MERGED', mergedAt: '2026-05-29T03:00:00Z' } },
+    ],
+  });
+  prWait(
+    ['test-loom', '--branch=loom-cli/test-branch', '--quiet'],
+    ctx,
+  );
+  const args = ctx.ghCalls[0] as string[];
+  const jsonIdx = args.indexOf('--json');
+  expect(args[jsonIdx + 1]).toContain('mergedAt');
 });

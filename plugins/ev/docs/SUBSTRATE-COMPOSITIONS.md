@@ -388,6 +388,41 @@ idempotent across same-body invocations.
 470), `/ev-loop-interactive` (lines 311, 314, 384, 409),
 `/loom-archive` (line 166).
 
+## § Wait for merge
+
+**Purpose**: Block the router on an in-progress phase's PR until the PR reaches a terminal lifecycle state (merged, closed-without-merge), the wait times out, or the underlying `gh` CLI fails persistently — then route the next step by which of those four outcomes occurred. Composes `bin/loom pr wait` so the router never has to inline polling itself, and so a future implementation swap (in-conversation polling → `ScheduleWakeup` → hybrid → external webhook) doesn't ripple into the skill body.
+
+The verb the recipe wraps is **observation-only**: it reads `gh pr view` repeatedly, writes nothing to the manifest, emits no events. The "no pr-* event" decision (`LOOM-CONVENTIONS.md:255-263`, anchored at Phase-6 U1 of substrate-consolidation) is load-bearing for this design — adding `pr-wait-started` / `pr-wait-merged` events would re-open that closed argument by the back door.
+
+The verb returns `{number, url, state, exitReason, mergedAt?, lastError?}` where `exitReason` is one of `'merged' | 'closed' | 'timeout' | 'gh-failed'`. The router uses `exitReason` as the dispatch discriminant (not the raw `state` field — `state: CLOSED` could mean either operator-merged-then-closed-the-branch or operator-closed-without-merging, only `exitReason` disambiguates). The router's four branches are documented in `/ev-run` step 3.
+
+The verb re-resolves the PR from the branch on each poll (it does not cache the PR number from the first poll), so a force-push that closes the old PR and opens a new one with a different number is visible to the caller — the wait returns the LAST observed PR number, not the first.
+
+**Silencing rule**: `--quiet` silences routine per-poll status output (one entry-line + one exit-line); it does NOT silence the `gh-failed` exit. Terminal failures (auth expired, rate limit, persistent gh non-responsiveness) break silence by design — silent during routine polls, informative during trouble. Auto-mode callers (the router under `--mode=auto`) pass `--quiet` through to the verb.
+
+**Wraps**:
+
+```bash
+bin/loom pr wait <slug> --branch=<branch> \
+  [--interval=30]    \
+  [--timeout=1800]   \
+  [--quiet]
+```
+
+Defaults: 30s polling interval, 30min total wait. Both flag values are SECONDS without a unit suffix (the upgrade path to `30s` / `30m` duration parsing is noted in the verb source, deferred until a second duration flag lands somewhere in the CLI). The verb exits 0 in all four `exitReason` cases — `timeout`, `closed`, and `gh-failed` are NOT errors, they're terminal exit reasons returned cleanly.
+
+**Idempotency**: `safe`. Called twice against the same branch returns the same shape — the loop ends at the first terminal state. Two concurrent invocations against the same branch are harmless (both observe gh, no shared write state). Called after a timeout exit, the next invocation polls again from scratch with no memory of the prior timeout — the substrate's posture is "ask gh, don't remember."
+
+**Failure modes**:
+
+- `missing-slug` / `missing-args` → operator wiring error; surface verbatim and stop.
+- `invalid-interval` / `invalid-timeout` → caller passed a non-positive integer; surface and stop.
+- `pr-not-found` → first poll returned no PR for the branch. The wait verb assumes the PR already exists; opening it is `pr open`'s job. Surface "open the PR first via `pr open`, then re-run `/ev-run`" and stop.
+- `gh-cli-missing` / `gh-auth-failed` → these surface inside the verb as the `gh-failed` exit reason (the verb tracks K=3 consecutive gh failures before emitting). The router translates this exit into "wait failed: gh CLI not responding (last error: `<msg>`); check `gh auth status` and re-run `/ev-run`" and stops.
+- Note: `timeout` and `closed` are NOT errors — they're terminal exit reasons returned with exit code 0 and `exitReason` discriminant. The router treats them as routable outcomes, not failures.
+
+**Used by**: `/ev-run` step 3 (the router composition that takes the wait result and dispatches by `exitReason`).
+
 ## § Revise PLAN.md
 
 **Purpose**: Update the project's `PLAN.md` after the work shape
