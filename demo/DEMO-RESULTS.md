@@ -106,3 +106,37 @@ Three real whiteboard engineers (`guild:generated:whiteboard-{composition,abstra
 | 1 — append-only | `loom event append`, `griot operator-checks log-intervention` | **Safe** — validated (6 concurrent atomic appends) |
 | 2 — partitioned | `loom checkin write` | Safe with a unique partition (not stress-tested) |
 | 3 — single-writer | `loom phase update` (manifest), `guild whiteboard *` | **Serialize the write** — validated via whiteboard; manifest stays in the loop |
+
+---
+
+# Integration test: loop↔workflow interleaving + kill recovery (2026-05-29)
+
+A throwaway loom project (`projects/2026-05-29-workflow-integration-test/`, hand-authored manifest) drove a real loop sequence around real workflow runs. All five complex issues resolved.
+
+**Setup notes:** the installed loom (`dcb9e71817d0`) reads the current manifest format (`doctor` ok — no repo-local fallback; skew is per-plugin, loom fresh while guild `af4bc8…` is stale). Manifest is consolidated TOML: `[meta]`/`[config]`/`[[phases]]`/`[[events]]`/`[[checkins]]` — events and checkins live *in* the manifest, appended in order. `project scaffold` requires `--plan-file`/`--config-file`/`--manifest-init-file` (it's `loom plan`-driven; hand-authoring the manifest was the throwaway shortcut).
+
+## Part 1 — interleaving + coherence (phase 1, branch `wfi-probe-1`)
+
+Drove: phase→in-progress → checkin 01 (negotiation) → **fire guild panel workflow (`wf_ce71346b-692`), await verdict** → checkin 02 (verdict recorded) → phase→completed.
+
+- **Manifest coherence holds, and it's *enforced*.** Writes use optimistic concurrency (`readManifestFile → token`, `writeManifest({expect: token})`) — a write computed against a stale read is rejected, not silently merged. Category-3 coherence is a compare-and-swap, not just a convention.
+- **Event ordering is a coherent narrative:** `phase-started → checkin-created(01) → checkin-created(02) → phase-completed`. The ~2-minute gap between the 01 and 02 events is exactly the workflow window. The read-only workflow wrote nothing to loom, so it cannot scramble the trail.
+- **Checkin numbering monotonic** (01 → 02, per-branch partition).
+- **Cat-2 collision guard works:** re-writing checkin 01 → `checkin-already-exists` (loud, not a silent overwrite).
+
+## Part 2 — kill-mid-run recovery (phase 2, branch `wfi-probe-2`)
+
+Drove: phase→in-progress → checkin 01 (pre-workflow checkpoint) → **fire a write-heavy workflow (30 Cat-1 appends), `TaskStop` mid-run.**
+
+- **Cat-1 appends are atomic even under a kill:** 29 of 30 landed; **29/29 parseable, 0 half-written.** A killed workflow leaves complete records, never torn ones.
+- **Later phases interrupted:** `kill-test-whiteboard.md` absent — the assemble phase never ran; the kill cut the workflow mid-flight.
+- **loom recovery point is clean:** phase 2 still `in-progress`, checkin 01 present, **no resolution checkin, zero workflow-originated events.** loom sits exactly at the pre-workflow checkpoint. The loop recovers from loom (workflow-resume is in-session-only and gone with the kill).
+- **Crash-window verdict:** between "workflow done" and "loop records the verdict," a crash loses the in-flight work as **orphaned scratch appends + double work on re-fire — never loom corruption.**
+
+## Finding
+
+`meta.latest_checkin` is vestigial: `checkin write` never populates it (stays `null`); the real latest is derived via `loom checkin latest`. `ev-run`'s prose ("latest checkin from manifest's `latest_checkin`") is either stale or mis-orients — documented-vs-actual drift, same family as the dangling-generator refs.
+
+## Verdict
+
+The hybrid is sound: a loop fires a read-only workflow mid-unit, awaits it, and records the result with loom's manifest/checkin/event invariants intact across the async boundary; a killed workflow degrades to recoverable double-work, never corruption. Empirical backing for **loom is the durable spine; workflows are a safe, ephemeral leaf.**

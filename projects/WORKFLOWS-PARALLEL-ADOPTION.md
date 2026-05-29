@@ -95,6 +95,16 @@ A second demo (run `w3hekye55`; `demo/DEMO-RESULTS.md`) tested whether a workflo
 
 So the boundary is sharper than "read-only fan-out only": **a workflow may do Category-1 appends and route Category-3 writes through a single writer; the manifest and PLAN stay single-writer in the loop.**
 
+### Loop interleaving + kill recovery (validated 2026-05-29)
+
+A throwaway loom project drove a real loop sequence around real workflow runs (`demo/DEMO-RESULTS.md`, integration test):
+
+- **Interleaving holds.** A loop fired a read-only panel workflow mid-unit (between checkin 01 and 02), awaited the verdict, and recorded it — with the manifest coherent across the async await. Coherence is *enforced*, not conventional: manifest writes use an optimistic-lock token (stale write → rejected). The event trail stayed a coherent narrative because the read-only workflow writes nothing to loom and so cannot scramble it.
+- **Kill recovers cleanly.** Killing a workflow mid-run (`TaskStop`) left loom exactly at the pre-workflow checkpoint (negotiation checkin present, no resolution checkin, no workflow-originated events). The loop recovers from loom, not workflow-resume (which is in-session-only). Worst case is double work + orphaned scratch state on re-fire — never loom corruption. And Cat-1 appends were atomic even under the kill (29/30 landed, 0 half-written).
+- **Finding:** `meta.latest_checkin` is vestigial (never populated by `checkin write`; latest is derived via `loom checkin latest`), so `ev-run`'s "latest checkin from manifest's `latest_checkin`" orientation is stale or mis-orienting — worth a separate look.
+
+This is the empirical core of the bet: **loom is the durable spine; workflows are a safe, ephemeral leaf the loop drives.**
+
 ## What moves, what stays
 
 | Piece | Disposition | Why |
