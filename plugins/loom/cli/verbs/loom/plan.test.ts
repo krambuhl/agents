@@ -119,6 +119,49 @@ test('planVerb: happy path writes both draft files + auto-adopts loom + commits'
   expect(message).toContain('2026-05-15-adopt-biome');
 });
 
+test('planVerb: backfills PLAN.md phases into the manifest at adopt', () => {
+  // A plan declaring real phases replaces the synthesized placeholder
+  // "Phase 1". Uses both heading vocabularies (Deliverable + Goal) to
+  // confirm the backfill reads phases regardless of vocabulary.
+  writeFileSync(
+    planFile,
+    [
+      '# PLAN',
+      '',
+      '## Phases',
+      '',
+      '### Phase 1 — Setup',
+      '',
+      '**Deliverable**: prepare the world.',
+      '',
+      '### Phase 2 — Migrate',
+      '',
+      '**Goal**: do the migration.',
+      '',
+    ].join('\n'),
+  );
+
+  const result = planVerb(
+    [
+      'Backfill Demo',
+      `--plan-file=${planFile}`,
+      `--interview-file=${interviewFile}`,
+    ],
+    baseCtx(),
+  );
+
+  expect(result.exitCode).toBe(0);
+  const payload = JSON.parse(result.stdout as string);
+  const { manifest } = readManifestFile(manifestPath(payload.path));
+
+  // Manifest [[phases]] mirror the PLAN, not the single placeholder.
+  expect(manifest.phases.map((p) => p.number)).toEqual([1, 2]);
+  expect(manifest.phases.map((p) => p.name)).toEqual(['Setup', 'Migrate']);
+  // Placeholder phase 1 is reconciled by number (renamed), not duplicated.
+  expect(manifest.phases.filter((p) => p.number === 1)).toHaveLength(1);
+  expect(manifest.phases.every((p) => p.status === 'not-started')).toBe(true);
+});
+
 test('planVerb: --no-loom skips auto-adopt', () => {
   const result = planVerb(
     [

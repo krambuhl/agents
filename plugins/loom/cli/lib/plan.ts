@@ -45,15 +45,18 @@ const PHASE_RE = /^#{2,4}\s+Phase\s+([\d.]+)\s*[—–:-]\s*(.+?)\s*$/;
 // end section-collection (Loop strategy prose, exit bullet lists).
 const HEADING_RE = /^(#{1,6})\s+(.+?)\s*$/;
 
-// `**Goal**:` and the `**Goal (updated)**:` variant — the parenthetical
-// shape lets a plan revision supersede the original goal in-place. The
-// last occurrence within a phase wins.
-const GOAL_RE = /^\*\*Goal(?:\s*\([^)]*\))?\*\*:\s*(.+?)\s*$/;
+// `**Goal**:` / `**Deliverable**:` and the `**Goal (updated)**:` variant.
+// `Deliverable` is the project-PLAN vocabulary alias for `Goal`, accepted
+// additively so both conventions parse. The parenthetical shape lets a
+// plan revision supersede the original in-place. The last occurrence
+// within a phase wins.
+const GOAL_RE = /^\*\*(?:Goal|Deliverable)(?:\s*\([^)]*\))?\*\*:\s*(.+?)\s*$/;
 
-// `**Exit**:` or its `**Output**:` alias — both forms are accepted to
-// match the two PLAN.md conventions seen in the wild. The value may be
+// `**Exit**:`, `**Output**:`, or `**Verification**:` — all accepted to
+// match the PLAN.md conventions seen in the wild (`Verification` is the
+// project-PLAN vocabulary alias, accepted additively). The value may be
 // inline on the same line and/or a following bullet list.
-const EXIT_RE = /^\*\*(?:Exit|Output)\*\*:\s*(.*?)\s*$/;
+const EXIT_RE = /^\*\*(?:Exit|Output|Verification)\*\*:\s*(.*?)\s*$/;
 
 const DEPENDS_RE = /^\*\*Depends on\*\*:\s*(.+?)\s*$/;
 
@@ -280,7 +283,7 @@ export function parsePlan(text: string): ParsePlanResult {
         code: 'plan-phase-missing-goal',
         line: headingLine,
         severity: 'cosmetic',
-        message: `phase ${phase.id} has no **Goal**`,
+        message: `phase ${phase.id} has no **Goal**/**Deliverable**`,
       });
     }
     if (phase.exitCriteria.length === 0) {
@@ -288,7 +291,7 @@ export function parsePlan(text: string): ParsePlanResult {
         code: 'plan-phase-missing-exit',
         line: headingLine,
         severity: 'cosmetic',
-        message: `phase ${phase.id} has no **Exit**/**Output** criteria`,
+        message: `phase ${phase.id} has no **Exit**/**Output**/**Verification** criteria`,
       });
     }
     for (const depId of phase.dependsOn) {

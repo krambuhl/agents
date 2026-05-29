@@ -1,6 +1,4 @@
-checkins = []
 sessions = []
-revisions = []
 
 [meta]
 schema_version = 1
@@ -19,7 +17,28 @@ worker_bindings = {}
 
 [[phases]]
 number = 1
-name = "Phase 1"
+name = "Loom CLI papercut sweep"
+status = "in-progress"
+branch = "ev-agent.substrate-tempering.papercut-sweep"
+
+[[phases]]
+number = 2
+name = "Convention-drift 2.1"
+status = "not-started"
+
+[[phases]]
+number = 3
+name = "Evaluator event emission"
+status = "not-started"
+
+[[phases]]
+number = 4
+name = "Cross-project event aggregation"
+status = "not-started"
+
+[[phases]]
+number = 5
+name = "RESEARCH as fact-canon"
 status = "not-started"
 
 [[events]]
@@ -36,3 +55,51 @@ detail = { slug = "2026-05-29-substrate-tempering", topic = "substrate-tempering
 at = "2026-05-29T06:36:04.260Z"
 event = "research-completed"
 detail = { slug = "2026-05-29-substrate-tempering", research_path = "RESEARCH.md", notes_path = "RESEARCH-NOTES.md" }
+
+[[events]]
+at = "2026-05-29T17:20:43.072Z"
+event = "checkin-created"
+detail = { number = "01", branch = "ev-agent.substrate-tempering.papercut-sweep" }
+
+[[events]]
+at = "2026-05-29T17:25:03.464Z"
+event = "phase-started"
+detail = { phase = 1, name = "Phase 1" }
+
+[[events]]
+at = "2026-05-29T19:04:50.625Z"
+event = "checkin-created"
+detail = { number = "02", branch = "ev-agent.substrate-tempering.papercut-sweep" }
+
+[[checkins]]
+schema_version = 1
+number = "01"
+created = "2026-05-29T17:17:35.000Z"
+phase = { number = 1, name = "Loom CLI papercut sweep" }
+branch = "ev-agent.substrate-tempering.papercut-sweep"
+unit = "1a - parse-plan heading reconciliation"
+contract = { goal = "Teach parse-plan to accept the project PLAN heading vocabulary - **Deliverable** as a Goal-equivalent and **Verification** as an Exit/Output-equivalent - so a real project PLAN stops emitting cosmetic plan-phase-missing-goal / plan-phase-missing-exit diagnostics. Additive aliases, not a swap (back-compat).", acceptance_criteria = ["GOAL_RE also matches **Deliverable**: (keeping the (updated) parenthetical tolerance and same-line capture); EXIT_RE also matches **Verification**:. Both additive - Goal / Goal (updated) / Exit / Output still match.", "parse-plan on the real project PLAN reports zero plan-phase-missing-goal and zero plan-phase-missing-exit diagnostics (down from 10).", "Parsed-tree structure unchanged (phases/phasesById/ids/names/dependsOn); goal populates from Deliverable same-line text; recognizing Verification populates exitCriteria from its bullets via the existing collectBullets logic; no diagnostic-code renames.", "plan.test.ts covers both vocabularies: Deliverable/Verification PLAN yields zero missing diagnostics; Goal/Exit/Output PLAN still parses; mixed tolerated.", "npm test green."], rules_applied = ["ADR-0002: checkin written in full at unit close (not contract-first); the contract was negotiated in conversation.", "Additive-not-swap: preserve back-compat for the existing PLAN vocabularies.", "plan.ts is loom-authoritative (not commons-synced) - no sync-shared run needed."], disqualifiers = ["Swapping/replacing the vocabulary instead of adding aliases.", "Renaming diagnostic codes or changing the typed-tree structure.", "Editing plugins/commons/** or any synced lib.", "Drifting into 1b (manifest backfill)."], inputs = ["plugins/loom/cli/lib/plan.ts (GOAL_RE:51, EXIT_RE:56, comments:48/53, diagnostics:280-291)", "plugins/loom/cli/lib/plan.test.ts (existing parse-plan tests)", "projects/2026-05-29-substrate-tempering/PLAN.md (real fixture using Deliverable/Verification)", "projects/2026-05-29-substrate-tempering/whiteboards/1-loom-cli-papercut-sweep.md (phase design context)"] }
+execution = { actions = ["Widened GOAL_RE (plan.ts:51) to a Goal|Deliverable alternation, preserving the (updated) parenthetical tolerance and same-line capture.", "Widened EXIT_RE (plan.ts:56) to an Exit|Output|Verification alternation.", "Updated the two cosmetic diagnostic messages (plan.ts ~283/291) to name the accepted aliases.", "Added fixture plan-deliverable-verification.md (a Deliverable/Verification phase plus a Goal/Exit phase in one plan).", "Added a lib/plan.test.ts case asserting Deliverable-to-goal, Verification-to-exitCriteria bullets, the mixed-vocabulary phase, and zero diagnostics.", "Verified the real PLAN yields 0 diagnostics via node plugins/loom/cli/loom.ts parse-plan (source, not the cached binary); ran full npm test."], files_touched = ["plugins/loom/cli/lib/plan.ts", "plugins/loom/cli/lib/plan.test.ts", "plugins/loom/cli/fixtures/plan-deliverable-verification.md"], corrections = ["AC#3 originally claimed exitCriteria stays empty/unchanged. Corrected during execution: recognizing **Verification** populates exitCriteria from its bullets via the existing EXIT_RE-to-collectBullets path - that is how the missing-exit diagnostic (which checks exitCriteria.length===0) gets suppressed. The parsed tree is richer (real exit criteria) but structurally unchanged. Favorable refinement, confirmed by the evaluator."] }
+scope = ["plugins/loom/cli/lib/plan.ts - GOAL_RE, EXIT_RE, two diagnostic messages, comments", "plugins/loom/cli/lib/plan.test.ts - one new test", "plugins/loom/cli/fixtures/plan-deliverable-verification.md - new fixture"]
+changes_since_previous = "First unit on this branch. Builds on the pre-execution re-scope (dec5b56) and the whiteboard artifact (54320a3); no prior unit checkin."
+verdict = { result = "approved", reasons = ["guild-validate single-evaluator panel (evaluator-contract-fit) returned approved with zero findings.", "All 5 acceptance criteria met; no disqualifiers fired; original-ask alignment holds (accept both vocabularies, not a swap).", "Verified: parse-plan total diagnostics 0 (was 10); npm test 1049 passed; 28 existing parse-plan tests still green (back-compat)."] }
+notes_for_pr = ["Additive aliases: Deliverable maps to Goal, Verification maps to Exit/Output. Existing PLAN vocabularies untouched (back-compat).", "Side benefit: phases using Verification now get real exitCriteria parsed from their bullets (previously empty).", "1e groundwork done here: branch gt-tracked (parent main); gt submit --stack to be exercised at first PR; gh fallback available.", "Substrate papercuts surfaced this session (for retro, not fixed here): (1) revise-plan writes a manifest [[revisions]] record but does not commit it (captured in 966592f); (2) cached guild/loom binaries lag repo source - derive-panel reported panel-spec-unreadable on cached but source was clean, and parse-plan needs node loom.ts to reflect source edits; (3) agent registry spawn-names are guild:generated:* / guild:retained:*, not the guild:whiteboard-* / evaluator-* names the docs reference; (4) the /ev-loop-interactive Negotiate step still says 'Contract section only', contra ADR-0002 (full-schema-at-close) - the optional residual named in the Phase 1 re-scope.", "Pairs with Unit B (1b manifest backfill) into one PR (shared lib/plan.ts) - PR opens after Unit B."]
+
+[[checkins]]
+schema_version = 1
+number = "02"
+created = "2026-05-29T18:51:17.000Z"
+phase = { number = 1, name = "Loom CLI papercut sweep" }
+branch = "ev-agent.substrate-tempering.papercut-sweep"
+unit = "1b - manifest phase-backfill"
+contract = { goal = "Wire loom plan to backfill the PLAN's phases into the manifest at creation (today only a placeholder 'Phase 1' persists), and repair this project's manifest (which predates the wiring) to carry all five phases.", acceptance_criteria = ["loom plan adopt path parses the committed PLAN and reconciles [[phases]] by number - set name from PLAN, add missing, preserve status/branch on existing. Reconcile not blind replace; reuse appendPhase/updatePhase lib; do not shell to the verb.", "loom plan against a fixture writes a manifest whose [[phases]] (numbers + names) match the PLAN. Round-trip test.", "This project's manifest reflects all five phases: phase 1 'Loom CLI papercut sweep' with status in-progress + branch preserved; phases 2-5 added not-started.", "Idempotency: re-running the backfill is a no-op (no dup phases, no status clobber). Test.", "npm test green; existing phase.test.ts (incl phaseAdd) stays green.", "Fix the PLAN.md 1b note that wrongly says phase add is absent (cache-lag artifact)."], rules_applied = ["Use source CLIs (node plugins/<plugin>/cli/<cli>.ts) for all loom/guild ops - the cached binary lags source (see notes).", "Verbs do state-writes; events are skill-emitted - backfill is a manifest write, no event from the verb.", "Reconcile preserves existing phase status/branch; never blind-replace.", "manifest-toml.ts and plan.ts are loom-authoritative - no sync-shared run."], disqualifiers = ["Blind-replacing phases (losing status/branch).", "Shelling out to the phase-add verb instead of the lib.", "Emitting events from the loom plan verb.", "Editing plugins/commons/** or any synced lib.", "Drifting into 1c/1d (closed)."], inputs = ["plugins/loom/cli/verbs/loom/plan.ts (adopt path ~171-194; parsePlan import)", "plugins/loom/cli/lib/manifest-toml.ts (appendPhase, updatePhase)", "plugins/loom/cli/verbs/loom/phase.ts (existing phaseAdd verb - confirmed present in source)", "projects/2026-05-29-substrate-tempering/PLAN.md + manifest.toml (the repair target)", "projects/2026-05-29-substrate-tempering/whiteboards/1-loom-cli-papercut-sweep.md (phase design context)"] }
+execution = { actions = ["Added a pure backfillPhases(m, planPhases) reconcile to manifest-toml.ts: integer ids only; appendPhase for a missing number, updatePhase({name}) for an existing one (preserves status/branch).", "Wired loom plan's adopt path (gated on adoptLoom - fresh adopt only) to parse the committed PLAN and writeManifest(backfillPhases(...)). Recovery (pre-existing manifest) left untouched; no event emitted.", "Added 3 backfillPhases lib tests (reconcile+preserve; idempotency; integer-only ids) and 1 planVerb wiring test (multi-phase plan -> manifest phases match, placeholder reconciled not duped).", "Repaired this project's manifest by applying the shipped backfillPhases via a throwaway script (deleted after): phase 1 renamed to 'Loom CLI papercut sweep' with in-progress+branch preserved, phases 2-5 added not-started.", "Corrected the PLAN.md Context note and sub-unit (b) (cache-lag artifact: phase add exists in source; the missing piece was the wiring).", "Verified via source CLIs: npm test 1053; parse-plan 0 diagnostics/5 phases; phase list shows all 5 phases."], files_touched = ["plugins/loom/cli/lib/manifest-toml.ts", "plugins/loom/cli/verbs/loom/plan.ts", "plugins/loom/cli/lib/manifest-toml-helpers.test.ts", "plugins/loom/cli/verbs/loom/plan.test.ts", "projects/2026-05-29-substrate-tempering/PLAN.md", "projects/2026-05-29-substrate-tempering/manifest.toml"], corrections = ["The re-scope and this unit's first contract claimed loom phase add does not exist and 'the mechanism must be built'. That was the CACHED loom binary (listed only read/list/update); the SOURCE has phaseAdd (create-once, tested, registered in PHASE_VERBS). The same cache-vs-source lag had already bitten parse-plan and derive-panel this session. Corrected mid-unit: no verb to build - the genuinely-missing work was the loom plan backfill wiring + this project's repair. PLAN.md note fixed (AC#6). Operational fix: switched to source CLIs for all loom/guild ops."] }
+scope = ["plugins/loom/cli/lib/manifest-toml.ts - backfillPhases reconcile", "plugins/loom/cli/verbs/loom/plan.ts - adopt-path backfill wiring", "two test files - backfillPhases + planVerb wiring tests", "PLAN.md - 1b note correction; manifest.toml - this project's 5-phase repair"]
+changes_since_previous = "Builds on Unit A (b086807): the backfill reuses parsePlan, whose Deliverable/Verification aliases Unit A added. Same branch."
+verdict = { result = "approved", reasons = ["guild-validate single-evaluator panel (evaluator-contract-fit) returned approved.", "All 6 acceptance criteria met; load-bearing disqualifier pair clear (backfill gated on adoptLoom; calls the lib not the verb); no event from the verb; no scope creep into 1c/1d; original-ask alignment holds.", "One advisory-not-blocking observation: backfill fires only on fresh adopt, so future pre-wiring manifests would need the same manual repair - consistent with the contract, not a gap."] }
+notes_for_pr = ["loom plan now backfills PLAN phases into the manifest at adopt time via a reconcile (preserves status/branch); idempotent; fresh-adopt-only so recovery manifests are untouched.", "This project's manifest was repaired out-of-band (loom plan cannot re-run on a committed PLAN) using the shipped backfillPhases - all 5 phases now tracked.", "[adr-candidate] The cached loom/guild binaries lag repo source and there is no guard against it: phase add existed in source but not the cached binary (which fooled the re-scope into 'phase add does not exist'), and parse-plan / derive-panel also needed the source entry to reflect edits; loom doctor passed ok:true without detecting any of this. Decision worth a durable record: prefer node plugins/<plugin>/cli/<cli>.ts (source) over the cached binary during substrate development, and/or extend loom doctor to detect cache-vs-source verb skew. This lag bit the same session three times and put a wrong fact into a committed PLAN before it was caught.", "Advisory (evaluator, not blocking): backfill is adopt-time-only; any future manifest written before this wiring would need the same one-off repair. Out of this unit's scope.", "Process note (evaluator): plugins/commons/agents/evaluator-base.md was not found on disk; the contract-fit evaluator applied its stance from its system-prompt summary rather than the file. Another cache/source or codegen artifact worth a look.", "Phase-boundary signal (single; no plan revision offered): Unit B is the last unit of the re-scoped Phase 1. Deliverables 1a + 1b done, 1e groundwork done.", "Pairs with Unit A into one PR (shared parse-plan/lib/plan.ts lineage); PR to open at phase close - this also exercises 1e's gt submit --stack."]
+
+[[revisions]]
+timestamp = "2026-05-29T15:43:57.627Z"
+target = "PLAN.md"
+seq = 1

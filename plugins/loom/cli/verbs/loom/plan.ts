@@ -20,6 +20,7 @@ import {
 } from '../../lib/adopt.ts';
 import {
   appendRevision,
+  backfillPhases,
   manifestPath as manifestPathFor,
   readManifestFile,
   writeManifest,
@@ -188,6 +189,29 @@ export function planVerb(
         new LoomError(
           'loom-adopt-failed',
           `auto-adopting loom failed: ${(err as Error).message}`,
+        ),
+      );
+    }
+  }
+
+  // Backfill PLAN.md phases into the freshly-adopted manifest so [[phases]]
+  // mirrors the plan (the synthesized init carries only a placeholder
+  // "Phase 1"). Reconcile by number, preserving status/branch, so it is
+  // idempotent. Runs only on fresh adopt — a pre-existing manifest (recovery)
+  // is left untouched, matching the adopt-skip above. State write only — no
+  // event (verbs stay event-emission-free; the /loom-plan skill emits).
+  if (adoptLoom) {
+    try {
+      const { plan } = parsePlan(readFileSync(planMdPath, 'utf8'));
+      const { manifest, token } = readManifestFile(manifestFilePath);
+      writeManifest(manifestFilePath, backfillPhases(manifest, plan.phases), {
+        expect: token,
+      });
+    } catch (err: unknown) {
+      return errToResult(
+        new LoomError(
+          'plan-phase-backfill-failed',
+          `backfilling PLAN phases into the manifest failed: ${(err as Error).message}`,
         ),
       );
     }

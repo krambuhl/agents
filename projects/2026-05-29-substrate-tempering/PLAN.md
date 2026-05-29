@@ -15,13 +15,13 @@ The unifying theme is **substrate hardening**: making the substrate sturdier and
 
 The ordering is deliberate (RESEARCH.md § Sequencing): sharpen the saw (A) before the long job, close the open loop (C) while fresh, then build the self-observation arc (B) on a smoother substrate, and finish with the most independent, design-heavy thread (D). One non-obvious dependency drives Phase 1's internal order: manifest phase-backfill *requires* the `parse-plan` convention fix, because backfilling means parsing the PLAN.
 
-Plan-birth surfaced a second sharpening: an archived `2026-05-28-substrate-followups` project already swept a *disjoint* set of CLI papercuts (`loom doctor` exit codes, `loom phase add`, `loom phase update` PR-field events). Its retro named the exact follow-up this plan's manifest-backfill gap covers — "wire `loom plan` to call `phase add` internally" — so Phase 1 wires `loom plan` to that **existing** `phase add` verb rather than rebuilding phase-seeding, and mirrors substrate-followups' `pr-*` event emission as the precedent for its `plan-*` events. This program is effectively that project's round 2; the slug is kept distinct from its substrate-* siblings on purpose.
+Plan-birth surfaced a second sharpening: an archived `2026-05-28-substrate-followups` project already swept a *disjoint* set of CLI papercuts (`loom doctor` exit codes, `loom phase add`, `loom phase update` PR-field events). Its retro named the exact follow-up this plan's manifest-backfill gap covers — "wire `loom plan` to call `phase add` internally." (Note, 2026-05-29: `loom phase add` already exists in source — an earlier reading was misled by the cached `loom` binary, which lagged source and listed only `read`/`list`/`update`; the genuinely-missing piece was the `loom plan` backfill wiring, added in Phase 1. See Phase 1.) This program is effectively that project's round 2; the slug is kept distinct from its substrate-* siblings on purpose.
 
 ## Scope
 
 ### In
 
-- **Phase 1 — Loom CLI papercut sweep.** Fix the five execution-surfaced gaps: `parse-plan` heading-vocabulary reconciliation, manifest phase-backfill at `loom plan`, a `loom checkin write` update path, `plan-*` lifecycle event emission, and Graphite-sync enablement.
+- **Phase 1 — Loom CLI papercut sweep.** Close the genuinely-remaining execution-surfaced gaps: `parse-plan` heading-vocabulary reconciliation and manifest phase-backfill at `loom plan`, plus Graphite-sync verification. The originally-listed `loom checkin write` update path and `plan-*` event emission are closed by prior decision (ADR-0002; `plan-*` already shipped) — see Phase 1.
 - **Phase 2 — Convention-drift 2.1.** Two new `Convention` objects in `scripts/check-conventions.ts` covering `whiteboard-*.md` (bullet-pair coherence, sibling-reference resolution), plus triage of the existing contract-fit advisory finding. Advisory at MVP, matching the parent convention.
 - **Phase 3 — Evaluator event emission.** Add `evaluator-spawned`, `evaluator-finding-emitted`, `evaluator-recused` to the `commons` event union (synced everywhere); emit them from the `guild-validate` panel flow against the active project's event log.
 - **Phase 4 — Cross-project event aggregation.** A `loom events aggregate` subverb folding per-project event stores across `projects/` + `projects/archive/`. Surfaces spawn-to-finding and non-applicability metrics once Phase 3's events exist in the corpus. This is the prior project's closed Phase 3, built in the correct order.
@@ -44,22 +44,29 @@ Plan-birth surfaced a second sharpening: an archived `2026-05-28-substrate-follo
 
 ### Phase 1 — Loom CLI papercut sweep
 
-**Deliverable**: the five gaps from RESEARCH.md § Cluster A, closed. Internal order is constrained: (a) `parse-plan` accepts the project PLAN heading vocabulary (`**Deliverable**` / `**Verification**`) so it stops cosmetically flagging `plan-phase-missing-goal` (`plugins/loom/cli/lib/plan.ts`); (b) `loom plan` backfills PLAN.md phases into the manifest using that parser (`plugins/loom/cli/verbs/loom/plan.ts:171-185`) — depends on (a); (c) a `loom checkin write` update path (flag or skill-body canonicalization — unit-contract decides) resolves the create-once conflict (`plugins/loom/cli/verbs/loom/checkin.ts:198-204`); (d) a `plan-*` lifecycle event emitted at `loom plan` commit time, added to the `commons` event union (`plugins/commons/cli/lib/types.ts:59-96`); (e) Graphite-sync enabled for the repo (a one-time bootstrap chore, done first, not a PR).
+**Revision (2026-05-29, pre-execution)**: a substrate reconciliation at phase start (whiteboard + ADR review) found this phase planned against a stale picture of the substrate. The sibling `2026-05-28` projects (`loom-adr`, `agent-system-improvements`) landed work the archived-research foundation (Decision #4) could not see. Two of the five original sub-units are closed by prior decision and one had a missing mechanism; the phase is re-scoped below. Sub-unit letters (a–e) are preserved for traceability.
+
+**Deliverable**: the genuinely-remaining gaps from RESEARCH.md § Cluster A. Live sub-units, internal order constrained:
+- **(a) `parse-plan` heading reconciliation** — `parse-plan` accepts the project PLAN heading vocabulary (`**Deliverable**` / `**Verification**`) so it stops cosmetically flagging `plan-phase-missing-goal` / `plan-phase-missing-exit` (10 such diagnostics fire on this very PLAN). Accept both vocabularies rather than swap, so existing PLANs keep parsing. `plugins/loom/cli/lib/plan.ts`.
+- **(b) manifest phase-backfill** — `loom plan` backfills PLAN.md phases into the manifest so `[[phases]]` matches the PLAN; depends on (a) for the parse. This project exhibited the gap (manifest carried one placeholder phase; the PLAN has five). The `loom phase add` verb already exists in source (create-once, tested) — an earlier reading was misled by the cached `loom` binary that lagged source — so the genuinely-missing piece was the **wiring**, not the verb. Resolved by a `backfillPhases` lib reconcile (upsert by number, preserving status/branch on existing entries) called from `loom plan`'s adopt path, plus a one-off repair of this project's own manifest (which predated the wiring). `plugins/loom/cli/verbs/loom/plan.ts`, `plugins/loom/cli/lib/manifest-toml.ts`.
+- **(e) Graphite-sync** — verify `gt submit --stack` works in the repo and record the runbook line. `gt` 1.7.5 is installed and the repo is gt-tracked, so this is a verify-and-document chore, done first, not a PR. If `gt submit --stack` is unusable, document the `gh`-PR fallback; non-blocking.
+
+**Closed by prior decision (no work in this phase)**:
+- **(c) `loom checkin write` update path — closed by ADR-0002.** `0002-loom-checkin-write-requires-full-schema` (2026-05-28) already adjudicated the exact fork this plan deferred, choosing full-schema-at-close in the skill body over a `--update` flag: conversation already supplies intermediate persistence, and an update path would invert the checkin's single-snapshot contract. No CLI change. Optional residual, tracked separately: confirm the `/ev-loop-interactive` Negotiate step reflects full-schema-at-close rather than the older "Contract section only" language.
+- **(d) `plan-*` lifecycle event — closed, already shipped.** `plan-completed` (`{slug, plan_path, interview_path}`) and the full `plan-*` / `plan-revise-*` family already exist in `plugins/commons/cli/lib/types.ts`; `/loom-plan` emits `plan-completed` after commit. The original framing — emit from the `loom plan` *verb* — would reverse the documented decision that CLI verbs stay event-emission-free and the skills emit (`types.ts` Plan-events comment). No work. (Why this project's own log lacks `plan-completed` — the `[loom] capture stray research-completed event` commit hints at emission flakiness — is a separate, narrower question; file it if it recurs.)
 
 **Verification**:
-- `parse-plan` on a real project PLAN.md produces zero `plan-phase-missing-goal` diagnostics; unit test covering both heading vocabularies.
-- `loom plan` against a fixture writes a manifest whose `[[phases]]` matches the PLAN.md phases; `loom phase update` then works without a manual edit.
-- `loom checkin write` can update an existing checkin (or the skill-body path is canonicalized and documented); round-trip test.
-- A `plan-*` event appears in the committed project's event log after `loom plan`; assertable via `loom events read`.
-- `gt submit --stack` works in the repo.
-- `npm test` green.
+- `parse-plan` on this project's PLAN.md produces zero `plan-phase-missing-goal` / `plan-phase-missing-exit` diagnostics; unit test covering both heading vocabularies.
+- `loom plan` against a fixture writes a manifest whose `[[phases]]` matches the PLAN.md phases; round-trip test. After backfill, this project's manifest reflects all five phases.
+- `gt submit --stack` works in the repo, or the `gh` fallback is documented.
+- `npm test` green; `node scripts/sync-shared.ts --check` green if `commons/` was touched.
 
-**PR**: one stacked branch group on `main`, prefix `ev-agent.substrate-tempering.papercut-sweep`. Expected ~3-4 PRs (parser+backfill may pair since they share `lib/plan.ts`; checkin, events, and the graphite chore split out). Granularity finalized at unit contract.
+**PR**: one stacked branch group on `main`, prefix `ev-agent.substrate-tempering.papercut-sweep`. Expected ~2 PRs (parser + backfill may pair, sharing `lib/plan.ts`; the graphite chore is verify-and-document, likely no PR). Granularity finalized at unit contract.
 
 **Risks**:
-- **Parser change breaks existing `parse-plan` consumers.** Mitigation: accept both vocabularies rather than swap, so old PLANs keep parsing; assert with tests on both shapes before touching the backfill.
-- **`plan-*` event has no clean home for pre-commit steps.** Mitigation: scope to the commit-time lifecycle event only; record the pre-commit gap as an Open question, do not force a fake project path.
-- **Graphite-sync enablement is environment config, not code.** Mitigation: treat as a bootstrap chore with a written runbook line; if it cannot be enabled, the rest of the stack falls back to `gh` PRs and the gap is documented, not blocking.
+- **Parser change breaks existing `parse-plan` consumers.** Mitigation: accept both vocabularies rather than swap; assert both shapes with tests before touching the backfill.
+- **Backfill mechanism widens or couples the surface.** A new `loom phase add` verb widens the CLI surface; writing phases directly in the plan flow couples plan to the phase-model lib. Unit contract decides, guided by the verbs-do-state-writes / skills-do-events split (manifest mutation is legitimately verb territory; the emission-free rule governs events, not state).
+- **Backfill idempotency on re-run.** `loom plan` may run against a manifest that already has phases. Mitigation: reconcile to the PLAN's phase set idempotently — do not duplicate entries or clobber existing phase status.
 
 ### Phase 2 — Convention-drift 2.1
 
@@ -130,9 +137,9 @@ Plan-birth surfaced a second sharpening: an archived `2026-05-28-substrate-follo
 
 ## Dependencies
 
-- **Phase 1 internal**: `parse-plan` reconciliation (1a) blocks manifest backfill (1b) — same phase model in `lib/plan.ts`. Graphite-sync (1e) is a bootstrap chore done first.
+- **Phase 1 internal**: `parse-plan` reconciliation (1a) blocks manifest backfill (1b) — same phase model in `lib/plan.ts`. Graphite-sync (1e) is a verify-and-document chore done first. Sub-units 1c and 1d are closed by prior decision (ADR-0002; `plan-*` events already shipped) — see Phase 1.
 - **Phase 3 → Phase 4**: hard. Aggregation's headline metrics require the `evaluator-*` events; Phase 4 must follow Phase 3.
-- **Phase 1 → Phase 3**: soft. Phase 1's `plan-*` event work warms the same event-union + `appendEvent` path Phase 3 extends; not a hard blocker, but doing A first de-risks B.
+- **Phase 1 → Phase 3**: none. (Originally a soft link — Phase 1's `plan-*` work was to warm the event-union + `appendEvent` path Phase 3 extends. With 1d closed, Phase 1 no longer touches the event union; the path is already warm from the shipped `plan-*` / `research-*` families.)
 - **Phases 2, 5**: independent of the others except for stack position. C is sequenced second for momentum, not coupling; D is last for design-heaviness, not coupling.
 - **Cadence dependency**: until Graphite-sync (1e) lands, the stack submits via `gh` rather than `gt submit --stack`. Phase 1 unblocks the intended cadence for Phases 2-5.
 - **External**: none. No npm dep changes, no marketplace-version bump. `commons/cli/lib/` edits (Phases 1d, 3) require `node scripts/sync-shared.ts` before commit (CI `--check` gate).
@@ -161,7 +168,7 @@ The project does NOT block on:
 
 ## Open questions (deferred to phase unit contracts)
 
-- **Phase 1**: `loom checkin write --update` flag vs. canonicalizing write-once-at-end in the `/ev-loop-interactive` skill body. Whether `parse-plan` accepts both heading vocabularies (recommended) or migrates the template. The exact `plan-*` event name + detail shape, given pre-commit orchestration events have no project to write to.
+- **Phase 1**: the manifest-backfill mechanism — add a `loom phase add` verb vs. write phases directly in the plan flow (unit-contract decides). (The `loom checkin write --update` and `plan-*` event-shape questions are resolved — see Phase 1 § Closed by prior decision.)
 - **Phase 2**: the contract-fit advisory triage (refine description / refine heuristic / accept). Whether sibling-reference resolution derives the roster from the directory or a list.
 - **Phase 3**: the three evaluator events' detail shapes; whether emission lives in `guild-validate` or the `/ev-loop-*` caller holding the project path.
 - **Phase 4**: whether output includes a cross-project `total` row per event name.
@@ -181,3 +188,7 @@ Resolved by the plan interview (see INTERVIEW.md for the walked tree):
 8. **Verification signals named per phase** (see Phases).
 9. **Risks named per phase + project-level** (see Phases and Risks).
 10. **Open questions enumerated, deferred to unit contracts, not blocked on** (see Open questions).
+
+## Revision log
+
+- 2026-05-29 — Re-scope Phase 1 to remaining work (parse-plan headings, manifest backfill, graphite verify); close 1c (ADR-0002) and 1d (plan-* already shipped) as resolved by prior decision after a pre-execution substrate reconciliation

@@ -75,6 +75,31 @@ test('parses the no-milestone shape with Output as an Exit alias', () => {
   expect(diagnostics).toEqual([]);
 });
 
+// ---------- Project vocabulary: Deliverable as Goal, Verification as Exit ----------
+
+test('accepts Deliverable/Verification aliases and mixes them with Goal/Exit', () => {
+  const { plan, diagnostics } = parsePlan(fixture('plan-deliverable-verification'));
+
+  // Phase 1 uses the project vocabulary: Deliverable -> goal, Verification -> exit bullets.
+  expect(plan.phases[0].goal).toBe(
+    'widen the heading parser to accept project vocabulary.',
+  );
+  expect(plan.phases[0].exitCriteria).toEqual([
+    'parse-plan accepts Deliverable and Verification',
+    'existing Goal/Exit/Output plans still parse',
+  ]);
+
+  // Phase 2 uses the legacy vocabulary in the same plan: both coexist.
+  expect(plan.phases[1].goal).toBe(
+    'prove Goal/Exit still parse alongside Deliverable/Verification.',
+  );
+  expect(plan.phases[1].exitCriteria).toEqual(['legacy vocabulary intact']);
+  expect(plan.phases[1].dependsOn).toEqual(['1']);
+
+  // Both vocabularies satisfy the goal/exit requirement: no cosmetic diagnostics.
+  expect(diagnostics).toEqual([]);
+});
+
 // ---------- Graceful degradation: missing optional sections ----------
 
 test('degrades gracefully on a phase missing goal and exit', () => {

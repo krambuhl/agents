@@ -628,6 +628,32 @@ export function appendPhase(m: ManifestToml, phase: ManifestPhase): ManifestToml
   return { ...m, phases: [...m.phases, phase] };
 }
 
+// Reconcile [[phases]] against a plan's phase list: for each plan phase with
+// an integer id, append it as not-started if absent, or set its name if
+// present (preserving status/branch — updatePhase merges a partial). Idempotent:
+// re-running with the same plan is a no-op. Non-integer ids (e.g. dotted "1.1")
+// are skipped — the manifest phase model keys on integer numbers. Used by
+// `loom plan` to backfill PLAN.md phases at adopt time instead of leaving the
+// synthesized placeholder "Phase 1", and reused to repair a manifest written
+// before the wiring existed.
+export function backfillPhases(
+  m: ManifestToml,
+  planPhases: ReadonlyArray<{ id: string; name: string }>,
+): ManifestToml {
+  let next = m;
+  for (const p of planPhases) {
+    const num = Number.parseInt(p.id, 10);
+    if (Number.isNaN(num) || String(num) !== p.id) continue;
+    const existing = next.phases.find((ph) => ph.number === num);
+    if (existing === undefined) {
+      next = appendPhase(next, { number: num, name: p.name, status: 'not-started' });
+    } else if (existing.name !== p.name) {
+      next = updatePhase(next, num, { name: p.name });
+    }
+  }
+  return next;
+}
+
 // Merge a patch into [meta] (current_branch / latest_checkin / status / …).
 export function updateMeta(
   m: ManifestToml,
