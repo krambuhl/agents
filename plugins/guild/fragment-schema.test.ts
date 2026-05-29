@@ -142,7 +142,7 @@ describe('fragment-schema: phase fragments conform to canonical heading set', ()
 });
 
 describe('fragment-schema: personality fragments conform to canonical heading set', () => {
-  const dir = join(pluginRoot, 'agents', 'personalities');
+  const dir = join(pluginRoot, 'modes', 'personalities');
   const files = readdirSync(dir)
     .filter((f: string) => f.endsWith('.md'))
     .filter((f: string) => !PERSONALITY_EXEMPT.has(f))
@@ -164,7 +164,7 @@ describe('fragment-schema: personality fragments conform to canonical heading se
 // stale reference to a deleted file).
 describe('fragment-schema: personality-base.md exemption is documented and real', () => {
   it('personality-base.md exists', () => {
-    const dir = join(pluginRoot, 'agents', 'personalities');
+    const dir = join(pluginRoot, 'modes', 'personalities');
     const files = readdirSync(dir);
     expect(files).toContain('personality-base.md');
   });

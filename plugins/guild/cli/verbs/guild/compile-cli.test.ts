@@ -33,13 +33,13 @@ function makeSandbox(): Sandbox {
   mkdirSync(pluginRoot, { recursive: true });
   mkdirSync(join(pluginRoot, 'modes', 'phases'), { recursive: true });
   mkdirSync(join(pluginRoot, 'modes', 'domains'), { recursive: true });
-  mkdirSync(join(pluginRoot, 'agents', 'personalities'), { recursive: true });
+  mkdirSync(join(pluginRoot, 'modes', 'personalities'), { recursive: true });
 
   writeFileSync(
     join(pluginRoot, 'axes.toml'),
     readFileSync(join(REPO_PLUGIN_ROOT, 'axes.toml'), 'utf8'),
   );
-  for (const dir of ['modes/phases', 'modes/domains', 'agents/personalities']) {
+  for (const dir of ['modes/phases', 'modes/domains', 'modes/personalities']) {
     const real = join(REPO_PLUGIN_ROOT, dir);
     const fake = join(pluginRoot, dir);
     for (const filename of readFileSyncDir(real)) {

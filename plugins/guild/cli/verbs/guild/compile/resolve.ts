@@ -26,7 +26,7 @@ export type FragmentReader = (relPath: string) => string;
 
 function fragmentRelPath(kind: 'phase' | 'personality' | 'domain', name: string): string {
   if (kind === 'phase') return `modes/phases/${name}.md`;
-  if (kind === 'personality') return `agents/personalities/${name}.md`;
+  if (kind === 'personality') return `modes/personalities/${name}.md`;
   return `modes/domains/${name}.md`;
 }
 
