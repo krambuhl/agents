@@ -1,0 +1,38 @@
+checkins = []
+sessions = []
+revisions = []
+
+[meta]
+schema_version = 1
+title = "Guild Workflow Coverage"
+slug = "2026-05-29-guild-workflow-coverage"
+started = "2026-05-29"
+status = "active"
+strategy = "interactive"
+
+[config]
+base_branch = "main"
+reviewers = []
+labels = []
+verification = []
+worker_bindings = {}
+
+[[phases]]
+number = 1
+name = "Restructure the guild agents directory"
+status = "not-started"
+
+[[phases]]
+number = 2
+name = "Instantiate implementer and author fixer"
+status = "not-started"
+
+[[phases]]
+number = 3
+name = "Wire postures into the workflow path"
+status = "not-started"
+
+[[events]]
+at = "2026-05-29T18:59:42.382Z"
+event = "project-initialized"
+detail = {}
