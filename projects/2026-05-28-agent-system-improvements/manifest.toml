@@ -1,0 +1,33 @@
+checkins = []
+sessions = []
+revisions = []
+
+[meta]
+schema_version = 1
+title = "Agent System Improvements"
+slug = "2026-05-28-agent-system-improvements"
+started = "2026-05-29"
+status = "active"
+strategy = "interactive"
+
+[config]
+base_branch = "main"
+reviewers = []
+labels = []
+verification = []
+worker_bindings = {}
+
+[[phases]]
+number = 1
+name = "Phase 1"
+status = "not-started"
+
+[[events]]
+at = "2026-05-29T01:55:49.130Z"
+event = "project-initialized"
+detail = {}
+
+[[events]]
+at = "2026-05-29T01:55:49.131Z"
+event = "research-started"
+detail = { slug = "2026-05-28-agent-system-improvements" }
