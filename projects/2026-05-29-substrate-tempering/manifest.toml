@@ -1,4 +1,3 @@
-checkins = []
 sessions = []
 
 [meta]
@@ -19,7 +18,8 @@ worker_bindings = {}
 [[phases]]
 number = 1
 name = "Phase 1"
-status = "not-started"
+status = "in-progress"
+branch = "ev-agent.substrate-tempering.papercut-sweep"
 
 [[events]]
 at = "2026-05-29T06:36:04.229Z"
@@ -35,6 +35,30 @@ detail = { slug = "2026-05-29-substrate-tempering", topic = "substrate-tempering
 at = "2026-05-29T06:36:04.260Z"
 event = "research-completed"
 detail = { slug = "2026-05-29-substrate-tempering", research_path = "RESEARCH.md", notes_path = "RESEARCH-NOTES.md" }
+
+[[events]]
+at = "2026-05-29T17:20:43.072Z"
+event = "checkin-created"
+detail = { number = "01", branch = "ev-agent.substrate-tempering.papercut-sweep" }
+
+[[events]]
+at = "2026-05-29T17:25:03.464Z"
+event = "phase-started"
+detail = { phase = 1, name = "Phase 1" }
+
+[[checkins]]
+schema_version = 1
+number = "01"
+created = "2026-05-29T17:17:35.000Z"
+phase = { number = 1, name = "Loom CLI papercut sweep" }
+branch = "ev-agent.substrate-tempering.papercut-sweep"
+unit = "1a - parse-plan heading reconciliation"
+contract = { goal = "Teach parse-plan to accept the project PLAN heading vocabulary - **Deliverable** as a Goal-equivalent and **Verification** as an Exit/Output-equivalent - so a real project PLAN stops emitting cosmetic plan-phase-missing-goal / plan-phase-missing-exit diagnostics. Additive aliases, not a swap (back-compat).", acceptance_criteria = ["GOAL_RE also matches **Deliverable**: (keeping the (updated) parenthetical tolerance and same-line capture); EXIT_RE also matches **Verification**:. Both additive - Goal / Goal (updated) / Exit / Output still match.", "parse-plan on the real project PLAN reports zero plan-phase-missing-goal and zero plan-phase-missing-exit diagnostics (down from 10).", "Parsed-tree structure unchanged (phases/phasesById/ids/names/dependsOn); goal populates from Deliverable same-line text; recognizing Verification populates exitCriteria from its bullets via the existing collectBullets logic; no diagnostic-code renames.", "plan.test.ts covers both vocabularies: Deliverable/Verification PLAN yields zero missing diagnostics; Goal/Exit/Output PLAN still parses; mixed tolerated.", "npm test green."], rules_applied = ["ADR-0002: checkin written in full at unit close (not contract-first); the contract was negotiated in conversation.", "Additive-not-swap: preserve back-compat for the existing PLAN vocabularies.", "plan.ts is loom-authoritative (not commons-synced) - no sync-shared run needed."], disqualifiers = ["Swapping/replacing the vocabulary instead of adding aliases.", "Renaming diagnostic codes or changing the typed-tree structure.", "Editing plugins/commons/** or any synced lib.", "Drifting into 1b (manifest backfill)."], inputs = ["plugins/loom/cli/lib/plan.ts (GOAL_RE:51, EXIT_RE:56, comments:48/53, diagnostics:280-291)", "plugins/loom/cli/lib/plan.test.ts (existing parse-plan tests)", "projects/2026-05-29-substrate-tempering/PLAN.md (real fixture using Deliverable/Verification)", "projects/2026-05-29-substrate-tempering/whiteboards/1-loom-cli-papercut-sweep.md (phase design context)"] }
+execution = { actions = ["Widened GOAL_RE (plan.ts:51) to a Goal|Deliverable alternation, preserving the (updated) parenthetical tolerance and same-line capture.", "Widened EXIT_RE (plan.ts:56) to an Exit|Output|Verification alternation.", "Updated the two cosmetic diagnostic messages (plan.ts ~283/291) to name the accepted aliases.", "Added fixture plan-deliverable-verification.md (a Deliverable/Verification phase plus a Goal/Exit phase in one plan).", "Added a lib/plan.test.ts case asserting Deliverable-to-goal, Verification-to-exitCriteria bullets, the mixed-vocabulary phase, and zero diagnostics.", "Verified the real PLAN yields 0 diagnostics via node plugins/loom/cli/loom.ts parse-plan (source, not the cached binary); ran full npm test."], files_touched = ["plugins/loom/cli/lib/plan.ts", "plugins/loom/cli/lib/plan.test.ts", "plugins/loom/cli/fixtures/plan-deliverable-verification.md"], corrections = ["AC#3 originally claimed exitCriteria stays empty/unchanged. Corrected during execution: recognizing **Verification** populates exitCriteria from its bullets via the existing EXIT_RE-to-collectBullets path - that is how the missing-exit diagnostic (which checks exitCriteria.length===0) gets suppressed. The parsed tree is richer (real exit criteria) but structurally unchanged. Favorable refinement, confirmed by the evaluator."] }
+scope = ["plugins/loom/cli/lib/plan.ts - GOAL_RE, EXIT_RE, two diagnostic messages, comments", "plugins/loom/cli/lib/plan.test.ts - one new test", "plugins/loom/cli/fixtures/plan-deliverable-verification.md - new fixture"]
+changes_since_previous = "First unit on this branch. Builds on the pre-execution re-scope (dec5b56) and the whiteboard artifact (54320a3); no prior unit checkin."
+verdict = { result = "approved", reasons = ["guild-validate single-evaluator panel (evaluator-contract-fit) returned approved with zero findings.", "All 5 acceptance criteria met; no disqualifiers fired; original-ask alignment holds (accept both vocabularies, not a swap).", "Verified: parse-plan total diagnostics 0 (was 10); npm test 1049 passed; 28 existing parse-plan tests still green (back-compat)."] }
+notes_for_pr = ["Additive aliases: Deliverable maps to Goal, Verification maps to Exit/Output. Existing PLAN vocabularies untouched (back-compat).", "Side benefit: phases using Verification now get real exitCriteria parsed from their bullets (previously empty).", "1e groundwork done here: branch gt-tracked (parent main); gt submit --stack to be exercised at first PR; gh fallback available.", "Substrate papercuts surfaced this session (for retro, not fixed here): (1) revise-plan writes a manifest [[revisions]] record but does not commit it (captured in 966592f); (2) cached guild/loom binaries lag repo source - derive-panel reported panel-spec-unreadable on cached but source was clean, and parse-plan needs node loom.ts to reflect source edits; (3) agent registry spawn-names are guild:generated:* / guild:retained:*, not the guild:whiteboard-* / evaluator-* names the docs reference; (4) the /ev-loop-interactive Negotiate step still says 'Contract section only', contra ADR-0002 (full-schema-at-close) - the optional residual named in the Phase 1 re-scope.", "Pairs with Unit B (1b manifest backfill) into one PR (shared lib/plan.ts) - PR opens after Unit B."]
 
 [[revisions]]
 timestamp = "2026-05-29T15:43:57.627Z"
