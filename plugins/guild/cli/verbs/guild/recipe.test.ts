@@ -2,9 +2,10 @@ import { test, expect } from 'vitest';
 import { recipeVerb } from './recipe.ts';
 import type { GuildCliContext } from './index.ts';
 
-// The verb resolves against the real core panel.manifest.toml (module-
-// relative, the same file codegen folds), so these are real-artifact checks
-// of the wrapper: arg handling, JSON shape, and the fail-loud error mapping.
+// The verb resolves against the real axes.toml (module-relative, the
+// same file the /guild-compile pipeline reads), so these are
+// real-artifact checks of the wrapper: arg handling, JSON shape, and
+// the fail-loud error mapping.
 const ctx: GuildCliContext = { cwd: process.cwd() };
 
 test('recipe: resolves a known recipe to its members as JSON', () => {
