@@ -1,0 +1,62 @@
+{
+  "schema_version": 1,
+  "type": "project",
+  "created": "2026-05-29T05:00:00.000Z",
+  "findings": [
+    {
+      "category": "kept-well",
+      "description": "Whiteboard pressure-tests caught design flaws before code in both phases — Phase 1 surfaced 4 spec refinements (3-layer Core/Body/Coda, Subject column, Checklist split, advisory length); Phase 2 surfaced 5 (exitReason enum, CLOSED handling, gh-failed at K=3, mergedAt on both verbs, explicit --quiet). Each refinement closed a Skeptic-predicted failure mode by name; load-bearing was the CLOSED-without-merge prediction that drove the substrate's 'router does NOT auto-dispatch on unmerged parent' safety property.",
+      "evidence": "whiteboards/1-codify-pr-body-shape.md round 1 + whiteboards/2-pr-wait-verb.md round 1; corrections referencing Skeptic predictions in checkins 02 of both branches."
+    },
+    {
+      "category": "kept-well",
+      "description": "Phase 1's codified body-shape spec dogfooded itself on Phase 2's PR (the first real exercise of the new spec) and held — 3-layer body, Subject column action table, top-level [!NOTE] callout, no diff re-narration all rendered correctly. The dependency between the two phases was 'soft compounding value, not correctness' per PLAN.md § Dependencies; in practice the compounding value materialized.",
+      "evidence": "PR #137 body composed under the spec from PR #136; both merged cleanly."
+    },
+    {
+      "category": "improvement",
+      "description": "Dense-packet pattern works cleanly for markdown artifacts but stalls evaluators on TypeScript code panels. U1 saw 3 of 4 evaluators hit maxTurns mid-exploration on a ~140-line verb; converged only after re-spawn with source inlined verbatim. The 'depth is one click away' convention assumes maxTurns budget covers the click; for cross-file code panels it doesn't.",
+      "evidence": "U1 (Phase 2) corrections checkin 02 branch ev-loop-pr-flow.pr-wait-verb; 3 of 4 derived evaluators (contract-fit/test-unit/naming after dropping react-api) stalled before verdict."
+    },
+    {
+      "category": "improvement",
+      "description": "sync-shared's cli/lib drift kept biting through both phases. Every commons/docs edit triggered the same lib-file-deletion pattern (manifest-toml.ts, plan.ts, toml.ts, commit-discipline.ts); manual cp workaround for docs-only became the de-facto path. Surfaced repeatedly in corrections but stayed out-of-scope each time.",
+      "evidence": "corrections in checkin 02 of ev-loop-pr-flow.pr-body-codify and ev-loop-pr-flow.pr-wait-verb; identical workaround applied in U2 of Phase 2."
+    },
+    {
+      "category": "improvement",
+      "description": "Phase 2 U1 hit a real mid-execution correction: initial prWait composed the existing fetchPrForBranch helper, which catches gh exceptions internally and returns null — lossy for the new gh-failed exit reason's lastError field. Caught by a failing test, fixed by inlining the gh call in the polling loop. The design assumed existing helper composition; in practice the helper's error-swallowing semantics (correct for pr discover's marker_state=new path) were wrong for pr wait's needs.",
+      "evidence": "U1 corrections checkin 02 branch ev-loop-pr-flow.pr-wait-verb."
+    },
+    {
+      "category": "process-change",
+      "description": "For TypeScript code units, codify 'pre-inline source verbatim into the eval packet' as the dense-packet recipe's default — not a workaround. Eval packets for .ts artifacts should include the new code's source verbatim (not just file paths + line ranges). Substrate doc update: extend docs/PANEL-COMPOSITION.md or evaluator-base.md with the code-artifact recipe.",
+      "evidence": "U1 of Phase 2 demonstrated the workaround works; the corrections names the substrate gap explicitly."
+    },
+    {
+      "category": "process-change",
+      "description": "Inner-RPI's default --flavor=research is the wrong default for the spec-refinement-only case. This project hit it twice: Phase 1 accepted then used --flavor=mechanical directly (skipping the research half); Phase 2 declined entirely. Either document --flavor=mechanical as the right pick when no new research is involved, or add a --flavor=mechanical-spec-refinement shortcut that absorbs whiteboard-derived decision-changes without grilling.",
+      "evidence": "Phase 1 close (ev-loop-pr-flow.pr-body-codify checkin 02) + Phase 2 close (ev-loop-pr-flow.pr-wait-verb checkin 04) both flagged this mismatch."
+    },
+    {
+      "category": "follow-up",
+      "description": "PLAN.md § Decisions list is behind by 5 spec-text refinements that landed in Phase 2 (exitReason enum, CLOSED handling, gh-failed at K=3, mergedAt on both verbs, explicit --quiet). Operator declined inner-RPI revise at Phase 2 close; this retro IS the catch-up. Future readers of the archived PLAN.md should treat the codified § Compose PR recipe + § Wait for merge recipe + /ev-run step 3 as the operational truth.",
+      "evidence": "checkin 04 corrections at branch ev-loop-pr-flow.pr-wait-verb; PR #137 body 'What's next' section."
+    },
+    {
+      "category": "follow-up",
+      "description": "Substrate-followups carryover from this project: (1) sync-shared cli/lib drift requires manual cp workaround for docs; (2) dense-packet-for-TS-code pattern needs codification; (3) inner-RPI flavor mismatch for spec-refinement-only cases; (4) evaluator-react-api Node-.ts mis-derivation (dropped manually per established convention from jelly-loom retro). All four surfaced during this project; all four stayed out-of-scope.",
+      "evidence": "All four named in corrections + PR #136 / #137 § Substrate notes."
+    },
+    {
+      "category": "follow-up",
+      "description": "Bolded Silencing-rule paragraph in § Wait for merge recipe could migrate to ### Silencing sub-heading inside Purpose if stricter 5-field semantics are enforced. evaluator-contract-fit read it as Purpose-extension (correct); stricter readers may want the structural cleanup.",
+      "evidence": "Panel non-blocking observation, checkin 04 corrections; plugins/commons/docs/SUBSTRATE-COMPOSITIONS.md § Wait for merge."
+    },
+    {
+      "category": "follow-up",
+      "description": "Deferred from PLAN.md § Out preserved as project-tier follow-ups: loom pr compose-body verb (Thread 2 candidate b); PR-body lint evaluator (Thread 2 candidate d); post-merge body update hook (cross-thread opportunity); parser-extension for **Archetype**: and **Checklist-extras**: blocks in loom parse-plan; mergeability detection on pr wait (mergeable + mergeStateStatus signals). Revisit each when a programmatic consumer or drift signal emerges.",
+      "evidence": "PLAN.md § Out / deferred lines 29-37; whiteboard round 1 Phase 2 skeptic flag on mergeability deferral."
+    }
+  ]
+}
