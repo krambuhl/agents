@@ -1,0 +1,6 @@
+/* THROWAWAY fixture. Planted issues: hardcoded hex colors + raw px -> tokens. */
+.card {
+  color: #3366ff;
+  padding: 16px;
+  border: 1px solid #cccccc;
+}

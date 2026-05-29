@@ -1,0 +1,101 @@
+sessions = []
+revisions = []
+
+[meta]
+schema_version = 1
+title = "Workflow integration test (throwaway)"
+slug = "2026-05-29-workflow-integration-test"
+started = "2026-05-29"
+status = "active"
+strategy = "Validate loop<->workflow interleaving and kill-mid-run recovery against real loom state."
+
+[config]
+base_branch = "main"
+reviewers = []
+labels = []
+verification = []
+worker_bindings = {}
+
+[[phases]]
+number = 1
+name = "Interleaving probe"
+status = "completed"
+branch = "wfi-probe-1"
+
+[[phases]]
+number = 2
+name = "Kill-recovery probe"
+status = "in-progress"
+branch = "wfi-probe-2"
+
+[[events]]
+at = "2026-05-29T15:48:00.787Z"
+event = "phase-started"
+detail = { phase = 1, name = "Interleaving probe" }
+
+[[events]]
+at = "2026-05-29T15:48:00.865Z"
+event = "checkin-created"
+detail = { number = "01", branch = "wfi-probe-1" }
+
+[[events]]
+at = "2026-05-29T15:50:56.161Z"
+event = "checkin-created"
+detail = { number = "02", branch = "wfi-probe-1" }
+
+[[events]]
+at = "2026-05-29T15:50:56.238Z"
+event = "phase-completed"
+detail = { phase = 1 }
+
+[[events]]
+at = "2026-05-29T15:52:16.266Z"
+event = "phase-started"
+detail = { phase = 2, name = "Kill-recovery probe" }
+
+[[events]]
+at = "2026-05-29T15:53:37.109Z"
+event = "checkin-created"
+detail = { number = "01", branch = "wfi-probe-2" }
+
+[[checkins]]
+schema_version = 1
+number = "01"
+created = "2026-05-29T12:00:00Z"
+phase = { number = 1, name = "Interleaving probe" }
+branch = "wfi-probe-1"
+unit = "negotiate the panel unit (pre-workflow checkpoint)"
+contract = { goal = "Run the guild-validate panel on the fixture as a workflow and record its verdict.", acceptance_criteria = ["panel runs as a workflow", "verdict recorded in the resolution checkin (02)", "manifest stays coherent across the async await"], rules_applied = ["panel via workflow; loop owns all loom writes"], disqualifiers = ["manifest incoherent after the workflow", "checkin numbering breaks"], inputs = ["demo/fixture/Widget.tsx", "demo/fixture/Widget.module.css"] }
+execution = { actions = [], files_touched = [], corrections = [] }
+scope = []
+changes_since_previous = "Negotiation checkin (pre-workflow). Resolution + verdict land in checkin 02 after the panel returns."
+verdict = { result = "pending", reasons = [] }
+notes_for_pr = []
+
+[[checkins]]
+schema_version = 1
+number = "02"
+created = "2026-05-29T12:05:00Z"
+phase = { number = 1, name = "Interleaving probe" }
+branch = "wfi-probe-1"
+unit = "record the panel verdict (post-workflow resolution)"
+contract = { goal = "Record the guild-validate panel verdict produced by the workflow fired during checkin 01's unit.", acceptance_criteria = ["verdict recorded", "manifest coherent across the await"], rules_applied = ["loop owns all loom writes; workflow was read-only fan-out"], disqualifiers = ["verdict lost across the await", "checkin numbering non-monotonic"], inputs = ["wf_ce71346b-692 (panel workflow run)"] }
+execution = { actions = ["Fired the guild-validate panel as a workflow (run wf_ce71346b-692) mid-unit, after checkin 01", "Awaited the verdict across the async boundary; the loop resumed with the result intact", "Recorded the panel verdict below"], files_touched = [], corrections = [] }
+scope = []
+changes_since_previous = "Resolution checkin. The panel ran as a workflow between checkins 01 and 02; this records its verdict. No loom write occurred while the workflow was in flight."
+verdict = { result = "flagged", reasons = ["a11y-no-accessible-name: <img> missing alt (Widget.tsx:11)", "nextjs-img-not-image + nextjs-anchor-not-link (Widget.tsx:11-12)", "tokens: hex-literal + hardcoded-spacing + inline-literal-style (Widget.module.css:3-5, Widget.tsx:10)"] }
+notes_for_pr = ["Integration probe: the panel ran as a workflow fired mid-unit by the loop; the manifest stayed coherent across the async await, and checkin numbering stayed monotonic (01 -> 02)."]
+
+[[checkins]]
+schema_version = 1
+number = "01"
+created = "2026-05-29T12:10:00Z"
+phase = { number = 2, name = "Kill-recovery probe" }
+branch = "wfi-probe-2"
+unit = "negotiate the kill-recovery unit (pre-workflow checkpoint)"
+contract = { goal = "Fire a workflow, kill it mid-run, and confirm loom state is at this checkpoint with no resolution checkin.", acceptance_criteria = ["after the kill, loom shows this checkin and no resolution checkin", "the killed workflow's own side-effects (scratch appends) are partial-but-atomic", "the loop can recover from this checkpoint and re-fire"], rules_applied = ["loop owns all loom writes; workflow is killed before any verdict is recorded"], disqualifiers = ["loom state corrupted by the kill", "half-written records in the scratch log"], inputs = ["write-boundary-demo workflow (Cat-1 appends)"] }
+execution = { actions = [], files_touched = [], corrections = [] }
+scope = []
+changes_since_previous = "Pre-workflow checkpoint for the kill-recovery probe. No resolution checkin will follow the killed run — that is the recovery point."
+verdict = { result = "pending", reasons = [] }
+notes_for_pr = []
