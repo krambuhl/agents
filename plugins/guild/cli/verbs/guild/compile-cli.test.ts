@@ -52,7 +52,7 @@ function makeSandbox(): Sandbox {
   return {
     cwd,
     axesTomlRel: 'plugins/guild/axes.toml',
-    outputDirRel: 'plugins/guild/agents/generated',
+    outputDirRel: 'plugins/guild/agents',
   };
 }
 

@@ -51,7 +51,7 @@ const THROUGH_RESOLVE_STAGE = 'parse,validate,derive,resolve';
 const EMIT_ONLY_STAGE = 'emit';
 
 const DEFAULT_AXES_TOML = 'plugins/guild/axes.toml';
-const DEFAULT_OUTPUT_DIR = 'plugins/guild/agents/generated';
+const DEFAULT_OUTPUT_DIR = 'plugins/guild/agents';
 
 const OPTIONS = {
   stage: { type: 'string' as const },

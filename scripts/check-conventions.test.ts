@@ -174,12 +174,12 @@ tools: Read
   test('appliesTo matches evaluator-* under plugins/.../agents/(retained|generated)', () => {
     expect(
       convention.appliesTo(
-        'plugins/guild/agents/retained/evaluator-contract-fit.md',
+        'plugins/guild/agents/evaluator-contract-fit.md',
       ),
     ).toBe(true);
     expect(
       convention.appliesTo(
-        'plugins/guild/agents/generated/evaluator-tokens.md',
+        'plugins/guild/agents/evaluator-tokens.md',
       ),
     ).toBe(true);
   });
@@ -187,12 +187,12 @@ tools: Read
   test('appliesTo does NOT match personality-base, whiteboard-*, or non-evaluator files', () => {
     expect(
       convention.appliesTo(
-        'plugins/guild/agents/personalities/personality-base.md',
+        'plugins/guild/modes/personalities/personality-base.md',
       ),
     ).toBe(false);
     expect(
       convention.appliesTo(
-        'plugins/guild/agents/generated/whiteboard-a11y.md',
+        'plugins/guild/agents/whiteboard-a11y.md',
       ),
     ).toBe(false);
     expect(convention.appliesTo('scripts/check-conventions.ts')).toBe(false);
@@ -200,7 +200,7 @@ tools: Read
 
   test('positive case: clean evaluator with coherent rubric and body yields zero findings', () => {
     const findings = convention.check(
-      'plugins/guild/agents/generated/evaluator-example.md',
+      'plugins/guild/agents/evaluator-example.md',
       cleanEvaluator,
     );
     expect(findings).toEqual([]);
@@ -208,7 +208,7 @@ tools: Read
 
   test('negative case: drifted evaluator with missing body reference yields one finding', () => {
     const findings = convention.check(
-      'plugins/guild/agents/generated/evaluator-example.md',
+      'plugins/guild/agents/evaluator-example.md',
       driftedEvaluator,
     );
     expect(findings).toHaveLength(1);
