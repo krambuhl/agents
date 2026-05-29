@@ -1,6 +1,5 @@
 checkins = []
 sessions = []
-revisions = []
 
 [meta]
 schema_version = 1
@@ -36,3 +35,8 @@ detail = { slug = "2026-05-29-substrate-tempering", topic = "substrate-tempering
 at = "2026-05-29T06:36:04.260Z"
 event = "research-completed"
 detail = { slug = "2026-05-29-substrate-tempering", research_path = "RESEARCH.md", notes_path = "RESEARCH-NOTES.md" }
+
+[[revisions]]
+timestamp = "2026-05-29T15:43:57.627Z"
+target = "PLAN.md"
+seq = 1
