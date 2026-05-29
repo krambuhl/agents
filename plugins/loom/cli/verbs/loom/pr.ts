@@ -1,4 +1,5 @@
 import { parseArgs } from 'node:util';
+import { execSync } from 'node:child_process';
 import {
   existsSync,
   mkdirSync,
@@ -47,6 +48,9 @@ type PrViewResponse = {
   // is the authoritative open/merged signal orientation reads (replacing the
   // retired pr-opened/pr-merged events).
   state: string;
+  // ISO timestamp populated by gh when state === "MERGED"; absent for OPEN
+  // and may be empty string for CLOSED-without-merge.
+  mergedAt?: string;
 };
 
 function fetchPrForBranch(
@@ -63,7 +67,7 @@ function fetchPrForBranch(
       'view',
       branch,
       '--json',
-      'number,url,body,state',
+      'number,url,body,state,mergedAt',
     ]);
     return JSON.parse(stdout) as PrViewResponse;
   } catch {
@@ -107,12 +111,28 @@ export function prDiscover(rest: string[], ctx: CliContext): DispatchResult {
       pr:
         pr === null
           ? null
-          : { number: pr.number, url: pr.url, state: pr.state },
+          : prShape(pr),
     };
     return { stdout: emit(result, values.pretty === true), exitCode: 0 };
   } catch (err) {
     return errToResult(err);
   }
+}
+
+// Shared JSON projection of a fetched PR — number/url/state always present,
+// mergedAt included when gh reported it (set on MERGED PRs, may be empty
+// string or absent otherwise). Used by both `pr discover` and `pr wait` so
+// the shape stays consistent across PR-state-observing verbs.
+function prShape(pr: PrViewResponse): {
+  number: number;
+  url: string;
+  state: string;
+  mergedAt?: string;
+} {
+  const base = { number: pr.number, url: pr.url, state: pr.state };
+  return pr.mergedAt !== undefined && pr.mergedAt !== ''
+    ? { ...base, mergedAt: pr.mergedAt }
+    : base;
 }
 
 const OPEN_OPTIONS = {
@@ -383,10 +403,235 @@ export function prRespond(rest: string[], ctx: CliContext): DispatchResult {
   };
 }
 
+// ---------------------------------------------------------------------------
+// pr wait — poll gh until terminal state, timeout, or gh-failure threshold
+// ---------------------------------------------------------------------------
+//
+// Values for --interval / --timeout are SECONDS (no unit suffix). Upgrade
+// path is `30s` / `30m` duration parsing once a second time-based flag lands
+// somewhere in the CLI; until then, document the unit in --help and recipe.
+//
+// The verb is read-only against gh + manifest. It writes nothing, emits no
+// events. The "no pr-* event" decision (LOOM-CONVENTIONS.md:255-263 from
+// Phase-6 U1 of substrate-consolidation) is load-bearing for this design;
+// adding pr-wait-started / pr-wait-merged would re-open that closed argument.
+//
+// Re-resolves PR on each poll (does not cache PR number from the first poll)
+// so a force-push that closes the old PR and opens a new one with a different
+// number is visible to the caller. The verb returns the LAST observed PR
+// number, not the first.
+
+const WAIT_OPTIONS = {
+  pretty: { type: 'boolean' as const },
+  branch: { type: 'string' as const },
+  interval: { type: 'string' as const },
+  timeout: { type: 'string' as const },
+  quiet: { type: 'boolean' as const },
+};
+
+const DEFAULT_WAIT_INTERVAL_SEC = 30;
+const DEFAULT_WAIT_TIMEOUT_SEC = 1800;
+const GH_FAILURE_THRESHOLD = 3;
+
+type WaitExitReason = 'merged' | 'closed' | 'timeout' | 'gh-failed';
+
+type WaitResult = {
+  number?: number;
+  url?: string;
+  state: string;
+  exitReason: WaitExitReason;
+  mergedAt?: string;
+  lastError?: string;
+};
+
+function defaultSleepMs(ms: number): void {
+  // Sync sleep — the CLI dispatch path returns DispatchResult (not Promise),
+  // so we can't await. Delegate to /bin/sleep which blocks deterministically.
+  // Tests inject ctx.sleepMs to skip the actual wait.
+  execSync(`sleep ${ms / 1000}`, { stdio: 'ignore' });
+}
+
+function defaultNowMs(): number {
+  return Date.now();
+}
+
+export function prWait(rest: string[], ctx: CliContext): DispatchResult {
+  const { values, positionals } = parseArgs({
+    args: rest,
+    options: WAIT_OPTIONS,
+    allowPositionals: true,
+    strict: false,
+  });
+  const slug = positionals[0];
+  if (slug === undefined) {
+    return errToResult(new LoomError('missing-slug', 'pr wait requires a slug'));
+  }
+  if (values.branch === undefined) {
+    return errToResult(
+      new LoomError('missing-args', 'pr wait requires --branch'),
+    );
+  }
+
+  const intervalSec = values.interval === undefined
+    ? DEFAULT_WAIT_INTERVAL_SEC
+    : Number.parseInt(values.interval, 10);
+  if (
+    Number.isNaN(intervalSec) ||
+    intervalSec <= 0 ||
+    String(intervalSec) !== values.interval && values.interval !== undefined
+  ) {
+    return errToResult(
+      new LoomError(
+        'invalid-interval',
+        `--interval must be a positive integer (seconds): ${values.interval}`,
+      ),
+    );
+  }
+  const timeoutSec = values.timeout === undefined
+    ? DEFAULT_WAIT_TIMEOUT_SEC
+    : Number.parseInt(values.timeout, 10);
+  if (
+    Number.isNaN(timeoutSec) ||
+    timeoutSec <= 0 ||
+    String(timeoutSec) !== values.timeout && values.timeout !== undefined
+  ) {
+    return errToResult(
+      new LoomError(
+        'invalid-timeout',
+        `--timeout must be a positive integer (seconds): ${values.timeout}`,
+      ),
+    );
+  }
+
+  try {
+    resolveProject(slug, ctx.projectsRoot); // existence check
+  } catch (err) {
+    return errToResult(err);
+  }
+
+  const gh = ctx.ghRunner ?? defaultGhRunner;
+  const sleepMs = ctx.sleepMs ?? defaultSleepMs;
+  const nowMs = ctx.nowMs ?? defaultNowMs;
+  const quiet = values.quiet === true;
+  const pretty = values.pretty === true;
+  const branch = values.branch;
+  const intervalMs = intervalSec * 1000;
+  const deadlineMs = nowMs() + timeoutSec * 1000;
+
+  if (!quiet) {
+    process.stderr.write(
+      `pr wait: polling branch=${branch}, interval=${intervalSec}s, timeout=${timeoutSec}s\n`,
+    );
+  }
+
+  let consecutiveFailures = 0;
+  let lastError: string | undefined;
+  let lastPr: PrViewResponse | null = null;
+  let isFirstPoll = true;
+
+  while (true) {
+    // Inline gh call so we distinguish "PR not found" (gh non-zero with
+    // expected message) from "gh threw an error" (network / auth / rate
+    // limit). fetchPrForBranch's null-swallowing semantics are right for
+    // prDiscover (no PR → marker_state=new) but lossy here.
+    let pr: PrViewResponse | null = null;
+    let pollFailed = false;
+    try {
+      const stdout = gh(['pr', 'view', branch, '--json', 'number,url,body,state,mergedAt']);
+      pr = JSON.parse(stdout) as PrViewResponse;
+    } catch (err: unknown) {
+      pollFailed = true;
+      lastError = (err as Error).message;
+    }
+
+    if (isFirstPoll && pr === null) {
+      // First poll returned no PR — fail loud. The wait verb assumes the PR
+      // already exists; opening it is pr open's job.
+      return errToResult(
+        new LoomError(
+          'pr-not-found',
+          `pr wait: no PR found for branch ${branch} on first poll. Open it with pr open first.`,
+        ),
+      );
+    }
+    isFirstPoll = false;
+
+    if (pollFailed) {
+      consecutiveFailures += 1;
+      if (consecutiveFailures >= GH_FAILURE_THRESHOLD) {
+        // Terminal gh failure — break silence even when --quiet is set.
+        const result: WaitResult = {
+          state: lastPr?.state ?? 'UNKNOWN',
+          exitReason: 'gh-failed',
+          lastError: lastError ?? 'gh failed N consecutive times',
+        };
+        if (lastPr !== null) {
+          result.number = lastPr.number;
+          result.url = lastPr.url;
+        }
+        process.stderr.write(
+          `pr wait: gh failed ${consecutiveFailures} consecutive times — exiting (last error: ${result.lastError})\n`,
+        );
+        return { stdout: emit(result, pretty), exitCode: 0 };
+      }
+    } else if (pr !== null) {
+      consecutiveFailures = 0;
+      lastPr = pr;
+      if (pr.state !== 'OPEN') {
+        const exitReason: WaitExitReason = pr.state === 'MERGED' ? 'merged' : 'closed';
+        const result: WaitResult = {
+          number: pr.number,
+          url: pr.url,
+          state: pr.state,
+          exitReason,
+        };
+        if (exitReason === 'merged' && pr.mergedAt !== undefined && pr.mergedAt !== '') {
+          result.mergedAt = pr.mergedAt;
+        }
+        if (!quiet) {
+          process.stderr.write(
+            `pr wait: branch=${branch} reached terminal state ${pr.state} (exitReason=${exitReason})\n`,
+          );
+        }
+        return { stdout: emit(result, pretty), exitCode: 0 };
+      }
+    }
+
+    // Timeout check after poll, before sleep — so a successful poll at the
+    // deadline still gets recorded; only a NEXT-poll attempt past the deadline
+    // exits with timeout.
+    if (nowMs() >= deadlineMs) {
+      const result: WaitResult = {
+        state: lastPr?.state ?? 'OPEN',
+        exitReason: 'timeout',
+      };
+      if (lastPr !== null) {
+        result.number = lastPr.number;
+        result.url = lastPr.url;
+      }
+      if (!quiet) {
+        process.stderr.write(
+          `pr wait: branch=${branch} timeout after ${timeoutSec}s\n`,
+        );
+      }
+      return { stdout: emit(result, pretty), exitCode: 0 };
+    }
+
+    if (!quiet) {
+      const state = lastPr?.state ?? 'unknown';
+      process.stderr.write(
+        `pr wait: state=${state} consecutive_failures=${consecutiveFailures} next in ${intervalSec}s\n`,
+      );
+    }
+    sleepMs(intervalMs);
+  }
+}
+
 export const PR_VERBS = {
   discover: prDiscover,
   open: prOpen,
   update: prUpdate,
   comments: prComments,
   respond: prRespond,
+  wait: prWait,
 };

@@ -206,8 +206,49 @@ With no message, pick the phase using this policy:
    satisfied when that phase's manifest status is `completed` (its PR
    merged). `loom parse-plan` is the single source for dependencies — do
    not re-derive them from the plan text.
-3. If no phase qualifies, surface the blocker: "waiting on PR #X to
-   merge" or "all phases completed — run `/loom-archive`."
+3. If no phase qualifies AND there's an in-progress phase whose branch
+   has an OPEN PR (per `loom pr discover`), **wait for the PR to reach
+   a terminal lifecycle state** per § Wait for merge before surfacing
+   a blocker. The wait verb returns `exitReason: 'merged' | 'closed'
+   | 'timeout' | 'gh-failed'`; route by that discriminant:
+
+   - **`merged`**: re-fetch live state via `loom pr discover`
+     (observation-only — no manifest write side effect), then re-run
+     this step (3) from 3.1 above. The merged phase's manifest status
+     is `completed`, so dependent phases now qualify; the re-run
+     picks the lowest-numbered next phase and step 4 dispatches it.
+     No retry loop within a single `/ev-run` invocation past this
+     re-run — one re-fetch, one re-evaluation, one dispatch.
+   - **`closed`**: PR closed without merging (operator manually
+     closed, force-pushed and recreated, branch deletion, etc.).
+     The phase's parent is NOT merged. Surface "PR #X closed
+     without merging — investigate (was it intentional? force-push?
+     branch deletion?); phase stays `not-started` (or `in-progress`,
+     whatever the manifest shows); resolve the closure and re-run
+     `/ev-run`." Exit cleanly — do NOT dispatch the next phase, the
+     substrate must not auto-dispatch against an unmerged parent.
+   - **`timeout`**: PR still OPEN after the configured wait (default
+     30 minutes). Surface "still open after N minutes (gh state at
+     exit: `<state>`) — run `/ev-run` later." Exit cleanly. Each
+     timeout is a clean handoff to the operator; no automatic
+     re-wait within the same invocation.
+   - **`gh-failed`**: K=3 consecutive `gh` failures (auth expired,
+     rate limit, network down). The wait verb's `--quiet` does NOT
+     silence this exit — terminal failures break silence by design.
+     Surface "wait failed: gh CLI not responding (last error:
+     `<msg>`); check `gh auth status` and re-run `/ev-run`." Exit
+     cleanly. Re-running after fixing gh starts the wait fresh.
+
+   When `/ev-run` is invoked under `--mode=auto`, the router passes
+   `--quiet` through to the wait verb so routine per-poll status is
+   silenced. The four `exitReason` branches above behave identically
+   in interactive and auto modes; only the routine-poll output
+   differs.
+4. If no phase qualifies AND no in-progress phase has an OPEN PR (all
+   phases either completed or genuinely not-startable), surface the
+   blocker: "waiting on PR #X to merge but the wait above didn't
+   advance state" (shouldn't happen if § Wait for merge fires
+   correctly) or "all phases completed — run `/loom-archive`."
 
 ### 4. Dispatch
 

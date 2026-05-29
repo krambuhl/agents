@@ -38,6 +38,14 @@ export type CliContext = {
   today?: string;
   gitRunner?: GitRunner;
   repoRoot?: string;
+  // pr wait clock + sleep injection — tests stub these to drive deterministic
+  // polling timelines without real wall-clock delays. Production callers omit
+  // both; the verb falls back to Date.now() + execSync('sleep N'). The sleep
+  // is sync because the CLI dispatch path is sync (DispatchResult, not
+  // Promise<DispatchResult>); the production path tolerates the wait by
+  // delegating to /bin/sleep.
+  nowMs?: () => number;
+  sleepMs?: (ms: number) => void;
 };
 
 export type DispatchResult = {
