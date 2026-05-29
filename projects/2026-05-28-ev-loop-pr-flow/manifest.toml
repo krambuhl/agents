@@ -22,6 +22,11 @@ number = 1
 name = "Phase 1"
 status = "not-started"
 
+[[phases]]
+number = 2
+name = "loom pr wait + Wait for merge recipe"
+status = "not-started"
+
 [[events]]
 at = "2026-05-29T00:39:13.443Z"
 event = "project-initialized"
