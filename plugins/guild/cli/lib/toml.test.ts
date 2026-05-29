@@ -75,28 +75,29 @@ describe('parseToml — grammar', () => {
   });
 });
 
-describe('parseToml — real source artifacts', () => {
-  const manifest = parseToml(
-    readFileSync(join(pluginRoot, 'panel.manifest.toml'), 'utf8'),
-  );
-  const toolsMap = parseToml(
-    readFileSync(join(pluginRoot, 'tools-map.toml'), 'utf8'),
+describe('parseToml — real source artifact (axes.toml)', () => {
+  const axes = parseToml(
+    readFileSync(join(pluginRoot, 'axes.toml'), 'utf8'),
   );
 
-  it('reads the manifest combinations as an array of tables', () => {
-    expect(Array.isArray(manifest.combinations)).toBe(true);
-    const combos = manifest.combinations as Array<Record<string, unknown>>;
-    expect(combos.length).toBeGreaterThan(0);
-    const reviewer = combos.find((c) => c.phase === 'reviewer');
-    expect(reviewer?.personality).toBe('skeptic');
-    expect(reviewer?.domains).toContain('a11y');
+  it('reads axes.toml [[recipes]] as an array of tables', () => {
+    expect(Array.isArray(axes.recipes)).toBe(true);
+    const recipes = axes.recipes as Array<Record<string, unknown>>;
+    expect(recipes.length).toBeGreaterThan(0);
+    const reviewerDefault = recipes.find((r) => r.name === 'reviewer-default');
+    expect(reviewerDefault?.phase).toBe('reviewer');
+    expect(reviewerDefault?.personality).toBe('skeptic');
+    expect(reviewerDefault?.domains).toContain('a11y');
   });
 
-  it('reads tools-map phase base + domain grants', () => {
-    const phase = toolsMap.phase as Record<string, Record<string, unknown>>;
-    expect(phase.reviewer.base).toEqual(['Read', 'Glob', 'Grep']);
+  it('reads axes.toml [axis.phase.reviewer] base_tools', () => {
+    // The minimal toml reader nests dotted-section paths as objects:
+    // [axis.phase.reviewer] → axes.axis.phase.reviewer. The reviewer
+    // phase declares the base tool fold (Read, Glob, Grep) every
+    // reviewer cell inherits, plus writes=false.
+    const axis = axes.axis as Record<string, unknown>;
+    const phase = axis.phase as Record<string, Record<string, unknown>>;
+    expect(phase.reviewer.base_tools).toEqual(['Read', 'Glob', 'Grep']);
     expect(phase.reviewer.writes).toBe(false);
-    const domain = toolsMap.domain as Record<string, Record<string, unknown>>;
-    expect(domain.a11y.grants).toContain('Bash(npm run test:a11y:*)');
   });
 });
