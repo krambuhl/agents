@@ -105,6 +105,14 @@ A throwaway loom project drove a real loop sequence around real workflow runs (`
 
 This is the empirical core of the bet: **loom is the durable spine; workflows are a safe, ephemeral leaf the loop drives.**
 
+### Schema-output agents (validated 2026-05-29)
+
+Probe (`walh8d33b`): two guild evaluators authored for `VERDICT:` prose were run in a workflow with a forced output schema (`agent({schema})`). Both complied cleanly — well-formed `{code, evidence, remedy}` findings, quality intact (the a11y lens cross-flagged the token contrast angle), and a trivial JS merge replaced `parse-and-aggregate` for basic aggregation.
+
+- **Existing prose-authored agents coerce into schema output with no quality loss** — so workflow-style agents likely do *not* need a new authoring template; they are the existing agents + a schema. This narrows the research away from "design new agents."
+- **But the aggregation *policy* does not vanish.** `parse-and-aggregate` also does severity (blocking/advisory), precedence, and conflict detection. The schema captures *structure*; that policy must move into the schema or the JS merge, not disappear.
+- **Open fork for research:** dual output contract (prose for the skill path, schema for the workflow path) vs. migrating evaluators to schema-only. An evaluator used both ways must satisfy both.
+
 ## What moves, what stays
 
 | Piece | Disposition | Why |

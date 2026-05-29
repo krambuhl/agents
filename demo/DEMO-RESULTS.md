@@ -140,3 +140,15 @@ Drove: phase→in-progress → checkin 01 (pre-workflow checkpoint) → **fire a
 ## Verdict
 
 The hybrid is sound: a loop fires a read-only workflow mid-unit, awaits it, and records the result with loom's manifest/checkin/event invariants intact across the async boundary; a killed workflow degrades to recoverable double-work, never corruption. Empirical backing for **loom is the durable spine; workflows are a safe, ephemeral leaf.**
+
+---
+
+# Schema-output probe (run `walh8d33b`, 2026-05-29)
+
+Pre-research probe: can guild evaluators authored for `VERDICT:` prose be coerced into structured output via the workflow's `agent({schema})`?
+
+- **Both complied, no quality loss.** `evaluator-a11y` → `flagged`, 2 findings; `evaluator-tokens` → `flagged`, 3 findings; all with well-formed `{code, evidence, remedy}`, and the a11y lens still cross-flagged the token-contrast angle. The prose→schema switch did not degrade the findings (arguably sharpened them).
+- **`schema_native_merge_worked: true`** — a trivial JS merge of the structured outputs replaced `parse-and-aggregate` for basic aggregation; no Bash-wrap verb needed on the schema path.
+- **Caveat:** the simple schema only replaced the simple parse. `parse-and-aggregate`'s *policy* (severity blocking/advisory, precedence, conflict detection) is not captured by structure alone — it would move into the schema or the JS merge, not vanish.
+
+Implication for "workflows-style agents": they are likely **the existing agents + a schema**, not a new authoring template — but that opens a dual-output-contract question (prose for the skill path vs. schema for the workflow path) that the research must resolve. This was the last validation piece; the remaining work is design.
