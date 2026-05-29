@@ -12,7 +12,7 @@ replaced it with the declarative `axes.toml` + LLM-fusion model. The
 old verb, the old TOMLs, and the old hand-curated agent files are
 deleted as of PR #133; this doc reflects the post-cutover state.
 
-Update (guild-workflow-coverage, 2026-05-29): the spawnable agents were flattened from `agents/{generated,retained}/` to a flat `agents/`, and the personality fragments moved from `agents/personalities/` to `modes/personalities/` (joining `modes/{domains,phases}`). The "where things live" paths below reflect the flat layout; the historical narration of earlier phases (Phase-7 U1 etc.) is left as-is.
+Update (guild-workflow-coverage, 2026-05-29): the spawnable agents were flattened from `agents/{generated,retained}/` to a flat `agents/`, and all codegen *source* was consolidated under `modes/` — the personality fragments moved from `agents/personalities/` to `modes/personalities/` (joining `modes/{domains,phases}`), and `axes.toml` plus its schema tests (`axes-schema.test.ts`, `fragment-schema.test.ts`) moved from the plugin root into `modes/`. So the source/output split is now physical: everything codegen *reads* lives under `modes/`, everything it *writes* lives flat under `agents/`. The "where things live" paths below reflect that layout; the historical narration of earlier phases (Phase-7 U1 etc.) is left as-is.
 
 ## The model
 

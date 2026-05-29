@@ -8,7 +8,7 @@ import {
   type TomlTable,
   type TomlValue,
   isTomlTable,
-} from './cli/lib/toml.ts';
+} from '../cli/lib/toml.ts';
 
 // Schema validator for plugins/guild/axes.toml. Codifies the
 // cross-product validity + collision invariants from PLAN.md

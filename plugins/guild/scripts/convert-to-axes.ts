@@ -400,5 +400,5 @@ for (const name of retainedNames) {
 // ---------- Write output ----------
 
 const output = sections.join('\n');
-writeFileSync(join(pluginRoot, 'axes.toml'), output);
-process.stdout.write(`wrote ${join(pluginRoot, 'axes.toml')} (${output.length} bytes)\n`);
+writeFileSync(join(pluginRoot, 'modes', 'axes.toml'), output);
+process.stdout.write(`wrote ${join(pluginRoot, 'modes', 'axes.toml')} (${output.length} bytes)\n`);

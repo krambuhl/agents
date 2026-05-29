@@ -8,8 +8,8 @@ import { compileVerb } from './compile-cli.ts';
 import type { GuildCliContext } from './index.ts';
 
 // CLI-level smoke for the new `guild compile` verb. Sets up a tmpdir
-// mirroring the plugins/guild/ subtree the verb expects (axes.toml,
-// modes/, agents/personalities/) and points the verb at it via --axes-toml.
+// mirroring the plugins/guild/ subtree the verb expects (modes/axes.toml
+// + modes/) and points the verb at it via --axes-toml.
 // Tests cover full-pipeline default + stage filter + emit-only stdin
 // + error cases.
 
@@ -26,9 +26,9 @@ interface Sandbox {
 function makeSandbox(): Sandbox {
   const cwd = mkdtempSync(join(tmpdir(), 'guild-compile-cli-'));
   // Build a plugins/guild/-shaped subtree inside cwd that the verb
-  // can read from. axes.toml, agents/personalities/, modes/phases/,
-  // modes/domains/ are all copied from the real repo so the test
-  // exercises the real verb against real source material.
+  // can read from. modes/axes.toml + modes/{phases,domains,personalities}/
+  // are all copied from the real repo so the test exercises the real
+  // verb against real source material.
   const pluginRoot = join(cwd, 'plugins', 'guild');
   mkdirSync(pluginRoot, { recursive: true });
   mkdirSync(join(pluginRoot, 'modes', 'phases'), { recursive: true });
@@ -36,8 +36,8 @@ function makeSandbox(): Sandbox {
   mkdirSync(join(pluginRoot, 'modes', 'personalities'), { recursive: true });
 
   writeFileSync(
-    join(pluginRoot, 'axes.toml'),
-    readFileSync(join(REPO_PLUGIN_ROOT, 'axes.toml'), 'utf8'),
+    join(pluginRoot, 'modes', 'axes.toml'),
+    readFileSync(join(REPO_PLUGIN_ROOT, 'modes', 'axes.toml'), 'utf8'),
   );
   for (const dir of ['modes/phases', 'modes/domains', 'modes/personalities']) {
     const real = join(REPO_PLUGIN_ROOT, dir);
@@ -51,7 +51,7 @@ function makeSandbox(): Sandbox {
   }
   return {
     cwd,
-    axesTomlRel: 'plugins/guild/axes.toml',
+    axesTomlRel: 'plugins/guild/modes/axes.toml',
     outputDirRel: 'plugins/guild/agents',
   };
 }

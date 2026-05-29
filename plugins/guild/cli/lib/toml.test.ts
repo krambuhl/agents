@@ -77,7 +77,7 @@ describe('parseToml — grammar', () => {
 
 describe('parseToml — real source artifact (axes.toml)', () => {
   const axes = parseToml(
-    readFileSync(join(pluginRoot, 'axes.toml'), 'utf8'),
+    readFileSync(join(pluginRoot, 'modes', 'axes.toml'), 'utf8'),
   );
 
   it('reads axes.toml [[recipes]] as an array of tables', () => {

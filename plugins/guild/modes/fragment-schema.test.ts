@@ -19,7 +19,8 @@ import { describe, expect, it } from 'vitest';
 // its content is inlined into every generated agent body via the
 // Phase 2.1 fusion prompt).
 
-const pluginRoot = dirname(fileURLToPath(import.meta.url));
+// This test now lives in modes/, so climb one level to the plugin root.
+const pluginRoot = join(dirname(fileURLToPath(import.meta.url)), '..');
 
 const DOMAIN_REQUIRED = [
   '## Scope',

@@ -23,7 +23,7 @@ const FUSED_AT = '2026-05-28T20:00:00Z';
 
 describe('compile: end-to-end smoke against the real seed axes.toml', () => {
   it('runs parse → validate → derive → resolve → compose → emit and produces cells', () => {
-    const axesToml = readFileSync(join(pluginRoot, 'axes.toml'), 'utf8');
+    const axesToml = readFileSync(join(pluginRoot, 'modes', 'axes.toml'), 'utf8');
     const fragmentReader = (relPath: string) =>
       readFileSync(join(pluginRoot, relPath), 'utf8');
     const writes = new Map<string, string>();
@@ -46,7 +46,7 @@ describe('compile: end-to-end smoke against the real seed axes.toml', () => {
   });
 
   it('every emitted .md carries the YAML frontmatter and provenance comment', () => {
-    const axesToml = readFileSync(join(pluginRoot, 'axes.toml'), 'utf8');
+    const axesToml = readFileSync(join(pluginRoot, 'modes', 'axes.toml'), 'utf8');
     const fragmentReader = (relPath: string) =>
       readFileSync(join(pluginRoot, relPath), 'utf8');
     const writes = new Map<string, string>();
@@ -67,7 +67,7 @@ describe('compile: end-to-end smoke against the real seed axes.toml', () => {
   });
 
   it('cache-miss on first run (no cache provided); cache-hit on second run with the prior cache', () => {
-    const axesToml = readFileSync(join(pluginRoot, 'axes.toml'), 'utf8');
+    const axesToml = readFileSync(join(pluginRoot, 'modes', 'axes.toml'), 'utf8');
     const fragmentReader = (relPath: string) =>
       readFileSync(join(pluginRoot, relPath), 'utf8');
 
@@ -99,7 +99,7 @@ describe('compile: end-to-end smoke against the real seed axes.toml', () => {
   });
 
   it('output_hashes from emit are stable across runs with same inputs + fusedAt', () => {
-    const axesToml = readFileSync(join(pluginRoot, 'axes.toml'), 'utf8');
+    const axesToml = readFileSync(join(pluginRoot, 'modes', 'axes.toml'), 'utf8');
     const fragmentReader = (relPath: string) =>
       readFileSync(join(pluginRoot, relPath), 'utf8');
 
@@ -125,7 +125,7 @@ describe('compile: end-to-end smoke against the real seed axes.toml', () => {
 
 describe('compile: prompt_hash threading', () => {
   it('same sources + same promptHash → cache_hit on second run', () => {
-    const axesToml = readFileSync(join(pluginRoot, 'axes.toml'), 'utf8');
+    const axesToml = readFileSync(join(pluginRoot, 'modes', 'axes.toml'), 'utf8');
     const fragmentReader = (relPath: string) =>
       readFileSync(join(pluginRoot, relPath), 'utf8');
 
@@ -155,7 +155,7 @@ describe('compile: prompt_hash threading', () => {
   });
 
   it('same sources + different promptHash → cache_miss for every cell', () => {
-    const axesToml = readFileSync(join(pluginRoot, 'axes.toml'), 'utf8');
+    const axesToml = readFileSync(join(pluginRoot, 'modes', 'axes.toml'), 'utf8');
     const fragmentReader = (relPath: string) =>
       readFileSync(join(pluginRoot, relPath), 'utf8');
 
@@ -185,7 +185,7 @@ describe('compile: prompt_hash threading', () => {
   });
 
   it('empty-string promptHash matches an empty-string entry (legacy-compat default)', () => {
-    const axesToml = readFileSync(join(pluginRoot, 'axes.toml'), 'utf8');
+    const axesToml = readFileSync(join(pluginRoot, 'modes', 'axes.toml'), 'utf8');
     const fragmentReader = (relPath: string) =>
       readFileSync(join(pluginRoot, relPath), 'utf8');
 
@@ -214,7 +214,7 @@ describe('compile: prompt_hash threading', () => {
   });
 
   it('legacy cache entry without prompt_hash field reads as empty string', () => {
-    const axesToml = readFileSync(join(pluginRoot, 'axes.toml'), 'utf8');
+    const axesToml = readFileSync(join(pluginRoot, 'modes', 'axes.toml'), 'utf8');
     const fragmentReader = (relPath: string) =>
       readFileSync(join(pluginRoot, relPath), 'utf8');
 
@@ -251,7 +251,7 @@ describe('compile: prompt_hash threading', () => {
 });
 
 describe('compile: --check smoke (Phase 2.1 exit criteria 4 + 5)', () => {
-  const axesToml = readFileSync(join(pluginRoot, 'axes.toml'), 'utf8');
+  const axesToml = readFileSync(join(pluginRoot, 'modes', 'axes.toml'), 'utf8');
   const fragmentReader = (relPath: string) =>
     readFileSync(join(pluginRoot, relPath), 'utf8');
 

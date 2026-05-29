@@ -8,7 +8,7 @@ import { parse } from './parse.ts';
 import { DeriveError, type AxesData, type Cell } from './types.ts';
 
 const pluginRoot = dirname(dirname(dirname(dirname(dirname(fileURLToPath(import.meta.url))))));
-const AXES_PATH = join(pluginRoot, 'axes.toml');
+const AXES_PATH = join(pluginRoot, 'modes', 'axes.toml');
 
 function deriveSeed(): Cell[] {
   return derive(parse(readFileSync(AXES_PATH, 'utf8')));
