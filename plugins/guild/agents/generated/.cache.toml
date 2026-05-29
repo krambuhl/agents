@@ -1,0 +1,178 @@
+schema_version = 1
+
+# .cache.toml — per-cell cache entries written by `guild compile`.
+# Each entry records {source_hashes, output_hash, fused_at} so the
+# check verb can detect drift between committed agent bodies and
+# their inputs without re-running the LLM fusion. Deterministic
+# ordering (sorted by cell_id) keeps the file diff-friendly.
+
+[[cells]]
+cell_id = "evaluator-a11y"
+fused_at = "2026-05-29T00:38:15.863Z"
+output_hash = "bf65d6bddf04f3983179b028b87a113b6395bae935895f09a0a100bbf252b37b"
+prompt_hash = "084dee1636897e831db0b4beaf3444f30347c4b53510e968cad8de0098995acd"
+source_hash_phase = "d0765450afd15b5b85102ae03b64652b16f00d1e29ed322ca063206af9cb8127"
+source_hash_personality = "f56c6e5029c570d4ca1064aad0e9e86175ad1a27c533fd3993656bcd2b5ad433"
+source_hash_domain = "a90f85b5eba035898d8f2eb0c4ac295cafdf5f107b1928c7e239be78d00905cf"
+
+[[cells]]
+cell_id = "evaluator-css-architecture"
+fused_at = "2026-05-29T00:38:15.863Z"
+output_hash = "8c0761dd89ec9d3807b198cd17426c649434e83d9dffd94346dabaac9902da74"
+prompt_hash = "084dee1636897e831db0b4beaf3444f30347c4b53510e968cad8de0098995acd"
+source_hash_phase = "d0765450afd15b5b85102ae03b64652b16f00d1e29ed322ca063206af9cb8127"
+source_hash_personality = "f56c6e5029c570d4ca1064aad0e9e86175ad1a27c533fd3993656bcd2b5ad433"
+source_hash_domain = "4f8ed553e76249d83797506c33235d5dcea795d6b733f67de09d613504b1ea76"
+
+[[cells]]
+cell_id = "evaluator-naming"
+fused_at = "2026-05-29T00:38:15.863Z"
+output_hash = "731bfbefcfa6313f66bafe7dc2cbbfc8d435721f82c9cfc94e17a8c6fdd9255d"
+prompt_hash = "084dee1636897e831db0b4beaf3444f30347c4b53510e968cad8de0098995acd"
+source_hash_phase = "d0765450afd15b5b85102ae03b64652b16f00d1e29ed322ca063206af9cb8127"
+source_hash_personality = "f56c6e5029c570d4ca1064aad0e9e86175ad1a27c533fd3993656bcd2b5ad433"
+source_hash_domain = "8a374ea38d559cda7059762ca510de9220a3b74cc0c628243b5856d6aa00a593"
+
+[[cells]]
+cell_id = "evaluator-nextjs"
+fused_at = "2026-05-29T00:38:15.863Z"
+output_hash = "646cb0f9c8268889229eb0806288d5aad2e5e9269a7124bbaf15e14fdc3968c5"
+prompt_hash = "084dee1636897e831db0b4beaf3444f30347c4b53510e968cad8de0098995acd"
+source_hash_phase = "d0765450afd15b5b85102ae03b64652b16f00d1e29ed322ca063206af9cb8127"
+source_hash_personality = "f56c6e5029c570d4ca1064aad0e9e86175ad1a27c533fd3993656bcd2b5ad433"
+source_hash_domain = "6d548d876b021a2073a9d43ed9637ef07f9c3941b351aedd1c2f20fba11d1a8e"
+
+[[cells]]
+cell_id = "evaluator-react"
+fused_at = "2026-05-29T00:38:15.863Z"
+output_hash = "b620346b5c55d867e49a1cdea9843e955c8c08aa42fcde3a283e69ec0a696f25"
+prompt_hash = "084dee1636897e831db0b4beaf3444f30347c4b53510e968cad8de0098995acd"
+source_hash_phase = "d0765450afd15b5b85102ae03b64652b16f00d1e29ed322ca063206af9cb8127"
+source_hash_personality = "f56c6e5029c570d4ca1064aad0e9e86175ad1a27c533fd3993656bcd2b5ad433"
+source_hash_domain = "0721e1f44c8b08fb058dd64b2ef430fc2daa361ae10196169904dfc8f6807c26"
+
+[[cells]]
+cell_id = "evaluator-test-integration"
+fused_at = "2026-05-29T00:38:15.863Z"
+output_hash = "b3fc97cdd2ec28016d38512fb3e50f44a0f9ba1fec65c77fe05b3f74b159e27a"
+prompt_hash = "084dee1636897e831db0b4beaf3444f30347c4b53510e968cad8de0098995acd"
+source_hash_phase = "d0765450afd15b5b85102ae03b64652b16f00d1e29ed322ca063206af9cb8127"
+source_hash_personality = "f56c6e5029c570d4ca1064aad0e9e86175ad1a27c533fd3993656bcd2b5ad433"
+source_hash_domain = "5a32cc16b0ab978a10a6b452f485b0f989af539dc4029498ddfd6f064ed20472"
+
+[[cells]]
+cell_id = "evaluator-test-unit"
+fused_at = "2026-05-29T00:38:15.863Z"
+output_hash = "d7fe077a2f84f3fe45d856110c81675a17637d93c6c6bd77a7a6a6a9a8205c88"
+prompt_hash = "084dee1636897e831db0b4beaf3444f30347c4b53510e968cad8de0098995acd"
+source_hash_phase = "d0765450afd15b5b85102ae03b64652b16f00d1e29ed322ca063206af9cb8127"
+source_hash_personality = "f56c6e5029c570d4ca1064aad0e9e86175ad1a27c533fd3993656bcd2b5ad433"
+source_hash_domain = "a960443b4a4055791b08665760cad296135379d24351c950b8c72ed6af6dafbb"
+
+[[cells]]
+cell_id = "evaluator-tokens"
+fused_at = "2026-05-29T00:38:15.863Z"
+output_hash = "68682f94e20912cca05534a9ed93d6f91cd00da3cd6a1ee64c36dc7aa8d3d32a"
+prompt_hash = "084dee1636897e831db0b4beaf3444f30347c4b53510e968cad8de0098995acd"
+source_hash_phase = "d0765450afd15b5b85102ae03b64652b16f00d1e29ed322ca063206af9cb8127"
+source_hash_personality = "f56c6e5029c570d4ca1064aad0e9e86175ad1a27c533fd3993656bcd2b5ad433"
+source_hash_domain = "30db1c358ec8a537f7414e9c591a3585fdb5f2d7bf05f6b92077835c13616322"
+
+[[cells]]
+cell_id = "whiteboard-a11y"
+fused_at = "2026-05-29T00:38:15.863Z"
+output_hash = "86e313e0d66f084938f1ccd6d1d38077bb8caaf4da7f039ef49a452c32b103f1"
+prompt_hash = "084dee1636897e831db0b4beaf3444f30347c4b53510e968cad8de0098995acd"
+source_hash_phase = "f88b15ad8905b9f121a6715a62b8f91f1f6ed1ec42e5a68468e9ca94bea0452d"
+source_hash_personality = "22472caac021912ccf6640264a3bdb7c7a3631c8b36536c2d1923f6f90148f56"
+source_hash_domain = "a90f85b5eba035898d8f2eb0c4ac295cafdf5f107b1928c7e239be78d00905cf"
+
+[[cells]]
+cell_id = "whiteboard-abstraction"
+fused_at = "2026-05-29T00:38:15.863Z"
+output_hash = "1deed4983877f625da8a32db1c5df07afb5b0ec068145ac5a52ba78054b743fb"
+prompt_hash = "084dee1636897e831db0b4beaf3444f30347c4b53510e968cad8de0098995acd"
+source_hash_phase = "f88b15ad8905b9f121a6715a62b8f91f1f6ed1ec42e5a68468e9ca94bea0452d"
+source_hash_personality = "22472caac021912ccf6640264a3bdb7c7a3631c8b36536c2d1923f6f90148f56"
+source_hash_domain = "2a8adcc86b2492844262b514fab9cc49cd9152848bbbd594cf602ef52c93a565"
+
+[[cells]]
+cell_id = "whiteboard-composition"
+fused_at = "2026-05-29T00:38:15.863Z"
+output_hash = "6b3315623803193971292b246fe468b3ad599693b639ebe117302242feae68cc"
+prompt_hash = "084dee1636897e831db0b4beaf3444f30347c4b53510e968cad8de0098995acd"
+source_hash_phase = "f88b15ad8905b9f121a6715a62b8f91f1f6ed1ec42e5a68468e9ca94bea0452d"
+source_hash_personality = "22472caac021912ccf6640264a3bdb7c7a3631c8b36536c2d1923f6f90148f56"
+source_hash_domain = "a7cb03296dd9051c9db0342e374d0176e8c39634779829f4870151dc76cf2222"
+
+[[cells]]
+cell_id = "whiteboard-naming"
+fused_at = "2026-05-29T00:38:15.863Z"
+output_hash = "e09b74a7550e404e427e9a4abd1e9812147a25991ac3fdf03bf3b88415786deb"
+prompt_hash = "084dee1636897e831db0b4beaf3444f30347c4b53510e968cad8de0098995acd"
+source_hash_phase = "f88b15ad8905b9f121a6715a62b8f91f1f6ed1ec42e5a68468e9ca94bea0452d"
+source_hash_personality = "22472caac021912ccf6640264a3bdb7c7a3631c8b36536c2d1923f6f90148f56"
+source_hash_domain = "8a374ea38d559cda7059762ca510de9220a3b74cc0c628243b5856d6aa00a593"
+
+[[cells]]
+cell_id = "whiteboard-performance"
+fused_at = "2026-05-29T00:38:15.863Z"
+output_hash = "bf9f0da924d4a91db7adff96dcfb271c095eb19d1d880a50aefc8eb5d29fd212"
+prompt_hash = "084dee1636897e831db0b4beaf3444f30347c4b53510e968cad8de0098995acd"
+source_hash_phase = "f88b15ad8905b9f121a6715a62b8f91f1f6ed1ec42e5a68468e9ca94bea0452d"
+source_hash_personality = "d2043c4192ff6a8f14facc465e1f415d62c02576fe1190a6b68cd13b3ad61d3b"
+source_hash_domain = "1968ea52efc34d639670b4d0df43b4359df56494e26bbfd3c7d9d452654e0a35"
+
+[[cells]]
+cell_id = "whiteboard-react"
+fused_at = "2026-05-29T00:38:15.863Z"
+output_hash = "dc33471189c5b738886c98dd71d121b1d11f457b4e5b166975a54c8da196223b"
+prompt_hash = "084dee1636897e831db0b4beaf3444f30347c4b53510e968cad8de0098995acd"
+source_hash_phase = "f88b15ad8905b9f121a6715a62b8f91f1f6ed1ec42e5a68468e9ca94bea0452d"
+source_hash_personality = "076134ae768e005774d0e2a4fa3ad4e999abe76148abf13aa17baf06ff79a4e5"
+source_hash_domain = "0721e1f44c8b08fb058dd64b2ef430fc2daa361ae10196169904dfc8f6807c26"
+
+[[cells]]
+cell_id = "whiteboard-skeptic"
+fused_at = "2026-05-29T00:38:15.863Z"
+output_hash = "2c3e30905cf27f7d55222d614a789e79d030667b385db3f210769c8630e375c8"
+prompt_hash = "084dee1636897e831db0b4beaf3444f30347c4b53510e968cad8de0098995acd"
+source_hash_phase = "f88b15ad8905b9f121a6715a62b8f91f1f6ed1ec42e5a68468e9ca94bea0452d"
+source_hash_personality = "f56c6e5029c570d4ca1064aad0e9e86175ad1a27c533fd3993656bcd2b5ad433"
+source_hash_domain = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+
+[[cells]]
+cell_id = "whiteboard-substrate"
+fused_at = "2026-05-29T00:38:15.863Z"
+output_hash = "515ba4310f0997f5a71f22d2fa6a55b0f8534f8095b5a05e6a365b3047942147"
+prompt_hash = "084dee1636897e831db0b4beaf3444f30347c4b53510e968cad8de0098995acd"
+source_hash_phase = "f88b15ad8905b9f121a6715a62b8f91f1f6ed1ec42e5a68468e9ca94bea0452d"
+source_hash_personality = "d2043c4192ff6a8f14facc465e1f415d62c02576fe1190a6b68cd13b3ad61d3b"
+source_hash_domain = "d95867488d395e85d49b15c6b7125bfc9e6e99c2736119ebd15ebe9156edff61"
+
+[[cells]]
+cell_id = "whiteboard-test-integration"
+fused_at = "2026-05-29T00:38:15.863Z"
+output_hash = "7238e0269682b3c78130489d2b15274a0d9a65cf21891f91ed5a801a5bbb6fae"
+prompt_hash = "084dee1636897e831db0b4beaf3444f30347c4b53510e968cad8de0098995acd"
+source_hash_phase = "f88b15ad8905b9f121a6715a62b8f91f1f6ed1ec42e5a68468e9ca94bea0452d"
+source_hash_personality = "076134ae768e005774d0e2a4fa3ad4e999abe76148abf13aa17baf06ff79a4e5"
+source_hash_domain = "5a32cc16b0ab978a10a6b452f485b0f989af539dc4029498ddfd6f064ed20472"
+
+[[cells]]
+cell_id = "whiteboard-test-unit"
+fused_at = "2026-05-29T00:38:15.863Z"
+output_hash = "6cd3761328bcb93076483a307930c80080c4281c0601c6130f4d4b3b1abad915"
+prompt_hash = "084dee1636897e831db0b4beaf3444f30347c4b53510e968cad8de0098995acd"
+source_hash_phase = "f88b15ad8905b9f121a6715a62b8f91f1f6ed1ec42e5a68468e9ca94bea0452d"
+source_hash_personality = "076134ae768e005774d0e2a4fa3ad4e999abe76148abf13aa17baf06ff79a4e5"
+source_hash_domain = "a960443b4a4055791b08665760cad296135379d24351c950b8c72ed6af6dafbb"
+
+[[cells]]
+cell_id = "whiteboard-tokens"
+fused_at = "2026-05-29T00:38:15.863Z"
+output_hash = "61f9f935fcae318fa03f4ec3d737f3e1876539d8af173ce7658dba4f1675e753"
+prompt_hash = "084dee1636897e831db0b4beaf3444f30347c4b53510e968cad8de0098995acd"
+source_hash_phase = "f88b15ad8905b9f121a6715a62b8f91f1f6ed1ec42e5a68468e9ca94bea0452d"
+source_hash_personality = "22472caac021912ccf6640264a3bdb7c7a3631c8b36536c2d1923f6f90148f56"
+source_hash_domain = "30db1c358ec8a537f7414e9c591a3585fdb5f2d7bf05f6b92077835c13616322"
