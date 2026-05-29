@@ -1,0 +1,33 @@
+checkins = []
+sessions = []
+revisions = []
+
+[meta]
+schema_version = 1
+title = "Substrate Tempering"
+slug = "2026-05-29-substrate-tempering"
+started = "2026-05-29"
+status = "active"
+strategy = "interactive"
+
+[config]
+base_branch = "main"
+reviewers = []
+labels = []
+verification = []
+worker_bindings = {}
+
+[[phases]]
+number = 1
+name = "Phase 1"
+status = "not-started"
+
+[[events]]
+at = "2026-05-29T06:36:04.229Z"
+event = "project-initialized"
+detail = {}
+
+[[events]]
+at = "2026-05-29T06:36:04.230Z"
+event = "research-started"
+detail = { slug = "2026-05-29-substrate-tempering", topic = "substrate-tempering" }
