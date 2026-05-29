@@ -71,3 +71,38 @@ Per-evaluator output that stayed inside the workflow's script memory:
 ## Conclusion
 
 The design in `WORKFLOWS-PARALLEL-ADOPTION.md` is mechanically sound: the panel runs as a workflow, mediation stays behind the real verb, and the context win is real and measured. The one seam that needs a deliberate owner — confirmed, not theorized — is the agent-name mapping (finding 1): it must live behind a guild verb that normalizes logical names to workflow-registry agentTypes, never hardcoded in workflow scripts.
+
+---
+
+# Write-boundary demo (run `w3hekye55`, 2026-05-29)
+
+Second probe, expanding the first: does loom's parallel-work invariant (`projects/CONVENTIONS.md` — Category 1 append-only / Category 3 single-writer) hold *from inside a workflow*? 10 agents, ~205k subagent tokens, 53s.
+
+## Category-1 append: validated safe
+
+Six parallel workflow agents each appended to one JSONL via the real `griot operator-checks log-intervention` verb. On-disk result:
+
+- 6 lines, all well-formed JSON, **zero unparseable or interleaved**.
+- All six distinct workers present (`demo-worker-0` … `-5`), none lost, none duplicated.
+- On-disk order was `4,2,0,1,3,5` — *not* worker order — the tell that they genuinely raced and landed in completion order, each line still atomic.
+
+**Category-1 appends are workflow-safe.** griot-compact can log interventions / bench history from inside a workflow without a serialization guard. (Aside: the verb flattens the `record` object to top-level fields; the first verification pass looked under `record.worker`, found nothing, and falsely flagged an anomaly — a reminder that the verification needs verifying too.)
+
+## Category-3 single-writer: validated via guild-whiteboard
+
+Three real whiteboard engineers (`guild:generated:whiteboard-{composition,abstraction,skeptic}`) ran in parallel, read-only, each *returning* a section (1496 / 1028 / 2472 chars, kept in the workflow). A single assembler agent then wrote all three to `demo/scratch/whiteboard.md` (5,176 bytes, 3 sections).
+
+**The Category-3 pattern works as predicted — parallelize the thinking, serialize the write.** Engineers fan out read-only; one writer commits the shared file. Parallel engineers writing the file directly would be the Category-3 collision the invariant forbids; the workflow form routes around it by construction.
+
+## Not tested here (reasoned; recommended as a real-loom-project integration test)
+
+- A real loom **manifest** (Category-3) write interleaved with a workflow across the async await. CONVENTIONS.md already settles that manifest writes are single-writer; only the live interleaving is unproven.
+- Kill-mid-run recovery from loom state vs. workflow-resume.
+
+## The boundary, now empirically grounded
+
+| Category | Verb examples | From a workflow? |
+|---|---|---|
+| 1 — append-only | `loom event append`, `griot operator-checks log-intervention` | **Safe** — validated (6 concurrent atomic appends) |
+| 2 — partitioned | `loom checkin write` | Safe with a unique partition (not stress-tested) |
+| 3 — single-writer | `loom phase update` (manifest), `guild whiteboard *` | **Serialize the write** — validated via whiteboard; manifest stays in the loop |

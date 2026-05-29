@@ -85,6 +85,16 @@ A real 5-evaluator guild-validate panel ran as a workflow against a planted-issu
 - **End-to-end works.** Five evaluators across the `retained` and `generated` namespaces spawned via `parallel()`, all resolved and produced real findings; the Bash-wrapped `guild parse-and-aggregate` returned the locked verdict (`flagged`, 13 blocking findings), with evaluator quality intact (it even caught an unplanted naming inconsistency).
 - **Context saving is real and measured.** The five evaluator transcripts (9,013 chars) stayed in the workflow's script memory; only the verdict (6,862 chars) returned to the orchestrator. Inline `/guild-validate` would deliver both (~15.9k); the workflow delivered ~7k — **~55% less orchestrator context for this run, and that is the floor** (the verdict was unusually large at 13 findings; an `approved` verdict returns ~100 chars and the saving approaches ~99%). Total subagent *work* is identical between modes; the difference is what the scarce orchestrator window absorbs, and it compounds across every panel in a phase.
 
+### Write-category boundary (validated 2026-05-29)
+
+A second demo (run `w3hekye55`; `demo/DEMO-RESULTS.md`) tested whether a workflow may *write* substrate state, using loom's own parallel-work invariant (`projects/CONVENTIONS.md`) as the lens:
+
+- **Category-1 append-only is workflow-safe.** Six parallel agents appended to one JSONL via `griot operator-checks log-intervention`; all six landed atomic, distinct, and in race-order (proving genuine concurrency). griot-compact's logging can run from a workflow without a guard.
+- **Category-3 single-writer routes around the collision.** Three whiteboard engineers fanned out read-only and *returned* sections; one assembler agent wrote the file. Parallelize the thinking, serialize the write.
+- **Category-3 manifest/PLAN writes stay in the loop** — not tested live (needs a real loom project; the invariant already settles the rule), recommended as a follow-up integration test alongside kill-mid-run recovery.
+
+So the boundary is sharper than "read-only fan-out only": **a workflow may do Category-1 appends and route Category-3 writes through a single writer; the manifest and PLAN stay single-writer in the loop.**
+
 ## What moves, what stays
 
 | Piece | Disposition | Why |
@@ -98,6 +108,8 @@ A real 5-evaluator guild-validate panel ran as a workflow against a planted-issu
 | `ev-loop-interactive` | **Stays a skill** | Human-in-the-loop by definition; "no mid-run input" is fatal to it. |
 | `ev-loop-confidence` outer loop (branch, checkins, gate-and-ratchet, scope-shift gates) | **Stays a skill** | Heavy git/manifest side-effects + human gates; it *calls* the panel workflow as a leaf. |
 | Project durability (manifest, checkins, sessions) | **Stays loom's job** | Workflow resume is in-session only; loom's on-disk state is the stronger durability layer. |
+
+**Guild is read-only by design.** The matrix-codegen migration dropped guild's write-capable `generator-*` family (Phase-7 U1; `demo/FINDING-guild-generator-dangling-refs.md` records the dangling references that survive the drop). Guild is now evaluators + whiteboards + personalities — pure read-only fan-out, the safest possible workflow citizen. The write-from-workflow question lives entirely with loom and griot, not guild.
 
 ## Sketch 1 — `guild-validate` as a panel workflow
 
