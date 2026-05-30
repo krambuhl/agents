@@ -133,6 +133,17 @@ describe('extractCheckTargets', () => {
     expect(targets).toContain('baz');
   });
 
+  test('skips "whether …" predicate clauses, keeps concrete sibling targets', () => {
+    const desc =
+      'Checks whether a unit of work meets its agreed contract. Verifies acceptance criteria and disqualifiers.';
+    const targets = extractCheckTargets(desc);
+    // The abstract "whether …" clause is not extracted as a target.
+    expect(targets.some((t) => t.includes('whether'))).toBe(false);
+    // Concrete targets from the sibling sentence still extract.
+    expect(targets).toContain('acceptance criteria');
+    expect(targets).toContain('disqualifiers');
+  });
+
   test('returns empty when no check verbs appear', () => {
     const desc = 'A passive description with no verbs at all.';
     const targets = extractCheckTargets(desc);
@@ -224,6 +235,30 @@ tools: Read
       severity: 'advisory',
     });
     expect(findings[0].message).toContain('disqualifiers');
+  });
+
+  test('a reworded "checks whether …" description does not over-flag', () => {
+    const whetherEvaluator = `---
+name: evaluator-example
+role: evaluator
+description: >-
+  Skeptical evaluator that checks whether a unit of work meets its
+  agreed contract. Verifies acceptance criteria and disqualifiers.
+tools: Read
+---
+
+# Evaluator: example
+
+## Process
+
+1. Re-read the contract and restate the agreed acceptance criteria.
+2. Walk disqualifiers and flag any that fire.
+`;
+    const findings = convention.check(
+      'plugins/guild/agents/evaluator-example.md',
+      whetherEvaluator,
+    );
+    expect(findings).toEqual([]);
   });
 });
 

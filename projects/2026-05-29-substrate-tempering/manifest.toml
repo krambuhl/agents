@@ -92,6 +92,11 @@ at = "2026-05-30T01:43:38.468Z"
 event = "checkin-created"
 detail = { number = "04", branch = "ev-agent.substrate-tempering.convention-drift-2-1" }
 
+[[events]]
+at = "2026-05-30T01:57:51.897Z"
+event = "checkin-created"
+detail = { number = "05", branch = "ev-agent.substrate-tempering.convention-drift-2-1" }
+
 [[checkins]]
 schema_version = 1
 number = "01"
@@ -147,6 +152,20 @@ scope = ["scripts/check-conventions.ts - deriveAgentRoster + makeSiblingReferenc
 changes_since_previous = "Second Phase 2 unit, same branch as D1 (f495a26). Reuses the convention framework D1 worked in."
 verdict = { result = "approved", reasons = ["guild-validate single-evaluator panel (evaluator-contract-fit) returned approved after reading both files.", "All 5 acceptance criteria met; no disqualifiers fired (roster derived-not-hardcoded; lenient token-match, hyphenated intact; advisory not blocking; check pure - no I/O; agent files + commons untouched).", "Original-ask alignment: roster derived from the same agent-file listing that feeds the checks, so it cannot drift."] }
 notes_for_pr = ["sibling-reference-resolution convention: flags a whiteboard agent's '**<name> overlap.**' bullet that resolves to no roster agent. Roster derived from the agents listing (not hardcoded), injected via a factory so check stays pure. Lenient token-match; live corpus passes clean.", "Evaluator observation (non-blocking): deriveAgentRoster includes evaluator-* domains in the roster - correct, since whiteboard bullets legitimately reference evaluator siblings (nextjs, contract-fit, css-architecture); widens leniency appropriately.", "Persistent finding (#6): the contract-fit evaluator's header references .claude/agents/evaluator-base.md which is not on disk (base content lives in the codegen tree). Still true across D1+D2 evaluations.", "Pairs with D1 (bullet-pair coherence) + D3 (triage the rubric-body-coherence advisory) into one Phase 2 PR; PR opens after D3."]
+
+[[checkins]]
+schema_version = 1
+number = "05"
+created = "2026-05-30T01:57:08.000Z"
+phase = { number = 2, name = "Convention-drift 2.1" }
+branch = "ev-agent.substrate-tempering.convention-drift-2-1"
+unit = "D3 - triage the rubric-body-coherence advisory (refine heuristic)"
+contract = { goal = "Resolve the existing rubric-body-coherence advisory on evaluator-contract-fit.md by refining extractCheckTargets to skip 'whether …'-led clauses, so check-conventions runs fully clean.", acceptance_criteria = ["extractCheckTargets skips a check-verb phrase beginning with 'whether' (case-insensitive); concrete sibling targets still extract. Doc-comment notes the exclusion.", "node scripts/check-conventions.ts runs fully clean - zero findings.", "Monotonically lenient - only removes targets; no currently-passing evaluator regresses; existing tests stay green.", "Tests: extractCheckTargets on 'checks whether X. Verifies A, B.' -> [A, B] (no 'whether X'); plus a rubric-body-coherence case where a reworded 'checks whether …' description -> zero findings.", "npm test green."], rules_applied = ["Chosen triage = refine heuristic (operator decision), not refine description and not accept-as-noise.", "Heuristic change must be monotonically lenient (only drop 'whether' clauses) - no regression risk.", "Do not edit the agent file (evaluator-contract-fit.md) - the triage is heuristic-side.", "Use source CLIs per ADR-0006; repo-root script (no commons sync)."], disqualifiers = ["Editing evaluator-contract-fit.md (triage is heuristic-refine, not description-refine).", "Making extractCheckTargets stricter (only drop 'whether' clauses).", "Breaking existing extractCheckTargets / rubric-body-coherence tests.", "Editing plugins/commons/**."], inputs = ["scripts/check-conventions.ts (extractCheckTargets :157-176, rubricBodyCoherence :193)", "scripts/check-conventions.test.ts (extractCheckTargets + rubric tests)", "plugins/guild/agents/evaluator-contract-fit.md (the finding's source - read-only)"] }
+execution = { actions = ["Added `if (/^whether\\b/i.test(phrase)) continue;` in extractCheckTargets after the phrase trim - skips abstract predicate clauses; comma/and splitting + length-gate untouched.", "Updated the extractCheckTargets doc-comment to explain the 'whether' exclusion.", "Added an extractCheckTargets test (skips 'whether X', keeps A/B) and a rubric-body-coherence test (reworded 'checks whether …' -> zero findings).", "Verified: node scripts/check-conventions.ts now reports 'no findings across all registered conventions' (the contract-fit advisory resolved); npm test 1065 (+2); existing tests green (monotonic-lenient)."], files_touched = ["scripts/check-conventions.ts", "scripts/check-conventions.test.ts"], corrections = [] }
+scope = ["scripts/check-conventions.ts - extractCheckTargets 'whether'-clause skip + doc-comment", "scripts/check-conventions.test.ts - extractCheckTargets + rubric tests"]
+changes_since_previous = "Third and final Phase 2 unit, same branch as D1/D2. Resolves the pre-existing advisory that D1/D2 deliberately left for this triage."
+verdict = { result = "approved", reasons = ["guild-validate single-evaluator panel (evaluator-contract-fit) returned approved; confirmed the guard is monotonically lenient and evaluator-contract-fit.md untouched (git status).", "All 5 acceptance criteria met; no disqualifiers fired; heuristic-refine is a PLAN-sanctioned triage outcome.", "check-conventions now runs fully clean (0 findings) - the Phase 2 project-level verification goal."] }
+notes_for_pr = ["Triaged the rubric-body-coherence false-positive by refining extractCheckTargets to skip 'whether …' predicate clauses (not concrete check-targets). check-conventions now runs fully clean.", "signal: phase-boundary (single signal; no revise offered): D3 is the last unit of Phase 2; all three deliverables (D1 bullet-pair, D2 sibling-reference, D3 triage) are done.", "Persistent finding (#6): the contract-fit evaluator's header still references .claude/agents/evaluator-base.md which is not on disk (base content lives in the codegen tree). Observed across D1/D2/D3 evaluations; a standalone substrate fix.", "Completes Phase 2's three deliverables. PR (D1+D2+D3) opens at phase close, via gh (gt submit needs server-sync per finding #8)."]
 
 [[revisions]]
 timestamp = "2026-05-29T15:43:57.627Z"

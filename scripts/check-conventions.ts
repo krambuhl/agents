@@ -151,6 +151,11 @@ export function extractDescription(frontmatter: string): string {
  * next sentence-ending punctuation or the end of the string, then
  * split on commas + " and " to get individual targets.
  *
+ * A phrase beginning with "whether" is skipped: it's an abstract
+ * predicate clause ("checks whether X meets its contract"), not a
+ * concrete noun-target, so substring-matching it against the body
+ * over-flags. Sibling sentences with concrete targets still extract.
+ *
  * Returns deduplicated, lowercased targets. Empty list if no
  * check-verb matches.
  */
@@ -166,6 +171,8 @@ export function extractCheckTargets(description: string): string[] {
   const targets = new Set<string>();
   for (const match of description.matchAll(pattern)) {
     const phrase = match[1].trim();
+    // Predicate clauses ("whether X …") are not concrete check-targets.
+    if (/^whether\b/i.test(phrase)) continue;
     const parts = phrase.split(/,\s*(?:and\s+)?|\s+and\s+/);
     for (const part of parts) {
       const cleaned = part.trim().toLowerCase();
