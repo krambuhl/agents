@@ -399,9 +399,17 @@ export function reviseVerb(
 
   if (!noCommit) {
     try {
+      // Commit the manifest alongside PLAN.md when the project is loom-adopted:
+      // revise writes the [[revisions]] entry and any backfilled [[phases]] into
+      // manifest.toml, so leaving it out of the commit would strand that state in
+      // the working tree (planVerb already commits its manifest on adopt). A
+      // plan-only project (no manifest.toml) commits PLAN.md alone, as before.
+      const filesToCommit = existsSync(manifestFilePath)
+        ? [planMdPath, manifestFilePath]
+        : [planMdPath];
       gitRunnerOf(ctx).addAndCommit(
         repoRootOf(ctx),
-        [planMdPath],
+        filesToCommit,
         `[loom revise-plan] ${slug}: ${rationale}`,
       );
     } catch (err) {

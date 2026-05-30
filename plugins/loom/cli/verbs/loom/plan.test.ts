@@ -545,6 +545,34 @@ test('reviseVerb (adopted): a revision that keeps the same phases adds none', ()
   expect(manifest.phases.map((p) => p.name)).toEqual(['Setup', 'Ship']);
 });
 
+test('reviseVerb (adopted): commits the manifest alongside PLAN.md', () => {
+  // Adopt via planVerb so a real manifest.toml exists, then revise WITH commit.
+  const planSrc = join(mkdtempSync(join(tmpdir(), 'rev-commit-')), 'p.md');
+  writeFileSync(planSrc, '# PLAN\n\n### Phase 1 — Setup\n');
+  const created = planVerb(
+    ['Commit Manifest', `--plan-file=${planSrc}`, `--interview-file=${interviewFile}`, '--no-commit'],
+    baseCtx(),
+  );
+  const { slug } = JSON.parse(created.stdout as string);
+  gitCalls.length = 0; // ignore plan-path git activity; assert only the revise commit
+
+  const rev = join(mkdtempSync(join(tmpdir(), 'rev-commit-r-')), 'r.md');
+  writeFileSync(rev, '# PLAN\n\n### Phase 1 — Setup\n### Phase 2 — Ship\n');
+  const result = reviseVerb(
+    [slug, `--revision-file=${rev}`, '--rationale=add phase 2'],
+    baseCtx(),
+  );
+  expect(result.exitCode).toBe(0);
+
+  const addCalls = gitCalls.filter((c) => c.method === 'addAndCommit');
+  expect(addCalls.length).toBe(1);
+  const [, paths] = addCalls[0]?.args ?? [];
+  const committed = (paths ?? []) as string[];
+  expect(committed.length).toBe(2);
+  expect(committed.some((p) => p.endsWith('PLAN.md'))).toBe(true);
+  expect(committed.some((p) => p.endsWith('manifest.toml'))).toBe(true);
+});
+
 test('reviseVerb (plan-only): writes the Revision log line but no manifest [[revisions]] (graceful)', () => {
   // seedTroutProjectWithPlan seeds PLAN.md only (no manifest.toml) — a
   // plan-only, un-adopted project.
