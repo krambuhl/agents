@@ -294,9 +294,62 @@ Two escape hatches are available without touching this spec:
   add a `Panel:` line naming evaluators that should be added or
   removed from the auto-derived list (e.g., `Panel: +evaluator-
   css-architecture` to add a specialist, `Panel: -evaluator-
-  nextjs` to suppress a lens). This is a Phase 4-shaped concern
-  (domain pairs) — documented here for future reference, not
-  required for D7's MVP.
+  nextjs` to suppress a lens). For when to actually reach for
+  the override (verdict-padding on judgment-heavy units,
+  mechanical-unit minimization), see § When to opt out: per-unit
+  Panel: override below.
+
+## When to opt out: per-unit Panel: override
+
+The auto-derived panel is a default, not a mandate. Judgment-heavy
+units — new abstractions, API surfaces, schema work — often see
+**verdict-padding**: each evaluator in the panel cycles its full
+rubric in the verdict prose even when only 2-3 dimensions are
+actually load-bearing for the unit. The operator reads through
+irrelevant "no findings in [dimension]" sections looking for the
+load-bearing findings. The signal is buried, the attention tax is
+real, and the contract didn't anticipate it because the panel
+shape is set by the file types touched, not by the unit's intent.
+
+The per-unit `Panel:` override in the contract is the substrate's
+existing answer. A unit whose intent is narrowly mechanical — a
+rename, a literal codemod, a small refactor — can declare the
+panel it actually needs and skip the rest. Use it when the unit's
+acceptance criteria genuinely cover only one or two dimensions and
+the rest of the auto-derived panel would just produce no-findings
+prose. Don't reach for it when the unit is genuinely
+multi-dimensional and you want each evaluator to confirm the
+absence of concerns in its lens (the no-findings prose is then the
+confidence signal, not noise).
+
+Copy-pasteable example for a mechanical unit (e.g. a file rename
+or a literal-value extraction):
+
+```
+Panel: [evaluator-contract-fit]
+```
+
+That single line in the unit's contract instructs `/ev-loop-*` to
+pass that exact `agents=` list to `/guild-validate`, bypassing
+auto-derivation entirely. For an additive narrowing (keep the
+auto-derived panel but explicitly add or remove one evaluator),
+use the `+` / `-` syntax from § Override and opt-out above:
+
+```
+Panel: +evaluator-css-architecture
+Panel: -evaluator-nextjs
+```
+
+One thing to keep in mind when narrowing: the verdict's exhaustive
+prose IS a confidence signal — "I checked dimension X and found
+nothing" tells the operator the dimension was actually examined.
+Narrowing the panel narrows that signal too. Use the override
+when you're sure the dimensions you're dropping aren't ones a
+future reviewer would want positive confirmation on. When in
+doubt, accept the padding.
+
+See § Override and opt-out for the underlying spec and the
+per-phase variant for plan-level overrides.
 
 ## Cross-references
 
