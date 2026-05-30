@@ -1,0 +1,43 @@
+checkins = []
+sessions = []
+revisions = []
+
+[meta]
+schema_version = 1
+title = "Commons Sync Reconciliation"
+slug = "2026-05-30-commons-sync-reconciliation"
+started = "2026-05-30"
+status = "active"
+strategy = "interactive"
+
+[config]
+base_branch = "main"
+reviewers = []
+labels = []
+verification = []
+worker_bindings = {}
+
+[[phases]]
+number = 1
+name = "ADR-0005 orphan-preservation in sync-shared"
+status = "not-started"
+
+[[phases]]
+number = 2
+name = "Reconcile the forked files"
+status = "not-started"
+
+[[phases]]
+number = 3
+name = "Resync + green"
+status = "not-started"
+
+[[phases]]
+number = 4
+name = "Enforce the gate (close the loop)"
+status = "not-started"
+
+[[events]]
+at = "2026-05-30T18:00:15.746Z"
+event = "project-initialized"
+detail = {}
