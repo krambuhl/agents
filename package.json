@@ -21,7 +21,9 @@
   },
   "scripts": {
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "check": "node scripts/sync-shared.ts --check",
+    "prepare": "git config core.hooksPath .githooks || true"
   },
   "devDependencies": {
     "vitest": "^4.1.0"

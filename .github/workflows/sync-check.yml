@@ -1,0 +1,28 @@
+name: sync-check
+
+# The real enforcement of the commons -> consumer sync invariant (ADR-0007).
+# `scripts/sync-shared.ts --check` fails (exit 1) when a consumer plugin's
+# cli/lib or docs has drifted from its canonical source in plugins/commons.
+# Before this workflow, CLAUDE.md claimed "CI will fail otherwise" but no CI
+# existed — the invariant was honor-system and silently forked under parallel
+# agents. This gate, plus the pre-commit hook (.githooks/pre-commit), makes
+# the claim true.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: npm ci
+      - name: sync drift check
+        run: npm run check
+      - name: tests
+        run: npm test

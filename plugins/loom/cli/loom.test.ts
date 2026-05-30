@@ -213,7 +213,13 @@ test('node entry: no args prints help and exits 0', () => {
 });
 
 test('node entry: unknown verb prints structured error and exits 1', () => {
-  const result = spawnSync('node', [LOOM_ENTRY, 'xyzzy'], { encoding: 'utf8' });
+  // NODE_NO_WARNINGS keeps the subprocess stderr clean JSON: some node
+  // versions emit a type-stripping ExperimentalWarning to stderr (CI's
+  // node does — see PR #159), which would otherwise break JSON.parse here.
+  const result = spawnSync('node', [LOOM_ENTRY, 'xyzzy'], {
+    encoding: 'utf8',
+    env: { ...process.env, NODE_NO_WARNINGS: '1' },
+  });
   expect(result.status).toBe(1);
   const parsed = JSON.parse(result.stderr.trim());
   expect(parsed.error).toBe('unknown-verb');

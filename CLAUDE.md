@@ -16,7 +16,8 @@ npx vitest run <path>    # run a single test file
 npx vitest run -t "<name>"  # run tests by name pattern
 
 node scripts/sync-shared.ts          # propagate plugins/commons/{cli/lib,docs}/ into consumer plugins
-node scripts/sync-shared.ts --check  # drift check (CI gate)
+node scripts/sync-shared.ts --check  # drift check
+npm run check                        # alias for the drift check — what the pre-commit hook + CI run
 ```
 
 Node ≥22.6 is required for the test harness (`package.json` engines); plugin bin shims enforce Node ≥24 at runtime for end users.
@@ -29,7 +30,7 @@ Node ≥22.6 is required for the test harness (`package.json` engines); plugin b
 
 ### `commons` is substrate, not just a plugin
 
-`plugins/commons/cli/lib/` (shared TypeScript lib) and `plugins/commons/docs/` (cross-cutting conventions docs) are the **canonical source** for cross-cutting content. `scripts/sync-shared.ts` mirrors them into every consumer plugin's `cli/lib/` and `docs/` trees. After editing anything in `plugins/commons/cli/lib/` or `plugins/commons/docs/`, run the sync script before committing — CI will fail otherwise (`--check` mode).
+`plugins/commons/cli/lib/` (shared TypeScript lib) and `plugins/commons/docs/` (cross-cutting conventions docs) are the **canonical source** for cross-cutting content. `scripts/sync-shared.ts` mirrors them into every consumer plugin's `cli/lib/` and `docs/` trees. After editing anything in `plugins/commons/cli/lib/` or `plugins/commons/docs/`, run the sync script before committing. The drift check is **enforced** (ADR-0007), not honor-system: a pre-commit hook (`.githooks/pre-commit`, auto-configured by the `prepare` npm script on `npm install`) blocks a drifted commit, and the `sync-check` GitHub Actions workflow (`.github/workflows/sync-check.yml`) fails the PR. Run `npm run check` to verify before committing.
 
 Everything else — `plugins/<plugin>/skills/`, `agents/`, `cli/verbs/<plugin>/`, `cli/<plugin>.ts`, and tests — is **plugin-authoritative**. Edit in place; no sync touches those files.
 
