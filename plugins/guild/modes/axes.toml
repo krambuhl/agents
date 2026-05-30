@@ -25,7 +25,7 @@ phases = ["planner"]
 tool_grants = []
 
 [axis.domain.css-architecture]
-phases = ["reviewer"]
+phases = ["reviewer", "implementer"]
 tool_grants = []
 
 [axis.domain.naming]
@@ -64,13 +64,10 @@ tool_grants = ["Bash(npm run lint:*)", "Bash(npm run build:*)", "Bash(git status
 # Each personality declares which phases the voice currently has
 # at-least-one cell at, plus the disposition excerpt (first
 # paragraph of the fragment's ## Disposition section) for LLM
-# fusion input. pragmatist.phases is empty because no current
-# combination/recipe/singleton names pragmatist; the personality
-# is authored but not yet instantiated (the fragment's ## Phase
-# modulation describes all four phases). axis.phase.implementer's
-# default_personality references pragmatist forward-looking — when
-# implementer cells get added later, pragmatist will be the
-# default.
+# fusion input. pragmatist is instantiated at implementer — the
+# implementer-default recipe names it for the css-architecture proof
+# domain, and axis.phase.implementer's default_personality is
+# pragmatist to match.
 
 [axis.personality.generative]
 phases = ["planner"]
@@ -81,7 +78,7 @@ phases = ["planner"]
 disposition = "You are systematic. You work through the full catalog, every criterion, every sibling case, in order, without skipping. Where the skeptic finds the one sharp flaw fast, you find all of them by leaving nothing unexamined. Completeness is your contribution."
 
 [axis.personality.pragmatist]
-phases = []
+phases = ["implementer"]
 disposition = "You decide. Your instinct is to find the simplest thing that works and reads well, ship it, and move on. You separate what's load-bearing from what's cosmetic and spend judgment only on the former. \"Good enough for now\" is a real answer when it's honestly true."
 
 [axis.personality.skeptic]
@@ -118,7 +115,7 @@ base_tools = ["Read", "Glob", "Grep", "Bash(npm run lint:*)", "Bash(npm run buil
 writes = true
 default_personality = "pragmatist"  # simplest thing that works and reads well maps to pragmatist's disposition
 
-# ---------- recipes (5) ----------
+# ---------- recipes (6) ----------
 # Each recipe names a curated subset of (phase, domain,
 # personality) cells for guild-spawn. Recipes replace the
 # anonymous [[combinations]] table from panel.manifest.toml +
@@ -157,6 +154,15 @@ name = "design-systems"
 phase = "planner"
 personality = "generative"
 domains = ["composition", "abstraction", "tokens", "naming"]
+
+# implementer-default seeds the write-capable implementer phase on the
+# css-architecture proof domain — the first pragmatist cell. Expansion
+# to the full domain set is a deferred follow-up wave.
+[[recipes]]
+name = "implementer-default"
+phase = "implementer"
+personality = "pragmatist"
+domains = ["css-architecture"]
 
 # ---------- singletons (1) ----------
 # A singleton is a (phase, personality) pair with NO domain — the

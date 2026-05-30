@@ -1,4 +1,3 @@
-checkins = []
 sessions = []
 revisions = []
 
@@ -26,7 +25,8 @@ branch = "ev-agent.guild-workflow-coverage.phase-1"
 [[phases]]
 number = 2
 name = "Instantiate implementer and author fixer"
-status = "not-started"
+status = "in-progress"
+branch = "ev-agent.guild-workflow-coverage.phase-2"
 
 [[phases]]
 number = 3
@@ -47,3 +47,27 @@ detail = { phase = 1, name = "Restructure the guild agents directory" }
 at = "2026-05-29T23:40:17.864Z"
 event = "phase-completed"
 detail = { phase = 1 }
+
+[[events]]
+at = "2026-05-30T01:05:00.329Z"
+event = "checkin-created"
+detail = { number = "01", branch = "ev-agent.guild-workflow-coverage.phase-2" }
+
+[[events]]
+at = "2026-05-30T01:05:00.412Z"
+event = "phase-started"
+detail = { phase = 2, name = "Instantiate implementer and author fixer" }
+
+[[checkins]]
+schema_version = 1
+number = "01"
+created = "2026-05-30T01:04:09Z"
+phase = { number = 2, name = "Instantiate implementer and author fixer" }
+branch = "ev-agent.guild-workflow-coverage.phase-2"
+unit = "D1 — Instantiate implementer (css-architecture)"
+contract = { goal = "Generate a write-capable implementer-css-architecture agent by instantiating the existing implementer phase for the css-architecture proof domain — wire the matrix, add the one missing implementer cell-id prefix, regenerate via guild-compile LLM fusion.", acceptance_criteria = ["PHASE_PREFIX gains implementer:'implementer' in both compile/derive.ts and recipe.ts (duplicate copies kept in sync).", "axes.toml: pragmatist.phases += implementer; css-architecture.phases += implementer; a [[recipes]] entry (implementer-default) names the (implementer, css-architecture, pragmatist) cell.", "The stale 'pragmatist.phases is empty' comment block updated.", "agents/implementer-css-architecture.md generated via fusion (implementer x css-architecture x pragmatist); valid frontmatter; write-capable tools (Edit/Write/Bash); reads as one coherent voice matching sibling house style.", "guild compile --check --prompt-hash returns ok:true.", "npm test green; codegen fixtures updated.", "D1 introduces no NEW sync-shared drift (touches no synced cli/lib or docs paths)."], rules_applied = ["Match implementer.md / existing-recipe idiom.", "Minimal PHASE_PREFIX addition only — mapping simplification is P3, not here.", "Semantic naming (recipe named for its role, not its sole member).", "Live-spawn smoke deferred (registry is a pre-flatten cache snapshot) — verify via tooling, mark proven-vs-reasoned."], disqualifiers = ["Refactoring the name-mapping beyond the one PHASE_PREFIX entry (P3 scope).", "Hand-editing any generated agent body.", "Expanding implementer past css-architecture (proof domain only).", "Touching anything fixer-related (D2/D3)."], inputs = ["plugins/guild/modes/axes.toml", "plugins/guild/cli/verbs/guild/compile/derive.ts", "plugins/guild/cli/verbs/guild/recipe.ts", "plugins/guild/cli/verbs/guild/compile/resolve.ts", "plugins/guild/modes/phases/implementer.md", "plugins/guild/modes/domains/css-architecture.md", "plugins/guild/modes/personalities/pragmatist.md", "plugins/guild/skills/guild-compile/SKILL.md + fusion-prompt.md", "PLAN.md:44,80"] }
+execution = { actions = ["Added implementer:'implementer' to PHASE_PREFIX in compile/derive.ts and recipe.ts; de-enumerated both now-stale throw messages ('reviewer + planner only' -> 'add an entry to PHASE_PREFIX').", "Wired axes.toml: pragmatist.phases=[\"implementer\"], css-architecture.phases=[\"reviewer\",\"implementer\"], added [[recipes]] implementer-default (phase=implementer, personality=pragmatist, domains=[css-architecture]); refreshed the personality-axis comment and bumped the recipes count 5->6.", "Ran the through-resolve stage (repo-local node, since the cached guild CLI lacks the compile verb): 20 cells, implementer-css-architecture the lone cache-miss.", "LLM-fused implementer-css-architecture.md (pragmatist x css-architecture x implementer) per fusion-prompt.md, matching sibling house style; emitted via guild compile --stage=emit (all 20 cells) writing the agent + .cache.toml.", "Repointed the derive.test.ts unknown-phase fixture from 'implementer' (now known) to 'no-such-phase' to preserve test intent.", "Verified: guild compile --check ok:true (zero drift); npm test 1056 passed; antagonist panel (contract-fit + naming + test-unit) approved."], files_touched = ["plugins/guild/cli/verbs/guild/compile/derive.ts", "plugins/guild/cli/verbs/guild/recipe.ts", "plugins/guild/modes/axes.toml", "plugins/guild/cli/verbs/guild/compile/derive.test.ts", "plugins/guild/agents/.cache.toml", "plugins/guild/agents/implementer-css-architecture.md"], corrections = ["AC#4 over-specified a do-not-edit provenance comment in the fused body. The LLM-fused sibling agents (e.g. evaluator-css-architecture.md) carry no such comment — it is a deterministic-compose-only artifact. The fused body correctly omits it to match sibling house style.", "AC#7 ('sync-shared --check clean') relaxed to 'no NEW drift from D1'. main carries 19 pre-existing loom<->commons sync records that reproduce with D1 stashed; D1 touches no synced (cli/lib, docs) paths."] }
+scope = ["Instantiate the existing implementer phase for css-architecture only.", "Code: the one PHASE_PREFIX entry (two synced copies) + the axes.toml wiring + the fused agent.", "Out of scope: fixer (D2/D3), name-mapping simplification (P3), domain expansion beyond css-architecture."]
+changes_since_previous = "First deliverable of phase 2. Branch cut from phase-1-completed main (commit ab71e6c)."
+verdict = { result = "approved", reasons = ["Panel (contract-fit, naming, test-unit) verdict: approved; zero blocking, zero advisory, no conflicts.", "contract-fit: all 7 ACs met, no disqualifiers fired, instantiation-not-authoring alignment holds.", "naming: three D1 names cohere; PHASE_PREFIX identity-mapping (implementer->implementer) defended as the no-translation case of a phase-name->public-agent-name map.", "test-unit: fixture repoint preserves both assertions and is durable; not a coverage deletion."] }
+notes_for_pr = ["Whiteboard skipped: the .claude/agents/whiteboard-*.md glob returns zero in this dev repo (engineers live in plugins/guild/agents/ under the stale guild:generated: namespace). Bootstrapping-clause skip; fixer design handled in the D2 contract instead.", "Cache/registry skew (load-bearing): this session's agent registry AND guild CLI are pre-phase-1 cache snapshots. Consequences: (a) cached guild lacks the compile verb -> used repo-local 'node plugins/guild/cli/guild.ts' for all codegen; (b) newly-generated agents are not spawnable via the Agent tool this session -> live-spawn smoke deferred; (c) the evaluator panel spawned via the cached guild:generated:/guild:retained: namespace.", "Done-gate decision (operator): phase 2 stays in-progress; the live-spawn smoke for implementer-css-architecture (and fixer- in D3) is deferred to a post-cache-refresh session and is reasoned-not-proven until then.", "guild-compile SKILL.md has pre-flatten stale paths: step 3 reads agents/personalities/personality-base.md (now modes/personalities/), and the 'bare commands only' rule breaks on the cached binary. Used the correct modes/ path + repo-local node. Candidate cleanup (P3 or a focused skill fix).", "derive-panel name-mapping breakage (relevant to P3): for D1's substrate .ts files it emitted 'evaluator-react-api' — a name with no matching agent (physical is evaluator-react) and a mis-fit (no React in substrate CLI). Dropped it; also had to manually map bare derive-panel names to spawnable namespaced types. Directly in scope for P3's 'simplify the name-mapping' + dangling-refs repair.", "evaluator-base.md unreadable at the expected path (contract-fit evaluator process note) — another pre-flatten stale-path symptom in the cached evaluator bodies.", ".cache.toml fused_at churn: emit re-stamps all 20 cells' fused_at on every run, so the cache diff shows ~19 cosmetic timestamp updates plus the 1 new entry. --check validates output/source/prompt hashes, not fused_at, so it stays green. Candidate tooling improvement (emit could preserve passthrough fused_at).", "maxTurns:5 on the generated implementer is the substrate default (compose.ts + fusion-prompt). May be tight for a write-capable implementer doing real work + verification; relevant to P3's write-capable output schema / firing layer."]

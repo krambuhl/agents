@@ -87,10 +87,10 @@ describe('derive: error cases', () => {
 
   it('throws DeriveError when a recipe references an unknown phase prefix', () => {
     const data = makeData({
-      recipes: [{ name: 'r', phase: 'implementer', personality: 'p', domains: ['d'] }],
+      recipes: [{ name: 'r', phase: 'no-such-phase', personality: 'p', domains: ['d'] }],
     });
     expect(() => derive(data)).toThrow(DeriveError);
-    expect(() => derive(data)).toThrow(/implementer/);
+    expect(() => derive(data)).toThrow(/no-such-phase/);
   });
 
   it('throws DeriveError when two recipes produce the same cell id', () => {
