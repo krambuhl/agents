@@ -1,3 +1,4 @@
+// sync-shared: plugin-local
 import { existsSync, readdirSync, statSync } from 'node:fs';
 import { isAbsolute, join, resolve } from 'node:path';
 import { LoomError } from './errors.ts';

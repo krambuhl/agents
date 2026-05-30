@@ -1,3 +1,4 @@
+// sync-shared: plugin-local
 // Loom project-substrate types.
 // Authored against the design contract in docs/LOOM-CONVENTIONS.md.
 // Erasable TypeScript only — no enums, no namespaces, no parameter

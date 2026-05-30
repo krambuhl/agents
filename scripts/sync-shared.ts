@@ -109,6 +109,24 @@ export const COMMONS_CONSUMERS = {
   docs: ['griot', 'guild', 'loom', 'ev'] as ReadonlyArray<PluginName>,
 } as const;
 
+/** Per-consumer override for the lib flow. A consumer listed here is a
+ *  PARTIAL lib-consumer: it mirrors ONLY the named `commons/cli/lib`
+ *  basenames, not the whole directory. Consumers absent from this map
+ *  (griot, guild) mirror all of commons/cli/lib as before.
+ *
+ *  loom is partial because it forked ahead of commons: it consolidated
+ *  the manifest stack into a TOML model (`manifest-toml.ts` etc., all
+ *  plugin-local) and derives PR state from gh instead of storing it. So
+ *  its `adopt/config/project/types.ts` diverged for loom-specific reasons
+ *  and its `checkin/events/manifest/session.ts` were consolidated away —
+ *  none of those should be mirrored from commons. loom shares only the
+ *  stable substrate utilities below. The forked files loom still has on
+ *  disk carry the `// sync-shared: plugin-local` marker so the
+ *  orphan-sweep preserves them once they're excluded from the plan here. */
+const LIB_MIRROR_ALLOWLIST: Partial<Record<PluginName, ReadonlySet<string>>> = {
+  loom: new Set(['errors.ts', 'gh.ts', 'git.ts', 'pr-marker.ts', 'retro.ts']),
+};
+
 // PR4 removed the PluginContentRule type and PLUGIN_CONTENT_RULES
 // table. Pre-PR4 they filtered root skills/<dir>/ and root agents/<file>
 // into per-plugin trees; post-PR4 each plugin owns its skills/agents
@@ -220,10 +238,15 @@ export function planForPlugin(plugin: PluginName, repoRoot = REPO_ROOT): PluginP
     //    Only lib-consumers receive (PLUGINS_WITH_CLI today).
     if (COMMONS_CONSUMERS.lib.includes(plugin)) {
       const commonsLibDir = join('plugins', 'commons', 'cli', 'lib');
+      const allowlist = LIB_MIRROR_ALLOWLIST[plugin];
       for (const rel of walkFiles(join(repoRoot, commonsLibDir), repoRoot)) {
         // Translate the destination from plugins/commons/cli/lib/<f>
         // to plugins/<consumer>/cli/lib/<f>.
         const fileTail = relative(commonsLibDir, rel);
+        // Partial consumers (e.g. loom) mirror only their allowlisted
+        // files; everything else in commons/cli/lib is theirs to own as
+        // plugin-local. Full consumers (no allowlist entry) mirror all.
+        if (allowlist && !allowlist.has(fileTail)) continue;
         files.push({
           source: rel,
           destination: join('plugins', plugin, 'cli', 'lib', fileTail),
