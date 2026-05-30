@@ -219,9 +219,54 @@ const rubricBodyCoherence: Convention = {
 };
 
 /**
+ * Convention: bullet-pair coherence (whiteboard-*.md).
+ *
+ * A whiteboard engineer that states what it leans toward should also
+ * bound itself — say what it does NOT do — so its scope stays coherent
+ * rather than unbounded. This flags a whiteboard agent whose lean-toward
+ * content carries no boundary signal anywhere in the file.
+ *
+ * Lenient by design (whole-file boundedness): the boundary may be inline
+ * in an "X over Y" stance bullet, a dedicated "Anti-patterns to avoid"
+ * section, or a "Not a …" / "don't" carve-out — any one suffices. Only a
+ * file that leans without ANY of these flags. This keeps the live
+ * (codegen'd, structurally varied) corpus clean and guards against future
+ * genuinely-unbounded agents. Advisory at MVP, matching
+ * rubric-body-coherence.
+ */
+const LEAN_SECTION = /^## Stance\b|^### Good patterns to bias toward\b/m;
+const BOUNDARY_SIGNALS: ReadonlyArray<RegExp> = [
+  /\b[A-Za-z]+ over [A-Za-z]+\b/, // inline "X over Y" stance
+  /to avoid/i, // "Anti-patterns to avoid" boundary section
+  /not a |\bdon'?t\b/i, // "Not a …" / "don't" carve-out
+];
+
+const bulletPairCoherence: Convention = {
+  name: 'bullet-pair-coherence',
+  appliesTo: (file) =>
+    /plugins\/[^/]+\/agents\/whiteboard-[^/]+\.md$/.test(file),
+  check: (file, content) => {
+    if (!LEAN_SECTION.test(content)) return [];
+    if (BOUNDARY_SIGNALS.some((re) => re.test(content))) return [];
+    return [
+      {
+        file,
+        convention: 'bullet-pair-coherence',
+        severity: 'advisory',
+        message:
+          'states what it leans toward but carries no boundary signal — add an "X over Y" stance bullet, an "Anti-patterns to avoid" section, or a "Not a …" carve-out',
+      },
+    ];
+  },
+};
+
+/**
  * Registered conventions. Add new ones here.
  */
-export const CONVENTIONS: ReadonlyArray<Convention> = [rubricBodyCoherence];
+export const CONVENTIONS: ReadonlyArray<Convention> = [
+  rubricBodyCoherence,
+  bulletPairCoherence,
+];
 
 /**
  * Glob-like recursive walk: collect all *.md files under a root.

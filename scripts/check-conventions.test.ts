@@ -59,6 +59,11 @@ describe('Convention framework', () => {
     const names = CONVENTIONS.map((c) => c.name);
     expect(names).toContain('rubric-body-coherence');
   });
+
+  test('CONVENTIONS registry exports the bullet-pair-coherence convention', () => {
+    const names = CONVENTIONS.map((c) => c.name);
+    expect(names).toContain('bullet-pair-coherence');
+  });
 });
 
 describe('frontmatter helpers', () => {
@@ -217,5 +222,106 @@ tools: Read
       severity: 'advisory',
     });
     expect(findings[0].message).toContain('disqualifiers');
+  });
+});
+
+describe('bullet-pair-coherence convention', () => {
+  const convention = CONVENTIONS.find(
+    (c) => c.name === 'bullet-pair-coherence',
+  )!;
+
+  // Lean-toward content bounded inline by an "X over Y" stance bullet.
+  const boundedWhiteboard = `---
+name: whiteboard-example
+role: whiteboard
+description: example whiteboard
+tools: Read
+---
+
+# Whiteboard: example
+
+## Stance
+
+- **Sharp over exhaustive.** Surface the few sharpest points.
+- **Document the path.** Show your work.
+
+## What to surface
+
+The systematic walk.
+`;
+
+  // Lean-toward content with no boundary anywhere (no "X over Y",
+  // no "Anti-patterns to avoid" section, no "Not a …" / "don't").
+  const unboundedWhiteboard = `---
+name: whiteboard-example
+role: whiteboard
+description: example whiteboard
+tools: Read
+---
+
+# Whiteboard: example
+
+## Stance
+
+- **Be thorough.** Cover every entry.
+- **Lean into structure.** Prefer systematic walks.
+
+## What to surface
+
+The systematic walk.
+`;
+
+  // No lean-toward section at all — nothing to bound.
+  const noLeanWhiteboard = `---
+name: whiteboard-example
+role: whiteboard
+description: example whiteboard
+tools: Read
+---
+
+# Whiteboard: example
+
+## What to surface
+
+The systematic walk.
+`;
+
+  test('appliesTo matches whiteboard-* under plugins/.../agents, not evaluator-*', () => {
+    expect(
+      convention.appliesTo('plugins/guild/agents/whiteboard-substrate.md'),
+    ).toBe(true);
+    expect(
+      convention.appliesTo('plugins/guild/agents/evaluator-contract-fit.md'),
+    ).toBe(false);
+    expect(convention.appliesTo('scripts/check-conventions.ts')).toBe(false);
+  });
+
+  test('positive case: lean-toward bounded by an "X over Y" stance yields zero findings', () => {
+    const findings = convention.check(
+      'plugins/guild/agents/whiteboard-example.md',
+      boundedWhiteboard,
+    );
+    expect(findings).toEqual([]);
+  });
+
+  test('negative case: lean-toward with no boundary signal yields one finding', () => {
+    const findings = convention.check(
+      'plugins/guild/agents/whiteboard-example.md',
+      unboundedWhiteboard,
+    );
+    expect(findings).toHaveLength(1);
+    expect(findings[0]).toMatchObject<Partial<Finding>>({
+      convention: 'bullet-pair-coherence',
+      severity: 'advisory',
+    });
+    expect(findings[0].message).toContain('boundary');
+  });
+
+  test('no lean-toward section: nothing to bound, zero findings', () => {
+    const findings = convention.check(
+      'plugins/guild/agents/whiteboard-example.md',
+      noLeanWhiteboard,
+    );
+    expect(findings).toEqual([]);
   });
 });

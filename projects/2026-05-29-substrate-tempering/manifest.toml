@@ -24,7 +24,8 @@ branch = "ev-agent.substrate-tempering.papercut-sweep"
 [[phases]]
 number = 2
 name = "Convention-drift 2.1"
-status = "not-started"
+status = "in-progress"
+branch = "ev-agent.substrate-tempering.convention-drift-2-1"
 
 [[phases]]
 number = 3
@@ -76,6 +77,16 @@ at = "2026-05-30T00:23:22.611Z"
 event = "phase-completed"
 detail = { phase = 1 }
 
+[[events]]
+at = "2026-05-30T01:15:47.708Z"
+event = "checkin-created"
+detail = { number = "03", branch = "ev-agent.substrate-tempering.convention-drift-2-1" }
+
+[[events]]
+at = "2026-05-30T01:15:47.779Z"
+event = "phase-started"
+detail = { phase = 2, name = "Convention-drift 2.1" }
+
 [[checkins]]
 schema_version = 1
 number = "01"
@@ -103,6 +114,20 @@ scope = ["plugins/loom/cli/lib/manifest-toml.ts - backfillPhases reconcile", "pl
 changes_since_previous = "Builds on Unit A (b086807): the backfill reuses parsePlan, whose Deliverable/Verification aliases Unit A added. Same branch."
 verdict = { result = "approved", reasons = ["guild-validate single-evaluator panel (evaluator-contract-fit) returned approved.", "All 6 acceptance criteria met; load-bearing disqualifier pair clear (backfill gated on adoptLoom; calls the lib not the verb); no event from the verb; no scope creep into 1c/1d; original-ask alignment holds.", "One advisory-not-blocking observation: backfill fires only on fresh adopt, so future pre-wiring manifests would need the same manual repair - consistent with the contract, not a gap."] }
 notes_for_pr = ["loom plan now backfills PLAN phases into the manifest at adopt time via a reconcile (preserves status/branch); idempotent; fresh-adopt-only so recovery manifests are untouched.", "This project's manifest was repaired out-of-band (loom plan cannot re-run on a committed PLAN) using the shipped backfillPhases - all 5 phases now tracked.", "[adr-candidate] The cached loom/guild binaries lag repo source and there is no guard against it: phase add existed in source but not the cached binary (which fooled the re-scope into 'phase add does not exist'), and parse-plan / derive-panel also needed the source entry to reflect edits; loom doctor passed ok:true without detecting any of this. Decision worth a durable record: prefer node plugins/<plugin>/cli/<cli>.ts (source) over the cached binary during substrate development, and/or extend loom doctor to detect cache-vs-source verb skew. This lag bit the same session three times and put a wrong fact into a committed PLAN before it was caught.", "Advisory (evaluator, not blocking): backfill is adopt-time-only; any future manifest written before this wiring would need the same one-off repair. Out of this unit's scope.", "Process note (evaluator): plugins/commons/agents/evaluator-base.md was not found on disk; the contract-fit evaluator applied its stance from its system-prompt summary rather than the file. Another cache/source or codegen artifact worth a look.", "Phase-boundary signal (single; no plan revision offered): Unit B is the last unit of the re-scoped Phase 1. Deliverables 1a + 1b done, 1e groundwork done.", "Pairs with Unit A into one PR (shared parse-plan/lib/plan.ts lineage); PR to open at phase close - this also exercises 1e's gt submit --stack."]
+
+[[checkins]]
+schema_version = 1
+number = "03"
+created = "2026-05-30T01:14:08.000Z"
+phase = { number = 2, name = "Convention-drift 2.1" }
+branch = "ev-agent.substrate-tempering.convention-drift-2-1"
+unit = "D1 - bullet-pair coherence convention"
+contract = { goal = "Add a bullet-pair-coherence Convention to scripts/check-conventions.ts that flags a whiteboard-*.md agent whose lean-toward content carries no boundary signal anywhere. Advisory; lenient (whole-file boundedness).", acceptance_criteria = ["New Convention registered in CONVENTIONS; appliesTo /plugins\\/[^/]+\\/agents\\/whiteboard-[^/]+\\.md$/ (mirrors rubric-body-coherence's evaluator pattern).", "check flags a file iff it has lean-toward content (## Stance or ### Good patterns to bias toward) AND zero boundary signals (no X-over-Y bullet, no 'to avoid' section, no 'Not a'/'don't' carve-out). Severity advisory; message names the missing boundary.", "node scripts/check-conventions.ts adds zero new findings on the live corpus (all 11 whiteboard-*.md pass). The pre-existing rubric-body-coherence advisory remains (D3's target).", "Positive test (bounded -> 0), negative test (lean-only -> 1 advisory), no-lean edge (-> 0), and a registry assertion in check-conventions.test.ts.", "npm test green."], rules_applied = ["Lenient whole-file boundedness (operator-chosen over strict section-pairing / bullet-level), to keep the live corpus clean per the PLAN.", "Mirror the existing rubric-body-coherence convention shape (appliesTo regex + check returning advisory Finding[]).", "Advisory at MVP, exit 0 on findings.", "Use source CLIs per ADR-0006; check-conventions.ts is a repo-root script (no commons sync)."], disqualifiers = ["Strict section-pairing or bullet-level heuristic (must stay lenient - no flagging inline-bounded files).", "Flagging any current corpus file.", "Making it blocking (must be advisory / exit 0).", "Editing the whiteboard-*.md agent files themselves.", "Editing plugins/commons/** or any synced lib."], inputs = ["scripts/check-conventions.ts (Convention interface, rubricBodyCoherence model, CONVENTIONS registry)", "scripts/check-conventions.test.ts (existing test pattern)", "plugins/guild/agents/whiteboard-*.md (the 11 live files the convention checks)"] }
+execution = { actions = ["Added const bulletPairCoherence: Convention to check-conventions.ts: appliesTo whiteboard-*.md; check returns [] if no LEAN_SECTION, [] if any BOUNDARY_SIGNALS match, else one advisory finding. Registered in CONVENTIONS beside rubricBodyCoherence.", "LEAN_SECTION = /^## Stance\\b|^### Good patterns to bias toward\\b/m; BOUNDARY_SIGNALS = [X-over-Y regex, /to avoid/i, /not a |don't/i].", "Added a bullet-pair-coherence describe block (appliesTo, positive bounded->0, negative lean-only->1, no-lean->0) + a CONVENTIONS registry assertion.", "Verified the lenient heuristic keeps the live corpus clean (all 11 whiteboard files have >=1 boundary signal) before committing to the approach.", "Verified via source CLIs: npm test 1058 (+5); node scripts/check-conventions.ts adds 0 new findings."], files_touched = ["scripts/check-conventions.ts", "scripts/check-conventions.test.ts"], corrections = ["The PLAN's 'every lean-toward bullet has a paired don't-do boundary' was written against an older whiteboard structure. The guild-matrix-precompile regen (merged in the 20 commits this branch was cut over) reshaped whiteboard agents to a three-axis form that bounds inline via 'X over Y' stance bullets rather than paired don't-do bullets. Reinterpreted at contract time as lenient whole-file boundedness (operator-chosen) so the convention fits the current structure and keeps the live corpus clean. Documented in the convention's doc-comment + the contract."] }
+scope = ["scripts/check-conventions.ts - bulletPairCoherence convention + registration", "scripts/check-conventions.test.ts - convention tests + registry assertion"]
+changes_since_previous = "First Phase 2 unit, on a fresh branch cut from post-#144 main. The branch's base commit (657dd4c) reconciled Phase 1 -> completed (finding #7)."
+verdict = { result = "approved", reasons = ["guild-validate single-evaluator panel (evaluator-contract-fit) returned approved after an independent 11-file corpus sweep.", "All 5 acceptance criteria met; no disqualifiers fired (lenient not strict; advisory not blocking; corpus stays clean; agent files untouched).", "Original-ask reinterpretation (lenient whole-file vs verbatim paired-bullet) is documented + operator-attributed, not silent drift."] }
+notes_for_pr = ["bullet-pair-coherence convention: flags a whiteboard agent that leans without any boundary signal (X-over-Y, anti-patterns section, or Not-a/don't carve-out). Lenient whole-file scope; advisory; live corpus passes clean.", "signal: plan-staleness (single signal; no revise offered): the guild-matrix-precompile regen reshaped whiteboard agents, staling the PLAN's 'paired don't-do bullet' phrasing. Handled in-contract via the lenient reinterpretation; not a structural plan change, so no inner-RPI.", "Evaluator observation (advisory, not blocking): BOUNDARY_SIGNALS match whole-file content, not just the lean region - correct-as-specified per the whole-file framing.", "Persistent finding (#6 from Phase 1): the contract-fit evaluator's header references .claude/agents/evaluator-base.md which is not on disk; base content lives under the plugins/*/agents codegen tree. Still true; worth a substrate fix.", "Pairs with D2 (sibling-reference resolution) + D3 (triage the rubric-body-coherence advisory) into one Phase 2 PR; PR opens after D3."]
 
 [[revisions]]
 timestamp = "2026-05-29T15:43:57.627Z"
