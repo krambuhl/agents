@@ -1,3 +1,4 @@
+// sync-shared: plugin-local
 // Typed read path for the consolidated manifest.toml (Phase 2).
 //
 // readManifest(raw) parses a manifest.toml string via the generic

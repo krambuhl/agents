@@ -1,3 +1,4 @@
+<!-- sync-shared: plugin-local -->
 # Agent codegen + the LLM-fusion pipeline
 
 `/guild-compile` compiles guild's antagonist-panel and whiteboard agents

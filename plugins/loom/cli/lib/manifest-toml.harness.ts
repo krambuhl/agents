@@ -1,3 +1,4 @@
+// sync-shared: plugin-local
 // Shared parallel-safe test harness for the manifest.toml verb migration.
 //
 // Test-time only (the `.harness` segment groups it with `.test` / `.smoke`):

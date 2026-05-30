@@ -1,3 +1,4 @@
+// sync-shared: plugin-local
 // Strip-only smoke for manifest-toml.ts. Run directly under real `node`:
 //
 //   node plugins/loom/cli/lib/manifest-toml.smoke.ts
