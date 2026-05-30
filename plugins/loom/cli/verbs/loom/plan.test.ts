@@ -13,7 +13,12 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { planVerb, reviseVerb, parsePlanVerb } from './plan.ts';
 import type { GitRunner } from '../../lib/git.ts';
-import { manifestPath, readManifestFile } from '../../lib/manifest-toml.ts';
+import {
+  manifestPath,
+  readManifestFile,
+  updatePhase,
+  writeManifest,
+} from '../../lib/manifest-toml.ts';
 
 const REVISE_FIXTURES = join(dirname(fileURLToPath(import.meta.url)), '..', '..', 'fixtures');
 
@@ -465,6 +470,107 @@ test('reviseVerb (adopted): [[revisions]] is the append-only ledger; seq increme
   // (the revision file here carries no prior log, so the latest PLAN.md
   // shows the most recent revision's line — per-operation no-drift).
   expect(countRevisionLogLines(readFileSync(join(dir, 'PLAN.md'), 'utf8'))).toBe(1);
+});
+
+// ---------- reviseVerb phase backfill ----------
+//
+// A revision that grows the plan must seed the new phases into [[phases]] the
+// same way `loom plan` does at adopt — reconcile by integer number, preserve
+// the status/branch of phases already in progress. These exercise the
+// backfillPhases call wired into reviseVerb's manifest dual-write.
+
+test('reviseVerb (adopted): backfills phases a revised PLAN adds, preserving prior status', () => {
+  // Create with a 1-phase PLAN so the manifest is seeded via the plan path.
+  const planSrc = join(mkdtempSync(join(tmpdir(), 'rev-grow-')), 'p.md');
+  writeFileSync(planSrc, '# PLAN\n\n### Phase 1 — Setup\n');
+  const created = planVerb(
+    ['Grow Plan', `--plan-file=${planSrc}`, `--interview-file=${interviewFile}`, '--no-commit'],
+    baseCtx(),
+  );
+  expect(created.exitCode).toBe(0);
+  const { path: dir, slug } = JSON.parse(created.stdout as string);
+
+  // Phase 1 progresses — status + branch the revise must not clobber.
+  const before = readManifestFile(manifestPath(dir));
+  writeManifest(
+    manifestPath(dir),
+    updatePhase(before.manifest, 1, { status: 'in-progress', branch: 'wip/setup' }),
+    { expect: before.token },
+  );
+
+  // Revise to a 3-phase PLAN: phase 1 unchanged, phases 2 + 3 are new.
+  const rev = join(mkdtempSync(join(tmpdir(), 'rev-grow-r-')), 'r.md');
+  writeFileSync(
+    rev,
+    '# PLAN\n\n### Phase 1 — Setup\n### Phase 2 — Migrate\n### Phase 3 — Cleanup\n',
+  );
+  const result = reviseVerb(
+    [slug, `--revision-file=${rev}`, '--rationale=add phases 2-3', '--no-commit'],
+    baseCtx(),
+  );
+  expect(result.exitCode).toBe(0);
+
+  const { manifest } = readManifestFile(manifestPath(dir));
+  expect(manifest.phases).toEqual([
+    { number: 1, name: 'Setup', status: 'in-progress', branch: 'wip/setup' },
+    { number: 2, name: 'Migrate', status: 'not-started' },
+    { number: 3, name: 'Cleanup', status: 'not-started' },
+  ]);
+  // The [[revisions]] dual-write still fires alongside the phase backfill.
+  expect(manifest.revisions).toHaveLength(1);
+});
+
+test('reviseVerb (adopted): a revision that keeps the same phases adds none', () => {
+  const planSrc = join(mkdtempSync(join(tmpdir(), 'rev-stable-')), 'p.md');
+  writeFileSync(planSrc, '# PLAN\n\n### Phase 1 — Setup\n### Phase 2 — Ship\n');
+  const created = planVerb(
+    ['Stable Plan', `--plan-file=${planSrc}`, `--interview-file=${interviewFile}`, '--no-commit'],
+    baseCtx(),
+  );
+  const { path: dir, slug } = JSON.parse(created.stdout as string);
+
+  const rev = join(mkdtempSync(join(tmpdir(), 'rev-stable-r-')), 'r.md');
+  writeFileSync(
+    rev,
+    '# PLAN\n\n### Phase 1 — Setup\n### Phase 2 — Ship\n\nExtra prose, same phases.\n',
+  );
+  const result = reviseVerb(
+    [slug, `--revision-file=${rev}`, '--rationale=tweak prose', '--no-commit'],
+    baseCtx(),
+  );
+  expect(result.exitCode).toBe(0);
+
+  const { manifest } = readManifestFile(manifestPath(dir));
+  expect(manifest.phases.map((p) => p.number)).toEqual([1, 2]);
+  expect(manifest.phases.map((p) => p.name)).toEqual(['Setup', 'Ship']);
+});
+
+test('reviseVerb (adopted): commits the manifest alongside PLAN.md', () => {
+  // Adopt via planVerb so a real manifest.toml exists, then revise WITH commit.
+  const planSrc = join(mkdtempSync(join(tmpdir(), 'rev-commit-')), 'p.md');
+  writeFileSync(planSrc, '# PLAN\n\n### Phase 1 — Setup\n');
+  const created = planVerb(
+    ['Commit Manifest', `--plan-file=${planSrc}`, `--interview-file=${interviewFile}`, '--no-commit'],
+    baseCtx(),
+  );
+  const { slug } = JSON.parse(created.stdout as string);
+  gitCalls.length = 0; // ignore plan-path git activity; assert only the revise commit
+
+  const rev = join(mkdtempSync(join(tmpdir(), 'rev-commit-r-')), 'r.md');
+  writeFileSync(rev, '# PLAN\n\n### Phase 1 — Setup\n### Phase 2 — Ship\n');
+  const result = reviseVerb(
+    [slug, `--revision-file=${rev}`, '--rationale=add phase 2'],
+    baseCtx(),
+  );
+  expect(result.exitCode).toBe(0);
+
+  const addCalls = gitCalls.filter((c) => c.method === 'addAndCommit');
+  expect(addCalls.length).toBe(1);
+  const [, paths] = addCalls[0]?.args ?? [];
+  const committed = (paths ?? []) as string[];
+  expect(committed.length).toBe(2);
+  expect(committed.some((p) => p.endsWith('PLAN.md'))).toBe(true);
+  expect(committed.some((p) => p.endsWith('manifest.toml'))).toBe(true);
 });
 
 test('reviseVerb (plan-only): writes the Revision log line but no manifest [[revisions]] (graceful)', () => {
