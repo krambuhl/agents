@@ -128,7 +128,13 @@ test('bin/griot --help: prints help and exits 0', () => {
 });
 
 test('bin/griot bogus: prints structured error and exits 1', () => {
-  const result = spawnSync(BIN_GRIOT, ['bogus'], { encoding: 'utf-8' });
+  // NODE_NO_WARNINGS keeps the subprocess stderr clean JSON: some node
+  // versions emit a type-stripping ExperimentalWarning to stderr (CI's
+  // node does — see PR #159), which would otherwise break JSON.parse here.
+  const result = spawnSync(BIN_GRIOT, ['bogus'], {
+    encoding: 'utf-8',
+    env: { ...process.env, NODE_NO_WARNINGS: '1' },
+  });
   expect(result.status).toBe(1);
   const payload = JSON.parse(result.stderr);
   expect(payload.error).toBe('unknown-verb');
