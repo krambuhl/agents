@@ -1,3 +1,4 @@
+// sync-shared: plugin-local
 // Shared PLAN.md parser for the loom substrate.
 //
 // parsePlan() turns PLAN.md text into a typed tree (see ParsedPlan in

@@ -524,3 +524,141 @@ describe('PR2: wall-clock budget — catches catastrophic O(n^2) regressions', (
     expect(elapsed).toBeLessThan(1000);
   });
 });
+
+// ============================================================
+// ADR-0005 — plugin-local orphan preservation
+//
+// An "orphan" is a file in a sync-managed subdir (cli/lib or docs)
+// with no upstream commons source. Pre-ADR-0005 the sync deleted them
+// unconditionally; that ate loom's own lib (manifest-toml.ts etc.).
+// New policy: the default never deletes (fail-safe-preserve);
+// --strict-orphan deletes UNMARKED orphans only; a top-of-file marker
+// (`// sync-shared: plugin-local` for code, `<!-- sync-shared:
+// plugin-local -->` for Markdown) exempts a file even under strict.
+// Tests exercise behavior through applySync/detectDrift — the empty
+// commons fixture makes every written consumer file an orphan, which
+// isolates the orphan policy from the copy/divergence paths.
+// ============================================================
+
+describe('ADR-0005: applySync orphan preservation', () => {
+  test('default sync preserves orphans (deletes nothing)', () => {
+    write('plugins/griot/cli/lib/orphan.ts', 'export const ORPHAN = true;\n');
+
+    const result = applySync(root);
+    expect(result.removed).toBe(0);
+    expect(result.preserved).toBeGreaterThanOrEqual(1);
+    expect(read('plugins/griot/cli/lib/orphan.ts')).toContain('ORPHAN');
+  });
+
+  test('--strict-orphan removes an UNMARKED orphan', () => {
+    write('plugins/griot/cli/lib/orphan.ts', 'export const ORPHAN = true;\n');
+
+    const result = applySync(root, { strictOrphan: true });
+    expect(result.removed).toBe(1);
+    expect(() => read('plugins/griot/cli/lib/orphan.ts')).toThrow();
+  });
+
+  test('--strict-orphan PRESERVES a MARKED plugin-local code file', () => {
+    write(
+      'plugins/loom/cli/lib/manifest-toml.ts',
+      '// sync-shared: plugin-local\nexport const LOCAL = true;\n',
+    );
+
+    const result = applySync(root, { strictOrphan: true });
+    expect(result.removed).toBe(0);
+    expect(result.preserved).toBeGreaterThanOrEqual(1);
+    expect(read('plugins/loom/cli/lib/manifest-toml.ts')).toContain('LOCAL');
+  });
+
+  test('--strict-orphan PRESERVES a MARKED .md doc (HTML-comment form)', () => {
+    write(
+      'plugins/guild/docs/AGENT-CODEGEN.md',
+      '<!-- sync-shared: plugin-local -->\n# Guild-local doc\n',
+    );
+
+    const result = applySync(root, { strictOrphan: true });
+    expect(result.removed).toBe(0);
+    expect(read('plugins/guild/docs/AGENT-CODEGEN.md')).toContain('Guild-local doc');
+  });
+
+  test('--strict-orphan removes the unmarked file but keeps a marked sibling', () => {
+    write(
+      'plugins/loom/cli/lib/marked.ts',
+      '// sync-shared: plugin-local\nexport const A = 1;\n',
+    );
+    write('plugins/loom/cli/lib/unmarked.ts', 'export const B = 2;\n');
+
+    const result = applySync(root, { strictOrphan: true });
+    expect(result.removed).toBe(1);
+    expect(result.preserved).toBe(1);
+    expect(read('plugins/loom/cli/lib/marked.ts')).toContain('A = 1');
+    expect(() => read('plugins/loom/cli/lib/unmarked.ts')).toThrow();
+  });
+
+  test('a marker BEYOND the head-scan window does not count (removed under strict)', () => {
+    // Marker on a line past MARKER_SCAN_LINES is data, not a marker.
+    const padding = Array.from({ length: 25 }, (_, i) => `// line ${i}`).join('\n');
+    write(
+      'plugins/loom/cli/lib/late-marker.ts',
+      `${padding}\n// sync-shared: plugin-local\nexport const C = 3;\n`,
+    );
+
+    const result = applySync(root, { strictOrphan: true });
+    expect(result.removed).toBe(1);
+    expect(() => read('plugins/loom/cli/lib/late-marker.ts')).toThrow();
+  });
+});
+
+describe('ADR-0005: detectDrift orphan reporting respects the marker', () => {
+  test('an UNMARKED orphan is reported with the mark-or-remove remedy', () => {
+    write('plugins/griot/cli/lib/orphan.ts', 'export const ORPHAN = true;\n');
+
+    const drift = detectDrift(root);
+    const orphan = drift.find(
+      (d) => d.destination === 'plugins/griot/cli/lib/orphan.ts',
+    );
+    expect(orphan).toBeDefined();
+    expect(orphan?.kind).toBe('orphan');
+    expect(orphan?.source).toBeNull();
+    // The remedy names BOTH options: mark it, or --strict-orphan.
+    expect(orphan?.message).toContain('// sync-shared: plugin-local');
+    expect(orphan?.message).toContain('--strict-orphan');
+  });
+
+  test('a MARKED plugin-local code file is NOT reported as drift', () => {
+    write(
+      'plugins/loom/cli/lib/manifest-toml.ts',
+      '// sync-shared: plugin-local\nexport const LOCAL = true;\n',
+    );
+
+    const drift = detectDrift(root);
+    const record = drift.find(
+      (d) => d.destination === 'plugins/loom/cli/lib/manifest-toml.ts',
+    );
+    expect(record).toBeUndefined();
+  });
+
+  test('a MARKED .md doc is NOT reported as drift (HTML-comment form)', () => {
+    write(
+      'plugins/guild/docs/AGENT-CODEGEN.md',
+      '<!-- sync-shared: plugin-local -->\n# doc\n',
+    );
+
+    const drift = detectDrift(root);
+    const record = drift.find(
+      (d) => d.destination === 'plugins/guild/docs/AGENT-CODEGEN.md',
+    );
+    expect(record).toBeUndefined();
+  });
+
+  test('an unmarked .md orphan suggests the HTML-comment marker form', () => {
+    write('plugins/guild/docs/local.md', '# unmarked doc\n');
+
+    const drift = detectDrift(root);
+    const orphan = drift.find(
+      (d) => d.destination === 'plugins/guild/docs/local.md',
+    );
+    expect(orphan?.kind).toBe('orphan');
+    expect(orphan?.message).toContain('<!-- sync-shared: plugin-local -->');
+  });
+});

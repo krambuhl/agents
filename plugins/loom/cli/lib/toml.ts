@@ -1,3 +1,4 @@
+// sync-shared: plugin-local
 // Hand-rolled, zero-dependency TOML parser + serializer for loom's
 // manifest subset.
 //

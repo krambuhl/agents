@@ -1,3 +1,4 @@
+// sync-shared: plugin-local
 // Minimal TOML reader for guild's panel.manifest.toml + tools-map.toml.
 //
 // This is NOT a general TOML parser. It is a small, guild-local reader

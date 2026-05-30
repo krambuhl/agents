@@ -1,3 +1,4 @@
+// sync-shared: plugin-local
 // Strip-only smoke for toml.ts. Run directly under real `node`:
 //
 //   node plugins/loom/cli/lib/toml.smoke.ts

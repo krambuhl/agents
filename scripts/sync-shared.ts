@@ -25,9 +25,25 @@
  * converge.
  *
  * Modes:
- *   - default (`sync`): copy upstream → per-plugin (writes files)
+ *   - default (`sync`): copy upstream → per-plugin (writes files).
+ *     Fail-safe-preserve (ADR-0005): orphans — sync-managed files with
+ *     no upstream source — are NEVER deleted in this mode.
+ *   - `--strict-orphan` (with `sync`): additionally delete UNMARKED
+ *     orphans. Files carrying the plugin-local marker survive even here.
  *   - `--check`: read-only drift detection; exit 1 on missing /
- *     divergent / orphan / conflicting destinations
+ *     divergent / unmarked-orphan / conflicting destinations. Marked
+ *     plugin-local files are not orphans (the `--check` orphan report
+ *     ignores `--strict-orphan` — it always flags unmarked orphans).
+ *
+ * Plugin-local marker (ADR-0005):
+ *   A consumer plugin's cli/lib or docs tree may legitimately hold its
+ *   OWN files that have no `plugins/commons/` counterpart (e.g. loom's
+ *   `manifest-toml.ts`, guild's `docs/AGENT-CODEGEN.md`). A top-of-file
+ *   marker — `// sync-shared: plugin-local` for code, `<!-- sync-shared:
+ *   plugin-local -->` for Markdown — declares such a file intentional so
+ *   the orphan-sweep preserves it. Unmarked orphans stay ambiguous: the
+ *   operator either marks them (plugin-local) or removes them
+ *   (`--strict-orphan`).
  *
  * Invariants:
  *   - Test files (`*.test.ts`) are NOT copied — runtime code only.
@@ -126,6 +142,34 @@ function isExcluded(relativePath: string): boolean {
   if (relativePath.endsWith('.test.ts')) return true;
   if (relativePath.includes('/fixtures/')) return true;
   return false;
+}
+
+/** Marker that exempts a consumer-tree file from the orphan-sweep
+ *  (ADR-0005). `.md` uses the HTML-comment form; everything else
+ *  (`.ts`, `.js`) uses the line-comment form. */
+const PLUGIN_LOCAL_MARKER_TS = '// sync-shared: plugin-local';
+const PLUGIN_LOCAL_MARKER_MD = '<!-- sync-shared: plugin-local -->';
+
+/** The marker form a given path should carry, keyed by extension. */
+function pluginLocalMarkerFor(path: string): string {
+  return path.endsWith('.md') ? PLUGIN_LOCAL_MARKER_MD : PLUGIN_LOCAL_MARKER_TS;
+}
+
+/** Leading lines scanned for the plugin-local marker. The marker is a
+ *  top-of-file convention; scanning only the head avoids matching the
+ *  literal string where it appears as DATA lower in a file (this
+ *  script's own source, a test fixture, or a doc quoting the
+ *  convention). */
+const MARKER_SCAN_LINES = 20;
+
+/** True if the file at `absPath` carries the plugin-local marker in its
+ *  head region. A missing file is not plugin-local. */
+function isPluginLocal(absPath: string): boolean {
+  if (!existsSync(absPath)) return false;
+  const head = readFileSync(absPath, 'utf8')
+    .split('\n', MARKER_SCAN_LINES)
+    .join('\n');
+  return head.includes(pluginLocalMarkerFor(absPath));
 }
 
 /** Walk a directory and return all file paths (recursive). */
@@ -315,16 +359,19 @@ export function detectDrift(repoRoot = REPO_ROOT): DriftRecord[] {
       const root = join(repoRoot, 'plugins', plan.plugin, syncManagedSubdir);
       if (!existsSync(root)) continue;
       for (const rel of walkFiles(root, repoRoot)) {
-        if (!expectedDestinations.has(rel)) {
-          records.push({
-            plugin: plan.plugin,
-            kind: 'orphan',
-            source: null,
-            destination: rel,
-            origin: null,
-            message: `${plan.plugin}: orphan generated file ${rel} has no upstream source. Run \`node scripts/sync-shared.ts\` to resync (the script removes orphans).`,
-          });
-        }
+        if (expectedDestinations.has(rel)) continue;
+        // ADR-0005: a marked plugin-local file has no upstream source
+        // BY DESIGN — it is intentional, not a stale orphan. Skip it
+        // (no drift record), independent of --strict-orphan.
+        if (isPluginLocal(join(repoRoot, rel))) continue;
+        records.push({
+          plugin: plan.plugin,
+          kind: 'orphan',
+          source: null,
+          destination: rel,
+          origin: null,
+          message: `${plan.plugin}: orphan ${rel} has no upstream source. Either mark it plugin-local (add \`${pluginLocalMarkerFor(rel)}\` near the top of the file) or remove it (\`node scripts/sync-shared.ts --strict-orphan\`).`,
+        });
       }
     }
   }
@@ -332,31 +379,42 @@ export function detectDrift(repoRoot = REPO_ROOT): DriftRecord[] {
   return records;
 }
 
-export function applySync(repoRoot = REPO_ROOT): { copied: number; removed: number } {
+export function applySync(
+  repoRoot = REPO_ROOT,
+  opts: { strictOrphan?: boolean } = {},
+): { copied: number; removed: number; preserved: number } {
   const plans = planAll(repoRoot);
   let copied = 0;
   let removed = 0;
+  let preserved = 0;
 
   for (const plan of plans) {
     const expectedDestinations = new Set(plan.files.map((f) => f.destination));
 
-    // Remove orphans first (files in the SYNC-MANAGED subdirs that no
-    // longer have an upstream source). Post-PR4, sync-managed subdirs
-    // are exactly the commons-canonical destinations: `cli/lib/` and
-    // `docs/`. Everything else in the plugin tree (`cli/verbs/`,
-    // `cli/<plugin>.ts`, `skills/`, `agents/`, `.claude-plugin/`,
-    // `bin/`) is plugin-authoritative and never orphan-swept. The
-    // `commons` plugin itself is never orphan-swept either (it's the
-    // substrate source, not a destination).
+    // Handle orphans (files in the SYNC-MANAGED subdirs that have no
+    // upstream source). Post-PR4, sync-managed subdirs are exactly the
+    // commons-canonical destinations: `cli/lib/` and `docs/`. Everything
+    // else in the plugin tree (`cli/verbs/`, `cli/<plugin>.ts`,
+    // `skills/`, `agents/`, `.claude-plugin/`, `bin/`) is
+    // plugin-authoritative and never orphan-swept. The `commons` plugin
+    // itself is never orphan-swept either (it's the substrate source,
+    // not a destination).
+    //
+    // ADR-0005 fail-safe-preserve: the DEFAULT never deletes — orphans
+    // are preserved. `--strict-orphan` opts back into deleting UNMARKED
+    // orphans; a marked plugin-local file survives even then.
     if (plan.plugin !== 'commons') {
       for (const syncManagedSubdir of [join('cli', 'lib'), 'docs']) {
         const root = join(repoRoot, 'plugins', plan.plugin, syncManagedSubdir);
         if (!existsSync(root)) continue;
         for (const rel of walkFiles(root, repoRoot)) {
-          if (!expectedDestinations.has(rel)) {
-            rmSync(join(repoRoot, rel), { force: true });
-            removed += 1;
+          if (expectedDestinations.has(rel)) continue;
+          if (!opts.strictOrphan || isPluginLocal(join(repoRoot, rel))) {
+            preserved += 1;
+            continue;
           }
+          rmSync(join(repoRoot, rel), { force: true });
+          removed += 1;
         }
       }
     }
@@ -371,11 +429,12 @@ export function applySync(repoRoot = REPO_ROOT): { copied: number; removed: numb
     }
   }
 
-  return { copied, removed };
+  return { copied, removed, preserved };
 }
 
 function main(argv: string[]): number {
   const checkMode = argv.includes('--check');
+  const strictOrphan = argv.includes('--strict-orphan');
 
   if (checkMode) {
     const drift = detectDrift();
@@ -394,10 +453,17 @@ function main(argv: string[]): number {
     return 1;
   }
 
-  const { copied, removed } = applySync();
+  const { copied, removed, preserved } = applySync(REPO_ROOT, { strictOrphan });
   process.stdout.write(`sync-shared: ${copied} file${copied === 1 ? '' : 's'} synced`);
   if (removed > 0) {
     process.stdout.write(`, ${removed} orphan${removed === 1 ? '' : 's'} removed`);
+  }
+  if (preserved > 0) {
+    process.stdout.write(
+      strictOrphan
+        ? `, ${preserved} plugin-local file${preserved === 1 ? '' : 's'} preserved`
+        : `, ${preserved} orphan${preserved === 1 ? '' : 's'} preserved (run --check to review, or --strict-orphan to remove unmarked)`,
+    );
   }
   process.stdout.write('\n');
   return 0;

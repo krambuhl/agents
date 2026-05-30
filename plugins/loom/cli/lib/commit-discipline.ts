@@ -1,3 +1,4 @@
+// sync-shared: plugin-local
 // Commit-discipline lint primitive for the (d) "no state-only commits" rule.
 //
 // Phase 6's first exit criterion: an ev-loop unit folds its `manifest.toml`
