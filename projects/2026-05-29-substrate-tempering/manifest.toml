@@ -18,7 +18,7 @@ worker_bindings = {}
 [[phases]]
 number = 1
 name = "Loom CLI papercut sweep"
-status = "in-progress"
+status = "completed"
 branch = "ev-agent.substrate-tempering.papercut-sweep"
 
 [[phases]]
@@ -70,6 +70,11 @@ detail = { phase = 1, name = "Phase 1" }
 at = "2026-05-29T19:04:50.625Z"
 event = "checkin-created"
 detail = { number = "02", branch = "ev-agent.substrate-tempering.papercut-sweep" }
+
+[[events]]
+at = "2026-05-30T00:23:22.611Z"
+event = "phase-completed"
+detail = { phase = 1 }
 
 [[checkins]]
 schema_version = 1
