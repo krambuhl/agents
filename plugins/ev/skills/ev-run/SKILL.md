@@ -207,10 +207,36 @@ With no message, pick the phase using this policy:
    merged). `loom parse-plan` is the single source for dependencies — do
    not re-derive them from the plan text.
 3. If no phase qualifies AND there's an in-progress phase whose branch
-   has an OPEN PR (per `loom pr discover`), **wait for the PR to reach
-   a terminal lifecycle state** per § Wait for merge before surfacing
-   a blocker. The wait verb returns `exitReason: 'merged' | 'closed'
-   | 'timeout' | 'gh-failed'`; route by that discriminant:
+   has an OPEN PR (per `loom pr discover`), the run is blocked only on
+   that PR merging. The substrate subscribes to each PR at open
+   (§ Compose PR, "After open"), so the default posture here is
+   **event-driven, not blocking** — park the run and let the PR
+   activity wake it:
+
+   - **Subscribed (managed/web session — the default).** Exit cleanly
+     with a parked handoff, e.g.: "Phase N is open as PR #X and
+     subscribed to PR activity; no other phase is unblocked yet.
+     Parking the run — a review, CI result, or the merge will re-wake
+     `/ev-run`, which re-evaluates from step 3 (on merge the phase
+     advances and unblocks its dependents). Re-run `/ev-run` manually
+     any time to re-check." Then **stop. Do not block, do not
+     dispatch.** This is the "open a PR, subscribe, move on" path: the
+     router has already moved past every phase it can act on, so
+     parking *is* moving on.
+
+     Treat the session as subscribed unless the most recent loop
+     return in this invocation reported `PR subscription: unavailable`
+     (set when the open ran in a local `gh`-only session). When that
+     PR-activity wake later fires, the substrate still derives live PR
+     state from `gh` via `loom pr discover` on the re-run — the wake
+     decides *when* to look, never *what is true*.
+
+   - **Not subscribed (local `gh`-only fallback).** When the open
+     reported `PR subscription: unavailable`, there is no wake to wait
+     on, so fall back to the blocking poll: **wait for the PR to reach
+     a terminal lifecycle state** per § Wait for merge before surfacing
+     a blocker. The wait verb returns `exitReason: 'merged' | 'closed'
+     | 'timeout' | 'gh-failed'`; route by that discriminant:
 
    - **`merged`**: re-fetch live state via `loom pr discover`
      (observation-only — no manifest write side effect), then re-run
