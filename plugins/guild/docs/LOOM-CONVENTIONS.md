@@ -262,6 +262,14 @@ thin `gh` wrappers that record nothing — there are no `pr-opened`,
 substrate-consolidation, commit-discipline option (d): state rides
 the feature commit; derive PR state on demand.)
 
+The PR-activity **subscription** registered at open (§ Compose PR,
+"After open") does not reopen this. A subscription is a harness
+*wake* mechanism — it lets a parked session resume when a review,
+CI result, or merge lands — not a substrate event or cached state.
+When woken, the substrate still derives the live PR state from `gh`
+via `bin/loom pr discover`; the subscription decides *when* to look,
+never *what is true*. So the no-`pr-*`-event invariant holds.
+
 #### `[[checkins]]`
 
 Per-unit-of-work immutable records. **Write surface**:

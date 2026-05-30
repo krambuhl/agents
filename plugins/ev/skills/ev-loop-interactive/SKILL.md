@@ -9,7 +9,7 @@ description: >-
   a phase is exploratory, creative, or otherwise not a bulk transform.
 argument-hint: "<project-slug-or-path> <phase-number>"
 user-invocable: true
-allowed-tools: Read, Write, Edit, Bash, Agent, Skill
+allowed-tools: Read, Write, Edit, Bash, Agent, Skill, mcp__github__subscribe_pr_activity
 ---
 
 # /ev-loop-interactive
@@ -710,8 +710,14 @@ Phase <N> — <title>
 Deliverables: <done>/<total>  (list with status)
 Last checkin: <path>
 PR: <url or "not yet opened">
+PR subscription: <active | unavailable | n.a.>
 Next: <deliverable name, or "phase complete">
 ```
+
+`PR subscription` mirrors § Compose PR's "After open": `active` once
+the PR is subscribed at open, `unavailable` in a local `gh`-only
+session (the router then falls back to § Wait for merge), `n.a.` when
+no PR was opened this run.
 
 ## Message-driven redirects
 

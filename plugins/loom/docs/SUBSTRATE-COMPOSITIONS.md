@@ -351,6 +351,8 @@ If the compose-time work shape doesn't match the declared archetype (e.g. Phase 
 
 After `pr open` succeeds, the loop calls `§ Phase update` with `--status=in-progress --branch=<branch>` to record that the phase is now in flight. PR state (number, URL, merge status) is **not** cached in the manifest — it is derived on-demand from `gh pr view` via `bin/loom pr discover` whenever a loop needs it. The retired `--pr=<number> --url=<url> --pr-state=open` flags (see § Phase update) reflect this design choice: PR state lives in `gh`, not in substrate state.
 
+**Subscribe to PR activity (first open only).** Immediately after a *fresh* `pr open` succeeds (not on `pr update` checkpoints — the subscription persists for the PR's life), register a PR-activity subscription for the new PR by calling the harness `mcp__github__subscribe_pr_activity` tool with the freshly-opened PR number. This is what lets the router *move on* instead of block-polling: once a PR is subscribed, review comments, CI results, and the eventual merge re-wake the session, so the router can park the run and resume on its own (`/ev-run` step 3). The subscription is a wake convenience, **never** a correctness dependency — PR state is still derived on demand via `pr discover` (see `LOOM-CONVENTIONS.md`, the no-`pr-*`-event note). If the subscribe tool is unavailable — a local `gh`-only session with no managed harness — skip it silently and report `PR subscription: unavailable` in the loop's return so the router falls back to the blocking § Wait for merge poll. A subscribe failure never blocks the open or the rest of the loop.
+
 **Wraps** — two-step composition (open-or-update):
 
 ```bash
@@ -392,6 +394,8 @@ idempotent across same-body invocations.
 
 **Purpose**: Block the router on an in-progress phase's PR until the PR reaches a terminal lifecycle state (merged, closed-without-merge), the wait times out, or the underlying `gh` CLI fails persistently — then route the next step by which of those four outcomes occurred. Composes `bin/loom pr wait` so the router never has to inline polling itself, and so a future implementation swap (in-conversation polling → `ScheduleWakeup` → hybrid → external webhook) doesn't ripple into the skill body.
 
+**Fallback, not the default path.** The webhook leg of that swap has landed: PRs are subscribed at open (§ Compose PR, "After open"), so the router's default posture is event-driven — park and exit, let the PR-activity wake resume the run (`/ev-run` step 3). This blocking poll is the **fallback** for sessions where subscription is unavailable (a local `gh`-only run, where the loop reported `PR subscription: unavailable`). In a subscribed session the router does not call this recipe at all.
+
 The verb the recipe wraps is **observation-only**: it reads `gh pr view` repeatedly, writes nothing to the manifest, emits no events. The "no pr-* event" decision (`LOOM-CONVENTIONS.md:255-263`, anchored at Phase-6 U1 of substrate-consolidation) is load-bearing for this design — adding `pr-wait-started` / `pr-wait-merged` events would re-open that closed argument by the back door.
 
 The verb returns `{number, url, state, exitReason, mergedAt?, lastError?}` where `exitReason` is one of `'merged' | 'closed' | 'timeout' | 'gh-failed'`. The router uses `exitReason` as the dispatch discriminant (not the raw `state` field — `state: CLOSED` could mean either operator-merged-then-closed-the-branch or operator-closed-without-merging, only `exitReason` disambiguates). The router's four branches are documented in `/ev-run` step 3.
@@ -421,7 +425,7 @@ Defaults: 30s polling interval, 30min total wait. Both flag values are SECONDS w
 - `gh-cli-missing` / `gh-auth-failed` → these surface inside the verb as the `gh-failed` exit reason (the verb tracks K=3 consecutive gh failures before emitting). The router translates this exit into "wait failed: gh CLI not responding (last error: `<msg>`); check `gh auth status` and re-run `/ev-run`" and stops.
 - Note: `timeout` and `closed` are NOT errors — they're terminal exit reasons returned with exit code 0 and `exitReason` discriminant. The router treats them as routable outcomes, not failures.
 
-**Used by**: `/ev-run` step 3 (the router composition that takes the wait result and dispatches by `exitReason`).
+**Used by**: `/ev-run` step 3, **fallback leg only** — the router composition that takes the wait result and dispatches by `exitReason` when the open PR is not subscribed (local `gh`-only session). Subscribed sessions park-and-exit instead; see § Compose PR "After open".
 
 ## § Revise PLAN.md
 

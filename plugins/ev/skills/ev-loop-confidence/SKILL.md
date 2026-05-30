@@ -10,7 +10,7 @@ description: >-
   operation across many files.
 argument-hint: "<project-slug-or-path> <phase-number>"
 user-invocable: true
-allowed-tools: Read, Write, Edit, Bash, Agent, Skill, mcp__github__get_file_contents
+allowed-tools: Read, Write, Edit, Bash, Agent, Skill, mcp__github__get_file_contents, mcp__github__subscribe_pr_activity
 ---
 
 # /ev-loop-confidence
@@ -558,6 +558,9 @@ On any termination — phase close, closed gate, or escalation — return:
 - **Tiers run**: list with counts (e.g., `1: 3 files, 2: 7 files`)
 - **Last checkin**: `<NN>`
 - **Last PR update**: `<url>` or `none`
+- **PR subscription**: `active` (subscribed at open) | `unavailable`
+  (local `gh`-only session — router falls back to § Wait for merge) |
+  `n.a.` (no PR opened this run)
 - **Reason** (if not completed): one-line cause
 - **Next action**: what the router or user should do next
 
