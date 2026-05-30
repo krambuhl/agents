@@ -353,11 +353,25 @@ export function reviseVerb(
   if (existsSync(manifestFilePath)) {
     try {
       const { manifest, token } = readManifestFile(manifestFilePath);
-      const next = appendRevision(manifest, {
+      let next = appendRevision(manifest, {
         timestamp: new Date().toISOString(),
         target: 'PLAN.md',
         seq: manifest.revisions.length + 1,
       });
+      // Backfill any phases the revised PLAN added or renamed, reconciling by
+      // integer number — the same path `loom plan` uses at adopt time, so a
+      // revision that grows the plan keeps [[phases]] in step instead of
+      // stranding the new phases. Preserves status/branch on existing phases
+      // and is idempotent when the phase set is unchanged. parsePlan throws
+      // only on a heading-less document, so guard it: a prose-only revision
+      // still records its [[revisions]] entry rather than hard-failing.
+      let planPhases: ReadonlyArray<{ id: string; name: string }> = [];
+      try {
+        planPhases = parsePlan(composed).plan.phases;
+      } catch {
+        // heading-less revision content — nothing to backfill.
+      }
+      next = backfillPhases(next, planPhases);
       writeManifest(manifestFilePath, next, { expect: token });
     } catch (err: unknown) {
       if (err instanceof LoomError) return errToResult(err);
