@@ -25,13 +25,14 @@ branch = "ev-agent.commons-sync-reconciliation.orphan-preservation"
 [[phases]]
 number = 2
 name = "Reconcile the forked files"
-status = "in-progress"
+status = "completed"
 branch = "ev-agent.commons-sync-reconciliation.reconcile-forks"
 
 [[phases]]
 number = 3
 name = "Resync + green"
-status = "not-started"
+status = "in-progress"
+branch = "ev-agent.commons-sync-reconciliation.resync"
 
 [[phases]]
 number = 4
@@ -72,6 +73,21 @@ detail = { phase = 2, name = "Reconcile the forked files" }
 at = "2026-05-30T19:40:39.705Z"
 event = "checkin-created"
 detail = { number = "03", branch = "ev-agent.commons-sync-reconciliation.reconcile-forks" }
+
+[[events]]
+at = "2026-05-30T20:08:04.927Z"
+event = "phase-completed"
+detail = { phase = 2 }
+
+[[events]]
+at = "2026-05-30T20:17:44.870Z"
+event = "checkin-created"
+detail = { number = "04", branch = "ev-agent.commons-sync-reconciliation.resync" }
+
+[[events]]
+at = "2026-05-30T20:17:44.943Z"
+event = "phase-started"
+detail = { phase = 3, name = "Resync + green" }
 
 [[checkins]]
 schema_version = 1
@@ -114,3 +130,17 @@ scope = ["plugins/commons/docs/PANEL-COMPOSITION.md - adopt guild's improved ver
 changes_since_previous = "Third unit of the project, second on the reconcile-forks branch. Follows D1 (loom partial-consumer reconciliation, checkin 02). Completes Phase 2's reconciliation: loom's lib (D1) + guild's one forked doc (D2). The phase-2 PR opens after this unit covering both."
 verdict = { result = "approved", reasons = ["guild-validate single-evaluator panel (evaluator-contract-fit via guild:retained:evaluator-contract-fit) returned approved; parse-and-aggregate confirmed verdict=approved, no blocking/advisory/conflicts.", "All acceptance criteria met; no disqualifiers fired; the 'general not guild-specific' framing verified against the actual text; promotion correctly placed.", "Verified: guild byte-equals commons; --check transient is the expected phase-3 handoff; npm test 1093 passed; only the commons doc touched (+56/-3)."] }
 notes_for_pr = ["guild's PANEL-COMPOSITION.md was the lone forked doc (griot/loom/ev mirror commons clean; guild's cli/lib audit also came back clean). guild had added a general 'When to opt out: per-unit Panel override' section to its consumer copy instead of the canonical source. Promoted it to commons so the guidance lives at the source.", "Reconcile-then-propagate: this unit puts the canonical content in commons but does NOT run sync-shared. As a result --check now shows griot/loom/ev's PANEL-COMPOSITION.md divergent (behind the updated canonical) - this is the expected phase-2 -> phase-3 handoff, resolved by phase 3's resync, NOT a regression.", "Phase 2 complete (both units): loom is now a partial lib-consumer with its diverged lib marked plugin-local (D1); guild's forked doc is canonicalized (D2). After phase 3's resync, --check should be fully green."]
+
+[[checkins]]
+schema_version = 1
+number = "04"
+created = "2026-05-30T20:16:53.000Z"
+phase = { number = 3, name = "Resync + green" }
+branch = "ev-agent.commons-sync-reconciliation.resync"
+unit = "3 - Resync + green"
+contract = { goal = "Run node scripts/sync-shared.ts (default, now safe after phases 1+2) to propagate canonical content - concretely the updated PANEL-COMPOSITION.md to griot/loom/ev - then confirm --check green, tests pass, CLIs work. First safe sync run since the script was destructive.", acceptance_criteria = ["Default sync runs cleanly, 0 orphans removed.", "Exactly 3 files change: griot/loom/ev docs/PANEL-COMPOSITION.md (now matching commons); nothing else modified, nothing deleted.", "loom's plugin-local files preserved untouched (manifest-toml/plan/toml/commit-discipline + smoke/harness + adopt/config/project/types; guild AGENT-CODEGEN.md).", "node scripts/sync-shared.ts --check -> GREEN (0 records, exit 0).", "npm test green; loom (parse-plan/doctor) + guild (derive-panel) spot-run clean."], rules_applied = ["Default run only (NOT --strict-orphan) - fail-safe-preserve keeps loom's plugin-local files.", "Phase 3 RUNS the sync; no source hand-edits. Wiring the CI gate is phase 4.", "ADR-0002: checkin in full at unit close. ADR-0006: substrate ops via node plugins/<plugin>/cli/<cli>.ts.", "Hard stop on any deletion or loom-plugin-local overwrite (the safety payoff check)."], disqualifiers = ["Running --strict-orphan.", "Any deletion or loom-plugin-local overwrite (would mean the phase-1+2 safety work failed).", "Any change beyond the 3 expected docs.", "Hand-editing source; wiring the CI gate (phase 4)."], inputs = ["scripts/sync-shared.ts (the now-safe sync, post phases 1+2)", "the 3 prior --check records (griot/loom/ev PANEL-COMPOSITION.md)", "loom's plugin-local inventory (must survive)"] }
+execution = { actions = ["Ran node scripts/sync-shared.ts (default): '47 files synced, 14 orphans preserved' (0 removed).", "Audited immediately: git status shows ONLY griot/loom/ev docs/PANEL-COMPOSITION.md modified (+ the manifest reconcile bookkeeping); NO deletions; loom/cli/lib UNTOUCHED. The phase-1+2 safety design held under a real sync run.", "Confirmed node scripts/sync-shared.ts --check -> 'ok (4 plugins synced)', exit 0 (GREEN; was 3 doc-divergence records).", "Verified npm test 1093 passed; loom doctor ok:true, parse-plan ok (4 phases); guild derive-panel ok."], files_touched = ["plugins/griot/docs/PANEL-COMPOSITION.md", "plugins/loom/docs/PANEL-COMPOSITION.md", "plugins/ev/docs/PANEL-COMPOSITION.md"], corrections = [] }
+scope = ["plugins/{griot,loom,ev}/docs/PANEL-COMPOSITION.md - synced from commons (now byte-equal to the canonical updated in phase 2)"]
+changes_since_previous = "Fourth unit of the project, first on the resync branch. Follows phase 2 (#157, merged). This commit also carries the phase-2->completed reconcile (manifest bookkeeping ridden into this real-work commit per commit-discipline - no state-only commit)."
+verdict = { result = "approved", reasons = ["guild-validate single-evaluator panel (evaluator-contract-fit via guild:retained:evaluator-contract-fit) returned approved; parse-and-aggregate confirmed verdict=approved, no findings.", "Evaluator ran its own spot-check: all 3 consumer docs byte-equal to commons. All 5 ACs met; no disqualifiers (default sync, no deletions, loom lib untouched).", "The big one: --check is GREEN (0 records, exit 0). The fork is reconciled AND propagated; npm test 1093; CLIs clean."] }
+notes_for_pr = ["Milestone: `sync-shared --check` is GREEN (0 records) for the first time. The fork is reconciled (phases 1-2) and now propagated (phase 3).", "The sync ran fully safe: 47 files synced (byte-equal no-ops for the lib mirrors + 3 doc changes), 14 orphans PRESERVED (loom's 12 plugin-local lib files + guild toml.ts + AGENT-CODEGEN.md), 0 removed. No deletions; loom/cli/lib untouched. The phase-1 fail-safe-preserve + phase-2 partial-consumer allowlist held under a real run.", "Only 3 files changed: griot/loom/ev's PANEL-COMPOSITION.md, propagating the canonical section promoted in #157. guild already matched.", "This commit also carries the phase-2 -> completed manifest reconcile (bookkeeping ridden into the phase-3 work commit, not a standalone state-only commit).", "Next: Phase 4 wires `--check` into a real CI gate (+ pre-commit hook / npm script), writes the enforcement ADR, and makes CLAUDE.md's 'CI gate' claim true - so this class of fork can't silently recur. The partial-consumer-model ADR question is parked for Phase 4 (fold-in vs standalone)."]
