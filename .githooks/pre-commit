@@ -1,0 +1,11 @@
+#!/bin/sh
+# Pre-commit gate (ADR-0007): fail the commit if the commons -> consumer
+# sync has drifted. Mirrors the CI gate (.github/workflows/sync-check.yml)
+# at commit-time so drift never even gets pushed.
+#
+# Active via `git config core.hooksPath .githooks`, which the package.json
+# `prepare` script sets automatically on `npm install`.
+#
+# Fast by design (a file-walk + byte-compare, no tests). Bypass with
+# `git commit --no-verify` only when you genuinely mean to.
+exec node scripts/sync-shared.ts --check
