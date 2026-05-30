@@ -1,3 +1,4 @@
+// sync-shared: plugin-local
 import { readFileSync } from 'node:fs';
 import type { Config } from './types.ts';
 import { LoomError } from './errors.ts';

@@ -142,13 +142,17 @@ describe('V10 (a): planForPlugin returns expected source/dest pairs', () => {
     expect(sources.some((s) => s.includes('/fixtures/'))).toBe(false);
   });
 
-  test('every plugin gets the same shared lib subset (post-PR3: from commons)', () => {
+  test('full lib-consumers (griot, guild) get the same shared lib subset (post-PR3: from commons)', () => {
     buildBothDirectionsTree();
     const libFiles = [
       'plugins/commons/cli/lib/events.ts',
       'plugins/commons/cli/lib/manifest.ts',
     ];
-    for (const plugin of PLUGINS_WITH_CLI) {
+    // loom is a PARTIAL consumer (LIB_MIRROR_ALLOWLIST) — it does NOT
+    // mirror events.ts/manifest.ts (it consolidated them into its TOML
+    // manifest stack). Its restricted plan is covered by the
+    // "loom is a partial lib-consumer" block below.
+    for (const plugin of ['griot', 'guild'] as const) {
       const plan = planForPlugin(plugin, root);
       const sources = plan.files.map((f) => f.source);
       for (const lib of libFiles) {
@@ -383,9 +387,12 @@ describe('PR2 (a): commons-source planner — empty-commons no-op invariant', ()
 });
 
 describe('PR2 (b): commons-source planner — populated commons fixture', () => {
-  test('lib-consumers (griot/guild/loom) receive commons/cli/lib/* mirror', () => {
+  test('full lib-consumers (griot, guild) receive commons/cli/lib/* mirror', () => {
     buildBothDirectionsTree();
-    for (const plugin of COMMONS_CONSUMERS.lib) {
+    // loom is a PARTIAL consumer (LIB_MIRROR_ALLOWLIST) and may mirror zero
+    // of a given fixture's lib files; its behavior is covered by the
+    // "loom is a partial lib-consumer" block below.
+    for (const plugin of ['griot', 'guild'] as const) {
       const plan = planForPlugin(plugin, root);
       const libSpecs = plan.files.filter(
         (f) =>
@@ -660,5 +667,72 @@ describe('ADR-0005: detectDrift orphan reporting respects the marker', () => {
     );
     expect(orphan?.kind).toBe('orphan');
     expect(orphan?.message).toContain('<!-- sync-shared: plugin-local -->');
+  });
+});
+
+// ============================================================
+// Phase 2 (D1) — loom is a PARTIAL lib-consumer (LIB_MIRROR_ALLOWLIST)
+//
+// loom forked ahead of commons (TOML manifest stack, PR-state-derived),
+// so it mirrors only the stable shared utilities and OWNS the rest of its
+// cli/lib as plugin-local. The planner excludes the non-allowlisted files
+// from loom's plan; phase-1's marker preserves loom's forked files (now
+// orphans) from the sweep. Fixture uses real allowlisted basenames
+// (errors.ts/gh.ts are in loom's allowlist; manifest.ts is not).
+// ============================================================
+
+describe('Phase 2: loom is a partial lib-consumer (LIB_MIRROR_ALLOWLIST)', () => {
+  function buildPartialFixture(): void {
+    write('plugins/commons/cli/lib/errors.ts', 'export const E = "shared";\n'); // in loom's allowlist
+    write('plugins/commons/cli/lib/gh.ts', 'export const G = "shared";\n'); // in loom's allowlist
+    write('plugins/commons/cli/lib/manifest.ts', 'export const M = "shared";\n'); // NOT in loom's allowlist
+  }
+
+  test('loom mirrors only its allowlisted lib files', () => {
+    buildPartialFixture();
+    const libSources = planForPlugin('loom', root)
+      .files.filter((f) => f.source.startsWith('plugins/commons/cli/lib/'))
+      .map((f) => f.source);
+    expect(libSources).toContain('plugins/commons/cli/lib/errors.ts');
+    expect(libSources).toContain('plugins/commons/cli/lib/gh.ts');
+    // manifest.ts is loom's own (consolidated) — not mirrored from commons.
+    expect(libSources).not.toContain('plugins/commons/cli/lib/manifest.ts');
+  });
+
+  test('full consumers (griot, guild) still mirror ALL commons lib', () => {
+    buildPartialFixture();
+    for (const plugin of ['griot', 'guild'] as const) {
+      const libSources = planForPlugin(plugin, root)
+        .files.filter((f) => f.source.startsWith('plugins/commons/cli/lib/'))
+        .map((f) => f.source);
+      expect(libSources).toContain('plugins/commons/cli/lib/errors.ts');
+      expect(libSources).toContain('plugins/commons/cli/lib/gh.ts');
+      expect(libSources).toContain('plugins/commons/cli/lib/manifest.ts');
+    }
+  });
+
+  test('a commons lib file loom does not mirror produces NO missing record for loom', () => {
+    buildPartialFixture();
+    applySync(root); // syncs errors.ts + gh.ts to loom; never manifest.ts
+    const loomMissing = detectDrift(root).filter(
+      (d) => d.plugin === 'loom' && d.kind === 'missing',
+    );
+    expect(loomMissing).toEqual([]);
+  });
+
+  test("loom's forked file (in commons, excluded from plan, marked) is neither divergent nor orphan", () => {
+    buildPartialFixture();
+    applySync(root);
+    // commons has manifest.ts; loom excludes it and owns a divergent,
+    // marked copy. It must be neither 'divergent' (not planned → not
+    // compared) nor 'orphan' (marked → preserved).
+    write(
+      'plugins/loom/cli/lib/manifest.ts',
+      '// sync-shared: plugin-local\nexport const M = "loom-forked";\n',
+    );
+    const loomManifest = detectDrift(root).filter(
+      (d) => d.destination === 'plugins/loom/cli/lib/manifest.ts',
+    );
+    expect(loomManifest).toEqual([]);
   });
 });

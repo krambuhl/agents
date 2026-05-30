@@ -1,3 +1,4 @@
+// sync-shared: plugin-local
 import { manifestPath, writeManifest } from './manifest-toml.ts';
 import type { Config, ManifestPhase, ManifestToml } from './types.ts';
 
