@@ -31,13 +31,14 @@ branch = "ev-agent.commons-sync-reconciliation.reconcile-forks"
 [[phases]]
 number = 3
 name = "Resync + green"
-status = "in-progress"
+status = "completed"
 branch = "ev-agent.commons-sync-reconciliation.resync"
 
 [[phases]]
 number = 4
 name = "Enforce the gate (close the loop)"
-status = "not-started"
+status = "in-progress"
+branch = "ev-agent.commons-sync-reconciliation.enforce-gate"
 
 [[events]]
 at = "2026-05-30T18:00:15.746Z"
@@ -88,6 +89,21 @@ detail = { number = "04", branch = "ev-agent.commons-sync-reconciliation.resync"
 at = "2026-05-30T20:17:44.943Z"
 event = "phase-started"
 detail = { phase = 3, name = "Resync + green" }
+
+[[events]]
+at = "2026-05-30T20:33:16.600Z"
+event = "phase-completed"
+detail = { phase = 3 }
+
+[[events]]
+at = "2026-05-30T20:49:34.579Z"
+event = "checkin-created"
+detail = { number = "05", branch = "ev-agent.commons-sync-reconciliation.enforce-gate" }
+
+[[events]]
+at = "2026-05-30T20:49:34.652Z"
+event = "phase-started"
+detail = { phase = 4, name = "Enforce the gate (close the loop)" }
 
 [[checkins]]
 schema_version = 1
@@ -144,3 +160,17 @@ scope = ["plugins/{griot,loom,ev}/docs/PANEL-COMPOSITION.md - synced from common
 changes_since_previous = "Fourth unit of the project, first on the resync branch. Follows phase 2 (#157, merged). This commit also carries the phase-2->completed reconcile (manifest bookkeeping ridden into this real-work commit per commit-discipline - no state-only commit)."
 verdict = { result = "approved", reasons = ["guild-validate single-evaluator panel (evaluator-contract-fit via guild:retained:evaluator-contract-fit) returned approved; parse-and-aggregate confirmed verdict=approved, no findings.", "Evaluator ran its own spot-check: all 3 consumer docs byte-equal to commons. All 5 ACs met; no disqualifiers (default sync, no deletions, loom lib untouched).", "The big one: --check is GREEN (0 records, exit 0). The fork is reconciled AND propagated; npm test 1093; CLIs clean."] }
 notes_for_pr = ["Milestone: `sync-shared --check` is GREEN (0 records) for the first time. The fork is reconciled (phases 1-2) and now propagated (phase 3).", "The sync ran fully safe: 47 files synced (byte-equal no-ops for the lib mirrors + 3 doc changes), 14 orphans PRESERVED (loom's 12 plugin-local lib files + guild toml.ts + AGENT-CODEGEN.md), 0 removed. No deletions; loom/cli/lib untouched. The phase-1 fail-safe-preserve + phase-2 partial-consumer allowlist held under a real run.", "Only 3 files changed: griot/loom/ev's PANEL-COMPOSITION.md, propagating the canonical section promoted in #157. guild already matched.", "This commit also carries the phase-2 -> completed manifest reconcile (bookkeeping ridden into the phase-3 work commit, not a standalone state-only commit).", "Next: Phase 4 wires `--check` into a real CI gate (+ pre-commit hook / npm script), writes the enforcement ADR, and makes CLAUDE.md's 'CI gate' claim true - so this class of fork can't silently recur. The partial-consumer-model ADR question is parked for Phase 4 (fold-in vs standalone)."]
+
+[[checkins]]
+schema_version = 1
+number = "05"
+created = "2026-05-30T20:48:39.000Z"
+phase = { number = 4, name = "Enforce the gate (close the loop)" }
+branch = "ev-agent.commons-sync-reconciliation.enforce-gate"
+unit = "4 - Enforce the gate (close the loop)"
+contract = { goal = "Turn the documented-but-fictional sync-shared --check 'CI gate' into a real, enforced, multi-layer gate, and record the decisions durably. Operator chose belt-and-braces (CI + npm run check + pre-commit hook) and two ADRs.", acceptance_criteria = [".github/workflows/sync-check.yml runs on pull_request + push-to-main: checkout -> node 24 -> npm ci -> npm run check -> npm test. Valid YAML.", "package.json gains check (node scripts/sync-shared.ts --check) + prepare (git config core.hooksPath .githooks || true) - auto-sets hookpath on install, no husky/dep.", ".githooks/pre-commit (executable) runs --check and blocks the commit on drift.", "ADR-0007 (enforcement + root cause) + ADR-0008 (partial-lib-consumer model) with FILLED Consequences (not the TODO stub 0002/0005 left).", "CLAUDE.md's 'CI gate' claim updated to reference the real workflow + hook + npm run check.", "Gate demonstrably fails on divergence (tested).", "npm test green; npm run check green on the clean tree."], rules_applied = ["Operator decisions: belt-and-braces gate (CI + hook + script); two ADRs (enforcement + partial-consumer).", "Committed .githooks/ + prepare-sets-core.hooksPath rather than husky (no npm dependency; 'keep it basic').", "Pre-commit hook runs only the fast --check (not npm test); CI runs --check + npm test.", "Fill the ADR Consequences (don't repeat the 0002/0005 TODO-stub papercut).", "Phase 4 wires enforcement AROUND sync-shared.ts; does not edit its logic. ADR-0002/0006 conventions hold."], disqualifiers = ["Adding husky or any npm dependency for the hook.", "Editing sync-shared.ts logic.", "Landing a divergent commit in the PR (demo the failure locally + revert).", "Running the destructive sync."], inputs = ["CLAUDE.md (lines 19, 32 - the fictional CI-gate claim)", "package.json (scripts)", "scripts/sync-shared.ts (the --check the gate invokes)", "projects/adr-log/ (format; next number was 0007)", "LIB_MIRROR_ALLOWLIST doc-comment + checkin 02 (ADR-0008 context)"] }
+execution = { actions = ["Wrote .github/workflows/sync-check.yml (on pull_request + push:[main]; checkout@v4 -> setup-node@v4 node 24 -> npm ci -> npm run check -> npm test).", "Added package.json scripts: check (node scripts/sync-shared.ts --check) + prepare (git config core.hooksPath .githooks || true).", "Wrote .githooks/pre-commit (exec node scripts/sync-shared.ts --check), chmod +x; set core.hooksPath=.githooks.", "Wrote ADR-0007 (enforce the invariant via CI + hook; root cause) + ADR-0008 (partial-lib-consumer model) via loom adr --no-commit, both with filled Consequences.", "Updated CLAUDE.md: the line-32 claim now references the enforced workflow + hook + npm run check (ADR-0007); the commands block gained an npm run check line.", "Verified end-to-end: staged a deliberately-drifted consumer doc, git commit -> hook fired -> --check exit 1 -> COMMIT BLOCKED (no commit landed), then reverted. npm run check green; --check exit 1 on drift / 0 clean; npm test 1093."], files_touched = [".github/workflows/sync-check.yml", ".githooks/pre-commit", "package.json", "CLAUDE.md", "projects/adr-log/0007-enforce-the-commons-sync-invariant-via-ci-and-a-pre-commit-hook.md", "projects/adr-log/0008-support-partial-lib-consumers-via-lib-mirror-allowlist.md"], corrections = [] }
+scope = [".github/workflows/sync-check.yml - the CI gate (new)", ".githooks/pre-commit + package.json prepare - commit-time gate (new)", "package.json check script - local alias (new)", "CLAUDE.md - make the CI-gate claim true", "ADR-0007 + ADR-0008 - record enforcement + the partial-consumer model"]
+changes_since_previous = "Fifth and final unit of the project, on the enforce-gate branch. Follows phase 3 (#158, merged; --check green on main). Also carries the phase-3 -> completed manifest reconcile (bookkeeping ridden into this real-work commit). Closes the loop the project opened."
+verdict = { result = "approved", reasons = ["guild-validate single-evaluator panel (evaluator-contract-fit via guild:retained:evaluator-contract-fit) returned approved; parse-and-aggregate confirmed verdict=approved, no findings.", "Evaluator ran 4 spot-checks (workflow, package.json incl husky?=false, hook, ADR-0008 Consequences); all 7 ACs met; no disqualifiers (no dep, no sync-shared.ts logic edit, no divergent commit, no destructive sync).", "Belt-and-braces is a superset of the PLAN's 'and/or' ask. Hook blocks on drift end-to-end; npm test 1093; npm run check green; ADR Consequences genuinely filled."] }
+notes_for_pr = ["Closes the loop: the project's root cause was a documented-but-unenforced sync gate that silently forked under parallel agents. This phase makes the gate real - CI workflow (sync-check.yml) + a pre-commit hook (.githooks/pre-commit, auto-configured by the prepare npm script) + an npm run check alias. Tested end-to-end: a drifted commit is blocked by the hook.", "Two ADRs, both with FILLED Consequences: 0007 (enforce the commons-sync invariant via CI/hook, not honor-system; + root cause) and 0008 (the partial-lib-consumer model / LIB_MIRROR_ALLOWLIST). This deliberately does NOT repeat the unfilled-'TODO: operator to fill' Consequences papercut that ADR-0002 and ADR-0005 left - worth a separate cleanup pass on those two.", "Hook mechanism: committed .githooks/ + a prepare script that runs git config core.hooksPath .githooks (|| true for non-git contexts) - no husky, no npm dependency. Activates on npm install; CI's npm ci runs it harmlessly.", "CLAUDE.md's 'CI will fail otherwise' claim is now true (it was fiction before this phase).", "Project complete after this merges: all 4 phases done, --check green + enforced. Next step is /loom-archive (retro + archive) - and this unblocks substrate-tempering Phase 3 (the commons event-union edit it needs is now safe + gated)."]
