@@ -1,8 +1,10 @@
 import { describe, expect, test } from 'vitest';
 import {
   CONVENTIONS,
+  deriveAgentRoster,
   extractCheckTargets,
   extractDescription,
+  makeSiblingReferenceConvention,
   runConventions,
   splitFrontmatter,
   type Convention,
@@ -321,6 +323,109 @@ The systematic walk.
     const findings = convention.check(
       'plugins/guild/agents/whiteboard-example.md',
       noLeanWhiteboard,
+    );
+    expect(findings).toEqual([]);
+  });
+});
+
+describe('deriveAgentRoster', () => {
+  test('extracts whiteboard-* / evaluator-* domains, ignores non-agent paths', () => {
+    const roster = deriveAgentRoster([
+      'plugins/guild/agents/whiteboard-substrate.md',
+      'plugins/guild/agents/evaluator-contract-fit.md',
+      'plugins/guild/agents/evaluator-css-architecture.md',
+      'plugins/guild/modes/personalities/personality-base.md',
+      'scripts/check-conventions.ts',
+    ]);
+    expect(roster.has('substrate')).toBe(true);
+    expect(roster.has('contract-fit')).toBe(true);
+    expect(roster.has('css-architecture')).toBe(true); // hyphenated domain stays intact
+    expect(roster.has('personality-base')).toBe(false); // under modes/, not an agent
+    expect(roster.size).toBe(3);
+  });
+});
+
+describe('sibling-reference-resolution convention', () => {
+  const roster = new Set([
+    'performance',
+    'contract-fit',
+    'nextjs',
+    'composition',
+  ]);
+  const convention = makeSiblingReferenceConvention(roster);
+
+  const resolvingWhiteboard = `---
+name: whiteboard-example
+role: whiteboard
+---
+
+# Whiteboard: example
+
+## Cross-domain notes
+
+- **performance overlap.** Render-cost concerns live there.
+- **contract-fit overlap.** Correctness after the fact is its lane.
+`;
+
+  const danglingWhiteboard = `---
+name: whiteboard-example
+role: whiteboard
+---
+
+# Whiteboard: example
+
+## Cross-domain notes
+
+- **ghostdomain overlap.** References a domain that no longer exists.
+`;
+
+  const qualifierWhiteboard = `---
+name: whiteboard-example
+role: whiteboard
+---
+
+# Whiteboard: example
+
+## Cross-domain notes
+
+- **nextjs reviewer overlap.** Framework concerns are nextjs's lane.
+`;
+
+  test('name + appliesTo: sibling-reference-resolution on whiteboard-*, not evaluator-*', () => {
+    expect(convention.name).toBe('sibling-reference-resolution');
+    expect(
+      convention.appliesTo('plugins/guild/agents/whiteboard-react.md'),
+    ).toBe(true);
+    expect(
+      convention.appliesTo('plugins/guild/agents/evaluator-react.md'),
+    ).toBe(false);
+  });
+
+  test('positive case: references that resolve to the roster yield zero findings', () => {
+    const findings = convention.check(
+      'plugins/guild/agents/whiteboard-example.md',
+      resolvingWhiteboard,
+    );
+    expect(findings).toEqual([]);
+  });
+
+  test('negative case: a dangling sibling reference yields one advisory finding', () => {
+    const findings = convention.check(
+      'plugins/guild/agents/whiteboard-example.md',
+      danglingWhiteboard,
+    );
+    expect(findings).toHaveLength(1);
+    expect(findings[0]).toMatchObject<Partial<Finding>>({
+      convention: 'sibling-reference-resolution',
+      severity: 'advisory',
+    });
+    expect(findings[0].message).toContain('ghostdomain');
+  });
+
+  test('qualifier case: "nextjs reviewer overlap" resolves via the "nextjs" token', () => {
+    const findings = convention.check(
+      'plugins/guild/agents/whiteboard-example.md',
+      qualifierWhiteboard,
     );
     expect(findings).toEqual([]);
   });

@@ -269,6 +269,68 @@ export const CONVENTIONS: ReadonlyArray<Convention> = [
 ];
 
 /**
+ * Derive the engineer-domain roster from an agent-file listing: the
+ * `<domain>` of each `plugins/.../agents/{whiteboard,evaluator}-<domain>.md`.
+ * Deriving from the real listing (rather than a hand-maintained list)
+ * means the roster cannot drift from the actual engineer set. Pure —
+ * the caller (main) supplies the already-collected paths.
+ */
+export function deriveAgentRoster(
+  paths: ReadonlyArray<string>,
+): Set<string> {
+  const roster = new Set<string>();
+  const re = /plugins\/[^/]+\/agents\/(?:whiteboard|evaluator)-(.+)\.md$/;
+  for (const path of paths) {
+    const match = path.match(re);
+    if (match) roster.add(match[1]);
+  }
+  return roster;
+}
+
+/**
+ * Convention factory: sibling-reference resolution (whiteboard-*.md).
+ *
+ * Whiteboard agents cross-link siblings in their "Cross-domain notes"
+ * via `**<name> overlap.**` bullets (e.g. "**performance overlap.**",
+ * "**contract-fit overlap.**"). This flags a reference whose <name>
+ * resolves to no roster agent — a dangling link, usually from a renamed
+ * or dropped engineer.
+ *
+ * The roster is injected (derived from the agent-file listing in main,
+ * never hardcoded) so `check` stays pure and unit-testable with a known
+ * roster. Lenient resolution: a reference resolves if ANY whitespace-
+ * token of <name> is a roster domain — so "nextjs reviewer overlap"
+ * resolves via "nextjs", while hyphenated domains ("css-architecture")
+ * stay intact. Advisory at MVP, matching the sibling conventions.
+ */
+const OVERLAP_REF = /\*\*([^*]+?)\s+overlap\.?\*\*/g;
+
+export function makeSiblingReferenceConvention(
+  roster: ReadonlySet<string>,
+): Convention {
+  return {
+    name: 'sibling-reference-resolution',
+    appliesTo: (file) =>
+      /plugins\/[^/]+\/agents\/whiteboard-[^/]+\.md$/.test(file),
+    check: (file, content) => {
+      const findings: Finding[] = [];
+      for (const match of content.matchAll(OVERLAP_REF)) {
+        const name = match[1].trim();
+        const tokens = name.split(/\s+/);
+        if (tokens.some((token) => roster.has(token))) continue;
+        findings.push({
+          file,
+          convention: 'sibling-reference-resolution',
+          severity: 'advisory',
+          message: `sibling reference "${name}" resolves to no roster agent (expected a whiteboard-<name> or evaluator-<name>)`,
+        });
+      }
+      return findings;
+    },
+  };
+}
+
+/**
  * Glob-like recursive walk: collect all *.md files under a root.
  * Skips node_modules and dotfile dirs. Returns absolute-ish paths
  * relative to the cwd passed in.
@@ -342,7 +404,11 @@ function main(): void {
     path,
     content: readFileSync(path, 'utf8'),
   }));
-  const findings = runConventions(files, CONVENTIONS);
+  // Roster-dependent conventions are built here (the I/O layer): the
+  // roster is derived from the collected agent-file paths, never hardcoded.
+  const roster = deriveAgentRoster(allMarkdown);
+  const conventions = [...CONVENTIONS, makeSiblingReferenceConvention(roster)];
+  const findings = runConventions(files, conventions);
   printReport(findings, cwd);
   process.exit(0);
 }
