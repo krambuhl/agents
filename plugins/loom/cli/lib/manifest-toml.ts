@@ -3,11 +3,11 @@
 // readManifest(raw) parses a manifest.toml string via the generic
 // parseToml lib (U1) and reconstructs the typed ManifestToml tree: a
 // [meta] table, the [config] table, and the [[phases]] / [[events]] /
-// [[checkins]] / [[sessions]] array-of-table sections. This is the
-// READER half of Phase 2 — there is no writer here (U3 owns the atomic
-// write path) and no verb wiring (U3/U5). It is additive: the legacy
-// manifest.json / config.json / events.jsonl read paths are untouched
-// until the U5 dogfood migration removes them.
+// [[checkins]] / [[sessions]] array-of-table sections. This module owns
+// both halves of the manifest path: readManifest / readManifestFile and
+// the atomic writeManifest below. The legacy per-file JSON stores
+// (manifest.json / config.json / events.jsonl) have been retired — no
+// code constructs those paths anymore (see MANIFEST_FILENAME below).
 //
 // Validation posture — STRUCTURE strict, SEMANTICS lenient:
 //   - Structure (is the key present? is it a string / a string-array / a
