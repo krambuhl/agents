@@ -1,8 +1,10 @@
 import { describe, expect, test } from 'vitest';
 import {
   CONVENTIONS,
+  deriveAgentRoster,
   extractCheckTargets,
   extractDescription,
+  makeSiblingReferenceConvention,
   runConventions,
   splitFrontmatter,
   type Convention,
@@ -58,6 +60,11 @@ describe('Convention framework', () => {
   test('CONVENTIONS registry exports the rubric-body-coherence convention', () => {
     const names = CONVENTIONS.map((c) => c.name);
     expect(names).toContain('rubric-body-coherence');
+  });
+
+  test('CONVENTIONS registry exports the bullet-pair-coherence convention', () => {
+    const names = CONVENTIONS.map((c) => c.name);
+    expect(names).toContain('bullet-pair-coherence');
   });
 });
 
@@ -124,6 +131,17 @@ describe('extractCheckTargets', () => {
     expect(targets).toContain('foo');
     expect(targets).toContain('bar');
     expect(targets).toContain('baz');
+  });
+
+  test('skips "whether …" predicate clauses, keeps concrete sibling targets', () => {
+    const desc =
+      'Checks whether a unit of work meets its agreed contract. Verifies acceptance criteria and disqualifiers.';
+    const targets = extractCheckTargets(desc);
+    // The abstract "whether …" clause is not extracted as a target.
+    expect(targets.some((t) => t.includes('whether'))).toBe(false);
+    // Concrete targets from the sibling sentence still extract.
+    expect(targets).toContain('acceptance criteria');
+    expect(targets).toContain('disqualifiers');
   });
 
   test('returns empty when no check verbs appear', () => {
@@ -217,5 +235,233 @@ tools: Read
       severity: 'advisory',
     });
     expect(findings[0].message).toContain('disqualifiers');
+  });
+
+  test('a reworded "checks whether …" description does not over-flag', () => {
+    const whetherEvaluator = `---
+name: evaluator-example
+role: evaluator
+description: >-
+  Skeptical evaluator that checks whether a unit of work meets its
+  agreed contract. Verifies acceptance criteria and disqualifiers.
+tools: Read
+---
+
+# Evaluator: example
+
+## Process
+
+1. Re-read the contract and restate the agreed acceptance criteria.
+2. Walk disqualifiers and flag any that fire.
+`;
+    const findings = convention.check(
+      'plugins/guild/agents/evaluator-example.md',
+      whetherEvaluator,
+    );
+    expect(findings).toEqual([]);
+  });
+});
+
+describe('bullet-pair-coherence convention', () => {
+  const convention = CONVENTIONS.find(
+    (c) => c.name === 'bullet-pair-coherence',
+  )!;
+
+  // Lean-toward content bounded inline by an "X over Y" stance bullet.
+  const boundedWhiteboard = `---
+name: whiteboard-example
+role: whiteboard
+description: example whiteboard
+tools: Read
+---
+
+# Whiteboard: example
+
+## Stance
+
+- **Sharp over exhaustive.** Surface the few sharpest points.
+- **Document the path.** Show your work.
+
+## What to surface
+
+The systematic walk.
+`;
+
+  // Lean-toward content with no boundary anywhere (no "X over Y",
+  // no "Anti-patterns to avoid" section, no "Not a …" / "don't").
+  const unboundedWhiteboard = `---
+name: whiteboard-example
+role: whiteboard
+description: example whiteboard
+tools: Read
+---
+
+# Whiteboard: example
+
+## Stance
+
+- **Be thorough.** Cover every entry.
+- **Lean into structure.** Prefer systematic walks.
+
+## What to surface
+
+The systematic walk.
+`;
+
+  // No lean-toward section at all — nothing to bound.
+  const noLeanWhiteboard = `---
+name: whiteboard-example
+role: whiteboard
+description: example whiteboard
+tools: Read
+---
+
+# Whiteboard: example
+
+## What to surface
+
+The systematic walk.
+`;
+
+  test('appliesTo matches whiteboard-* under plugins/.../agents, not evaluator-*', () => {
+    expect(
+      convention.appliesTo('plugins/guild/agents/whiteboard-substrate.md'),
+    ).toBe(true);
+    expect(
+      convention.appliesTo('plugins/guild/agents/evaluator-contract-fit.md'),
+    ).toBe(false);
+    expect(convention.appliesTo('scripts/check-conventions.ts')).toBe(false);
+  });
+
+  test('positive case: lean-toward bounded by an "X over Y" stance yields zero findings', () => {
+    const findings = convention.check(
+      'plugins/guild/agents/whiteboard-example.md',
+      boundedWhiteboard,
+    );
+    expect(findings).toEqual([]);
+  });
+
+  test('negative case: lean-toward with no boundary signal yields one finding', () => {
+    const findings = convention.check(
+      'plugins/guild/agents/whiteboard-example.md',
+      unboundedWhiteboard,
+    );
+    expect(findings).toHaveLength(1);
+    expect(findings[0]).toMatchObject<Partial<Finding>>({
+      convention: 'bullet-pair-coherence',
+      severity: 'advisory',
+    });
+    expect(findings[0].message).toContain('boundary');
+  });
+
+  test('no lean-toward section: nothing to bound, zero findings', () => {
+    const findings = convention.check(
+      'plugins/guild/agents/whiteboard-example.md',
+      noLeanWhiteboard,
+    );
+    expect(findings).toEqual([]);
+  });
+});
+
+describe('deriveAgentRoster', () => {
+  test('extracts whiteboard-* / evaluator-* domains, ignores non-agent paths', () => {
+    const roster = deriveAgentRoster([
+      'plugins/guild/agents/whiteboard-substrate.md',
+      'plugins/guild/agents/evaluator-contract-fit.md',
+      'plugins/guild/agents/evaluator-css-architecture.md',
+      'plugins/guild/modes/personalities/personality-base.md',
+      'scripts/check-conventions.ts',
+    ]);
+    expect(roster.has('substrate')).toBe(true);
+    expect(roster.has('contract-fit')).toBe(true);
+    expect(roster.has('css-architecture')).toBe(true); // hyphenated domain stays intact
+    expect(roster.has('personality-base')).toBe(false); // under modes/, not an agent
+    expect(roster.size).toBe(3);
+  });
+});
+
+describe('sibling-reference-resolution convention', () => {
+  const roster = new Set([
+    'performance',
+    'contract-fit',
+    'nextjs',
+    'composition',
+  ]);
+  const convention = makeSiblingReferenceConvention(roster);
+
+  const resolvingWhiteboard = `---
+name: whiteboard-example
+role: whiteboard
+---
+
+# Whiteboard: example
+
+## Cross-domain notes
+
+- **performance overlap.** Render-cost concerns live there.
+- **contract-fit overlap.** Correctness after the fact is its lane.
+`;
+
+  const danglingWhiteboard = `---
+name: whiteboard-example
+role: whiteboard
+---
+
+# Whiteboard: example
+
+## Cross-domain notes
+
+- **ghostdomain overlap.** References a domain that no longer exists.
+`;
+
+  const qualifierWhiteboard = `---
+name: whiteboard-example
+role: whiteboard
+---
+
+# Whiteboard: example
+
+## Cross-domain notes
+
+- **nextjs reviewer overlap.** Framework concerns are nextjs's lane.
+`;
+
+  test('name + appliesTo: sibling-reference-resolution on whiteboard-*, not evaluator-*', () => {
+    expect(convention.name).toBe('sibling-reference-resolution');
+    expect(
+      convention.appliesTo('plugins/guild/agents/whiteboard-react.md'),
+    ).toBe(true);
+    expect(
+      convention.appliesTo('plugins/guild/agents/evaluator-react.md'),
+    ).toBe(false);
+  });
+
+  test('positive case: references that resolve to the roster yield zero findings', () => {
+    const findings = convention.check(
+      'plugins/guild/agents/whiteboard-example.md',
+      resolvingWhiteboard,
+    );
+    expect(findings).toEqual([]);
+  });
+
+  test('negative case: a dangling sibling reference yields one advisory finding', () => {
+    const findings = convention.check(
+      'plugins/guild/agents/whiteboard-example.md',
+      danglingWhiteboard,
+    );
+    expect(findings).toHaveLength(1);
+    expect(findings[0]).toMatchObject<Partial<Finding>>({
+      convention: 'sibling-reference-resolution',
+      severity: 'advisory',
+    });
+    expect(findings[0].message).toContain('ghostdomain');
+  });
+
+  test('qualifier case: "nextjs reviewer overlap" resolves via the "nextjs" token', () => {
+    const findings = convention.check(
+      'plugins/guild/agents/whiteboard-example.md',
+      qualifierWhiteboard,
+    );
+    expect(findings).toEqual([]);
   });
 });

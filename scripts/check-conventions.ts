@@ -151,6 +151,11 @@ export function extractDescription(frontmatter: string): string {
  * next sentence-ending punctuation or the end of the string, then
  * split on commas + " and " to get individual targets.
  *
+ * A phrase beginning with "whether" is skipped: it's an abstract
+ * predicate clause ("checks whether X meets its contract"), not a
+ * concrete noun-target, so substring-matching it against the body
+ * over-flags. Sibling sentences with concrete targets still extract.
+ *
  * Returns deduplicated, lowercased targets. Empty list if no
  * check-verb matches.
  */
@@ -166,6 +171,8 @@ export function extractCheckTargets(description: string): string[] {
   const targets = new Set<string>();
   for (const match of description.matchAll(pattern)) {
     const phrase = match[1].trim();
+    // Predicate clauses ("whether X …") are not concrete check-targets.
+    if (/^whether\b/i.test(phrase)) continue;
     const parts = phrase.split(/,\s*(?:and\s+)?|\s+and\s+/);
     for (const part of parts) {
       const cleaned = part.trim().toLowerCase();
@@ -219,9 +226,116 @@ const rubricBodyCoherence: Convention = {
 };
 
 /**
+ * Convention: bullet-pair coherence (whiteboard-*.md).
+ *
+ * A whiteboard engineer that states what it leans toward should also
+ * bound itself — say what it does NOT do — so its scope stays coherent
+ * rather than unbounded. This flags a whiteboard agent whose lean-toward
+ * content carries no boundary signal anywhere in the file.
+ *
+ * Lenient by design (whole-file boundedness): the boundary may be inline
+ * in an "X over Y" stance bullet, a dedicated "Anti-patterns to avoid"
+ * section, or a "Not a …" / "don't" carve-out — any one suffices. Only a
+ * file that leans without ANY of these flags. This keeps the live
+ * (codegen'd, structurally varied) corpus clean and guards against future
+ * genuinely-unbounded agents. Advisory at MVP, matching
+ * rubric-body-coherence.
+ */
+const LEAN_SECTION = /^## Stance\b|^### Good patterns to bias toward\b/m;
+const BOUNDARY_SIGNALS: ReadonlyArray<RegExp> = [
+  /\b[A-Za-z]+ over [A-Za-z]+\b/, // inline "X over Y" stance
+  /to avoid/i, // "Anti-patterns to avoid" boundary section
+  /not a |\bdon'?t\b/i, // "Not a …" / "don't" carve-out
+];
+
+const bulletPairCoherence: Convention = {
+  name: 'bullet-pair-coherence',
+  appliesTo: (file) =>
+    /plugins\/[^/]+\/agents\/whiteboard-[^/]+\.md$/.test(file),
+  check: (file, content) => {
+    if (!LEAN_SECTION.test(content)) return [];
+    if (BOUNDARY_SIGNALS.some((re) => re.test(content))) return [];
+    return [
+      {
+        file,
+        convention: 'bullet-pair-coherence',
+        severity: 'advisory',
+        message:
+          'states what it leans toward but carries no boundary signal — add an "X over Y" stance bullet, an "Anti-patterns to avoid" section, or a "Not a …" carve-out',
+      },
+    ];
+  },
+};
+
+/**
  * Registered conventions. Add new ones here.
  */
-export const CONVENTIONS: ReadonlyArray<Convention> = [rubricBodyCoherence];
+export const CONVENTIONS: ReadonlyArray<Convention> = [
+  rubricBodyCoherence,
+  bulletPairCoherence,
+];
+
+/**
+ * Derive the engineer-domain roster from an agent-file listing: the
+ * `<domain>` of each `plugins/.../agents/{whiteboard,evaluator}-<domain>.md`.
+ * Deriving from the real listing (rather than a hand-maintained list)
+ * means the roster cannot drift from the actual engineer set. Pure —
+ * the caller (main) supplies the already-collected paths.
+ */
+export function deriveAgentRoster(
+  paths: ReadonlyArray<string>,
+): Set<string> {
+  const roster = new Set<string>();
+  const re = /plugins\/[^/]+\/agents\/(?:whiteboard|evaluator)-(.+)\.md$/;
+  for (const path of paths) {
+    const match = path.match(re);
+    if (match) roster.add(match[1]);
+  }
+  return roster;
+}
+
+/**
+ * Convention factory: sibling-reference resolution (whiteboard-*.md).
+ *
+ * Whiteboard agents cross-link siblings in their "Cross-domain notes"
+ * via `**<name> overlap.**` bullets (e.g. "**performance overlap.**",
+ * "**contract-fit overlap.**"). This flags a reference whose <name>
+ * resolves to no roster agent — a dangling link, usually from a renamed
+ * or dropped engineer.
+ *
+ * The roster is injected (derived from the agent-file listing in main,
+ * never hardcoded) so `check` stays pure and unit-testable with a known
+ * roster. Lenient resolution: a reference resolves if ANY whitespace-
+ * token of <name> is a roster domain — so "nextjs reviewer overlap"
+ * resolves via "nextjs", while hyphenated domains ("css-architecture")
+ * stay intact. Advisory at MVP, matching the sibling conventions.
+ */
+const OVERLAP_REF = /\*\*([^*]+?)\s+overlap\.?\*\*/g;
+
+export function makeSiblingReferenceConvention(
+  roster: ReadonlySet<string>,
+): Convention {
+  return {
+    name: 'sibling-reference-resolution',
+    appliesTo: (file) =>
+      /plugins\/[^/]+\/agents\/whiteboard-[^/]+\.md$/.test(file),
+    check: (file, content) => {
+      const findings: Finding[] = [];
+      for (const match of content.matchAll(OVERLAP_REF)) {
+        const name = match[1].trim();
+        const tokens = name.split(/\s+/);
+        if (tokens.some((token) => roster.has(token))) continue;
+        findings.push({
+          file,
+          convention: 'sibling-reference-resolution',
+          severity: 'advisory',
+          message: `sibling reference "${name}" resolves to no roster agent (expected a whiteboard-<name> or evaluator-<name>)`,
+        });
+      }
+      return findings;
+    },
+  };
+}
 
 /**
  * Glob-like recursive walk: collect all *.md files under a root.
@@ -297,7 +411,11 @@ function main(): void {
     path,
     content: readFileSync(path, 'utf8'),
   }));
-  const findings = runConventions(files, CONVENTIONS);
+  // Roster-dependent conventions are built here (the I/O layer): the
+  // roster is derived from the collected agent-file paths, never hardcoded.
+  const roster = deriveAgentRoster(allMarkdown);
+  const conventions = [...CONVENTIONS, makeSiblingReferenceConvention(roster)];
+  const findings = runConventions(files, conventions);
   printReport(findings, cwd);
   process.exit(0);
 }
