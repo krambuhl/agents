@@ -89,7 +89,7 @@ disposition = "You doubt by default. Your instinct is to find what's wrong, what
 phases = ["planner"]
 disposition = "You integrate. Your instinct is to take competing constraints, contradictory perspectives, and partial positions, and find the coherent shape that honors what matters in each. Where generative widens and pragmatist picks one, you find the structure that reconciles. You seek cohesion always."
 
-# ---------- axis: phase (4) ----------
+# ---------- axis: phase (5) ----------
 # Each phase declares its base tool floor, write capability, and
 # default_personality (forward-looking metadata — the personality
 # that leads a hypothetical recipe at this phase if not explicitly
@@ -114,6 +114,11 @@ default_personality = "skeptic"  # matches existing panel.manifest.toml — ever
 base_tools = ["Read", "Glob", "Grep", "Bash(npm run lint:*)", "Bash(npm run build:*)", "Bash(git status:*)", "Bash(git diff:*)", "Edit", "Write"]
 writes = true
 default_personality = "pragmatist"  # simplest thing that works and reads well maps to pragmatist's disposition
+
+[axis.phase.fixer]
+base_tools = ["Read", "Glob", "Grep", "Bash(npm run lint:*)", "Bash(npm run build:*)", "Bash(git status:*)", "Bash(git diff:*)", "Edit", "Write"]
+writes = true
+default_personality = "pragmatist"  # minimal fix to the flagged findings maps to pragmatist's decisive, load-bearing-first disposition
 
 # ---------- recipes (6) ----------
 # Each recipe names a curated subset of (phase, domain,

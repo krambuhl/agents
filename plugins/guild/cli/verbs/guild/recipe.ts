@@ -32,6 +32,7 @@ const PHASE_PREFIX: Record<string, string> = {
   reviewer: 'evaluator',
   planner: 'whiteboard',
   implementer: 'implementer',
+  fixer: 'fixer',
 };
 
 export class RecipeNotFoundError extends Error {}

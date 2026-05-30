@@ -27,6 +27,7 @@ const PHASE_PREFIX: Record<string, string> = {
   reviewer: 'evaluator',
   planner: 'whiteboard',
   implementer: 'implementer',
+  fixer: 'fixer',
 };
 
 function prefixForPhase(phase: string): string {
