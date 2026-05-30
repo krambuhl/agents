@@ -25,7 +25,7 @@ phases = ["planner"]
 tool_grants = []
 
 [axis.domain.css-architecture]
-phases = ["reviewer"]
+phases = ["reviewer", "implementer", "fixer"]
 tool_grants = []
 
 [axis.domain.naming]
@@ -64,13 +64,10 @@ tool_grants = ["Bash(npm run lint:*)", "Bash(npm run build:*)", "Bash(git status
 # Each personality declares which phases the voice currently has
 # at-least-one cell at, plus the disposition excerpt (first
 # paragraph of the fragment's ## Disposition section) for LLM
-# fusion input. pragmatist.phases is empty because no current
-# combination/recipe/singleton names pragmatist; the personality
-# is authored but not yet instantiated (the fragment's ## Phase
-# modulation describes all four phases). axis.phase.implementer's
-# default_personality references pragmatist forward-looking — when
-# implementer cells get added later, pragmatist will be the
-# default.
+# fusion input. pragmatist is instantiated at implementer and fixer —
+# the implementer-default and fixer-default recipes name it for the
+# css-architecture proof domain, matching both write-capable phases'
+# pragmatist default_personality.
 
 [axis.personality.generative]
 phases = ["planner"]
@@ -81,7 +78,7 @@ phases = ["planner"]
 disposition = "You are systematic. You work through the full catalog, every criterion, every sibling case, in order, without skipping. Where the skeptic finds the one sharp flaw fast, you find all of them by leaving nothing unexamined. Completeness is your contribution."
 
 [axis.personality.pragmatist]
-phases = []
+phases = ["implementer", "fixer"]
 disposition = "You decide. Your instinct is to find the simplest thing that works and reads well, ship it, and move on. You separate what's load-bearing from what's cosmetic and spend judgment only on the former. \"Good enough for now\" is a real answer when it's honestly true."
 
 [axis.personality.skeptic]
@@ -92,7 +89,7 @@ disposition = "You doubt by default. Your instinct is to find what's wrong, what
 phases = ["planner"]
 disposition = "You integrate. Your instinct is to take competing constraints, contradictory perspectives, and partial positions, and find the coherent shape that honors what matters in each. Where generative widens and pragmatist picks one, you find the structure that reconciles. You seek cohesion always."
 
-# ---------- axis: phase (4) ----------
+# ---------- axis: phase (5) ----------
 # Each phase declares its base tool floor, write capability, and
 # default_personality (forward-looking metadata — the personality
 # that leads a hypothetical recipe at this phase if not explicitly
@@ -118,7 +115,12 @@ base_tools = ["Read", "Glob", "Grep", "Bash(npm run lint:*)", "Bash(npm run buil
 writes = true
 default_personality = "pragmatist"  # simplest thing that works and reads well maps to pragmatist's disposition
 
-# ---------- recipes (5) ----------
+[axis.phase.fixer]
+base_tools = ["Read", "Glob", "Grep", "Bash(npm run lint:*)", "Bash(npm run build:*)", "Bash(git status:*)", "Bash(git diff:*)", "Edit", "Write"]
+writes = true
+default_personality = "pragmatist"  # minimal fix to the flagged findings maps to pragmatist's decisive, load-bearing-first disposition
+
+# ---------- recipes (7) ----------
 # Each recipe names a curated subset of (phase, domain,
 # personality) cells for guild-spawn. Recipes replace the
 # anonymous [[combinations]] table from panel.manifest.toml +
@@ -157,6 +159,24 @@ name = "design-systems"
 phase = "planner"
 personality = "generative"
 domains = ["composition", "abstraction", "tokens", "naming"]
+
+# implementer-default seeds the write-capable implementer phase on the
+# css-architecture proof domain — the first pragmatist cell. Expansion
+# to the full domain set is a deferred follow-up wave.
+[[recipes]]
+name = "implementer-default"
+phase = "implementer"
+personality = "pragmatist"
+domains = ["css-architecture"]
+
+# fixer-default seeds the write-capable fixer phase on the
+# css-architecture proof domain, completing the implement-verify-fix
+# posture set. Expansion to the full domain set is a deferred follow-up.
+[[recipes]]
+name = "fixer-default"
+phase = "fixer"
+personality = "pragmatist"
+domains = ["css-architecture"]
 
 # ---------- singletons (1) ----------
 # A singleton is a (phase, personality) pair with NO domain — the

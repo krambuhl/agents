@@ -8,7 +8,7 @@ import { ResolveError } from './types.ts';
 //
 // Tool fold (per PLAN § Phase 1.2 exit criterion 5):
 //   tools = phase.base_tools ∪ domain.tool_grants
-//                          (at verification phases — reviewer + implementer)
+//                          (at verification phases — reviewer + implementer + fixer)
 //   tools = phase.base_tools
 //                          (everywhere else — planner + researcher)
 //
@@ -20,7 +20,7 @@ import { ResolveError } from './types.ts';
 // real I/O happens in compile.ts; tests can pass an in-memory
 // reader. The reader's relPath argument is rooted at plugins/guild/.
 
-const VERIFICATION_PHASES = new Set(['reviewer', 'implementer']);
+const VERIFICATION_PHASES = new Set(['reviewer', 'implementer', 'fixer']);
 
 export type FragmentReader = (relPath: string) => string;
 

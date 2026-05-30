@@ -31,6 +31,8 @@ import type { DispatchResult, GuildCliContext, GuildVerbHandler } from './index.
 const PHASE_PREFIX: Record<string, string> = {
   reviewer: 'evaluator',
   planner: 'whiteboard',
+  implementer: 'implementer',
+  fixer: 'fixer',
 };
 
 export class RecipeNotFoundError extends Error {}
@@ -47,7 +49,7 @@ function nameFor(phase: string, domain: string): string {
   const prefix = PHASE_PREFIX[phase];
   if (prefix === undefined) {
     throw new RecipeReadError(
-      `no agent-name prefix for phase '${phase}' (recipes target reviewer/planner phases only)`,
+      `no agent-name prefix for phase '${phase}' — add an entry to PHASE_PREFIX`,
     );
   }
   return `${prefix}-${domain}`;

@@ -19,18 +19,22 @@ import { DeriveError } from './types.ts';
 // silent dedup. A duplicate is a signal the recipe set has an overlap
 // the author didn't intend.
 
-// Phase → cell-id prefix. PLAN's existing convention for the two
-// active phases. Other phases throw on derivation today.
+// Phase → cell-id prefix. reviewer/planner keep their historical
+// prefixes (evaluator/whiteboard); write-capable phases prefix with
+// their own name. A phase absent here throws on derivation — P3
+// collapses this map to a phase-name default.
 const PHASE_PREFIX: Record<string, string> = {
   reviewer: 'evaluator',
   planner: 'whiteboard',
+  implementer: 'implementer',
+  fixer: 'fixer',
 };
 
 function prefixForPhase(phase: string): string {
   const prefix = PHASE_PREFIX[phase];
   if (prefix === undefined) {
     throw new DeriveError(
-      `phase "${phase}" has no cell-id prefix (PLAN's convention covers reviewer + planner only today)`,
+      `phase "${phase}" has no cell-id prefix — add an entry to PHASE_PREFIX`,
     );
   }
   return prefix;

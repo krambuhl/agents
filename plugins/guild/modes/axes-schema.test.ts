@@ -48,7 +48,7 @@ const CANONICAL_PERSONALITIES = [
   'synthesizer',
 ];
 
-const CANONICAL_PHASES = ['researcher', 'planner', 'reviewer', 'implementer'];
+const CANONICAL_PHASES = ['researcher', 'planner', 'reviewer', 'implementer', 'fixer'];
 
 function getTable(
   t: TomlValue | undefined,
