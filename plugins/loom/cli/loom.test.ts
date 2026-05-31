@@ -152,17 +152,24 @@ test('dispatch: verbless namespace (revise-plan) routes to reviseVerb (missing-a
   rmSync(ctx.projectsRoot, { recursive: true, force: true });
 });
 
-test('dispatch: verbless namespace (research) routes to researchVerb (missing-args surfaces)', () => {
+test('dispatch: research is a subverb namespace — bare slug errors, `init` routes', () => {
   const ctx = makeCtx();
-  // Same shape as the plan / revise-plan tests above, for the
-  // `loom research` verb (Phase 3 wiring).
-  const result = dispatch(
-    { kind: 'verb', namespace: 'research', rest: [] },
+  // research is no longer verbless: `loom research <slug>` (no subverb)
+  // is an unknown-verb hard cut; `loom research init` routes to the init
+  // handler (surfacing its own missing-args for the absent positional).
+  const bare = dispatch(
+    { kind: 'verb', namespace: 'research', rest: ['2026-05-18-some-topic'] },
     ctx,
   );
-  expect(result.exitCode).toBe(1);
-  const parsed = JSON.parse(result.stderr as string);
-  expect(parsed.error).toBe('missing-args');
+  expect(bare.exitCode).toBe(1);
+  expect(JSON.parse(bare.stderr as string).error).toBe('unknown-verb');
+
+  const init = dispatch(
+    { kind: 'verb', namespace: 'research', rest: ['init'] },
+    ctx,
+  );
+  expect(init.exitCode).toBe(1);
+  expect(JSON.parse(init.stderr as string).error).toBe('missing-args');
   rmSync(ctx.projectsRoot, { recursive: true, force: true });
 });
 

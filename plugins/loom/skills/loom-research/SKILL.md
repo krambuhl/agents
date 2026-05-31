@@ -252,10 +252,14 @@ Write the two candidate files to temp paths:
 Invoke:
 
 ```
-Bash("loom research <slug-or-topic> \
+Bash("loom research init <slug-or-topic> \
   --research-file=/tmp/loom-research-<slug>.md \
   --notes-file=/tmp/loom-research-notes-<slug>.md")
 ```
+
+`loom research` is a subverb family (`init`, plus `append`/`show`); the
+scaffold-from-prepared-files behavior is `init`. The bare `loom research
+<slug>` form is no longer valid.
 
 The CLI auto-adopts loom substrate by default and emits
 `research-started` + `research-completed` events itself (see Phase

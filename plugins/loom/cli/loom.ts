@@ -62,14 +62,16 @@ const VERBS_BY_NAMESPACE: Record<string, Record<string, VerbHandler>> = {
 
 // Verbless namespaces are single-handler namespaces (per
 // LOOM-CONVENTIONS.md: `loom doctor [<slug>]`, `loom plan <slug-or-topic>
-// ...`, `loom revise-plan <slug> ...`, `loom research <slug-or-topic>
-// ...`). The first verb-position argument is treated as the first
-// handler arg.
+// ...`, `loom revise-plan <slug> ...`). The first verb-position argument
+// is treated as the first handler arg.
+//
+// `research` is NOT verbless: it is a subverb family (`init`, plus
+// `append`/`show` in the next unit), so the bare `loom research <slug>`
+// form now errors and callers use `loom research init <slug> ...`.
 const VERBLESS_NAMESPACES: ReadonlySet<string> = new Set([
   'doctor',
   'plan',
   'revise-plan',
-  'research',
   'parse-plan',
   'adr',
 ]);
