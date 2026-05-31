@@ -230,7 +230,12 @@ For each deliverable (picked per the ordering rule):
      follow-ups when the field needs free-form input) one question
      at a time. After each answer, update the candidate contract.
      When the ambiguity queue empties, show the full contract for
-     final approve/redirect — same shape as the default path.
+     final approve/redirect — same shape as the default path. A
+     field whose resolution is a consequential fork (discrete,
+     mutually-exclusive options that change the unit's work) takes
+     the structured `AskUserQuestion`; a field with an obvious
+     default takes prose — see `docs/AGENT-CONVENTIONS.md`
+     § Human-paired decisions: structured vs prose.
 
    **Auto-mode** (the loop's `--mode=auto` flag, or upstream
    caller-supplied auto-mode signal): the user is replaced by

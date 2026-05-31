@@ -241,6 +241,45 @@ mission), the parent skill deletes `RECOVERY-STATUS.json`. The
 substrate does not auto-clean stale files; cleanup is each skill's
 responsibility.
 
+## Human-paired decisions: structured vs prose
+
+When a skill is human-paired (not `--mode=auto`), some decisions go to
+the operator. *How* you ask matters: a consequential fork deserves a
+structured `AskUserQuestion`; a clarification with an obvious default
+does not.
+
+**Use a structured `AskUserQuestion`** when BOTH hold:
+
+- The answer **changes what you do next** — different options lead to
+  materially different work (a different design, scope, or set of
+  files), not just a wording tweak.
+- The options are **discrete and mutually exclusive** — you can name
+  2-4 concrete choices the operator picks between (lead with a
+  recommendation; make the trade-offs visible).
+
+This is the same class of decision auto-mode hands to an evaluator or
+whiteboard panel (see § Auto-mode below). Human-paired, it goes to the
+operator as a structured prompt so the choice is on the record and the
+operator isn't reconstructing the options out of a paragraph.
+
+**Use free-form prose** when:
+
+- There's an **obvious default** — pick it, state it in one line, and
+  proceed. Don't manufacture a question for a decision you can make.
+- The input is **open-ended** — it doesn't fit discrete options (a
+  name, a free-text redirect, a "what did you mean by X").
+
+**The failure mode this prevents:** asking a consequential fork in
+prose ("should I do A, or B, or maybe C?") buries the decision, makes
+the options hard to compare, and leaves no clean record of what was
+chosen. The inverse — a structured prompt for a decision with an
+obvious default — is friction the operator didn't ask for. Match the
+form to the stakes.
+
+When genuinely uncertain about approach, scope, or intent — and the
+decision tree has more than one live branch — reach for `/grill-me`,
+which drives the structured form one branch at a time.
+
 ## Auto-mode and the two-budget shape
 
 Many skills support an optional `--mode=auto` flag (or equivalent
