@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve as resolvePath } from 'node:path';
 import { parseArgs } from 'node:util';
@@ -41,10 +42,14 @@ import type { ComposedAgent } from './compile/types.ts';
 //   --axes-toml=<path>    Default: plugins/guild/modes/axes.toml (cwd-relative).
 //   --output-dir=<path>   Default: plugins/guild/agents (cwd-relative).
 //   --cache-toml=<path>   Default: <output-dir>/.cache.toml.
-//   --prompt-hash=<hex>   Default: empty string. The U3 /guild-compile
-//                         skill computes SHA-256 of fusion-prompt.md and
-//                         passes it here; an empty value matches legacy
-//                         cache entries written before U3 lands.
+//   --prompt-hash=<hex>   The SHA-256 of fusion-prompt.md. The U3
+//                         /guild-compile skill computes and passes it for
+//                         the fusion stages. For --check, an OMITTED flag
+//                         is self-computed from the in-plugin
+//                         fusion-prompt.md template (see below) so the
+//                         check is honest standalone; an explicit value
+//                         (including empty, to match pre-U3 legacy cache
+//                         entries) always wins.
 //   --check               Run drift detection instead of the pipeline.
 
 const THROUGH_RESOLVE_STAGE = 'parse,validate,derive,resolve';
@@ -72,6 +77,26 @@ function errorResult(name: string, message: string, exitCode = 1): DispatchResul
 function readCacheFile(cachePath: string): string | undefined {
   if (!existsSync(cachePath)) return undefined;
   return readFileSync(cachePath, 'utf8');
+}
+
+// The fusion-prompt template codegen fuses against, relative to the guild
+// plugin root. The cache stamps each cell with sha256(this template) so a
+// prompt-template edit invalidates the cache (see guild-compile SKILL.md).
+const FUSION_PROMPT_RELPATH = join('skills', 'guild-compile', 'fusion-prompt.md');
+
+// Self-compute the prompt-hash from the in-plugin fusion-prompt.md, matching
+// what the /guild-compile skill computes (`shasum -a 256` over the same file).
+// Used by --check when --prompt-hash is omitted, so a standalone check (CI,
+// loom doctor) compares against the REAL prompt-hash instead of '' — which
+// would false-flag every cell as prompt-drifted. Returns '' if the template
+// is absent (a broken install where codegen can't run anyway), preserving the
+// pre-U3 legacy-match behavior rather than inventing a phantom mismatch story.
+function computeFusionPromptHash(pluginRoot: string): string {
+  const templatePath = join(pluginRoot, FUSION_PROMPT_RELPATH);
+  if (!existsSync(templatePath)) return '';
+  return createHash('sha256')
+    .update(readFileSync(templatePath, 'utf8'), 'utf8')
+    .digest('hex');
 }
 
 function ensureDir(path: string): void {
@@ -191,12 +216,20 @@ export function compileVerb(
         if (!existsSync(filePath)) return undefined;
         return readFileSync(filePath, 'utf8');
       };
+      // An explicit --prompt-hash wins (the skill passes it; an empty value
+      // intentionally matches legacy entries). When omitted, self-compute
+      // from fusion-prompt.md so a standalone --check is honest instead of
+      // false-flagging every cell against ''.
+      const checkPromptHash =
+        values['prompt-hash'] !== undefined
+          ? promptHash
+          : computeFusionPromptHash(pluginRoot);
       const result = check({
         axesToml,
         cacheToml,
         fragmentReader,
         agentBodyReader,
-        promptHash,
+        promptHash: checkPromptHash,
       });
       return {
         stdout: JSON.stringify(result, null, 2),
