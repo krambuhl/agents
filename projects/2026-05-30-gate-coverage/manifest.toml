@@ -25,7 +25,8 @@ branch = "ev-agent.gate-coverage.phase-1"
 [[phases]]
 number = 2
 name = "loom doctor probes guild cache-skew"
-status = "not-started"
+status = "in-progress"
+branch = "ev-agent.gate-coverage.phase-2"
 
 [[events]]
 at = "2026-05-30T23:54:17.644Z"
@@ -51,6 +52,16 @@ detail = { number = "02", branch = "ev-agent.gate-coverage.phase-1" }
 at = "2026-05-31T01:50:47.205Z"
 event = "phase-completed"
 detail = { phase = 1 }
+
+[[events]]
+at = "2026-05-31T02:36:42.749Z"
+event = "checkin-created"
+detail = { number = "03", branch = "ev-agent.gate-coverage.phase-2" }
+
+[[events]]
+at = "2026-05-31T02:36:42.820Z"
+event = "phase-started"
+detail = { phase = 2, name = "loom doctor probes guild cache-skew" }
 
 [[checkins]]
 schema_version = 1
@@ -79,3 +90,17 @@ scope = ["Add a real-entry strip-only loader smoke (griot/guild/loom) + a gate-b
 changes_since_previous = "Second and final deliverable of phase 1. Builds on D1's smoke posture; closes the bin-shim half of the phase goal. Phase 1 exit criteria all met."
 verdict = { result = "approved", reasons = ["Panel (contract-fit, test-unit, naming) aggregated verdict: approved; zero blocking, zero advisory, no conflicts.", "contract-fit: all 4 ACs met with file:line evidence; real shims exec'd (not fakes); DRY via entryBody; no disqualifiers fired.", "test-unit: real-SUT subprocess smoke, both tests assert two conditions, finally-cleanup isolation, parallel-safe, no skip/only/snapshot; default-entry path preserved.", "naming: entryBody/realShim/footgun cohere with the file's vocabulary; titles match sibling phrasing."] }
 notes_for_pr = ["Non-blocking (panel observations, no flags): (a) the real-entry test asserts syntax-error-absence before status===0 — cosmetic diagnostic ordering; (b) one representative footgun (parameter property) on one plugin (loom) — deliberate and contract-scoped, the per-plugin loop covers all three real import graphs; (c) `footgun` is colloquial but the codebase's house word for the strip-only class.", "Coverage note: the real-entry smoke covers each entry + its EAGERLY-imported graph (what loads on no-args). Lazily-imported per-verb modules are not exercised by this smoke — out of scope for a bin-shim loader smoke; per-verb loader coverage would be a separate effort if ever wanted.", "Scope correction vs PLAN.md: the plan said 'loom/guild/ev/griot'; only griot/guild/loom ship a bin shim (ev/commons/agent-loop-full do not), so D2 covers three shims. The PLAN's D2 wording is slightly off; the manifest/checkin record the accurate set.", "Same cache-skew caveat as D1's checkin applies to the panel spawn (pre-flatten guild:generated:/guild:retained: namespace)."]
+
+[[checkins]]
+schema_version = 1
+number = "03"
+created = "2026-05-31T02:35:55.000Z"
+phase = { number = 2, name = "loom doctor probes guild cache-skew" }
+branch = "ev-agent.gate-coverage.phase-2"
+unit = "P2 - loom doctor probes guild cache-skew (verb-list, advisory)"
+contract = { goal = "Add a guild cache-skew check to loom doctor: a verb-list probe comparing the verbs guild SOURCE declares vs what the resolvable on-PATH guild exposes; when the resolvable guild is missing source-declared verbs, doctor reports an advisory (warning) with remediation.", acceptance_criteria = ["detectGuildSkew(sourceVerbs, resolvableVerbs) is pure + returns a warning/guild-cache-skew issue naming the missing verbs + remediation when resolvable lacks any source verb; null when resolvable covers source (equal or superset).", "The skew issue is severity:'warning' - report.ok stays true, exit stays 0 (matches doctor's warning/error tiers).", "doctor gathers source verbs (node plugins/guild/cli/guild.ts candidates) + resolvable verbs (on-PATH guild candidates) via the unknown-verb->candidates path; degrades gracefully (null, never error/crash) when guild isn't resolvable or off-repo.", "doctor.test.ts: a simulated stale verb-set pair -> guild-cache-skew warning; fresh/superset -> null.", "npm test green; sync-shared --check clean; loom doctor still does manifest checks."], rules_applied = ["Operator decisions: verb-list probe (not agent-cache, deferred); advisory severity (warning, not error); one unit (D1+D2 merged).", "Reused the gate-coverage P1 / commons-sync #159 lesson proactively: NODE_NO_WARNINGS in the spawn keeps subprocess stderr clean JSON (the probe parses guild's unknown-verb candidates from stderr).", "Probe READS guild's verb-list only; never edits guild source. ADR-0006: node entries for substrate ops.", "Advisory-not-blocking matches the PLAN's risk guidance ('keep advisory if a robust signal proves elusive')."], disqualifiers = ["Making skew an error (operator chose advisory).", "The agent-cache-vs-source signal (deferred - verb-probe only this unit).", "Editing guild's source.", "A non-deterministic check, or one that crashes when guild isn't on PATH."], inputs = ["plugins/loom/cli/verbs/loom/doctor.ts (+ doctor.test.ts) - DoctorIssue/Report, checkProject, exit semantics", "plugins/guild/cli/guild.ts (VERBS + the unknown-verb->candidates mechanism)", "the live skew (resolvable guild missing compile/recipe vs source)"] }
+execution = { actions = ["Added detectGuildSkew(sourceVerbs, resolvableVerbs) to doctor.ts: pure; warning/guild-cache-skew naming the missing verbs + a re-sync-cache-and-restart remediation when sourceVerbs not-subset-of resolvableVerbs; null otherwise (equal/superset/empty-source).", "Added queryGuildVerbs(cmd, args): spawns a guild CLI with a bogus verb (NODE_NO_WARNINGS for clean stderr), parses the unknown-verb candidates; returns null on any failure (never throws).", "Added checkGuildSkew(repoRoot): queries source (node plugins/guild/cli/guild.ts) + resolvable (on-PATH guild) verbs; null if guild source absent or either query fails; else detectGuildSkew.", "Wired into doctor() as a workspace-level check (repoRoot = resolve(projectsRoot,'..')): pushes the warning + recomputes report.ok (a warning never flips ok).", "Added 6 tests to doctor.test.ts (detectGuildSkew stale/equal/superset/empty; queryGuildVerbs nonexistent-cmd->null; doctor off-repo degrades -> no skew issue, ok:true exit 0).", "Verified: npm test 1104 green; sync-shared --check ok; LIVE loom doctor gate-coverage flags guild-cache-skew (warning, names compile+recipe, ok:true, exit 0)."], files_touched = ["plugins/loom/cli/verbs/loom/doctor.ts", "plugins/loom/cli/verbs/loom/doctor.test.ts"], corrections = [] }
+scope = ["plugins/loom/cli/verbs/loom/doctor.ts - detectGuildSkew + queryGuildVerbs + checkGuildSkew + doctor() wiring", "plugins/loom/cli/verbs/loom/doctor.test.ts - 6 new tests"]
+changes_since_previous = "Third unit of gate-coverage, first on the phase-2 branch (cut from main after #162 merged phase 1). Phase 1 (the node-real smoke net) is completed. Builds on phase 1's spawn-subprocess testing pattern + reuses the NODE_NO_WARNINGS clean-stderr lesson from commons-sync #159."
+verdict = { result = "approved", reasons = ["guild-validate single-evaluator panel (evaluator-contract-fit via guild:retained:evaluator-contract-fit) returned approved; parse-and-aggregate confirmed verdict=approved, no findings.", "Evaluator read the code (detectGuildSkew purity + subset direction, the warning tier + ok-recompute, the never-throw degradation guards); all ACs met; no disqualifiers (advisory not error, agent-cache deferred, read-only probe).", "The probe works LIVE: loom doctor flags the real cache-skew (resolvable guild missing compile/recipe) as a warning with ok:true, exit 0; npm test 1104; --check clean."] }
+notes_for_pr = ["The probe caught a REAL skew on first run: the on-PATH (cached) guild exposes only {derive-panel, findings, parse-and-aggregate, whiteboard}, missing source's {compile, recipe}. loom doctor now surfaces this as an advisory with a re-sync-and-restart remediation - directly the friction (cached guild predating verbs, silent stale-state codegen/spawn) the PLAN cited from guild-workflow-coverage P2.", "Signal = verb-list probe only (operator decision). The agent-cache-vs-source signal is DEFERRED (the PLAN's other option) - flake-prone given cache-path variance across install modes; a candidate follow-up if a robust signal emerges.", "Advisory (warning) severity: guild cache-skew is environment-freshness, not corrupt project data, so it reports + remediates but keeps doctor's exit 0 - matching the existing warning/error tier semantics.", "Reused commons-sync #159's lesson proactively: the probe parses guild's unknown-verb candidates from subprocess stderr, so NODE_NO_WARNINGS keeps that stderr clean JSON across node versions (the exact fragility that bit the new CI gate)."]
