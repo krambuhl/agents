@@ -24,11 +24,17 @@ import { manifestPath, readManifestFile } from '../../lib/manifest-toml.ts';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const FIXTURES = join(__dirname, '..', '..', 'fixtures');
 
+let repoRoot: string;
 let projectsRoot: string;
 let projectPath: string;
 
 beforeEach(() => {
-  projectsRoot = mkdtempSync(join(tmpdir(), 'loom-verbs-project-'));
+  // projectsRoot nests under a repoRoot mkdtemp so that parent-of-projectsRoot
+  // (the scope projectArchive's test-reference scan walks) is this controlled
+  // temp tree, not the shared system tmpdir.
+  repoRoot = mkdtempSync(join(tmpdir(), 'loom-verbs-project-'));
+  projectsRoot = join(repoRoot, 'projects');
+  mkdirSync(projectsRoot, { recursive: true });
   projectPath = join(projectsRoot, '2026-05-15-test-loom');
   mkdirSync(projectPath);
   copyFileSync(
@@ -45,7 +51,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
-  rmSync(projectsRoot, { recursive: true, force: true });
+  rmSync(repoRoot, { recursive: true, force: true });
 });
 
 test('projectRead: returns manifest JSON for valid slug', () => {
@@ -406,6 +412,8 @@ test('projectArchive: relocates project to archive/ and flips manifest status', 
   expect(result.exitCode).toBe(0);
   const out = JSON.parse(result.stdout as string);
   expect(out.destination).toContain('archive');
+  // No *.test.ts under the temp repoRoot references the slug → no warnings.
+  expect(out.warnings).toEqual([]);
 
   // Old location no longer exists
   expect(existsSync(projectPath)).toBe(false);
@@ -419,6 +427,35 @@ test('projectArchive: relocates project to archive/ and flips manifest status', 
   const last = manifest.events[manifest.events.length - 1];
   expect(last?.event).toBe('archived');
   expect((last?.detail as { destination: string }).destination).toContain('archive');
+});
+
+test('projectArchive: warns about *.test.ts files that reference the archived slug', () => {
+  const testDir = join(repoRoot, 'plugins', 'x', 'cli');
+  mkdirSync(testDir, { recursive: true });
+  writeFileSync(
+    join(testDir, 'refs.test.ts'),
+    "// reads projects/2026-05-15-test-loom/manifest.toml in a fixture\n",
+  );
+  const result = projectArchive(['test-loom'], { projectsRoot });
+  expect(result.exitCode).toBe(0);
+  const out = JSON.parse(result.stdout as string);
+  expect(out.warnings.length).toBe(1);
+  expect(out.warnings[0]).toContain('refs.test.ts');
+  expect(out.warnings[0]).toContain('2026-05-15-test-loom');
+  // Advisory, not blocking — the archive still proceeded.
+  expect(existsSync(out.destination)).toBe(true);
+});
+
+test('projectArchive: ignores non-test files and unrelated test files', () => {
+  const dir = join(repoRoot, 'plugins', 'x');
+  mkdirSync(dir, { recursive: true });
+  // A NON-test file mentioning the slug is not scanned.
+  writeFileSync(join(dir, 'code.ts'), "const s = '2026-05-15-test-loom';\n");
+  // A test file that does NOT mention the slug is not matched.
+  writeFileSync(join(dir, 'other.test.ts'), "const s = 'some-other-project';\n");
+  const result = projectArchive(['test-loom'], { projectsRoot });
+  const out = JSON.parse(result.stdout as string);
+  expect(out.warnings).toEqual([]);
 });
 
 test('projectArchive: nonexistent slug returns project-not-found', () => {

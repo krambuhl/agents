@@ -402,11 +402,56 @@ export function detectDrift(repoRoot = REPO_ROOT): DriftRecord[] {
   return records;
 }
 
+const COMMONS_LIB_PREFIX = join('plugins', 'commons', 'cli', 'lib');
+
+/** A lib-flow spec sources from plugins/commons/cli/lib/; a docs-flow spec
+ *  from plugins/commons/docs/. --exclude-lib drops the former. */
+function isLibSpec(spec: SyncSpec): boolean {
+  return spec.source.startsWith(COMMONS_LIB_PREFIX);
+}
+
+/** Minimal glob → RegExp for --only: `*` matches within a path segment,
+ *  `**` across segments, matched against the repo-relative source path. */
+function globToRegExp(glob: string): RegExp {
+  let re = '';
+  for (let i = 0; i < glob.length; i++) {
+    const c = glob[i];
+    if (c === '*' && glob[i + 1] === '*') {
+      re += '.*';
+      i += 1;
+    } else if (c === '*') {
+      re += '[^/]*';
+    } else if ('.+^${}()|[]\\'.includes(c)) {
+      re += `\\${c}`;
+    } else {
+      re += c;
+    }
+  }
+  return new RegExp(`^${re}$`);
+}
+
+type ScopeOpts = { only?: string; excludeLib?: boolean };
+
+/** Whether a spec is in scope this run. --exclude-lib drops lib-flow specs;
+ *  --only keeps specs whose SOURCE matches the glob — the canonical file the
+ *  operator edited, whose propagation to consumers is what they want synced. */
+function specInScope(spec: SyncSpec, opts: ScopeOpts): boolean {
+  if (opts.excludeLib && isLibSpec(spec)) return false;
+  if (opts.only !== undefined && !globToRegExp(opts.only).test(spec.source)) {
+    return false;
+  }
+  return true;
+}
+
 export function applySync(
   repoRoot = REPO_ROOT,
-  opts: { strictOrphan?: boolean } = {},
+  opts: { strictOrphan?: boolean; only?: string; excludeLib?: boolean } = {},
 ): { copied: number; removed: number; preserved: number } {
-  const plans = planAll(repoRoot);
+  const scoped = opts.only !== undefined || opts.excludeLib === true;
+  const plans = planAll(repoRoot).map((plan) => ({
+    plugin: plan.plugin,
+    files: plan.files.filter((f) => specInScope(f, opts)),
+  }));
   let copied = 0;
   let removed = 0;
   let preserved = 0;
@@ -426,7 +471,11 @@ export function applySync(
     // ADR-0005 fail-safe-preserve: the DEFAULT never deletes — orphans
     // are preserved. `--strict-orphan` opts back into deleting UNMARKED
     // orphans; a marked plugin-local file survives even then.
-    if (plan.plugin !== 'commons') {
+    // Orphan sweep runs only on a FULL sync. A scoped run (--only /
+    // --exclude-lib) is copy-only and never deletes: files outside the scope
+    // are intentionally unmanaged this run, and treating them as orphans is
+    // exactly the bare-run overreach these flags exist to prevent.
+    if (plan.plugin !== 'commons' && !scoped) {
       for (const syncManagedSubdir of [join('cli', 'lib'), 'docs']) {
         const root = join(repoRoot, 'plugins', plan.plugin, syncManagedSubdir);
         if (!existsSync(root)) continue;
@@ -458,7 +507,13 @@ export function applySync(
 function main(argv: string[]): number {
   const checkMode = argv.includes('--check');
   const strictOrphan = argv.includes('--strict-orphan');
+  const excludeLib = argv.includes('--exclude-lib');
+  const onlyArg = argv.find((a) => a.startsWith('--only='));
+  const only = onlyArg ? onlyArg.slice('--only='.length) : undefined;
 
+  // --only / --exclude-lib scope the SYNC (write) path only. --check stays a
+  // full-tree drift gate by design — a narrow sync is a convenience, but the
+  // pre-commit / CI check must still verify the whole tree is consistent.
   if (checkMode) {
     const drift = detectDrift();
     if (drift.length === 0) {
@@ -476,8 +531,21 @@ function main(argv: string[]): number {
     return 1;
   }
 
-  const { copied, removed, preserved } = applySync(REPO_ROOT, { strictOrphan });
+  const { copied, removed, preserved } = applySync(REPO_ROOT, {
+    strictOrphan,
+    only,
+    excludeLib,
+  });
   process.stdout.write(`sync-shared: ${copied} file${copied === 1 ? '' : 's'} synced`);
+  if (only !== undefined || excludeLib) {
+    const scope = [
+      only !== undefined ? `--only=${only}` : null,
+      excludeLib ? '--exclude-lib' : null,
+    ]
+      .filter(Boolean)
+      .join(' ');
+    process.stdout.write(` (scoped: ${scope}; orphans untouched)`);
+  }
   if (removed > 0) {
     process.stdout.write(`, ${removed} orphan${removed === 1 ? '' : 's'} removed`);
   }
