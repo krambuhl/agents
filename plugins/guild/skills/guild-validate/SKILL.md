@@ -214,7 +214,7 @@ In v1, conflict detection is a documented no-op:
 - For single-evaluator panels (e.g. `[evaluator-contract-fit]` as
   used by ev-loop in unit 4), only one evaluator can fire, so
   conflicts cannot exist by definition. Return `conflicts: []`.
-- For multi-evaluator panels (Phase 2+ when a11y, nextjs, react-api,
+- For multi-evaluator panels (Phase 2+ when a11y, nextjs, react,
   tokens, naming evaluators land), the detection mechanism needs a
   shared scope-and-remedy comparison rule. That logic is a Phase 2
   concern and will be added to this skill's process step 4 then.

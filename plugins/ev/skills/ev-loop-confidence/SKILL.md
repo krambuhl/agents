@@ -467,8 +467,9 @@ auto-derivation:
 ### Specialist-evaluator gate-then-review (Phase 4)
 
 When a tier's panel includes a **specialist evaluator** paired with
-a `generator-*` agent (e.g. `evaluator-css-architecture` paired
-with `generator-css-codemod`), the specialist runs as part of the
+a write-capable posture (e.g. `evaluator-css-architecture` paired
+with `implementer-css-architecture` / `fixer-css-architecture`), the
+specialist runs as part of the
 parallel panel with **elevated precedence** per PANEL-COMPOSITION.
 No control-flow change is needed.
 

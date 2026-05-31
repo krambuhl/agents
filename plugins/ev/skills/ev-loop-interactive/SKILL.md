@@ -688,8 +688,9 @@ Edge cases the verb handles, documented for reviewer awareness:
 ### Specialist-evaluator gate-then-review (Phase 4)
 
 When a unit's panel includes a **specialist evaluator** paired with
-a `generator-*` agent (e.g. `evaluator-css-architecture` paired with
-`generator-css-codemod`), the specialist runs as part of the
+a write-capable posture (e.g. `evaluator-css-architecture` paired
+with `implementer-css-architecture` / `fixer-css-architecture`), the
+specialist runs as part of the
 parallel panel — its verdict participates with **elevated
 precedence** per `docs/PANEL-COMPOSITION.md`. **No
 control-flow change** to the loop is needed: the existing

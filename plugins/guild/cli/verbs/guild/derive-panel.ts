@@ -141,8 +141,8 @@ function fallbackRule(raws: string[], evaluators: string[]): Rule {
 }
 
 const FALLBACK_RULES: Rule[] = [
-  fallbackRule(['*.tsx', '*.jsx'], ['evaluator-react-api', 'evaluator-naming', 'evaluator-a11y', 'evaluator-nextjs']),
-  fallbackRule(['*.ts'], ['evaluator-react-api', 'evaluator-naming']),
+  fallbackRule(['*.tsx', '*.jsx'], ['evaluator-react', 'evaluator-naming', 'evaluator-a11y', 'evaluator-nextjs']),
+  fallbackRule(['*.ts'], ['evaluator-react', 'evaluator-naming']),
   fallbackRule(['*.module.css'], ['evaluator-tokens', 'evaluator-naming']),
   fallbackRule(['*.css'], ['evaluator-tokens']),
   fallbackRule(['*.md'], []),
@@ -168,7 +168,7 @@ const FALLBACK_PRECEDENCE = [
   'evaluator-a11y',
   'evaluator-nextjs',
   'evaluator-css-architecture',
-  'evaluator-react-api',
+  'evaluator-react',
   'evaluator-test-integration',
   'evaluator-test-unit',
   'evaluator-tokens',
