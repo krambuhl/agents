@@ -59,6 +59,26 @@ test('formatHelp lists every namespace from LOOM-CONVENTIONS.md', () => {
   expect(help).toContain('loom');
 });
 
+test('formatHelp aligns namespace descriptions in a column (padding fits the longest name)', () => {
+  // Regression guard for the padEnd-8 misalignment: every namespace line is
+  // `  <name><padding>  <description>`, and the description must start at the
+  // same column for all of them — including the longest name (`revise-plan`,
+  // which overflowed the old hardcoded width of 8).
+  const help = formatHelp();
+  const names = Object.keys(NAMESPACES);
+  const descStarts = help
+    .split('\n')
+    .map((line) => {
+      const name = names.find((n) => line.startsWith(`  ${n} `));
+      if (name === undefined) return null;
+      // Column where the description begins (after the name + its padding).
+      return line.indexOf(NAMESPACES[name as keyof typeof NAMESPACES]);
+    })
+    .filter((c): c is number => c !== null && c > 0);
+  expect(descStarts.length).toBe(names.length);
+  expect(new Set(descStarts).size).toBe(1); // all descriptions aligned
+});
+
 test('formatUnknownVerbError emits structured JSON with candidates', () => {
   const stderr = formatUnknownVerbError('xyzzy');
   const parsed = JSON.parse(stderr);
