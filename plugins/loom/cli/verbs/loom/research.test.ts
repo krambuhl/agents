@@ -10,9 +10,9 @@ import {
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { researchInit, RESEARCH_VERBS } from './research.ts';
+import { researchInit, researchAppend, researchShow, RESEARCH_VERBS } from './research.ts';
 import type { GitRunner } from '../../lib/git.ts';
-import { manifestPath, readManifestFile } from '../../lib/manifest-toml.ts';
+import { manifestPath, readManifestFile, writeManifest } from '../../lib/manifest-toml.ts';
 import type { Event } from '../../lib/types.ts';
 
 // Events now live in the project's manifest.toml [[events]].
@@ -61,9 +61,11 @@ const baseCtx = () => ({
 
 // ---------- Registry shape ----------
 
-test('RESEARCH_VERBS exposes `init` as a subverb (append/show land in the next unit)', () => {
+test('RESEARCH_VERBS exposes the init/append/show subverb family', () => {
   expect(typeof RESEARCH_VERBS.init).toBe('function');
-  expect(Object.keys(RESEARCH_VERBS)).toEqual(['init']);
+  expect(typeof RESEARCH_VERBS.append).toBe('function');
+  expect(typeof RESEARCH_VERBS.show).toBe('function');
+  expect(Object.keys(RESEARCH_VERBS)).toEqual(['init', 'append', 'show']);
 });
 
 // ---------- Happy paths ----------
@@ -399,4 +401,158 @@ test('researchInit: missing --notes-file source throws notes-file-not-found', ()
   expect(JSON.parse(result.stderr as string).error).toBe(
     'notes-file-not-found',
   );
+});
+
+// ---------- append / show (Phase 5 unit 2) ----------
+
+const APPEND_SLUG = '2026-05-18-some-topic';
+
+// Scaffold a loom-adopted project (so resolveProject + the manifest exist)
+// and return its dir + a fact file ready to append.
+function initProject(): { dir: string; factFile: string } {
+  researchInit(
+    [APPEND_SLUG, `--research-file=${researchFile}`, `--notes-file=${notesFile}`, '--no-commit'],
+    baseCtx(),
+  );
+  const dir = join(projectsRoot, APPEND_SLUG);
+  const factFile = join(dirname(researchFile), 'fact.md');
+  writeFileSync(factFile, 'A freeform finding paragraph.\n');
+  return { dir, factFile };
+}
+
+test('researchAppend: appends a provenance-stamped block; prior content is an untouched prefix', () => {
+  const { dir, factFile } = initProject();
+  const before = readFileSync(join(dir, 'RESEARCH.md'), 'utf8');
+
+  const res = researchAppend(
+    [APPEND_SLUG, '--section=Findings', `--fact-file=${factFile}`, '--citing=PR #170', '--phase=5', '--no-commit'],
+    baseCtx(),
+  );
+  expect(res.exitCode).toBe(0);
+  const out = JSON.parse(res.stdout as string);
+  expect(out.section).toBe('Findings');
+  expect(out.provenance.slug).toBe(APPEND_SLUG);
+  expect(out.provenance.phase).toBe(5);
+  expect(out.provenance.citing).toBe('PR #170');
+  expect(typeof out.provenance.at).toBe('string');
+
+  const after = readFileSync(join(dir, 'RESEARCH.md'), 'utf8');
+  expect(after.startsWith(before)).toBe(true); // append-only
+  expect(after).toContain('## Findings');
+  expect(after).toContain('<!-- loom:provenance');
+  expect(after).toContain('A freeform finding paragraph.');
+});
+
+test('researchAppend: derives the session id from the latest handoff', () => {
+  const { dir, factFile } = initProject();
+  const mp = manifestPath(dir);
+  const { manifest, token } = readManifestFile(mp);
+  writeManifest(
+    mp,
+    {
+      ...manifest,
+      sessions: [
+        ...manifest.sessions,
+        {
+          schema_version: 1,
+          date: '2026-05-31',
+          letter: 'a',
+          phases_touched: [],
+          checkins_written: [],
+          pr_activity: [],
+          what_happened: [],
+          open_threads: [],
+          notes: [],
+        },
+      ],
+    },
+    { expect: token },
+  );
+
+  const out = JSON.parse(
+    researchAppend(
+      [APPEND_SLUG, '--section=Notes', `--fact-file=${factFile}`, '--citing=x', '--no-commit'],
+      baseCtx(),
+    ).stdout as string,
+  );
+  expect(out.provenance.session).toBe('2026-05-31-a');
+});
+
+test('researchAppend: session is omitted when no handoff has been saved', () => {
+  const { factFile } = initProject();
+  const out = JSON.parse(
+    researchAppend(
+      [APPEND_SLUG, '--section=Notes', `--fact-file=${factFile}`, '--citing=x', '--no-commit'],
+      baseCtx(),
+    ).stdout as string,
+  );
+  expect(out.provenance.session).toBeUndefined();
+});
+
+test('researchAppend: two appends accumulate; the first block stays byte-unchanged', () => {
+  const { dir, factFile } = initProject();
+  researchAppend([APPEND_SLUG, '--section=One', `--fact-file=${factFile}`, '--citing=a', '--no-commit'], baseCtx());
+  const afterFirst = readFileSync(join(dir, 'RESEARCH.md'), 'utf8');
+  researchAppend([APPEND_SLUG, '--section=Two', `--fact-file=${factFile}`, '--citing=b', '--no-commit'], baseCtx());
+  const afterSecond = readFileSync(join(dir, 'RESEARCH.md'), 'utf8');
+  // The second append only adds at the end — the post-first state is a prefix.
+  expect(afterSecond.startsWith(afterFirst)).toBe(true);
+  expect(afterSecond).toContain('## One');
+  expect(afterSecond).toContain('## Two');
+});
+
+test('researchAppend: commits the dossier with a descriptive message unless --no-commit', () => {
+  const { factFile } = initProject();
+  gitCalls.length = 0;
+  researchAppend([APPEND_SLUG, '--section=Findings', `--fact-file=${factFile}`, '--citing=a'], baseCtx());
+  const commit = gitCalls.find((c) => c.method === 'addAndCommit');
+  expect(commit).toBeDefined();
+  expect(commit?.args[2]).toContain('append');
+  expect(commit?.args[2]).toContain('Findings');
+});
+
+test('researchAppend: errors research-not-found when RESEARCH.md is absent', () => {
+  const { dir, factFile } = initProject();
+  rmSync(join(dir, 'RESEARCH.md'));
+  const res = researchAppend(
+    [APPEND_SLUG, '--section=X', `--fact-file=${factFile}`, '--citing=y', '--no-commit'],
+    baseCtx(),
+  );
+  expect(res.exitCode).toBe(1);
+  expect(JSON.parse(res.stderr as string).error).toBe('research-not-found');
+});
+
+test('researchAppend: missing --section / --fact-file / --citing each error', () => {
+  const { factFile } = initProject();
+  expect(
+    JSON.parse(researchAppend([APPEND_SLUG, `--fact-file=${factFile}`, '--citing=a'], baseCtx()).stderr as string).error,
+  ).toBe('missing-args');
+  expect(
+    JSON.parse(researchAppend([APPEND_SLUG, '--section=S', '--citing=a'], baseCtx()).stderr as string).error,
+  ).toBe('missing-args');
+  expect(
+    JSON.parse(researchAppend([APPEND_SLUG, '--section=S', `--fact-file=${factFile}`], baseCtx()).stderr as string).error,
+  ).toBe('missing-args');
+});
+
+test('researchShow: returns the full dossier, and a single section with --section', () => {
+  const { factFile } = initProject();
+  researchAppend([APPEND_SLUG, '--section=Findings', `--fact-file=${factFile}`, '--citing=PR #170', '--no-commit'], baseCtx());
+
+  const full = JSON.parse(researchShow([APPEND_SLUG], baseCtx()).stdout as string);
+  expect(full.content).toContain('# RESEARCH');
+  expect(full.content).toContain('## Findings');
+
+  const sec = JSON.parse(researchShow([APPEND_SLUG, '--section=Findings'], baseCtx()).stdout as string);
+  expect(sec.section).toBe('Findings');
+  expect(sec.content.startsWith('## Findings')).toBe(true);
+  expect(sec.content).toContain('A freeform finding paragraph.');
+  expect(sec.content).not.toContain('A grounded claim with source.'); // not the init body
+});
+
+test('researchShow: section-not-found for an absent section', () => {
+  initProject();
+  const res = researchShow([APPEND_SLUG, '--section=Nope'], baseCtx());
+  expect(res.exitCode).toBe(1);
+  expect(JSON.parse(res.stderr as string).error).toBe('section-not-found');
 });
