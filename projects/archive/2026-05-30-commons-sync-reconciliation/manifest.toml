@@ -6,7 +6,7 @@ schema_version = 1
 title = "Commons Sync Reconciliation"
 slug = "2026-05-30-commons-sync-reconciliation"
 started = "2026-05-30"
-status = "active"
+status = "archived"
 strategy = "interactive"
 
 [config]
@@ -37,7 +37,7 @@ branch = "ev-agent.commons-sync-reconciliation.resync"
 [[phases]]
 number = 4
 name = "Enforce the gate (close the loop)"
-status = "in-progress"
+status = "completed"
 branch = "ev-agent.commons-sync-reconciliation.enforce-gate"
 
 [[events]]
@@ -104,6 +104,21 @@ detail = { number = "05", branch = "ev-agent.commons-sync-reconciliation.enforce
 at = "2026-05-30T20:49:34.652Z"
 event = "phase-started"
 detail = { phase = 4, name = "Enforce the gate (close the loop)" }
+
+[[events]]
+at = "2026-05-30T23:52:31.223Z"
+event = "phase-completed"
+detail = { phase = 4 }
+
+[[events]]
+at = "2026-05-31T00:12:10.803Z"
+event = "retro-written"
+detail = { type = "project" }
+
+[[events]]
+at = "2026-05-31T00:12:10.872Z"
+event = "archived"
+detail = { destination = "/Users/krambuhl/Sites/agents-nebula/projects/archive/2026-05-30-commons-sync-reconciliation" }
 
 [[checkins]]
 schema_version = 1
