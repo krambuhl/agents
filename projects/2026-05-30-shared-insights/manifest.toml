@@ -19,7 +19,7 @@ worker_bindings = { default = "ev-loop-interactive" }
 [[phases]]
 number = 1
 name = "Dispatch preflight & freshness gate"
-status = "in-progress"
+status = "completed"
 branch = "ev-agent.shared-insights.freshness-gate"
 
 [[phases]]
@@ -81,6 +81,11 @@ detail = { number = "02", branch = "ev-agent.shared-insights.freshness-gate" }
 at = "2026-05-31T20:58:42.316Z"
 event = "checkin-created"
 detail = { number = "03", branch = "ev-agent.shared-insights.freshness-gate" }
+
+[[events]]
+at = "2026-05-31T21:01:57.980Z"
+event = "phase-completed"
+detail = { phase = 1 }
 
 [[checkins]]
 schema_version = 1
