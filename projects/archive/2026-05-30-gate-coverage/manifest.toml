@@ -6,7 +6,7 @@ schema_version = 1
 title = "Gate Coverage"
 slug = "2026-05-30-gate-coverage"
 started = "2026-05-30"
-status = "active"
+status = "archived"
 strategy = "interactive"
 
 [config]
@@ -25,7 +25,7 @@ branch = "ev-agent.gate-coverage.phase-1"
 [[phases]]
 number = 2
 name = "loom doctor probes guild cache-skew"
-status = "in-progress"
+status = "completed"
 branch = "ev-agent.gate-coverage.phase-2"
 
 [[events]]
@@ -62,6 +62,21 @@ detail = { number = "03", branch = "ev-agent.gate-coverage.phase-2" }
 at = "2026-05-31T02:36:42.820Z"
 event = "phase-started"
 detail = { phase = 2, name = "loom doctor probes guild cache-skew" }
+
+[[events]]
+at = "2026-05-31T02:42:07.429Z"
+event = "phase-completed"
+detail = { phase = 2 }
+
+[[events]]
+at = "2026-05-31T02:50:38.178Z"
+event = "retro-written"
+detail = { type = "project" }
+
+[[events]]
+at = "2026-05-31T02:50:38.249Z"
+event = "archived"
+detail = { destination = "/Users/krambuhl/Sites/agents-nebula/projects/archive/2026-05-30-gate-coverage" }
 
 [[checkins]]
 schema_version = 1

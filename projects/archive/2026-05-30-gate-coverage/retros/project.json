@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "type": "project",
+  "created": "2026-05-31T02:50:09.000Z",
+  "findings": [
+    {
+      "category": "kept-well",
+      "description": "Phase 2's verb-list probe self-validated: it caught the real live skew (the cached guild missing compile/recipe) on its first run, and the SAME skew is documented biting both the phase-1 session and the phase-2 session — so the project provably detects a corroborated, recurring failure mode, not a hypothetical.",
+      "evidence": "checkin-01 correction (phase-1 hit a failed spawn on guild:generated:*/retained:*); live `loom doctor gate-coverage` flags guild-cache-skew (compile, recipe)."
+    },
+    {
+      "category": "kept-well",
+      "description": "Lowest-complexity-first sequencing paid off: phase 1 replicated loom's proven .smoke.ts + spawnSync('node') pattern onto guild + bin-shims (low-novelty), de-risking the rhythm before phase 2's more novel cross-plugin freshness signal.",
+      "evidence": "#162 (P1, node-real smoke net) before #165 (P2, doctor probe)."
+    },
+    {
+      "category": "improvement",
+      "description": "The substrate's own guild cache-skew bit the work BUILDING the skew-detector: both the phase-1 and phase-2 sessions burned orientation time on the guild:generated:*/retained:* registry confusion + a failed spawn before phase 2 existed to flag it. The tooling can't yet preflight its own authoring environment.",
+      "evidence": "checkin-01 correction; the phase-2 session's first evaluator spawn also failed on guild:evaluator-contract-fit before retrying guild:retained:evaluator-contract-fit."
+    },
+    {
+      "category": "improvement",
+      "description": "The subprocess-stderr-parse fragility recurred: the doctor probe (spawn a guild CLI, JSON.parse its stderr) had to apply the same NODE_NO_WARNINGS fix commons-sync #159 needed for the cli unknown-verb tests — a recurring shape, not a one-off.",
+      "evidence": "commons-sync #159 (CI test fix); doctor.ts queryGuildVerbs sets NODE_NO_WARNINGS proactively."
+    },
+    {
+      "category": "process-change",
+      "description": "A shared 'run-a-substrate-CLI-and-parse-its-structured-stderr' helper (with NODE_NO_WARNINGS baked in) would centralize the fix now duplicated across the cli unknown-verb tests and the doctor guild-skew probe — both spawn a CLI and parse its structured-error JSON off stderr.",
+      "evidence": "commons-sync #159 fixed it per-test in loom/griot/guild; gate-coverage P2 re-applied it in doctor.ts."
+    },
+    {
+      "category": "follow-up",
+      "description": "The plugin-cache re-sync that would actually CLEAR the detected skew (blocked for guild-workflow-coverage P2) — until it lands, `loom doctor` keeps flagging the live compile/recipe skew. Advisory, so non-blocking, but the warning persists.",
+      "evidence": "PLAN Context (neither item depends on the blocked re-sync; the probe detects rather than clears); live doctor warning."
+    },
+    {
+      "category": "follow-up",
+      "description": "The agent-cache-vs-source skew signal (the PLAN's other option, deferred at P2 D1) — add it if a robust, non-flaky cross-install-mode version proves out; the verb-list probe shipped alone.",
+      "evidence": "PLAN Open questions: verb-list vs agent-cache-vs-source hash vs both."
+    },
+    {
+      "category": "follow-up",
+      "description": "Flag #2a (derive CANONICAL_PHASES) for EXPLICIT inclusion in guild-workflow-coverage P3 — the PLAN's own stated closing action; it is currently only soft-noted in that project's D3 checkin.",
+      "evidence": "gate-coverage PLAN Scope (Out/deferred) + Decisions."
+    }
+  ]
+}
