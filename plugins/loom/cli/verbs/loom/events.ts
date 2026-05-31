@@ -1,5 +1,5 @@
 import { parseArgs } from 'node:util';
-import { resolveProject } from '../../lib/project.ts';
+import { resolveProject, listProjects } from '../../lib/project.ts';
 import {
   manifestPath,
   readManifestFile,
@@ -193,8 +193,89 @@ export function eventsAppend(rest: string[], ctx: CliContext): DispatchResult {
   }
 }
 
+type AggregateRow = {
+  project: string;
+  event: string;
+  count: number;
+  first_at: string;
+  last_at: string;
+};
+
+// Fold events across every loom project (active + archived) into per-
+// (project, event) rows. Cross-project, so no slug positional. No cache:
+// the project count is small (~tens) and the read is a single pass over
+// each manifest's [[events]]. A project whose manifest is missing or
+// unreadable is skipped rather than failing the whole fold. `--since` is an
+// ISO timestamp matching `events read` (not a relative duration); `--event`
+// narrows to one name. Headline metrics (spawn-to-finding, non-applicability)
+// are derived by the caller from the folded evaluator-* counts.
+export function eventsAggregate(rest: string[], ctx: CliContext): DispatchResult {
+  const { values } = parseArgs({
+    args: rest,
+    options: EVENTS_OPTIONS,
+    allowPositionals: true,
+    strict: false,
+  });
+  let limit: number | undefined;
+  if (values.limit !== undefined) {
+    const parsed = Number.parseInt(values.limit, 10);
+    if (Number.isNaN(parsed) || parsed < 0) {
+      return errToResult(
+        new LoomError('invalid-limit', `--limit must be a non-negative integer: ${values.limit}`),
+      );
+    }
+    limit = parsed;
+  }
+  try {
+    const projects = [
+      ...listProjects(ctx.projectsRoot, { archived: false }),
+      ...listProjects(ctx.projectsRoot, { archived: true }),
+    ];
+    const groups = new Map<string, AggregateRow>();
+    for (const project of projects) {
+      let events: Event[];
+      try {
+        events = readManifestFile(manifestPath(project.path)).manifest.events;
+      } catch {
+        // Missing or unreadable manifest — skip this project, never crash
+        // the whole fold.
+        continue;
+      }
+      for (const e of events) {
+        if (values.event !== undefined && e.event !== values.event) continue;
+        if (values.since !== undefined && e.at < values.since) continue;
+        const key = `${project.slug} ${e.event}`;
+        const existing = groups.get(key);
+        if (existing === undefined) {
+          groups.set(key, {
+            project: project.slug,
+            event: e.event,
+            count: 1,
+            first_at: e.at,
+            last_at: e.at,
+          });
+        } else {
+          existing.count += 1;
+          if (e.at < existing.first_at) existing.first_at = e.at;
+          if (e.at > existing.last_at) existing.last_at = e.at;
+        }
+      }
+    }
+    let rows = [...groups.values()].sort((a, b) =>
+      a.project === b.project
+        ? a.event.localeCompare(b.event)
+        : a.project.localeCompare(b.project),
+    );
+    if (limit !== undefined) rows = rows.slice(0, limit);
+    return { stdout: emit(rows, values.pretty === true), exitCode: 0 };
+  } catch (err) {
+    return errToResult(err);
+  }
+}
+
 export const EVENTS_VERBS = {
   read: eventsRead,
   latest: eventsLatest,
   append: eventsAppend,
+  aggregate: eventsAggregate,
 };

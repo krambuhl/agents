@@ -3,9 +3,34 @@ import { mkdtempSync, mkdirSync, rmSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { eventsRead, eventsLatest, eventsAppend } from './events.ts';
+import { eventsRead, eventsLatest, eventsAppend, eventsAggregate } from './events.ts';
 import { manifestPath, readManifestFile, writeManifest } from '../../lib/manifest-toml.ts';
+import { writeFileSync } from 'node:fs';
 import type { Event } from '../../lib/types.ts';
+
+// Build an isolated multi-project root for aggregate tests: each project is a
+// SLUG_RE-shaped dir carrying a manifest.toml (the LOOM_MARKER listProjects
+// gates on). `archived` projects live under archive/.
+function seedAggregateRoot(
+  specs: { slug: string; events: Event[]; archived?: boolean }[],
+): string {
+  const root = mkdtempSync(join(tmpdir(), 'loom-aggregate-'));
+  const base = readManifestFile(join(FIXTURES, 'manifest-basic.toml')).manifest;
+  for (const spec of specs) {
+    const dir = spec.archived === true
+      ? join(root, 'archive', spec.slug)
+      : join(root, spec.slug);
+    mkdirSync(dir, { recursive: true });
+    // slug is derived from the directory name by listProjects, not stored in
+    // the manifest — only the events vary per project here.
+    writeManifest(manifestPath(dir), { ...base, events: spec.events });
+  }
+  return root;
+}
+
+function ev(at: string, event: string, detail: Record<string, unknown> = {}): Event {
+  return { at, event, detail } as Event;
+}
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const FIXTURES = join(__dirname, '..', '..', 'fixtures');
@@ -200,4 +225,129 @@ test('eventsAppend: missing slug and missing event each error', () => {
   expect(
     JSON.parse(eventsAppend(['test-loom'], { projectsRoot }).stderr as string).error,
   ).toBe('missing-args');
+});
+
+test('eventsAggregate: folds events across active + archived projects by (project, event)', () => {
+  const root = seedAggregateRoot([
+    {
+      slug: '2026-01-01-alpha',
+      events: [
+        ev('2026-01-01T01:00:00Z', 'phase-started', { phase: 1, name: 'p' }),
+        ev('2026-01-01T02:00:00Z', 'phase-started', { phase: 2, name: 'q' }),
+        ev('2026-01-01T03:00:00Z', 'evaluator-spawned', {
+          slug: '2026-01-01-alpha', phase: 1, unit: '01', evaluator: 'x',
+        }),
+      ],
+    },
+    {
+      slug: '2026-02-02-beta',
+      archived: true,
+      events: [
+        ev('2026-02-02T05:00:00Z', 'evaluator-spawned', {
+          slug: '2026-02-02-beta', phase: 1, unit: '01', evaluator: 'y',
+        }),
+      ],
+    },
+  ]);
+  const res = eventsAggregate(['--since=2026-01-01T00:00:00Z'], { projectsRoot: root });
+  expect(res.exitCode).toBe(0);
+  const rows = JSON.parse(res.stdout as string);
+  // alpha: phase-started + evaluator-spawned (2 rows); beta (archived): evaluator-spawned (1 row)
+  expect(rows).toHaveLength(3);
+
+  const alphaPhase = rows.find(
+    (r: { project: string; event: string }) =>
+      r.project === '2026-01-01-alpha' && r.event === 'phase-started',
+  );
+  expect(alphaPhase.count).toBe(2);
+  expect(alphaPhase.first_at).toBe('2026-01-01T01:00:00Z');
+  expect(alphaPhase.last_at).toBe('2026-01-01T02:00:00Z');
+
+  // The Phase 3 evaluator-* fold spans both the active and archived project.
+  const evalRows = rows.filter(
+    (r: { event: string }) => r.event === 'evaluator-spawned',
+  );
+  expect(evalRows).toHaveLength(2);
+  expect(new Set(evalRows.map((r: { project: string }) => r.project))).toEqual(
+    new Set(['2026-01-01-alpha', '2026-02-02-beta']),
+  );
+  rmSync(root, { recursive: true, force: true });
+});
+
+test('eventsAggregate: --event narrows to one event type across projects', () => {
+  const root = seedAggregateRoot([
+    {
+      slug: '2026-01-01-alpha',
+      events: [
+        ev('2026-01-01T01:00:00Z', 'phase-started', { phase: 1, name: 'p' }),
+        ev('2026-01-01T02:00:00Z', 'evaluator-recused', {
+          slug: '2026-01-01-alpha', phase: 1, unit: '01', evaluator: 'x', reason: 'n/a',
+        }),
+      ],
+    },
+  ]);
+  const rows = JSON.parse(
+    eventsAggregate(['--event=evaluator-recused'], { projectsRoot: root }).stdout as string,
+  );
+  expect(rows).toHaveLength(1);
+  expect(rows[0].event).toBe('evaluator-recused');
+  expect(rows[0].count).toBe(1);
+  rmSync(root, { recursive: true, force: true });
+});
+
+test('eventsAggregate: --since excludes older events (ISO compare, mirrors read)', () => {
+  const root = seedAggregateRoot([
+    {
+      slug: '2026-01-01-alpha',
+      events: [
+        ev('2026-01-01T00:00:00Z', 'note', { text: 'old' }),
+        ev('2026-06-01T00:00:00Z', 'note', { text: 'new' }),
+      ],
+    },
+  ]);
+  const rows = JSON.parse(
+    eventsAggregate(['--since=2026-03-01T00:00:00Z'], { projectsRoot: root }).stdout as string,
+  );
+  expect(rows).toHaveLength(1);
+  expect(rows[0].count).toBe(1); // only the June event survives the since filter
+  expect(rows[0].first_at).toBe('2026-06-01T00:00:00Z');
+  rmSync(root, { recursive: true, force: true });
+});
+
+test('eventsAggregate: skips a project whose manifest is unreadable (no crash)', () => {
+  const root = seedAggregateRoot([
+    {
+      slug: '2026-01-01-alpha',
+      events: [ev('2026-01-01T01:00:00Z', 'phase-started', { phase: 1, name: 'p' })],
+    },
+  ]);
+  // A second project that passes listProjects (has a manifest.toml) but whose
+  // manifest is malformed TOML — exercises the in-fold try/catch skip.
+  const broken = join(root, '2026-09-09-broken');
+  mkdirSync(broken, { recursive: true });
+  writeFileSync(manifestPath(broken), 'this is = not valid [toml', 'utf8');
+
+  const res = eventsAggregate([], { projectsRoot: root });
+  expect(res.exitCode).toBe(0); // did not crash
+  const rows = JSON.parse(res.stdout as string);
+  expect(rows.every((r: { project: string }) => r.project === '2026-01-01-alpha')).toBe(true);
+  rmSync(root, { recursive: true, force: true });
+});
+
+test('eventsAggregate: --limit caps the row count', () => {
+  const root = seedAggregateRoot([
+    {
+      slug: '2026-01-01-alpha',
+      events: [
+        ev('2026-01-01T01:00:00Z', 'phase-started', { phase: 1, name: 'p' }),
+        ev('2026-01-01T02:00:00Z', 'phase-completed', { phase: 1 }),
+        ev('2026-01-01T03:00:00Z', 'note', { text: 'n' }),
+      ],
+    },
+  ]);
+  const rows = JSON.parse(
+    eventsAggregate(['--limit=2'], { projectsRoot: root }).stdout as string,
+  );
+  expect(rows).toHaveLength(2);
+  rmSync(root, { recursive: true, force: true });
 });
