@@ -28,6 +28,27 @@ ${reasonLines}
 ${remedyLines}`;
 }
 
+function approvedWithAdvisory(advisories: string[]): string {
+  return `VERDICT: approved
+
+Summary: looks good, with notes.
+
+Advisory notes:
+${advisories.map((a) => `- ${a}`).join('\n')}
+`;
+}
+
+function approvedWithChecks(): string {
+  return `VERDICT: approved
+
+Summary: verified.
+
+Checks:
+- criterion 1: met (evidence: x)
+- Disqualifiers: none fired
+`;
+}
+
 test('empty stdin fails informatively', () => {
   const res = parseAndAggregateVerb([], ctx(''));
   expect(res.exitCode).toBe(1);
@@ -70,6 +91,62 @@ test('single approved evaluator → verdict approved, all empty', () => {
   expect(result.advisory_findings).toEqual([]);
   expect(result.cli_runs).toEqual([]);
   expect(result.conflicts).toEqual([]);
+});
+
+test('approved evaluator with an Advisory notes section → verdict approved, advisory surfaced', () => {
+  const output = approvedWithAdvisory([
+    'naming-overloaded: `FileReader` is a common type name; watch for collisions',
+  ]);
+  const input = JSON.stringify([{ agent: 'evaluator-naming', output }]);
+  const res = parseAndAggregateVerb([], ctx(input));
+  expect(res.exitCode).toBe(0);
+  const result = JSON.parse(res.stdout as string);
+  expect(result.verdict).toBe('approved');
+  expect(result.blocking_findings).toEqual([]);
+  expect(result.advisory_findings.length).toBe(1);
+  expect(result.advisory_findings[0].code).toBe('naming-overloaded');
+  expect(result.advisory_findings[0].evidence).toMatch(/common type name/);
+});
+
+test('approved with multiple un-prefixed advisory bullets → all surfaced as advisory', () => {
+  const output = approvedWithAdvisory([
+    'the stderr disjunct is redundant but harmless',
+    'consider a per-file independence test later',
+  ]);
+  const input = JSON.stringify([{ agent: 'evaluator-x', output }]);
+  const res = parseAndAggregateVerb([], ctx(input));
+  const result = JSON.parse(res.stdout as string);
+  expect(result.verdict).toBe('approved');
+  expect(result.advisory_findings.length).toBe(2);
+  expect(result.advisory_findings.every((f: { code: string }) => f.code === 'criterion-unmet')).toBe(true);
+  expect(result.blocking_findings).toEqual([]);
+});
+
+test('approved advisory section: a prefixed bullet and an un-prefixed bullet are parsed independently', () => {
+  // Per-bullet code extraction must not bleed across siblings: one bullet
+  // with a kebab-code prefix keeps its code; a bare bullet beside it falls
+  // back to criterion-unmet. (Surfaced as an advisory by this very feature
+  // during its own review.)
+  const output = approvedWithAdvisory([
+    'naming-overloaded: a common type name',
+    'just a plain prose note with no code',
+  ]);
+  const input = JSON.stringify([{ agent: 'evaluator-x', output }]);
+  const res = parseAndAggregateVerb([], ctx(input));
+  const result = JSON.parse(res.stdout as string);
+  expect(result.verdict).toBe('approved');
+  expect(result.advisory_findings.map((f: { code: string }) => f.code)).toEqual([
+    'naming-overloaded',
+    'criterion-unmet',
+  ]);
+});
+
+test('approved with a Checks section (bullets) → Checks are NOT mistaken for advisories', () => {
+  const input = JSON.stringify([{ agent: 'evaluator-x', output: approvedWithChecks() }]);
+  const res = parseAndAggregateVerb([], ctx(input));
+  const result = JSON.parse(res.stdout as string);
+  expect(result.verdict).toBe('approved');
+  expect(result.advisory_findings).toEqual([]);
 });
 
 test('single flagged evaluator with one reason → blocking finding emitted', () => {

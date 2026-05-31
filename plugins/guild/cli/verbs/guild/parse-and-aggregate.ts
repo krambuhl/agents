@@ -81,6 +81,20 @@ function findRemediesBlock(output: string): string {
   );
 }
 
+// An APPROVED evaluator can still carry non-blocking observations under an
+// `Advisory notes:` (or `Advisory:`) section — the same shape as the Flagged
+// path's Reasons block, but it does not gate the verdict. Previously these
+// were silently dropped because an approved verdict short-circuited to zero
+// findings; this lets an evaluator approve AND surface a concern without
+// having to mislabel its verdict as `flagged`.
+function findAdvisoryBlock(output: string): string {
+  return sliceFromHeader(
+    output,
+    /^[\s>]*\*?\*?Advisory(?:\s+notes)?\*?\*?:?\s*$/im,
+    /^[\s>]*\*?\*?(?:Reasons|Suggested remedies|Verification|## CLI runs|VERDICT)\b/im,
+  );
+}
+
 function extractBullets(block: string): string[] {
   return block
     .split('\n')
@@ -170,7 +184,19 @@ function parseEvaluatorOutput(
     };
   }
   if (verdict === 'approved') {
-    return { findings: [], cliRuns: [], parseFailure: false, recusal: null };
+    // Surface any advisory notes the evaluator attached to its approval.
+    // Bullets under the Advisory section are advisory by construction (the
+    // section IS the advisory channel), so force the flag regardless of an
+    // explicit `ADVISORY:` prefix. No section → no findings (unchanged).
+    const advisoryFindings = extractBullets(findAdvisoryBlock(output)).map(
+      (bullet) => ({ ...parseReason(bullet), advisory: true }),
+    );
+    return {
+      findings: advisoryFindings,
+      cliRuns: [],
+      parseFailure: false,
+      recusal: null,
+    };
   }
 
   const reasonsBlock = findReasonsBlock(output);
