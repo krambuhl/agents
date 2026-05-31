@@ -115,7 +115,11 @@ message. If `$ARGUMENTS` is empty, stop and ask for a slug.
 Refresh git state before orientation so the autoload briefing reflects
 what's actually merged on the remote — not a stale local snapshot.
 This is the single point in the substrate where the working tree gets
-synced; downstream loops trust the result.
+synced; downstream loops trust the result. Branch hygiene matters here
+because every substrate write the dispatched loop makes commits to the
+checked-out branch (see `docs/AGENT-CONVENTIONS.md` § Branch hygiene
+before substrate writes); the branch checks below establish which
+branch that is before any dispatch.
 
 1. `git fetch origin` — always; never modifies the working tree.
 2. If currently on the base branch (typically `main`):

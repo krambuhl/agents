@@ -241,6 +241,45 @@ mission), the parent skill deletes `RECOVERY-STATUS.json`. The
 substrate does not auto-clean stale files; cleanup is each skill's
 responsibility.
 
+## Human-paired decisions: structured vs prose
+
+When a skill is human-paired (not `--mode=auto`), some decisions go to
+the operator. *How* you ask matters: a consequential fork deserves a
+structured `AskUserQuestion`; a clarification with an obvious default
+does not.
+
+**Use a structured `AskUserQuestion`** when BOTH hold:
+
+- The answer **changes what you do next** — different options lead to
+  materially different work (a different design, scope, or set of
+  files), not just a wording tweak.
+- The options are **discrete and mutually exclusive** — you can name
+  2-4 concrete choices the operator picks between (lead with a
+  recommendation; make the trade-offs visible).
+
+This is the same class of decision auto-mode hands to an evaluator or
+whiteboard panel (see § Auto-mode below). Human-paired, it goes to the
+operator as a structured prompt so the choice is on the record and the
+operator isn't reconstructing the options out of a paragraph.
+
+**Use free-form prose** when:
+
+- There's an **obvious default** — pick it, state it in one line, and
+  proceed. Don't manufacture a question for a decision you can make.
+- The input is **open-ended** — it doesn't fit discrete options (a
+  name, a free-text redirect, a "what did you mean by X").
+
+**The failure mode this prevents:** asking a consequential fork in
+prose ("should I do A, or B, or maybe C?") buries the decision, makes
+the options hard to compare, and leaves no clean record of what was
+chosen. The inverse — a structured prompt for a decision with an
+obvious default — is friction the operator didn't ask for. Match the
+form to the stakes.
+
+When genuinely uncertain about approach, scope, or intent — and the
+decision tree has more than one live branch — reach for `/grill-me`,
+which drives the structured form one branch at a time.
+
 ## Auto-mode and the two-budget shape
 
 Many skills support an optional `--mode=auto` flag (or equivalent
@@ -345,3 +384,36 @@ Bad: "Someone else can speak to this better."
 
 Good: "Deferring to `whiteboard-substrate-engineer` on the schema
 shape — that's their lens."
+
+## Branch hygiene before substrate writes
+
+The loom authoring skills (`loom plan` / `revise-plan` / `archive`,
+and the ev-loop checkin / phase / event writes) commit to **whatever
+branch is currently checked out** — they have no branch-awareness of
+their own. Invoke one on the wrong branch and the work strands there:
+a checkin meant for a phase branch lands on `main`, or a phase update
+lands on a sibling branch and the manifest reads stale everywhere else.
+
+**Before invoking any branch-committing substrate skill, confirm the
+branch** — `git branch --show-current` — and that it matches the
+phase/work you intend. This is cheap; the recovery (cherry-picking a
+stranded commit onto the right branch, reconciling a split manifest)
+is not. Loop bodies carry this as a preflight line; outside a loop,
+make it a habit before the first `loom`/`ev` write of a session.
+
+## Demonstrate before declaring done
+
+Do not report a task complete on the strength of reasoning alone —
+**demonstrate it**. Run the command and show the output; execute the
+probe and paste what it returned; open the artifact and confirm the
+change is there. "It should now work" / "the check fired with nothing
+to do" is a claim, not evidence, and the gap between the two is where
+false-green hides (a `Stop` hook catching a "done" that wasn't is the
+expensive version of learning this).
+
+The bar scales with reversibility and audience: a throwaway scratch
+note needs no ceremony, but anything another engineer (or a gate, or
+future-you) will trust as done gets a demonstration in the same breath
+as the claim. When you can't demonstrate — the run is external, the
+result is pending — say *that* plainly ("opened, awaiting CI") rather
+than rounding up to done.

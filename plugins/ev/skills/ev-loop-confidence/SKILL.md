@@ -176,7 +176,12 @@ Before any work:
   `<project-name>.<phase-lazy-name>` (e.g.
   `loom-absorb-draft.phase-7-griot-writes`). Otherwise confirm the
   current branch matches the phase's recorded branch in the manifest;
-  if not, stop and ask whether to switch.
+  if not, stop and ask whether to switch. **Branch hygiene**: every
+  checkin / phase / event write below commits to whatever branch is
+  checked out, so re-confirm `git branch --show-current` is the phase
+  branch before the first write — a write on the wrong branch strands
+  the work (see `docs/AGENT-CONVENTIONS.md` § Branch hygiene before
+  substrate writes).
 - Run the verification commands from `config.json` as a baseline.
   Record exit status. A red baseline before any work means the loop
   stops — you are not making a red build redder.
@@ -283,15 +288,20 @@ unit-specific deltas.
 
 For each unit inside a tier:
 
-1. **Negotiate.** Compose a Checkin JSON with just the Contract
-   substructure populated and write it per § Checkin write. Pick the
-   items for this batch from inventory.md (mark them with a tier tag if
-   not already). Execution / Verdict / Notes-for-PR substructures stay
+1. **Negotiate.** Compose a Checkin JSON with the Contract
+   substructure populated and write it per § Checkin write. The file
+   still needs the full required envelope (`schema_version`, `number`,
+   `created`, `branch`) even when only `contract` carries content —
+   `loom checkin write` rejects a file missing those. Pick the items
+   for this batch from inventory.md (mark them with a tier tag if not
+   already). Execution / Verdict / Notes-for-PR substructures stay
    empty for now — they're filled in by a later checkin once the work
    resolves. (Loom checkins are immutable, so the "fill it in later"
    pattern is "write a new numbered checkin," not "edit the existing
    one." The negotiation checkin and the resolution checkin together
-   tell the story.)
+   tell the story.) For a tier unit that resolves in one pass, a single
+   complete checkin after the panel approves is equally valid — the
+   create-once store doesn't require the two-checkin split.
 2. **Execute.** Do the transform on the batch. Keep to scope.
 3. **Evaluate.** Invoke `/guild-validate` via the `Skill` tool to run
    the antagonist panel against this unit. Compose the panel by

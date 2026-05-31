@@ -179,7 +179,11 @@ Claude Code process start; `/clear` is NOT a session boundary.
   `<project-name>.<phase-lazy-name>` (e.g.
   `marketplace-portable-install.migration`). Otherwise confirm the
   current branch matches the manifest's recorded phase branch; if not,
-  stop and ask whether to switch.
+  stop and ask whether to switch. **Branch hygiene**: every checkin /
+  phase / event write below commits to whatever branch is checked out,
+  so re-confirm `git branch --show-current` is the phase branch before
+  the first write — a write on the wrong branch strands the work (see
+  `docs/AGENT-CONVENTIONS.md` § Branch hygiene before substrate writes).
 
 ### Step 1. Enumerate deliverables
 
@@ -201,7 +205,21 @@ and confirm the decomposition before Step 2.
 For each deliverable (picked per the ordering rule):
 
 1. **Negotiate.** Draft the unit contract for this deliverable and
-   write it into a new numbered checkin (Contract section only).
+   write it into a new numbered checkin. A contract-stage checkin
+   still carries the **full envelope the schema defines** —
+   `schema_version`, `number`, `created`, `branch` — with `contract`
+   populated and the `execution` / `verdict` / `notes_for_pr` fields
+   left empty; "Contract section only" describes which substructure
+   you've *filled*, not a licence to omit the envelope (`loom checkin
+   write` hard-rejects a file missing `schema_version` / `number` /
+   `branch`, and the schema expects `created` too). Loom checkins are
+   **create-once** (immutable; a duplicate `(branch, number)` is
+   rejected), so "fill execution in later" means *write a new numbered
+   checkin*, never edit this one. For a unit that resolves in a single
+   pass, writing ONE complete checkin after the panel approves
+   (contract + execution + verdict together) is simpler and equally
+   valid — the create-once store doesn't care whether the unit's story
+   is told in one checkin or two.
    The negotiation has two shapes, selected by where ambiguity sits
    in the drafted contract:
 
@@ -230,7 +248,12 @@ For each deliverable (picked per the ordering rule):
      follow-ups when the field needs free-form input) one question
      at a time. After each answer, update the candidate contract.
      When the ambiguity queue empties, show the full contract for
-     final approve/redirect — same shape as the default path.
+     final approve/redirect — same shape as the default path. A
+     field whose resolution is a consequential fork (discrete,
+     mutually-exclusive options that change the unit's work) takes
+     the structured `AskUserQuestion`; a field with an obvious
+     default takes prose — see `docs/AGENT-CONVENTIONS.md`
+     § Human-paired decisions: structured vs prose.
 
    **Auto-mode** (the loop's `--mode=auto` flag, or upstream
    caller-supplied auto-mode signal): the user is replaced by
