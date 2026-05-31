@@ -31,7 +31,8 @@ branch = "ev-agent.shared-insights.derive-dont-duplicate"
 [[phases]]
 number = 3
 name = "Authoring-repo vs consumer-project path resolution"
-status = "not-started"
+status = "completed"
+branch = "ev-agent.shared-insights.path-resolution"
 
 [[phases]]
 number = 4
@@ -108,6 +109,26 @@ at = "2026-05-31T21:27:48.712Z"
 event = "phase-completed"
 detail = { phase = 2 }
 
+[[events]]
+at = "2026-05-31T21:58:26.678Z"
+event = "checkin-created"
+detail = { number = "06", branch = "ev-agent.shared-insights.path-resolution" }
+
+[[events]]
+at = "2026-05-31T21:58:26.746Z"
+event = "checkin-created"
+detail = { number = "07", branch = "ev-agent.shared-insights.path-resolution" }
+
+[[events]]
+at = "2026-05-31T21:58:26.817Z"
+event = "checkin-created"
+detail = { number = "08", branch = "ev-agent.shared-insights.path-resolution" }
+
+[[events]]
+at = "2026-05-31T21:58:48.805Z"
+event = "phase-completed"
+detail = { phase = 3 }
+
 [[checkins]]
 schema_version = 1
 number = "01"
@@ -177,3 +198,45 @@ scope = ["new shared phase-prefix.ts", "repoint recipe.ts + derive.ts to import 
 changes_since_previous = "Second and final unit of Phase 2; builds on U1's verified branch."
 verdict = { result = "approved", reasons = ["Antagonist panel (evaluator-contract-fit + evaluator-naming) → approved, zero findings. One source, two importers, two preserved error types; behavior verified unchanged; phase-prefix.ts reads consistently with sibling concept-named modules."] }
 notes_for_pr = ["Pure refactor (no behavioral change) — verification is behavior-preservation: 111 guild tests + identical live recipe resolution.", "Advisory (non-blocking, pre-existing, not introduced here): the two lookup wrappers are named differently — nameFor (recipe.ts) vs prefixForPhase (derive.ts). Justified by distinct outputs (full agent NAME vs cell-id PREFIX); the naming evaluator declined to flag it as it's pre-existing and outside this diff's new module.", "phase-prefix.ts has no dedicated test (it's a constant map); it's exercised transitively by recipe.test.ts + the derive/compile tests, and its loadability is covered by D2's exhaustive node --check gate. A dedicated test for a literal would be over-assertion."]
+
+[[checkins]]
+schema_version = 1
+number = "06"
+created = "2026-05-31T21:50:00Z"
+phase = { number = 3, name = "Authoring-repo vs consumer-project path resolution" }
+branch = "ev-agent.shared-insights.path-resolution"
+unit = "P3·D2 — repoint derive-panel substrate globs to the real plugins/** layout"
+contract = { goal = "Repoint derive-panel's substrate-path globs off the non-existent pre-plugins layout (.claude/scripts/**, .claude/cli/**) to the real plugins/**/cli/**, scripts/**, plugins/**/scripts/** layout in both PANEL-COMPOSITION.md (runtime source) and the FALLBACK_RULES mirror, so substrate .ts resolves to contract-fit+naming instead of the generic *.ts->react over-include.", acceptance_criteria = ["Spec rows repointed off .claude/* to the real layout; evaluator lists unchanged.", "FALLBACK_RULES aligned to match (it had also drifted, missing the cli rules).", "globToRegex **/ matches zero-OR-more segments (bin entrypoints directly in cli/ + files directly in scripts/ resolve as substrate).", "Empirical: substrate .ts -> contract-fit+naming (no react); substrate tests -> test-unit; .tsx unchanged.", "Tests updated to real layout + new coverage (entrypoint, direct-scripts, **/ regression)."], rules_applied = ["L-006: spec and FALLBACK_RULES mirror must agree", "Only path globs + the glob engine change; evaluator lists untouched"], disqualifiers = ["any stale .claude/ substrate glob remaining", "spec/fallback disagreement", "changing the evaluators for these paths", "touching the react-gating (D1)"], inputs = ["plugins/commons/docs/PANEL-COMPOSITION.md", "plugins/guild/cli/verbs/guild/derive-panel.ts", "derive-panel.test.ts"] }
+execution = { actions = ["Repointed 5 substrate rows in PANEL-COMPOSITION.md (synced to consumers); aligned FALLBACK_RULES + added the previously-missing cli rules.", "Fixed globToRegex: `**/` now emits `(?:.*/)?` (zero-or-more segments) instead of `.*/` (which required a trailing slash and missed files directly in a base dir).", "Updated 2 stale .claude/scripts tests to real paths; added entrypoint/direct-scripts/plugin-script + a globToRegex **/-zero-segment regression test.", "Verified empirically: all substrate .ts -> contract-fit+naming; tests -> test-unit; tsx unchanged; non-substrate src/util.ts still react (D1's gate). 40 derive-panel tests + full suite green; sync ok."], files_touched = ["plugins/commons/docs/PANEL-COMPOSITION.md (+4 synced)", "plugins/guild/cli/verbs/guild/derive-panel.ts", "plugins/guild/cli/verbs/guild/derive-panel.test.ts"], corrections = ["Scope expansion beyond the PLAN's 'repoint globs' framing: the globToRegex `**/` zero-segment fix was REQUIRED for the repointed globs to actually match (without it, bin entrypoints directly in cli/ and files directly in scripts/ still fell through to *.ts->react). Folded in as the enabling mechanism; flagged for operator awareness.", "Discovered (deferred, NOT folded in): `guild derive-panel` silently emits baseline-only when given POSITIONAL path args (it only reads --files=/stdin) -- a silent-degradation footgun that caused this session's earlier manual-panel workarounds. The documented recipe uses --files=, so it is a robustness gap, not a correctness bug in the documented path. Noted for a future cleanup."] }
+scope = ["repoint substrate path globs (spec + fallback)", "globToRegex **/ zero-segment fix"]
+changes_since_previous = "First unit of Phase 3; Phase 2 merged (PR #177)."
+verdict = { result = "approved", reasons = ["Panel (contract-fit + test-unit + naming) -> approved, zero findings. Substrate .ts now resolves to contract-fit+naming; spec/fallback parity restored; the **/ regression is pinned; the over-broadening guard (non-substrate .ts still gets react) is preserved."] }
+notes_for_pr = ["The globToRegex `**/` fix is a general glob-correctness improvement (standard zero-or-more-segment semantics), in-scope as the mechanism that makes the repointed globs match bin entrypoints. [adr-candidate] worth a one-line ADR that derive-panel globs use standard `**/` zero-or-more semantics, since it is load-bearing for substrate-path routing.", "Deferred follow-up: derive-panel silently baselines on positional args instead of erroring -- a footgun worth a guard (error or accept positionals) in a later cleanup."]
+
+[[checkins]]
+schema_version = 1
+number = "07"
+created = "2026-05-31T21:54:00Z"
+phase = { number = 3, name = "Authoring-repo vs consumer-project path resolution" }
+branch = "ev-agent.shared-insights.path-resolution"
+unit = "P3·D1 — gate evaluator-react on an actual react import for .ts"
+contract = { goal = "Make derive-panel honor the spec's already-written `*.ts -> evaluator-react (only when imports react/react-dom)` condition: a non-JSX .ts gets react only when it imports react/react-dom; .tsx/.jsx keep react unconditionally; an unreadable file keeps react (conservative).", acceptance_criteria = ["non-JSX .ts importing react/react-dom -> react kept; not importing -> react dropped (naming+contract-fit stay).", ".tsx/.jsx keep react unconditionally.", "unreadable path -> react kept (never strip what we can't disprove).", "react-import detector matches react/react-dom (from/bare/require/dynamic/subpath) but not react-router or ./react-* siblings.", "tests cover each direction via an injected reader stub."], rules_applied = ["Honor the spec's written condition rather than extracting react unconditionally", "Conservative-keep on unreadable", "Inject the file reader for testability"], disqualifiers = ["stripping react from JSX", "stripping react from an unreadable file", "false-matching react-router/react-icons/./react-utils", "changing the substrate-glob routing (D2)"], inputs = ["plugins/guild/cli/verbs/guild/derive-panel.ts", "derive-panel.test.ts", "PANEL-COMPOSITION.md (condition already documented)"] }
+execution = { actions = ["Added REACT_IMPORT regex (anchored to exactly react/react-dom + subpaths), FileReader type, defaultFileReader(cwd), and gateReact(file, evaluators, readFile).", "derivePanel gained an optional readFile param (default cwd-rooted readFileSync wrapper); derivePanelVerb passes defaultFileReader(ctx.cwd).", "Added a react-gating describe (injected reader): import kept, non-react dropped, react-router dropped, .tsx unconditional, unreadable kept, react-dom/subpath/require/dynamic count, per-file independence.", "Verified live (temp files) + 48 derive-panel tests + full suite green; strip-only + sync ok."], files_touched = ["plugins/guild/cli/verbs/guild/derive-panel.ts", "plugins/guild/cli/verbs/guild/derive-panel.test.ts"], corrections = [] }
+scope = ["gateReact + REACT_IMPORT + injected reader", "react-gating tests"]
+changes_since_previous = "Second unit; builds on D2 (substrate routing narrows what the *.ts react rule must gate)."
+verdict = { result = "approved", reasons = ["Panel (contract-fit + test-unit + naming) -> approved, zero findings. Gate honors the spec condition both directions; JSX + unreadable correctly keep react; regex doesn't over-match siblings; per-file independence tested (added per the test-unit advisory)."] }
+notes_for_pr = ["derive-panel now reads file CONTENT (not just paths) for the react-import condition -- the first content-based condition in the engine. Unreadable -> conservative keep, so consumer-project/out-of-tree paths never get react wrongly stripped.", "Advisory (naming, non-blocking): `FileReader` is a common type name; watch for naming-overloaded if a second reader abstraction appears."]
+
+[[checkins]]
+schema_version = 1
+number = "08"
+created = "2026-05-31T21:57:26Z"
+phase = { number = 3, name = "Authoring-repo vs consumer-project path resolution" }
+branch = "ev-agent.shared-insights.path-resolution"
+unit = "P3·D3 — forward --base through loom pr open"
+contract = { goal = "Add --base handling to loom pr open so stacked PRs target their parent branch, not the repo default.", acceptance_criteria = ["loom pr open --base=<branch> adds --base <branch> to gh pr create.", "Omitting --base adds nothing (gh defaults to the repo default branch; current behavior preserved).", "Test covers both directions.", "The Compose PR recipe documents the new optional flag."], rules_applied = ["Preserve current behavior when the flag is omitted", "Forward only to gh pr create"], disqualifiers = ["changing behavior when --base omitted", "hardcoding a base", "passing --base to gh verbs other than pr create"], inputs = ["plugins/loom/cli/verbs/loom/pr.ts", "pr.test.ts", "plugins/commons/docs/SUBSTRATE-COMPOSITIONS.md"] }
+execution = { actions = ["Added base to OPEN_OPTIONS; ghArgs.push('--base', values.base) guarded on values.base !== undefined, inside prOpen's pr create argv.", "Added 2 pr.test.ts tests (forwarded with flag+value adjacency incl. coexisting --head; absent by default).", "Documented [--base=<parent-branch>] in the Compose PR recipe (synced).", "Verified: 37 pr tests + full suite green; strip-only + sync ok."], files_touched = ["plugins/loom/cli/verbs/loom/pr.ts", "plugins/loom/cli/verbs/loom/pr.test.ts", "plugins/commons/docs/SUBSTRATE-COMPOSITIONS.md (+synced)"], corrections = [] }
+scope = ["--base forwarding in pr open", "tests + recipe doc"]
+changes_since_previous = "Third and final unit of Phase 3; independent of D1/D2 (different surface)."
+verdict = { result = "approved", reasons = ["Panel (contract-fit + test-unit) -> approved, zero findings. --base forwarded only when provided, only to pr create; omitted-default behavior preserved; both directions tested with flag+value adjacency."] }
+notes_for_pr = ["Phase boundary (last deliverable of Phase 3) -- single scope signal, no concurrence, no plan revision.", "This makes future gt-style stacked-PR phases targetable via the loom substrate (loom pr open --base=<parent>), though the loom flow remains gh-based not gt-native."]
