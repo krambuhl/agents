@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "type": "session",
+  "created": "2026-05-31T21:27:00Z",
+  "phase": 2,
+  "tier": 1,
+  "findings": [
+    {
+      "category": "kept-well",
+      "description": "Verifying both premises against current source before transforming caught a stale plan reference — CANONICAL_PHASES lives in plugins/guild/modes/, not the cli/ path the PLAN implied. The substrate-tempering 'premises go stale' rule paid off again.",
+      "evidence": "grep in plugins/guild/cli returned nothing for CANONICAL_PHASES; it was in plugins/guild/modes/axes-schema.test.ts:51."
+    },
+    {
+      "category": "kept-well",
+      "description": "Skipping the whiteboard (glob-zero bootstrapping + no PLAN override) was right for a mechanical phase — the approach for 'derive a list from parsed keys' and 'collapse two byte-identical maps' is obvious; a design panel would have been ceremony. Both units passed their antagonist panels first try.",
+      "evidence": "P2U1 contract-fit+test-unit approved; P2U2 contract-fit+naming approved; zero blocking findings across both."
+    },
+    {
+      "category": "process-change",
+      "description": "Deriving a test's expected set from the same source it validates needs an explicit non-empty/floor guard, or a parse that yields nothing makes every data-driven loop pass vacuously. This is the same shape as D2's inventory-floor guard — worth treating as a standing rule for any derive-don't-duplicate test work.",
+      "evidence": "Added `expect(CANONICAL_PHASES.length).toBeGreaterThan(0)`; the test-unit evaluator confirmed it defends the exact vacuous-pass failure mode."
+    },
+    {
+      "category": "follow-up",
+      "description": "CANONICAL_DOMAINS / CANONICAL_PERSONALITIES are the same hand-list shape but were left hardcoded on purpose (leaf axes, completeness assertions, not cross-referenced FKs). A future consistency pass could derive them too, but that trades their completeness guard for self-maintenance — a different tradeoff than the phases FK case, so not folded in here.",
+      "evidence": "Noted in checkin-04 notes_for_pr and the inventory's out-of-scope section."
+    }
+  ]
+}

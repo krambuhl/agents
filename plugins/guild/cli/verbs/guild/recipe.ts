@@ -22,18 +22,7 @@ import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
 import { parseToml, TomlParseError, isTomlTable, type TomlTable } from '../../lib/toml.ts';
 import type { DispatchResult, GuildCliContext, GuildVerbHandler } from './index.ts';
-
-// Phase prefix: maps the axes.toml phase axis to the agent-name
-// prefix codegen emits. Mirrors the same mapping the compile
-// pipeline's compose.ts uses (reviewer → evaluator, planner →
-// whiteboard); kept in sync by virtue of both being load-bearing
-// across the substrate.
-const PHASE_PREFIX: Record<string, string> = {
-  reviewer: 'evaluator',
-  planner: 'whiteboard',
-  implementer: 'implementer',
-  fixer: 'fixer',
-};
+import { PHASE_PREFIX } from './phase-prefix.ts';
 
 export class RecipeNotFoundError extends Error {}
 export class RecipeReadError extends Error {}

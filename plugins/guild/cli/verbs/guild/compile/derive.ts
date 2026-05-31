@@ -1,5 +1,6 @@
 import type { AxesData, Cell } from './types.ts';
 import { DeriveError } from './types.ts';
+import { PHASE_PREFIX } from '../phase-prefix.ts';
 
 // derive: AxesData → ordered Cell[].
 //
@@ -19,17 +20,9 @@ import { DeriveError } from './types.ts';
 // silent dedup. A duplicate is a signal the recipe set has an overlap
 // the author didn't intend.
 
-// Phase → cell-id prefix. reviewer/planner keep their historical
-// prefixes (evaluator/whiteboard); write-capable phases prefix with
-// their own name. A phase absent here throws on derivation — P3
-// collapses this map to a phase-name default.
-const PHASE_PREFIX: Record<string, string> = {
-  reviewer: 'evaluator',
-  planner: 'whiteboard',
-  implementer: 'implementer',
-  fixer: 'fixer',
-};
-
+// PHASE_PREFIX (phase → cell-id prefix) is imported from the shared
+// phase-prefix module — the single source of truth the recipe resolver
+// also reads. A phase absent from the map throws on derivation.
 function prefixForPhase(phase: string): string {
   const prefix = PHASE_PREFIX[phase];
   if (prefix === undefined) {

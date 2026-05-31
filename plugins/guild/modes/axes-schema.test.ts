@@ -48,8 +48,6 @@ const CANONICAL_PERSONALITIES = [
   'synthesizer',
 ];
 
-const CANONICAL_PHASES = ['researcher', 'planner', 'reviewer', 'implementer', 'fixer'];
-
 function getTable(
   t: TomlValue | undefined,
   key: string,
@@ -82,6 +80,21 @@ function getArrayOfTables(t: TomlValue | undefined, key: string): TomlTable[] {
   return v.filter(isTomlTable);
 }
 
+// CANONICAL_PHASES is DERIVED from axes.toml's [axis.phase.*] keys — the
+// single source of truth for which phases exist. It was previously a
+// hardcoded array: a second source that drifted, because when `fixer` was
+// added to axes.toml the list wasn't updated, so cross-axis references to
+// the new phase validated against a stale expectation. Deriving it makes
+// the "references a valid phase" + per-phase shape checks below correct-
+// by-construction. (CANONICAL_DOMAINS / CANONICAL_PERSONALITIES stay
+// hardcoded on purpose: they are leaf axes, not cross-referenced foreign
+// keys, so their lists are completeness assertions — "axes.toml must
+// declare these" — rather than drift-prone duplicates of an existing
+// source. See the phase axis being the FK that bit.)
+const CANONICAL_PHASES = Object.keys(
+  getTable(getTable(AXES, 'axis'), 'phase') ?? {},
+);
+
 describe('axes-schema: parses + schema_version', () => {
   it('axes.toml parses as TOML', () => {
     // Reaching this point means parseToml succeeded; assertion is the
@@ -95,6 +108,14 @@ describe('axes-schema: parses + schema_version', () => {
 });
 
 describe('axes-schema: axis tables present', () => {
+  it('CANONICAL_PHASES derives to a non-empty set', () => {
+    // Anti-vacuous guard: CANONICAL_PHASES is derived from the parsed
+    // [axis.phase.*] keys, so a parse that yields no phase tables would
+    // make every `for (phase of CANONICAL_PHASES)` loop below generate
+    // zero test cases and pass vacuously. Pin a floor so that failure is
+    // loud here instead of silent everywhere.
+    expect(CANONICAL_PHASES.length).toBeGreaterThan(0);
+  });
   for (const d of CANONICAL_DOMAINS) {
     it(`axis.domain.${d} exists`, () => {
       const t = getTable(getTable(AXES, 'axis'), 'domain');

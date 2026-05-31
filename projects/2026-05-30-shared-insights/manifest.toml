@@ -25,7 +25,8 @@ branch = "ev-agent.shared-insights.freshness-gate"
 [[phases]]
 number = 2
 name = "Derive-don't-duplicate"
-status = "not-started"
+status = "completed"
+branch = "ev-agent.shared-insights.derive-dont-duplicate"
 
 [[phases]]
 number = 3
@@ -87,6 +88,26 @@ at = "2026-05-31T21:01:57.980Z"
 event = "phase-completed"
 detail = { phase = 1 }
 
+[[events]]
+at = "2026-05-31T21:27:02.255Z"
+event = "checkin-created"
+detail = { number = "04", branch = "ev-agent.shared-insights.derive-dont-duplicate" }
+
+[[events]]
+at = "2026-05-31T21:27:02.328Z"
+event = "checkin-created"
+detail = { number = "05", branch = "ev-agent.shared-insights.derive-dont-duplicate" }
+
+[[events]]
+at = "2026-05-31T21:27:48.640Z"
+event = "retro-written"
+detail = { type = "session", phase = 2, tier = 1 }
+
+[[events]]
+at = "2026-05-31T21:27:48.712Z"
+event = "phase-completed"
+detail = { phase = 2 }
+
 [[checkins]]
 schema_version = 1
 number = "01"
@@ -128,3 +149,31 @@ scope = ["ev-run Tier 2/Tier 3 surfacing of loom doctor advisories", "entry-vs-r
 changes_since_previous = "Third and final deliverable; depends on D1 (loom doctor must already emit the freshness advisories this preflight surfaces)."
 verdict = { result = "approved", reasons = ["Antagonist panel (evaluator-contract-fit) → approved, zero findings. All 5 ACs met: stdout no longer discarded, advisories surfaced, stale out-of-scope prose corrected, advisory+recompile-boundary framing present, both loop bodies collapsed to defer to ev-run's canonical spec."] }
 notes_for_pr = ["Single scope signal (phase boundary; no inner-RPI offer): D3 is the last deliverable of Phase 1. No second concurring signal (no plan-structure evaluator findings, no operator redirect), so no plan revision triggered.", "Load-bearing coupling worth noting in review: D1 (loom doctor emits the advisories) and D3 (ev-run surfaces them) only deliver value together — D1 alone produced a signal nothing read; D3 alone would have nothing to surface. They ship in the same phase PR for that reason.", "The dispatched-vs-standalone split in the loop bodies is a soft LLM-interpreted signal (no explicit router marker arg). Trades a possible redundant second `loom doctor` run (harmless, idempotent, advisory) for not expanding the dispatch contract. If double-probing becomes a measured cost, a future unit can add an explicit 'preflight-already-run' marker to the dispatch."]
+
+[[checkins]]
+schema_version = 1
+number = "04"
+created = "2026-05-31T21:22:00Z"
+phase = { number = 2, name = "Derive-don't-duplicate" }
+branch = "ev-agent.shared-insights.derive-dont-duplicate"
+unit = "P2·U1 — derive CANONICAL_PHASES from parsed axes.toml keys"
+contract = { goal = "Replace the hardcoded CANONICAL_PHASES array in axes-schema.test.ts with one derived from the parsed [axis.phase.*] keys, deleting the drift class (the array lagged axes.toml when `fixer` was added). Add a non-empty guard so a parse yielding zero phases fails loudly instead of vacuously.", acceptance_criteria = ["CANONICAL_PHASES is derived from the parsed axis.phase table keys, not hardcoded.", "A non-empty guard test exists (anti-vacuous).", "All existing usages stay valid: per-phase shape checks and FK-validation checks (domain/personality/recipe/singleton phase references) continue to assert meaningfully.", "Scope discipline: only phases are derived; CANONICAL_DOMAINS/PERSONALITIES stay hardcoded (leaf axes, completeness assertions, not drift-prone FKs)."], rules_applied = ["Derive-don't-duplicate: the single source of truth is axes.toml; the test validates its internal consistency rather than asserting it matches a hand-list.", "Anti-vacuous guard for derived expectations (the D2 inventory-floor lesson applied to a derived set)."], disqualifiers = ["Making the FK-validation tests tautological.", "Deriving the leaf axes and dropping their completeness guard.", "Leaving CANONICAL_PHASES hardcoded."], inputs = ["plugins/guild/modes/axes-schema.test.ts", "plugins/guild/modes/axes.toml"] }
+execution = { actions = ["Removed the hardcoded CANONICAL_PHASES array; added `const CANONICAL_PHASES = Object.keys(getTable(getTable(AXES,'axis'),'phase') ?? {})` after the helpers, with a comment documenting the derivation + why domains/personalities stay hardcoded.", "Added a non-empty guard test in the 'axis tables present' describe.", "Verified: derived keys == old hardcoded list (researcher, planner, reviewer, implementer, fixer); axes-schema.test.ts → 114 passed (113 + guard).", "Confirmed (via the panel) the FK checks are NOT made vacuous: the derived set (axis.phase keys) and the validated references (recipe.phase etc.) come from independent TOML regions, so a typo'd reference still fails and a new phase can't go stale."], files_touched = ["plugins/guild/modes/axes-schema.test.ts"], corrections = [] }
+scope = ["derive CANONICAL_PHASES from parsed axis.phase keys", "non-empty guard"]
+changes_since_previous = "First unit of Phase 2; Phase 1 merged to main (PR #176)."
+verdict = { result = "approved", reasons = ["Antagonist panel (evaluator-contract-fit + evaluator-test-unit) → approved, zero findings. Both confirmed the derivation strengthens the FK checks (validates against real keys) without making them tautological, and the non-empty guard defends the vacuous-pass case."] }
+notes_for_pr = ["Single scope signal (phase boundary — first of two units, no concurrence): noted, no plan revision.", "Completeness-assertion tradeoff (acknowledged, intended): the old hardcoded list implicitly asserted 'axes.toml declares exactly these 5 phases'. That assertion is gone — but it was the documented drift source, and axes.toml is the source of truth. Trading a stale-prone 'exactly these' for a self-maintaining FK graph is the point of the phase.", "DOMAINS/PERSONALITIES are the same hand-list shape but stay hardcoded on purpose (leaf axes, not cross-referenced FKs). If a future effort wants them derived too, it would trade their completeness guard for self-maintenance — a different tradeoff than the phases FK case."]
+
+[[checkins]]
+schema_version = 1
+number = "05"
+created = "2026-05-31T21:26:08Z"
+phase = { number = 2, name = "Derive-don't-duplicate" }
+branch = "ev-agent.shared-insights.derive-dont-duplicate"
+unit = "P2·U2 — collapse the dual PHASE_PREFIX into one shared module"
+contract = { goal = "Collapse the byte-identical PHASE_PREFIX map (duplicated in recipe.ts and compile/derive.ts, hand-synced) into one shared module both import. Pure refactor, behavior preserved.", acceptance_criteria = ["A single shared module (plugins/guild/cli/verbs/guild/phase-prefix.ts) exports PHASE_PREFIX.", "recipe.ts and compile/derive.ts both import it; neither keeps a local copy.", "Each consumer keeps its own lookup wrapper + domain-specific error (recipe.ts → RecipeReadError; derive.ts → DeriveError) so error provenance is preserved.", "No behavioral change — prefixes resolve identically."], rules_applied = ["Derive-don't-duplicate: one exported source the others read.", "Preserve error provenance: share the data, not the throw — each consumer keeps its own error type.", "Plugin-authoritative placement: cli/verbs/guild/ (guild-specific), NOT the synced cli/lib/."], disqualifiers = ["Any behavioral change (different prefix output).", "Leaving a duplicate copy.", "Collapsing the two distinct error types into one (losing provenance).", "Putting the shared module in cli/lib/ (synced commons)."], inputs = ["plugins/guild/cli/verbs/guild/recipe.ts", "plugins/guild/cli/verbs/guild/compile/derive.ts"] }
+execution = { actions = ["Created plugins/guild/cli/verbs/guild/phase-prefix.ts exporting PHASE_PREFIX with a header naming it the single source.", "recipe.ts: removed the local const + the obsolete 'kept in sync' comment; added the import. nameFor() still throws RecipeReadError.", "compile/derive.ts: removed the local const + the stale 'P3 collapses this map' comment; added the import. prefixForPhase() still throws DeriveError.", "Verified: node --check on all 3 files passes (strip-only clean, also covered by D2's exhaustive gate); recipe+derive+compile tests → 111 passed; full suite → 1150; live `guild recipe design-systems` resolves identically (planner→whiteboard preserved)."], files_touched = ["plugins/guild/cli/verbs/guild/phase-prefix.ts", "plugins/guild/cli/verbs/guild/recipe.ts", "plugins/guild/cli/verbs/guild/compile/derive.ts"], corrections = [] }
+scope = ["new shared phase-prefix.ts", "repoint recipe.ts + derive.ts to import it"]
+changes_since_previous = "Second and final unit of Phase 2; builds on U1's verified branch."
+verdict = { result = "approved", reasons = ["Antagonist panel (evaluator-contract-fit + evaluator-naming) → approved, zero findings. One source, two importers, two preserved error types; behavior verified unchanged; phase-prefix.ts reads consistently with sibling concept-named modules."] }
+notes_for_pr = ["Pure refactor (no behavioral change) — verification is behavior-preservation: 111 guild tests + identical live recipe resolution.", "Advisory (non-blocking, pre-existing, not introduced here): the two lookup wrappers are named differently — nameFor (recipe.ts) vs prefixForPhase (derive.ts). Justified by distinct outputs (full agent NAME vs cell-id PREFIX); the naming evaluator declined to flag it as it's pre-existing and outside this diff's new module.", "phase-prefix.ts has no dedicated test (it's a constant map); it's exercised transitively by recipe.test.ts + the derive/compile tests, and its loadability is covered by D2's exhaustive node --check gate. A dedicated test for a literal would be over-assertion."]
