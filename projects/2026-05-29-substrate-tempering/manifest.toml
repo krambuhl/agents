@@ -24,7 +24,7 @@ branch = "ev-agent.substrate-tempering.papercut-sweep"
 [[phases]]
 number = 2
 name = "Convention-drift 2.1"
-status = "in-progress"
+status = "completed"
 branch = "ev-agent.substrate-tempering.convention-drift-2-1"
 
 [[phases]]
@@ -96,6 +96,11 @@ detail = { number = "04", branch = "ev-agent.substrate-tempering.convention-drif
 at = "2026-05-30T01:57:51.897Z"
 event = "checkin-created"
 detail = { number = "05", branch = "ev-agent.substrate-tempering.convention-drift-2-1" }
+
+[[events]]
+at = "2026-05-31T03:31:45.769Z"
+event = "phase-completed"
+detail = { phase = 2 }
 
 [[checkins]]
 schema_version = 1
