@@ -239,10 +239,55 @@ export function matchPath(path: string, rules: Rule[]): string[] {
   return best ? best.rule.evaluators : [];
 }
 
-export function derivePanel(files: string[], spec: Spec): string[] {
+// Detect an import of `react` or `react-dom` (static `from`, bare
+// side-effect `import 'react'`, `require('react')`, or dynamic
+// `import('react')`; also a `react/...` subpath like `react/jsx-runtime`).
+// Deliberately does NOT match sibling packages like `react-router` or a
+// local `./react-utils` — the specifier must be exactly react / react-dom.
+const REACT_IMPORT =
+  /(?:from|import|require\(|import\()\s*['"]react(?:-dom)?(?:\/[^'"]*)?['"]/;
+
+export type FileReader = (path: string) => string | undefined;
+
+function defaultFileReader(cwd: string): FileReader {
+  return (path) => {
+    try {
+      return readFileSync(resolve(cwd, path), 'utf8');
+    } catch {
+      return undefined;
+    }
+  };
+}
+
+// Honor the spec's `*.ts → evaluator-react (only when the file imports from
+// react / react-dom)` condition. A non-JSX `.ts` warrants the React lens
+// only when it actually pulls in React (a hook, a context, a non-JSX
+// helper) — bare `.ts` substrate / Node code does not. `.tsx`/`.jsx` are
+// JSX by definition and keep react unconditionally. When the file can't be
+// read (a path outside the working tree, a consumer-project path, a deleted
+// file), KEEP react — never strip a lens we cannot disprove.
+function gateReact(
+  file: string,
+  evaluators: string[],
+  readFile: FileReader,
+): string[] {
+  if (!evaluators.includes('evaluator-react')) return evaluators;
+  if (file.endsWith('.tsx') || file.endsWith('.jsx')) return evaluators;
+  if (!file.endsWith('.ts')) return evaluators;
+  const content = readFile(file);
+  if (content === undefined) return evaluators;
+  if (REACT_IMPORT.test(content)) return evaluators;
+  return evaluators.filter((e) => e !== 'evaluator-react');
+}
+
+export function derivePanel(
+  files: string[],
+  spec: Spec,
+  readFile: FileReader = defaultFileReader(process.cwd()),
+): string[] {
   const set = new Set<string>([BASELINE]);
   for (const file of files) {
-    const matched = matchPath(file, spec.rules);
+    const matched = gateReact(file, matchPath(file, spec.rules), readFile);
     for (const e of matched) set.add(e);
   }
   const ordered: string[] = [];
@@ -274,7 +319,7 @@ export function derivePanelVerb(
   }
   // Empty input is fine — emit baseline.
   const { spec, warning } = loadSpec(ctx.cwd);
-  const panel = derivePanel(files, spec);
+  const panel = derivePanel(files, spec, defaultFileReader(ctx.cwd));
   const result: DispatchResult = {
     stdout: panel.join(','),
     exitCode: 0,
