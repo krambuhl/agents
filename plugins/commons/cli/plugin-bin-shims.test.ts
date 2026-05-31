@@ -48,6 +48,7 @@ interface FakePluginTree {
 function makeFakePluginTree(plugin: (typeof PLUGINS)[number], options: {
   dummyStdout?: string;
   withoutEntry?: boolean;
+  entryBody?: string;
 } = {}): FakePluginTree {
   const root = mkdtempSync(join(tmpdir(), `plugin-bin-${plugin}-`));
   mkdirSync(join(root, 'bin'), { recursive: true });
@@ -58,11 +59,10 @@ function makeFakePluginTree(plugin: (typeof PLUGINS)[number], options: {
   if (!options.withoutEntry) {
     mkdirSync(join(root, 'cli'), { recursive: true });
     const stdout = options.dummyStdout ?? `dummy-${plugin}-entry-output`;
-    writeFileSync(
-      join(root, 'cli', `${plugin}.ts`),
-      `process.stdout.write(${JSON.stringify(stdout)});\nprocess.exit(0);\n`,
-      'utf8',
-    );
+    const entry =
+      options.entryBody ??
+      `process.stdout.write(${JSON.stringify(stdout)});\nprocess.exit(0);\n`;
+    writeFileSync(join(root, 'cli', `${plugin}.ts`), entry, 'utf8');
   }
 
   return {
@@ -175,3 +175,49 @@ for (const plugin of PLUGINS) {
     });
   });
 }
+
+// The per-plugin block above exercises shim MECHANICS against a dummy
+// entry. This block closes the remaining gap: the REAL cli/<name>.ts
+// entry (and its eagerly-imported graph) must load under node's
+// strip-only TypeScript loader — the class that vitest's own transform
+// masks (parameter properties, JSDoc-close sequences, enums). A footgun
+// in a real entrypoint is a total outage, so it gets its own gate.
+describe('real-entry strip-only loader smoke', () => {
+  for (const plugin of PLUGINS) {
+    test(`${plugin}: the real bin shim loads its real cli/${plugin}.ts under the strip-only loader`, () => {
+      const realShim = join(REPO_ROOT, 'plugins', plugin, 'bin', plugin);
+      const result = spawnSync(realShim, [], {
+        encoding: 'utf8',
+        env: { ...process.env },
+      });
+      // A strip-only footgun anywhere in the entry's import graph aborts
+      // the load with a non-zero exit + ERR_UNSUPPORTED_TYPESCRIPT_SYNTAX;
+      // exit 0 means the graph parsed and the no-arg usage path ran.
+      expect(result.stderr).not.toMatch(
+        /ERR_UNSUPPORTED_TYPESCRIPT_SYNTAX|SyntaxError/,
+      );
+      expect(result.status).toBe(0);
+    });
+  }
+
+  test('a strip-only footgun in an entry is caught by the shim + node, not shipped', () => {
+    // Proves the gate BITES. A parameter property is the representative
+    // footgun (node: "TypeScript parameter property is not supported in
+    // strip-only mode"). If a real entry ever grows one, the exec fails
+    // loudly rather than passing a dummy-entry test.
+    const footgun = makeFakePluginTree('loom', {
+      entryBody:
+        'class Probe {\n  constructor(public x: number) {}\n}\nprocess.stdout.write(String(new Probe(1).x));\n',
+    });
+    try {
+      const result = spawnSync(footgun.shimPath, [], {
+        encoding: 'utf8',
+        env: { ...process.env },
+      });
+      expect(result.status).not.toBe(0);
+      expect(result.stderr).toMatch(/ERR_UNSUPPORTED_TYPESCRIPT_SYNTAX/);
+    } finally {
+      footgun.cleanup();
+    }
+  });
+});

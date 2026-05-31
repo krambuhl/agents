@@ -19,7 +19,7 @@ worker_bindings = {}
 [[phases]]
 number = 1
 name = "Extend the node-real smoke net to guild + bin-shims"
-status = "in-progress"
+status = "completed"
 branch = "ev-agent.gate-coverage.phase-1"
 
 [[phases]]
@@ -42,6 +42,16 @@ at = "2026-05-31T01:30:35.503Z"
 event = "phase-started"
 detail = { phase = 1, name = "Extend the node-real smoke net to guild + bin-shims" }
 
+[[events]]
+at = "2026-05-31T01:50:47.137Z"
+event = "checkin-created"
+detail = { number = "02", branch = "ev-agent.gate-coverage.phase-1" }
+
+[[events]]
+at = "2026-05-31T01:50:47.205Z"
+event = "phase-completed"
+detail = { phase = 1 }
+
 [[checkins]]
 schema_version = 1
 number = "01"
@@ -55,3 +65,17 @@ scope = ["Add a strip-only loader smoke for guild's cli/lib/toml.ts (parse-only)
 changes_since_previous = "First deliverable of phase 1. Branch cut from main with the gate-coverage plan merged (#160)."
 verdict = { result = "approved", reasons = ["Panel (contract-fit, test-unit, naming) aggregated verdict: approved; zero blocking, zero advisory, no conflicts.", "contract-fit: all 5 ACs met with file:line evidence; no disqualifiers fired; direct-import smoke aligns with the 'before any verb imports it' intent.", "test-unit: real-SUT (no mock), asserts both exit status 0 AND the stdout marker, parallel-safe SMOKE path, no snapshot/spy/skip/only.", "naming: identifiers cohere with the loom toml.smoke sibling; guild- marker prefix is meaningful namespacing."] }
 notes_for_pr = ["LIVE CACHE-SKEW (directly validates Phase 2): the runtime Agent registry in this session is the pre-flatten snapshot — evaluators are guild:generated:evaluator-* and guild:retained:evaluator-contract-fit, NOT the flat guild:evaluator-* the session agent list advertises. Flat names fail 'agent type not found'; the panel ran via the stale namespace. loom doctor does not probe this (loom-only) — exactly the gap Phase 2 closes. Strong evidence the P2 freshness probe is worth building.", "Non-blocking (all three evaluators noted it): toml.smoke.ts logs the byte count as `${src.length}`, which is JS string length (UTF-16 code units), not a byte count — harmless (ASCII doc, log-only, asserted nowhere). Optional one-word tweak to 'chars' on a future touch.", "parse-plan number:null: loom parse-plan extracts phase name/goal/exitCriteria but leaves `number` null for '### Phase N —' headings; the manifest backfill assigns numbers correctly, so it is cosmetic. Minor parser observation.", "node toml.smoke.ts emits a benign MODULE_TYPELESS_PACKAGE_JSON ESM-reparse perf warning (package.json has no type:module); loom's smokes emit the same. Non-blocking.", "Panel composition: derive-panel emitted evaluator-react-api for these non-React .ts files (bug #5, owned by guild-workflow-coverage P3); dropped it manually per the plan."]
+
+[[checkins]]
+schema_version = 1
+number = "02"
+created = "2026-05-31T01:50:47.065Z"
+phase = { number = 1, name = "Extend the node-real smoke net to guild + bin-shims" }
+branch = "ev-agent.gate-coverage.phase-1"
+unit = "D2 — bin-shim real-entry exec smoke (griot/guild/loom)"
+contract = { goal = "Close the bin-shim loader gap: plugin-bin-shims.test.ts exercises shim mechanics against a DUMMY cli/<plugin>.ts but never the REAL entry, so a strip-only footgun in a real entrypoint's import graph ships uncaught. Add a real-entry smoke (exec each real shim, assert clean load) and a gate-bites proof (a planted parameter-property footgun must fail with ERR_UNSUPPORTED_TYPESCRIPT_SYNTAX).", acceptance_criteria = ["New test per plugin (griot/guild/loom) execs the REAL plugins/<plugin>/bin/<plugin> (no args) and asserts status===0 AND stderr has no /ERR_UNSUPPORTED_TYPESCRIPT_SYNTAX|SyntaxError/.", "Gate-bites test: a fake tree whose cli/<plugin>.ts carries a parameter-property footgun is exec'd via the real shim; assert status!==0 AND stderr matches /ERR_UNSUPPORTED_TYPESCRIPT_SYNTAX/. Reuse makeFakePluginTree via a new entryBody override (DRY).", "No production source changed — test file only.", "npm test green; node scripts/sync-shared.ts --check clean."], rules_applied = ["Extend the existing plugin-bin-shims.test.ts + makeFakePluginTree (entryBody override) rather than a parallel file.", "Cover only the shims that exist (griot/guild/loom); ev/commons/agent-loop-full ship no bin shim (corrects the plan's loom/guild/ev/griot).", "Real-entry smoke goes through the REAL shim (full production path), not node entry.ts directly.", "Gate-bites uses a parameter property — the representative strip-only footgun we have actually hit."], disqualifiers = ["Testing verb behavior (this is a loader smoke).", "Modifying any production source / bin shim / cli entry.", "Adding ev to the shim list (it has no bin).", "Duplicating the tree-faking logic instead of extending the helper."], inputs = ["plugins/commons/cli/plugin-bin-shims.test.ts (file + makeFakePluginTree helper)", "plugins/{griot,guild,loom}/bin/<plugin> (the real shims; verified exit 0 on no-args, node v24.10)", "footgun probe: parameter property -> ERR_UNSUPPORTED_TYPESCRIPT_SYNTAX (verified)", "D1's loom-smoke sibling posture"] }
+execution = { actions = ["Extended makeFakePluginTree options with `entryBody?: string`; when present it is written verbatim as the fake cli/<plugin>.ts (default stdout-writer path unchanged, `??` fallback).", "Added describe('real-entry strip-only loader smoke'): a per-plugin loop (griot/guild/loom) exec'ing the REAL plugins/<plugin>/bin/<plugin> (no args), asserting stderr has no /ERR_UNSUPPORTED_TYPESCRIPT_SYNTAX|SyntaxError/ AND status===0.", "Added a gate-bites test: makeFakePluginTree('loom', {entryBody: a parameter-property class}) exec'd via the real shim, asserting status!==0 AND stderr matches /ERR_UNSUPPORTED_TYPESCRIPT_SYNTAX/; tmpdir torn down in finally.", "Verified: footgun probe -> exit 1 + 'TypeScript parameter property is not supported in strip-only mode'; npx vitest run plugin-bin-shims.test.ts -> 19 passed (was 15; +3 real-entry + 1 gate-bites); npm test -> 1098 passed (64 files); sync-shared --check -> ok.", "Antagonist panel (contract-fit + test-unit + naming; react-api dropped): aggregated VERDICT approved, zero blocking, zero advisory."], files_touched = ["plugins/commons/cli/plugin-bin-shims.test.ts"], corrections = [] }
+scope = ["Add a real-entry strip-only loader smoke (griot/guild/loom) + a gate-bites proof to plugin-bin-shims.test.ts; extend makeFakePluginTree with entryBody.", "Out of scope: verb-behavior testing, any production source change, ev (no bin shim), per-verb loader coverage (entry + eager imports only)."]
+changes_since_previous = "Second and final deliverable of phase 1. Builds on D1's smoke posture; closes the bin-shim half of the phase goal. Phase 1 exit criteria all met."
+verdict = { result = "approved", reasons = ["Panel (contract-fit, test-unit, naming) aggregated verdict: approved; zero blocking, zero advisory, no conflicts.", "contract-fit: all 4 ACs met with file:line evidence; real shims exec'd (not fakes); DRY via entryBody; no disqualifiers fired.", "test-unit: real-SUT subprocess smoke, both tests assert two conditions, finally-cleanup isolation, parallel-safe, no skip/only/snapshot; default-entry path preserved.", "naming: entryBody/realShim/footgun cohere with the file's vocabulary; titles match sibling phrasing."] }
+notes_for_pr = ["Non-blocking (panel observations, no flags): (a) the real-entry test asserts syntax-error-absence before status===0 — cosmetic diagnostic ordering; (b) one representative footgun (parameter property) on one plugin (loom) — deliberate and contract-scoped, the per-plugin loop covers all three real import graphs; (c) `footgun` is colloquial but the codebase's house word for the strip-only class.", "Coverage note: the real-entry smoke covers each entry + its EAGERLY-imported graph (what loads on no-args). Lazily-imported per-verb modules are not exercised by this smoke — out of scope for a bin-shim loader smoke; per-verb loader coverage would be a separate effort if ever wanted.", "Scope correction vs PLAN.md: the plan said 'loom/guild/ev/griot'; only griot/guild/loom ship a bin shim (ev/commons/agent-loop-full do not), so D2 covers three shims. The PLAN's D2 wording is slightly off; the manifest/checkin record the accurate set.", "Same cache-skew caveat as D1's checkin applies to the panel spawn (pre-flatten guild:generated:/guild:retained: namespace)."]
