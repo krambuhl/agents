@@ -32,12 +32,12 @@ describe('derivePanel (live spec)', () => {
     expect(derivePanel([], spec)).toEqual(['evaluator-contract-fit']);
   });
 
-  test('single .tsx → contract-fit + a11y + nextjs + react-api + naming', () => {
+  test('single .tsx → contract-fit + a11y + nextjs + react + naming', () => {
     expect(derivePanel(['components/Foo.tsx'], spec)).toEqual([
       'evaluator-contract-fit',
       'evaluator-a11y',
       'evaluator-nextjs',
-      'evaluator-react-api',
+      'evaluator-react',
       'evaluator-naming',
     ]);
   });
@@ -47,7 +47,7 @@ describe('derivePanel (live spec)', () => {
       'evaluator-contract-fit',
       'evaluator-a11y',
       'evaluator-nextjs',
-      'evaluator-react-api',
+      'evaluator-react',
       'evaluator-naming',
     ]);
   });
@@ -67,10 +67,10 @@ describe('derivePanel (live spec)', () => {
     ]);
   });
 
-  test('single .ts (non-JSX) → contract-fit + react-api + naming', () => {
+  test('single .ts (non-JSX) → contract-fit + react + naming', () => {
     expect(derivePanel(['lib/util.ts'], spec)).toEqual([
       'evaluator-contract-fit',
-      'evaluator-react-api',
+      'evaluator-react',
       'evaluator-naming',
     ]);
   });
@@ -157,7 +157,7 @@ describe('derivePanel (live spec)', () => {
       'evaluator-contract-fit',
       'evaluator-a11y',
       'evaluator-nextjs',
-      'evaluator-react-api',
+      'evaluator-react',
       'evaluator-tokens',
       'evaluator-naming',
     ]);
@@ -168,7 +168,7 @@ describe('derivePanel (live spec)', () => {
       'evaluator-contract-fit',
       'evaluator-a11y',
       'evaluator-nextjs',
-      'evaluator-react-api',
+      'evaluator-react',
       'evaluator-naming',
     ]);
   });
@@ -183,7 +183,7 @@ describe('derivePanel (live spec)', () => {
       'evaluator-contract-fit',
       'evaluator-a11y',
       'evaluator-nextjs',
-      'evaluator-react-api',
+      'evaluator-react',
       'evaluator-naming',
     ]);
   });
@@ -225,7 +225,7 @@ describe('derivePanelVerb', () => {
     const res = run(['--files=components/Foo.tsx']);
     expect(res.exitCode).toBe(0);
     expect(res.stdout).toBe(
-      'evaluator-contract-fit,evaluator-a11y,evaluator-nextjs,evaluator-react-api,evaluator-naming',
+      'evaluator-contract-fit,evaluator-a11y,evaluator-nextjs,evaluator-react,evaluator-naming',
     );
   });
 
@@ -233,7 +233,7 @@ describe('derivePanelVerb', () => {
     const res = run(['--files=Foo.tsx,Foo.module.css']);
     expect(res.exitCode).toBe(0);
     expect(res.stdout).toBe(
-      'evaluator-contract-fit,evaluator-a11y,evaluator-nextjs,evaluator-react-api,evaluator-tokens,evaluator-naming',
+      'evaluator-contract-fit,evaluator-a11y,evaluator-nextjs,evaluator-react,evaluator-tokens,evaluator-naming',
     );
   });
 
@@ -241,7 +241,7 @@ describe('derivePanelVerb', () => {
     const res = run([], 'components/Foo.tsx\ncomponents/Foo.module.css\n');
     expect(res.exitCode).toBe(0);
     expect(res.stdout).toBe(
-      'evaluator-contract-fit,evaluator-a11y,evaluator-nextjs,evaluator-react-api,evaluator-tokens,evaluator-naming',
+      'evaluator-contract-fit,evaluator-a11y,evaluator-nextjs,evaluator-react,evaluator-tokens,evaluator-naming',
     );
   });
 
@@ -273,7 +273,7 @@ describe('loadSpec fallback', () => {
         'evaluator-contract-fit',
         'evaluator-a11y',
         'evaluator-nextjs',
-        'evaluator-react-api',
+        'evaluator-react',
         'evaluator-naming',
       ]);
     } finally {
@@ -322,7 +322,7 @@ describe('spec parsing', () => {
       'evaluator-a11y',
       'evaluator-nextjs',
       'evaluator-css-architecture',
-      'evaluator-react-api',
+      'evaluator-react',
       'evaluator-test-integration',
       'evaluator-test-unit',
       'evaluator-tokens',
@@ -333,7 +333,7 @@ describe('spec parsing', () => {
   test('matchPath uses most-specific-wins (substrate script over generic .ts)', () => {
     const spec = loadRealSpec();
     const matched = matchPath('.claude/scripts/foo/bar.ts', spec.rules);
-    expect(matched).not.toContain('evaluator-react-api');
+    expect(matched).not.toContain('evaluator-react');
     expect(matched).toContain('evaluator-naming');
   });
 

@@ -38,8 +38,8 @@ different files is a no-op.
 | File pattern | Evaluators added |
 |--------------|------------------|
 | `(any file)` | `evaluator-contract-fit` (baseline, always included) |
-| `*.tsx`, `*.jsx` | `evaluator-react-api`, `evaluator-naming`, `evaluator-a11y` (when the JSX renders visible UI), `evaluator-nextjs` (when the file is Next-aware: a route file like `app/**/page.tsx`, contains `'use client'` directive, or exports `getServerSideProps` / `getStaticProps` / `generateMetadata` / `loader` / `action`) |
-| `*.ts` (non-JSX) | `evaluator-react-api` (only when the file imports from `react` or `react-dom`), `evaluator-naming` |
+| `*.tsx`, `*.jsx` | `evaluator-react`, `evaluator-naming`, `evaluator-a11y` (when the JSX renders visible UI), `evaluator-nextjs` (when the file is Next-aware: a route file like `app/**/page.tsx`, contains `'use client'` directive, or exports `getServerSideProps` / `getStaticProps` / `generateMetadata` / `loader` / `action`) |
+| `*.ts` (non-JSX) | `evaluator-react` (only when the file imports from `react` or `react-dom`), `evaluator-naming` |
 | `*.module.css` | `evaluator-tokens`, `evaluator-naming` (class names are public API surface for the colocated component) |
 | `*.css` (non-module, e.g. `globals.css`, `tokens.css`) | `evaluator-tokens` (caveat: each evaluator's own carve-outs handle source-of-truth files; the composer still adds the lens) |
 | Files under `sketches/` | Same mapping as `*.tsx` based on extension; trust each evaluator's `sketches/`-specific carve-outs to suppress flags on p5 idioms (single-letter math vars, `setup`/`draw` callbacks, intentional literal colors as artistic statement) |
@@ -66,7 +66,7 @@ deterministic ordering.
 Example: a unit that creates one `.tsx` and one `.module.css` and
 modifies one `package.json` composes to:
 `[evaluator-contract-fit, evaluator-a11y, evaluator-nextjs?,
-evaluator-react-api, evaluator-tokens, evaluator-naming]` — where
+evaluator-react, evaluator-tokens, evaluator-naming]` — where
 `evaluator-nextjs` is conditional on the `.tsx` being Next-aware.
 
 ### When the panel reduces to just contract-fit
@@ -101,11 +101,11 @@ remedies. Higher position = higher precedence.
    `generator-css-codemod`. Selector specificity, cascade
    behavior, composition vs. duplication, `:global` leakage,
    shared-primitive bypass, sketch-CSS load-bearing-pattern
-   regressions. Elevated precedence over `evaluator-react-api`
+   regressions. Elevated precedence over `evaluator-react`
    because cascade fragility produces visual breakage; bumped
    below `evaluator-nextjs` because a build that won't ship is
    more urgent than one that ships fragile.
-5. **`evaluator-react-api`** — runtime correctness within React
+5. **`evaluator-react`** — runtime correctness within React
    itself (hooks rules, state mutation, ref-in-render). These don't
    crash the build but produce subtle runtime bugs.
 6. **`evaluator-test-integration`** — integration-test correctness
@@ -113,7 +113,7 @@ remedies. Higher position = higher precedence.
    state, hardcoded waits produce false confidence — a green suite
    that doesn't catch real user-facing regressions. Above tokens
    because false-confidence regressions ship to users; below
-   react-api because the test harness itself doesn't run in
+   react because the test harness itself doesn't run in
    production.
 7. **`evaluator-test-unit`** — unit-test correctness in
    production-shipped test code. Mock-vs-real boundaries, isolation
@@ -265,7 +265,7 @@ type → evaluator mapping":
    only` against the base).
 2. **Per-file lookup.** For each file, look up the applicable
    evaluator set from the table. Apply conditional rules (e.g.,
-   `.ts` only adds `react-api` if the file imports `react`; `.tsx`
+   `.ts` only adds `react` if the file imports `react`; `.tsx`
    only adds `nextjs` if Next-aware).
 3. **Union.** Build the set of evaluators across all files.
 4. **Always-include.** Add `evaluator-contract-fit` if not already
@@ -357,22 +357,22 @@ Each domain evaluator has its own "Boundary with adjacent
 evaluators" section that covers the per-evaluator nuance:
 
 - `.claude/agents/evaluator-a11y.md` — boundary with tokens
-  (contrast vs literal-vs-token) and react-api (semantic HTML vs
+  (contrast vs literal-vs-token) and react (semantic HTML vs
   hook usage)
-- `.claude/agents/evaluator-nextjs.md` — boundary with react-api
+- `.claude/agents/evaluator-nextjs.md` — boundary with react
   (framework vs runtime correctness) and naming (library-imposed
   names carve-out)
-- `.claude/agents/evaluator-react-api.md` — boundary with nextjs
+- `.claude/agents/evaluator-react.md` — boundary with nextjs
   (runtime vs framework) and naming (API surface vs identifier
   choice)
 - `.claude/agents/evaluator-test-integration.md` — boundary with
   a11y (axe-core scans defer to a11y; test shape stays here),
-  test-unit (tier choice at file boundary), react-api (fixture
+  test-unit (tier choice at file boundary), react (fixture
   components), and whiteboard-testing-strategy (design vs review
   phase)
 - `.claude/agents/evaluator-test-unit.md` — boundary with
   test-integration (tier choice), naming (test-file naming
-  carve-out), react-api (production code under test), and
+  carve-out), react (production code under test), and
   whiteboard-testing-strategy (design vs review phase)
 - `.claude/agents/evaluator-tokens.md` — boundary with naming
   (literal-vs-token vs right-name) and a11y (contrast outcomes)

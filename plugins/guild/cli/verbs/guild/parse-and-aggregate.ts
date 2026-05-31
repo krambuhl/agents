@@ -24,7 +24,7 @@ type Conflict = {
 type Verdict = 'approved' | 'flagged' | 'flagged-conflict';
 
 // A recusal is an evaluator declaring its domain non-applicable to the
-// artifact (e.g. react-api against a pure-CLI unit). It is NOT a finding —
+// artifact (e.g. react against a pure-CLI unit). It is NOT a finding —
 // it does not gate the verdict — but it is substrate signal: the panel's
 // non-applicability rate is recusals / spawns. Surfaced as its own list so
 // the caller (guild-validate) can emit an `evaluator-recused` event per entry.

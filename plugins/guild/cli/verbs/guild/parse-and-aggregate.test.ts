@@ -191,9 +191,9 @@ test('output shape locked: all six fields present even when result is approved',
 test('single recused evaluator → verdict approved, recusal surfaced, no findings', () => {
   const output = `VERDICT: recused
 
-Reason: no JSX artifacts in this unit — react-api rubric does not apply.
+Reason: no JSX artifacts in this unit — react rubric does not apply.
 `;
-  const input = JSON.stringify([{ agent: 'evaluator-react-api', output }]);
+  const input = JSON.stringify([{ agent: 'evaluator-react', output }]);
   const res = parseAndAggregateVerb([], ctx(input));
   expect(res.exitCode).toBe(0);
   const result = JSON.parse(res.stdout as string);
@@ -201,7 +201,7 @@ Reason: no JSX artifacts in this unit — react-api rubric does not apply.
   expect(result.blocking_findings).toEqual([]);
   expect(result.advisory_findings).toEqual([]);
   expect(result.recusals).toHaveLength(1);
-  expect(result.recusals[0].evaluator).toBe('evaluator-react-api');
+  expect(result.recusals[0].evaluator).toBe('evaluator-react');
   expect(result.recusals[0].reason).toMatch(/no JSX artifacts/);
 });
 
@@ -228,7 +228,7 @@ test('recused with no reason → empty reason string, still counted', () => {
 test('mixed panel: recused + flagged → recusal and blocking both surface, verdict flagged', () => {
   const recused = `VERDICT: recused\n\nReason: not applicable here.`;
   const input = JSON.stringify([
-    { agent: 'evaluator-react-api', output: recused },
+    { agent: 'evaluator-react', output: recused },
     { agent: 'evaluator-contract-fit', output: flaggedOutput(['criterion-unmet: a thing']) },
   ]);
   const res = parseAndAggregateVerb([], ctx(input));
@@ -236,13 +236,13 @@ test('mixed panel: recused + flagged → recusal and blocking both surface, verd
   expect(result.verdict).toBe('flagged');
   expect(result.blocking_findings).toHaveLength(1);
   expect(result.recusals).toHaveLength(1);
-  expect(result.recusals[0].evaluator).toBe('evaluator-react-api');
+  expect(result.recusals[0].evaluator).toBe('evaluator-react');
 });
 
 test('recused does NOT gate: recused + approved → verdict approved', () => {
   const recused = `VERDICT: recused\n\nReason: n/a`;
   const input = JSON.stringify([
-    { agent: 'evaluator-react-api', output: recused },
+    { agent: 'evaluator-react', output: recused },
     { agent: 'evaluator-contract-fit', output: approvedOutput() },
   ]);
   const res = parseAndAggregateVerb([], ctx(input));
