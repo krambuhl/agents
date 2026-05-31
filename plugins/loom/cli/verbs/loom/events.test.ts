@@ -3,7 +3,7 @@ import { mkdtempSync, mkdirSync, rmSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { eventsRead, eventsLatest } from './events.ts';
+import { eventsRead, eventsLatest, eventsAppend } from './events.ts';
 import { manifestPath, readManifestFile, writeManifest } from '../../lib/manifest-toml.ts';
 import type { Event } from '../../lib/types.ts';
 
@@ -95,4 +95,109 @@ test('eventsLatest: no events matching filter returns no-events', () => {
   expect(result.exitCode).toBe(1);
   const payload = JSON.parse(result.stderr as string);
   expect(payload.error).toBe('no-events');
+});
+
+test('eventsAppend: well-formed event lands in the manifest log', () => {
+  const result = eventsAppend(
+    [
+      'test-loom',
+      '--event=evaluator-spawned',
+      '--detail={"slug":"test-loom","phase":3,"unit":"D2a","evaluator":"evaluator-contract-fit"}',
+    ],
+    { projectsRoot },
+  );
+  expect(result.exitCode).toBe(0);
+  const appended = JSON.parse(result.stdout as string);
+  expect(appended.event).toBe('evaluator-spawned');
+  expect(appended.detail.evaluator).toBe('evaluator-contract-fit');
+  expect(typeof appended.at).toBe('string');
+
+  // It is visible to eventsRead (the same manifest [[events]] log): 14 -> 15.
+  const all = JSON.parse(eventsRead(['test-loom'], { projectsRoot }).stdout as string);
+  expect(all).toHaveLength(15);
+  const found = JSON.parse(
+    eventsRead(['test-loom', '--event=evaluator-spawned'], { projectsRoot })
+      .stdout as string,
+  );
+  expect(found).toHaveLength(1);
+  expect(found[0].detail.unit).toBe('D2a');
+});
+
+test('eventsAppend: the three Phase 3 evaluator events each round-trip', () => {
+  eventsAppend(
+    ['test-loom', '--event=evaluator-spawned', '--detail={"evaluator":"a"}'],
+    { projectsRoot },
+  );
+  eventsAppend(
+    [
+      'test-loom',
+      '--event=evaluator-finding-emitted',
+      '--detail={"evaluator":"a","code":"x","severity":"advisory"}',
+    ],
+    { projectsRoot },
+  );
+  eventsAppend(
+    ['test-loom', '--event=evaluator-recused', '--detail={"evaluator":"b","reason":"n/a"}'],
+    { projectsRoot },
+  );
+  for (const name of [
+    'evaluator-spawned',
+    'evaluator-finding-emitted',
+    'evaluator-recused',
+  ]) {
+    const hits = JSON.parse(
+      eventsRead(['test-loom', `--event=${name}`], { projectsRoot }).stdout as string,
+    );
+    expect(hits).toHaveLength(1);
+    expect(hits[0].event).toBe(name);
+  }
+});
+
+test('eventsAppend: --detail is optional and defaults to {}', () => {
+  const result = eventsAppend(['test-loom', '--event=note'], { projectsRoot });
+  expect(result.exitCode).toBe(0);
+  const appended = JSON.parse(result.stdout as string);
+  expect(appended.detail).toEqual({});
+});
+
+test('eventsAppend: identical re-append is a no-op (dedupe)', () => {
+  const args = ['test-loom', '--event=note', '--detail={"text":"dup"}'];
+  eventsAppend(args, { projectsRoot });
+  eventsAppend(args, { projectsRoot });
+  const all = JSON.parse(eventsRead(['test-loom'], { projectsRoot }).stdout as string);
+  // 14 seed + 1 (second is deduped on name + deepEqual detail)
+  expect(all).toHaveLength(15);
+});
+
+test('eventsAppend: non-kebab event name returns invalid-event-name', () => {
+  const result = eventsAppend(['test-loom', '--event=Evaluator_Spawned'], {
+    projectsRoot,
+  });
+  expect(result.exitCode).toBe(1);
+  expect(JSON.parse(result.stderr as string).error).toBe('invalid-event-name');
+});
+
+test('eventsAppend: array --detail returns invalid-detail', () => {
+  const result = eventsAppend(['test-loom', '--event=note', '--detail=[1,2]'], {
+    projectsRoot,
+  });
+  expect(result.exitCode).toBe(1);
+  expect(JSON.parse(result.stderr as string).error).toBe('invalid-detail');
+});
+
+test('eventsAppend: malformed JSON --detail returns invalid-detail', () => {
+  const result = eventsAppend(['test-loom', '--event=note', '--detail={oops}'], {
+    projectsRoot,
+  });
+  expect(result.exitCode).toBe(1);
+  expect(JSON.parse(result.stderr as string).error).toBe('invalid-detail');
+});
+
+test('eventsAppend: missing slug and missing event each error', () => {
+  expect(JSON.parse(eventsAppend([], { projectsRoot }).stderr as string).error).toBe(
+    'missing-slug',
+  );
+  expect(
+    JSON.parse(eventsAppend(['test-loom'], { projectsRoot }).stderr as string).error,
+  ).toBe('missing-args');
 });
