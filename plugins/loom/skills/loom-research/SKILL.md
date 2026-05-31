@@ -10,7 +10,7 @@ description: >-
   with the substrate two-budget(3 rounds × 5 shifts). Use when the user
   wants a research dossier whose every claim cites a source or
   observable.
-argument-hint: "<topic or short description> [--mode=auto]"
+argument-hint: "<topic or short description> [--mode=auto] [--mode=amend]"
 user-invocable: true
 disable-model-invocation: true
 allowed-tools: Read, Write, Bash, Skill, AskUserQuestion
@@ -49,6 +49,12 @@ sentences are flagged at the fact-check gate, not at commit time.
 - `--mode=auto` (optional) — run without human input. Auto-mode uses
   the registered whiteboard roster as the panel and the substrate
   two-budget as the convergence cap. See § Human / auto duality.
+- `--mode=amend` (optional) — research INTO an existing dossier rather
+  than scaffolding a fresh one. The grill-me + research loop runs as
+  normal, but instead of `loom research init` (which refuses on a
+  committed RESEARCH.md), each surfaced fact is appended to the existing
+  canon via `loom research append` with provenance. See § Amend mode.
+  Composable with `--mode=auto` (`--mode=auto,amend`).
 - `--from-recovery` (optional) — explicit resume signal. If
   `RECOVERY-STATUS.json` exists at the project root and the
   `parent_skill` matches `/loom-research`, the skill offers to resume
@@ -267,7 +273,32 @@ The CLI auto-adopts loom substrate by default and emits
 
 If the CLI errors (`research-exists-committed` is the common one when
 re-running on a committed project), surface the error verbatim and
-stop. The user resolves and re-invokes.
+stop — unless the intent is to ADD to the existing canon, which is
+what `--mode=amend` is for (see § Amend mode). The user resolves and
+re-invokes (often with `--mode=amend`).
+
+### 6a. Amend mode (`--mode=amend`)
+
+When the dossier already exists and the goal is to grow it — not
+replace it — run the normal grill-me + research loop to surface new
+facts, then commit each as a provenance-stamped block instead of
+calling `init`. For each surfaced fact (or coherent group of facts
+under one heading), write the prose to a temp file and append:
+
+```
+Bash("loom research append <slug> \
+  --section='<heading>' \
+  --fact-file=/tmp/loom-research-fact-<slug>-<n>.md \
+  --citing='<where this fact came from>'")
+```
+
+`append` is append-only and stamps each block with provenance
+(`slug`, the in-progress `phase`, the latest session id, a timestamp,
+and `--citing`) derived from the substrate — the skill passes only
+the section, the prose, and the citation. It never edits prior blocks.
+Read back with `loom research show <slug> [--section=<heading>]`.
+Amend mode does NOT call `init`, so the `research-exists-committed`
+guard never trips. The CLI owns the commit per appended block.
 
 ### 7. Report
 

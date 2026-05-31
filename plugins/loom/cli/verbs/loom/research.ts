@@ -1,8 +1,14 @@
 import { parseArgs } from 'node:util';
-import { copyFileSync, existsSync, mkdirSync } from 'node:fs';
-import { join, relative } from 'node:path';
+import {
+  copyFileSync,
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  writeFileSync,
+} from 'node:fs';
+import { basename, join, relative } from 'node:path';
 import { LoomError } from '../../lib/errors.ts';
-import { createSlug } from '../../lib/project.ts';
+import { createSlug, resolveProject } from '../../lib/project.ts';
 import { type GitRunner, defaultGitRunner } from '../../lib/git.ts';
 import {
   appendEvent,
@@ -83,6 +89,11 @@ const RESEARCH_OPTIONS = {
   'no-commit': { type: 'boolean' as const },
   'no-loom': { type: 'boolean' as const },
   pretty: { type: 'boolean' as const },
+  // append / show flags (harmless on init, which ignores them)
+  section: { type: 'string' as const },
+  'fact-file': { type: 'string' as const },
+  citing: { type: 'string' as const },
+  phase: { type: 'string' as const },
 };
 
 // `init` — today's copy-in behavior: take a slug-or-topic + a prepared
@@ -111,7 +122,7 @@ export function researchInit(
     return errToResult(
       new LoomError(
         'missing-args',
-        'research requires a <slug-or-topic> positional argument',
+        'research init requires a <slug-or-topic> positional argument',
       ),
     );
   }
@@ -119,13 +130,13 @@ export function researchInit(
     return errToResult(
       new LoomError(
         'missing-args',
-        'research requires --research-file=<path>',
+        'research init requires --research-file=<path>',
       ),
     );
   }
   if (notesFile === undefined) {
     return errToResult(
-      new LoomError('missing-args', 'research requires --notes-file=<path>'),
+      new LoomError('missing-args', 'research init requires --notes-file=<path>'),
     );
   }
 
@@ -296,9 +307,213 @@ export function researchInit(
   };
 }
 
-// Verbless-namespace registry for cli/loom.ts. `loom research` is
-// wired the same way `loom plan` / `loom revise-plan` / `loom doctor`
-// are: a single-handler namespace.
+// `append` — add a provenance-stamped, append-only block to an existing
+// RESEARCH.md. The block is a `## <section>` heading + a `loom:provenance`
+// HTML comment carrying strict JSON (slug, phase?, session?, at, citing),
+// then the freeform prose from --fact-file. Provenance is derived from the
+// substrate: `session` is the latest session-handoff filename stem,
+// `phase` is --phase or the in-progress phase. Append-only: prior blocks
+// are never read-modified, only new content is added at the end.
+//
+// Block boundaries are implicit (next `## ` heading or `---`), per the
+// chosen format — so the appended prose must not itself contain a `## `
+// heading or a bare `---`, or `show --section` would mis-split it.
+export function researchAppend(
+  rest: string[],
+  ctx: ResearchCliContext,
+): DispatchResult {
+  const { values, positionals } = parseArgs({
+    args: rest,
+    options: RESEARCH_OPTIONS,
+    allowPositionals: true,
+    strict: false,
+  });
+  const slug = positionals[0];
+  const section = values.section;
+  const factFile = values['fact-file'];
+  const citing = values.citing;
+  const noCommit = values['no-commit'] === true;
+  const pretty = values.pretty === true;
+
+  if (slug === undefined) {
+    return errToResult(
+      new LoomError('missing-args', 'research append requires a <slug> positional argument'),
+    );
+  }
+  if (section === undefined || section === '') {
+    return errToResult(
+      new LoomError('missing-args', 'research append requires --section=<heading>'),
+    );
+  }
+  if (factFile === undefined) {
+    return errToResult(
+      new LoomError('missing-args', 'research append requires --fact-file=<path>'),
+    );
+  }
+  if (citing === undefined) {
+    return errToResult(
+      new LoomError('missing-args', 'research append requires --citing=<source>'),
+    );
+  }
+  if (!existsSync(factFile)) {
+    return errToResult(
+      new LoomError('fact-file-not-found', `--fact-file does not exist at ${factFile}`),
+    );
+  }
+
+  let targetDir: string;
+  try {
+    targetDir = resolveProject(slug, ctx.projectsRoot);
+  } catch (err) {
+    return errToResult(err);
+  }
+  const researchMdPath = join(targetDir, 'RESEARCH.md');
+  if (!existsSync(researchMdPath)) {
+    return errToResult(
+      new LoomError(
+        'research-not-found',
+        `no RESEARCH.md at ${researchMdPath} — run 'loom research init' first`,
+      ),
+    );
+  }
+
+  // Provenance, derived from the manifest. `session` = latest handoff
+  // filename stem (omitted if none saved yet); `phase` = --phase override
+  // or the in-progress phase (omitted if neither).
+  const { manifest } = readManifestFile(manifestPathFor(targetDir));
+  const resolvedSlug = basename(targetDir);
+  // The session id is the handoff's `<date>-<letter>` stem (the filename
+  // minus .json). Session records store date + letter, not the filename.
+  const lastSession = manifest.sessions[manifest.sessions.length - 1];
+  const session =
+    lastSession !== undefined
+      ? `${lastSession.date}-${lastSession.letter}`
+      : undefined;
+  let phase: number | undefined;
+  if (values.phase !== undefined) {
+    const parsed = Number.parseInt(values.phase, 10);
+    if (Number.isNaN(parsed) || String(parsed) !== values.phase) {
+      return errToResult(
+        new LoomError('invalid-phase', `--phase must be an integer: ${values.phase}`),
+      );
+    }
+    phase = parsed;
+  } else {
+    phase = manifest.phases.find((p) => p.status === 'in-progress')?.number;
+  }
+
+  const provenance: Record<string, unknown> = { slug: resolvedSlug };
+  if (phase !== undefined) provenance.phase = phase;
+  if (session !== undefined) provenance.session = session;
+  provenance.at = nowIso();
+  provenance.citing = citing;
+
+  const factText = readFileSync(factFile, 'utf8').replace(/\s+$/, '');
+  const block = `\n## ${section}\n<!-- loom:provenance\n${JSON.stringify(provenance)}\n-->\n\n${factText}\n`;
+
+  // Append-only: normalize the existing file to a single trailing newline,
+  // then add the new block. Prior bytes are otherwise untouched.
+  const existing = readFileSync(researchMdPath, 'utf8').replace(/\n*$/, '\n');
+  writeFileSync(researchMdPath, existing + block, 'utf8');
+
+  if (!noCommit) {
+    try {
+      gitRunnerOf(ctx).addAndCommit(
+        repoRootOf(ctx),
+        [researchMdPath],
+        `[loom research] append "${section}" to ${resolvedSlug}`,
+      );
+    } catch (err) {
+      return errToResult(err);
+    }
+  }
+
+  return {
+    stdout: emit(
+      { slug: resolvedSlug, section, path: researchMdPath, provenance, committed: !noCommit },
+      pretty,
+    ),
+    exitCode: 0,
+  };
+}
+
+// `show` — read the dossier, or a single `## <section>` block (boundary =
+// the next `## ` heading or a `---` line, or EOF). Output is JSON
+// ({slug, path, section?, content}); --pretty indents it.
+export function researchShow(
+  rest: string[],
+  ctx: ResearchCliContext,
+): DispatchResult {
+  const { values, positionals } = parseArgs({
+    args: rest,
+    options: RESEARCH_OPTIONS,
+    allowPositionals: true,
+    strict: false,
+  });
+  const slug = positionals[0];
+  const section = values.section;
+  const pretty = values.pretty === true;
+
+  if (slug === undefined) {
+    return errToResult(
+      new LoomError('missing-args', 'research show requires a <slug> positional argument'),
+    );
+  }
+  let targetDir: string;
+  try {
+    targetDir = resolveProject(slug, ctx.projectsRoot);
+  } catch (err) {
+    return errToResult(err);
+  }
+  const researchMdPath = join(targetDir, 'RESEARCH.md');
+  if (!existsSync(researchMdPath)) {
+    return errToResult(
+      new LoomError(
+        'research-not-found',
+        `no RESEARCH.md at ${researchMdPath} — run 'loom research init' first`,
+      ),
+    );
+  }
+  const fullContent = readFileSync(researchMdPath, 'utf8');
+  const resolvedSlug = basename(targetDir);
+
+  if (section === undefined) {
+    return {
+      stdout: emit({ slug: resolvedSlug, path: researchMdPath, content: fullContent }, pretty),
+      exitCode: 0,
+    };
+  }
+
+  // Extract the named section: from its `## <section>` heading to the next
+  // `## ` heading or a standalone `---`, or EOF.
+  const lines = fullContent.split('\n');
+  const startIdx = lines.findIndex((l: string) => l.trimEnd() === `## ${section}`);
+  if (startIdx === -1) {
+    return errToResult(
+      new LoomError('section-not-found', `no '## ${section}' section in ${researchMdPath}`),
+    );
+  }
+  let endIdx = lines.length;
+  for (let i = startIdx + 1; i < lines.length; i++) {
+    const line = lines[i] as string;
+    if (line.startsWith('## ') || line.trimEnd() === '---') {
+      endIdx = i;
+      break;
+    }
+  }
+  const content = lines.slice(startIdx, endIdx).join('\n').replace(/\n+$/, '\n');
+  return {
+    stdout: emit({ slug: resolvedSlug, section, path: researchMdPath, content }, pretty),
+    exitCode: 0,
+  };
+}
+
+// `loom research` subverb registry for cli/loom.ts. `init` scaffolds the
+// dossier; `append` adds provenance-stamped blocks; `show` reads it. The
+// `/loom-research --mode=amend` skill composes `append`; there is no
+// `amend` CLI verb.
 export const RESEARCH_VERBS = {
   init: researchInit,
+  append: researchAppend,
+  show: researchShow,
 };

@@ -39,7 +39,7 @@ status = "completed"
 [[phases]]
 number = 5
 name = "RESEARCH as fact-canon"
-status = "in-progress"
+status = "completed"
 branch = "ev-agent.substrate-tempering.research-fact-canon"
 
 [[events]]
@@ -227,6 +227,41 @@ at = "2026-05-31T06:07:04.608Z"
 event = "session-saved"
 detail = { filename = "2026-05-31-a.json" }
 
+[[events]]
+at = "2026-05-31T07:34:05.410Z"
+event = "evaluator-spawned"
+detail = { slug = "2026-05-29-substrate-tempering", phase = 5, unit = "12", evaluator = "evaluator-contract-fit" }
+
+[[events]]
+at = "2026-05-31T07:34:05.483Z"
+event = "evaluator-spawned"
+detail = { slug = "2026-05-29-substrate-tempering", phase = 5, unit = "12", evaluator = "evaluator-react" }
+
+[[events]]
+at = "2026-05-31T07:34:05.558Z"
+event = "evaluator-spawned"
+detail = { slug = "2026-05-29-substrate-tempering", phase = 5, unit = "12", evaluator = "evaluator-test-unit" }
+
+[[events]]
+at = "2026-05-31T07:34:05.633Z"
+event = "evaluator-spawned"
+detail = { slug = "2026-05-29-substrate-tempering", phase = 5, unit = "12", evaluator = "evaluator-naming" }
+
+[[events]]
+at = "2026-05-31T07:34:05.708Z"
+event = "evaluator-recused"
+detail = { slug = "2026-05-29-substrate-tempering", phase = 5, unit = "12", evaluator = "evaluator-react", reason = "no React/JSX/hooks/components in scope" }
+
+[[events]]
+at = "2026-05-31T07:34:59.372Z"
+event = "checkin-created"
+detail = { number = "12", branch = "ev-agent.substrate-tempering.research-append" }
+
+[[events]]
+at = "2026-05-31T07:34:59.447Z"
+event = "phase-completed"
+detail = { phase = 5 }
+
 [[checkins]]
 schema_version = 1
 number = "01"
@@ -380,6 +415,20 @@ scope = ["plugins/loom/cli/verbs/loom/research.ts", "plugins/loom/cli/loom.ts", 
 changes_since_previous = "First unit of Phase 5, fresh branch off main (Phase 4 merged as #168). Refactor + hard cut only; append/show/provenance + the /loom-research --mode=amend wiring are unit 2."
 verdict = { result = "approved", reasons = ["guild-validate panel aggregated to approved, zero blocking, 1 recusal (1 prose advisory raised by naming, dropped by the aggregator — captured as a follow-up + emitted)", "all ACs met; npm test green (1124, behavior-preserving); hard-cut dispatch verified; no caller left on the bare form"] }
 notes_for_pr = ["Phase 5 unit 1 of 2. loom research is now a subverb family: init (this unit) + append/show (unit 2). Bare loom research <slug> is a hard cut -> loom research init. The /loom-research skill + the revise-plan future-work note were migrated in this PR.", "Unit 2 (next, closes Phase 5): loom research append (--section --fact-file --citing, provenance-stamped delimited block, append-only) + loom research show (read dossier / one section) + wire /loom-research --mode=amend to call append. Two open design questions to negotiate: the provenance schema session-id source (the CLI has no session id — flag vs derive vs drop) and the block-delimiter/append format. ALSO: tighten the LoomError messages to research init requires... / research <subverb> requires... (the naming advisory) when the sibling subverbs land.", "Substrate follow-up (aggregator): parse-and-aggregate drops prose ADVISORY notes from approved verdicts (only flagged-verdict ADVISORY: reasons survive). An approved-with-advisory evaluator loses its advice. Surface approved-verdict ADVISORY lines, or require flag-to-advise.", "Substrate follow-up (recurring): bin/guild derive-panel emits stale agent names (evaluator-react-api -> evaluator-react). And the dense-packet budget-exhaustion fallback needs the tighter at-most-one-spot-check framing to be honored (worked here; worth baking into the canonical packet template)."]
+
+[[checkins]]
+schema_version = 1
+number = "12"
+created = "2026-05-31T07:34:59.296Z"
+phase = { number = 5, name = "RESEARCH as fact-canon" }
+branch = "ev-agent.substrate-tempering.research-append"
+unit = "Phase 5 unit 2 — research append + show + amend wiring (closes the phase + the project)"
+contract = { goal = "Add loom research append (provenance-stamped, append-only) + loom research show to the research subverb family; wire /loom-research --mode=amend to call append; tighten the subverb error messages. Closes Phase 5 and the substrate-tempering project.", acceptance_criteria = ["AC1: loom research append <slug> --section --fact-file --citing [--phase] appends a ## <section> + loom:provenance comment + prose block to RESEARCH.md (research-not-found if absent); provenance {slug, phase?, session?, at, citing}; session from latest handoff (date-letter, omitted if none); phase from --phase else in-progress else omitted; append-only", "AC2: loom research show <slug> [--section] -> full dossier or one section (boundary next ##/---)", "AC3: provenance JSON strict; prose freeform; prior blocks byte-unchanged", "AC4: /loom-research SKILL.md --mode=amend calls loom research append instead of init", "AC5: research.ts error messages subverb-specific (research init/append/show requires...)", "AC6: tests (append-only accumulation; session derivation + omission; show full/by-section; research-not-found; missing-flag errors; commit message)", "AC7: npm test green"], rules_applied = ["loom-authoritative (verb + skill, not synced)", "append-only invariant (never edit prior blocks)", "section taxonomy stays freeform", "no emojis"], disqualifiers = ["editing prior RESEARCH.md blocks", "constraining --section to an enum", "reviving a bare loom research <slug> form", "editing commons"], inputs = ["plugins/loom/cli/verbs/loom/research.ts (researchInit structure, helpers gitRunnerOf/repoRootOf/nowIso, RESEARCH_OPTIONS, RESEARCH_VERBS)", "plugins/loom/cli/lib/project.ts (resolveProject), manifest-toml.ts (readManifestFile, manifest.sessions/.phases)", "plugins/loom/cli/verbs/loom/research.test.ts (test idiom: tmp projectsRoot + mock gitRunner)", "plugins/loom/skills/loom-research/SKILL.md (mode handling)", "PLAN Phase 5; operator decisions (session-from-handoff; heading+provenance-comment block format; amend skill-only; hard-cut)"] }
+execution = { actions = ["research.ts: +researchAppend (resolveProject -> RESEARCH.md; provenance derived — session = manifest.sessions last date-letter omitted-if-none, phase = --phase or in-progress; block = ## section + loom:provenance JSON comment + fact-file prose; append-only read existing -> write existing+block; commits per block unless --no-commit) + researchShow (full dossier or single ## section, boundary next ##/---); registered append/show in RESEARCH_VERBS; +section/fact-file/citing/phase options; tightened init messages to research init requires...; +readFileSync/writeFileSync/basename/resolveProject imports", "research.test.ts: +10 append/show tests (append-only prefix checks; two-appends accumulation; session derivation + omission; commit message; research-not-found; missing-flag errors; show full/by-section + section-not-found); registry-shape -> [init,append,show]", "loom-research SKILL.md: +--mode=amend input + § Amend mode (research INTO existing canon via loom research append per fact block, never init) + argument-hint; research-exists-committed handling points at amend", "npm test green (64 files, 1133); research+loom targeted 47; CLI smoke (init->append->show) clean append-only block + section extraction; dispatch subverb-specific messages", "guild-validate panel (contract-fit, react, test-unit, naming; react mapped from derive-panel stale evaluator-react-api) -> approved, 1 recusal, all evaluators <=2 tool uses (tight packets reliable). DOGFOOD: emitted phase=5 unit=12 panel events (4 spawned + 1 recused)."], files_touched = ["plugins/loom/cli/verbs/loom/research.ts", "plugins/loom/cli/verbs/loom/research.test.ts", "plugins/loom/skills/loom-research/SKILL.md"], corrections = ["Two bugs caught pre-commit: (1) Session type has no filename field (it is date + letter; the filename is derived) — fixed session derivation to `${date}-${letter}`. (2) initial smoke used --no-loom so no manifest.toml, and resolveProject requires the LOOM_MARKER — append/show require a loom-adopted project (correct; the smoke was wrong, not the code).", "naming non-firing ADVISORY: the success-payload committed field is a past-tense boolean not an is/has predicate — but it is inherited from researchInit existing convention, not new drift. No change.", "CHOSEN-FORMAT LIMITATION (documented in the verb): the heading+provenance-comment block has no end marker, so block boundaries are the next ## or --- — meaning appended prose must not itself contain a ## heading or a bare --- or show --section mis-splits it. Operator chose this format knowingly; noted in the append doc-comment.", "derive-panel STILL emits evaluator-react-api (live name evaluator-react); mapped manually. Recurring."] }
+scope = ["plugins/loom/cli/verbs/loom/research.ts", "plugins/loom/cli/verbs/loom/research.test.ts", "plugins/loom/skills/loom-research/SKILL.md"]
+changes_since_previous = "Second + final unit of Phase 5 (and the project). Builds append/show on the unit-1 subverb refactor; closes the loom research fact-canon family."
+verdict = { result = "approved", reasons = ["guild-validate panel approved, zero blocking, 1 recusal, 1 non-gating inherited-convention advisory", "all 7 ACs met; npm test green (1133); append-only invariant genuinely asserted; CLI smoke + dispatch verified; closes Phase 5 and substrate-tempering"] }
+notes_for_pr = ["Phase 5 CLOSED — and with it the substrate-tempering project (all 5 phases done). loom research is now a full fact-canon family: init scaffolds, append adds provenance-stamped append-only blocks (session/phase derived from the substrate), show reads; /loom-research --mode=amend composes append.", "PROJECT COMPLETE: /loom-archive 2026-05-29-substrate-tempering is now available (interview + project retro + relocate to archive/). The standing PLAN-refresh offer is moot at archive time — the retro captures the PLAN-vs-actual divergences (the append verb, recusal convention, aggregate staleness, the verb-family hard-cut) instead.", "Chosen block format has no end marker (boundary = next ##/---); appended prose must avoid ## headings / bare --- lines. A future end-marker variant would remove that constraint if it bites.", "Substrate follow-ups still open (carried across the project, for the retro): parse-and-aggregate drops approved-verdict prose ADVISORYs; derive-panel emits stale agent names (evaluator-react-api -> evaluator-react); bake VERDICT: recused into the codegen evaluator fleet; the dense-packet budget fallback needs the tighter framing (now proven across 3 panels); the stale events-all-types.jsonl/EVENT_NAMES set; no tsc gate in CI."]
 
 [[sessions]]
 schema_version = 1
