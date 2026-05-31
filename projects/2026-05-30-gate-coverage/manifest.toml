@@ -1,0 +1,33 @@
+checkins = []
+sessions = []
+revisions = []
+
+[meta]
+schema_version = 1
+title = "Gate Coverage"
+slug = "2026-05-30-gate-coverage"
+started = "2026-05-30"
+status = "active"
+strategy = "interactive"
+
+[config]
+base_branch = "main"
+reviewers = []
+labels = []
+verification = []
+worker_bindings = {}
+
+[[phases]]
+number = 1
+name = "Extend the node-real smoke net to guild + bin-shims"
+status = "not-started"
+
+[[phases]]
+number = 2
+name = "loom doctor probes guild cache-skew"
+status = "not-started"
+
+[[events]]
+at = "2026-05-30T23:54:17.644Z"
+event = "project-initialized"
+detail = {}
