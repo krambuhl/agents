@@ -201,6 +201,62 @@ describe('V10 (b): applySync end-to-end byte-for-byte match (commons-canonical o
   });
 });
 
+describe('P5 D2: --only / --exclude-lib scope the sync (copy-only, no orphan delete)', () => {
+  test('--exclude-lib syncs docs but not lib', () => {
+    buildCommonsDirectionTree();
+    applySync(root, { excludeLib: true });
+    expect(read('plugins/loom/docs/PANEL-COMPOSITION.md')).toBe(
+      read('plugins/commons/docs/PANEL-COMPOSITION.md'),
+    );
+    expect(() => read('plugins/griot/cli/lib/manifest.ts')).toThrow();
+  });
+
+  test('--only=<one doc> syncs only that doc — other docs + all lib untouched', () => {
+    buildCommonsDirectionTree();
+    applySync(root, { only: 'plugins/commons/docs/PANEL-COMPOSITION.md' });
+    expect(read('plugins/ev/docs/PANEL-COMPOSITION.md')).toBe(
+      read('plugins/commons/docs/PANEL-COMPOSITION.md'),
+    );
+    expect(() => read('plugins/ev/docs/AGENT-CONVENTIONS.md')).toThrow();
+    expect(() => read('plugins/griot/cli/lib/manifest.ts')).toThrow();
+  });
+
+  test('--only supports a single-star basename glob that does not cross into cli/lib', () => {
+    buildCommonsDirectionTree();
+    applySync(root, { only: 'plugins/commons/docs/*.md' });
+    expect(read('plugins/loom/docs/PANEL-COMPOSITION.md')).toBe(
+      read('plugins/commons/docs/PANEL-COMPOSITION.md'),
+    );
+    expect(read('plugins/loom/docs/AGENT-CONVENTIONS.md')).toBe(
+      read('plugins/commons/docs/AGENT-CONVENTIONS.md'),
+    );
+    expect(() => read('plugins/griot/cli/lib/manifest.ts')).toThrow();
+  });
+
+  test('--only with ** crosses path segments where a single * would not', () => {
+    buildCommonsDirectionTree();
+    // `**` collapses the leading plugins/commons/docs/ segments; a single `*`
+    // could not (it stops at the first `/`). Proves the two are distinct.
+    applySync(root, { only: '**/PANEL-COMPOSITION.md' });
+    expect(read('plugins/loom/docs/PANEL-COMPOSITION.md')).toBe(
+      read('plugins/commons/docs/PANEL-COMPOSITION.md'),
+    );
+    expect(() => read('plugins/loom/docs/AGENT-CONVENTIONS.md')).toThrow();
+  });
+
+  test('a scoped run never deletes orphans even with strictOrphan; a full run still does', () => {
+    buildCommonsDirectionTree();
+    applySync(root); // full sync populates consumer trees
+    write('plugins/griot/cli/lib/orphan.ts', 'export const ORPHAN = 1;\n');
+    // Scoped + strictOrphan: copy-only, the orphan survives (overreach guard).
+    applySync(root, { excludeLib: true, strictOrphan: true });
+    expect(read('plugins/griot/cli/lib/orphan.ts')).toBe('export const ORPHAN = 1;\n');
+    // Contrast: a FULL strictOrphan run sweeps the unmarked orphan as before.
+    applySync(root, { strictOrphan: true });
+    expect(() => read('plugins/griot/cli/lib/orphan.ts')).toThrow();
+  });
+});
+
 describe('V10 (c): drift detection — false-green failure-mode tripwire', () => {
   test('mutated per-plugin file post-sync is reported as divergent', () => {
     buildBothDirectionsTree();
