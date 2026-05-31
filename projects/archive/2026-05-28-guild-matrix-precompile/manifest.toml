@@ -6,7 +6,7 @@ schema_version = 1
 title = "Guild Matrix Precompile"
 slug = "2026-05-28-guild-matrix-precompile"
 started = "2026-05-28"
-status = "active"
+status = "archived"
 strategy = "interactive"
 
 [config]
@@ -196,6 +196,16 @@ detail = { number = "01", branch = "guild-matrix-precompile.retro" }
 at = "2026-05-29T00:55:50.947Z"
 event = "phase-completed"
 detail = { phase = 6 }
+
+[[events]]
+at = "2026-05-31T02:14:47.027Z"
+event = "retro-written"
+detail = { type = "project" }
+
+[[events]]
+at = "2026-05-31T02:14:56.490Z"
+event = "archived"
+detail = { destination = "/Users/krambuhl/Sites/agents-boulder/projects/archive/2026-05-28-guild-matrix-precompile" }
 
 [[checkins]]
 schema_version = 1

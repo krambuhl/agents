@@ -1,0 +1,62 @@
+{
+  "schema_version": 1,
+  "type": "project",
+  "created": "2026-05-31T02:14:14Z",
+  "findings": [
+    {
+      "category": "kept-well",
+      "description": "Caching the fused OUTPUT (not just inputs) made compile-time LLM fusion deterministic in CI — re-fusion fires only on a source-hash change, and `guild compile --check` verifies drift with zero API calls. The load-bearing architectural bet of the whole rebuild paid off.",
+      "evidence": "PLAN 2.1 risk (fusion non-determinism); the check-and-smoke phase + no-op-re-run smoke test."
+    },
+    {
+      "category": "kept-well",
+      "description": "The antagonist panels caught substance, not nits: a tautological assertion (expect(x).toBe(x)) rewritten to a meaningful one tied to writtenAgentCount, and a recipeVerb signature non-conformance with the dispatcher type contract.",
+      "evidence": "Corrections on check-and-smoke#01 and delete-old-codegen#01."
+    },
+    {
+      "category": "improvement",
+      "description": "The installed/cached `guild` CLI lagged the repo and bit repeatedly — the PATH binary predated the compile/recipe/generate verbs (unknown-verb), forcing the repo-local `node plugins/guild/cli/guild.ts` fallback. Tier-2 preflight validates loom doctor readability but not guild's verb table, so the gap surfaced only at smoke time (and recurred in guild-workflow-coverage days later).",
+      "evidence": "Corrections on delete-old-codegen#01 and labeled-fragments#02."
+    },
+    {
+      "category": "improvement",
+      "description": "The freshness gate's regen cascade was not budgeted into the unit contract: source-fragment edits inline into the committed agents at generate-time, so the gate fires on every source edit. U2's disqualifier #6 ('no file outside modes/domains/') was naive about this; 9 regen modifications were unanticipated and AC #6 was amended mid-execution to carve them out.",
+      "evidence": "Correction on labeled-fragments#02."
+    },
+    {
+      "category": "improvement",
+      "description": "A stacked-PR merge race silently dropped a schema-validator test from main — PR #119 merged at 18:18:13Z while U2's commit (955484f) pushed at 18:18:29Z, so axes-schema.test.ts never landed via #119. Recovered out-of-band via git cherry-pick (d74bb63).",
+      "evidence": "Correction on pipeline-skeleton#01."
+    },
+    {
+      "category": "improvement",
+      "description": "The minimal guild TOML reader doesn't support nested sub-tables under array-of-tables, discovered mid-execution. The cache shape had to flatten from [cells.source_hashes] sub-tables to flat source_hash_<axis> keys to honor the reader's grammar rather than expanding toml.ts.",
+      "evidence": "Correction on pipeline-writers#04."
+    },
+    {
+      "category": "process-change",
+      "description": "Extend the dispatch preflight to validate guild's verb table against the repo's expected VERBS, not just loom doctor manifest readability. The cached-CLI lag recurred because nothing checks guild CLI freshness before a codegen dispatch — turning a smoke-time surprise into a preflight catch.",
+      "evidence": "Recurrence across labeled-fragments#02, delete-old-codegen#01, and guild-workflow-coverage."
+    },
+    {
+      "category": "process-change",
+      "description": "Contracts that edit codegen SOURCE (modes/ fragments, axes.toml) must pre-declare the regen cascade in their file-set and disqualifier carve-out, so the freshness-gate consequence is contract-authoring convention rather than a mid-execution amendment.",
+      "evidence": "labeled-fragments#02 mid-execution AC #6 amendment."
+    },
+    {
+      "category": "follow-up",
+      "description": "Open-Q4's before/ voice snapshot was skipped — no quantitative old-vs-new voice diff exists; the pre-fusion voice is now only recoverable from git history. The qualitative learning did land separately, so nothing was lost intellectually.",
+      "evidence": "PLAN Open-Q4; before/ dir absent; learnings/session-notes/2026-05-28-llm-fusion-voice-convergence.md present."
+    },
+    {
+      "category": "follow-up",
+      "description": "PLAN.md carries a stale doc path — it cites docs/AGENT-CODEGEN.md but the doc lives at plugins/guild/docs/AGENT-CODEGEN.md (plugin-canonical). Flagged as a notes_for_pr follow-up during execution, never reconciled.",
+      "evidence": "Correction on labeled-fragments#01."
+    },
+    {
+      "category": "follow-up",
+      "description": "Build the guild verb-table preflight check named in the process-change finding — track the recurring cached-CLI-lag friction as concrete substrate work rather than a standing observation.",
+      "evidence": "Process-change finding above; see also the guild-codegen-cache-skew memory."
+    }
+  ]
+}
