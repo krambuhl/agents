@@ -43,7 +43,8 @@ branch = "ev-agent.shared-insights.evaluator-contract"
 [[phases]]
 number = 5
 name = "Close the genuinely-missing substrate verbs"
-status = "not-started"
+status = "completed"
+branch = "ev-agent.shared-insights.missing-verbs"
 
 [[phases]]
 number = 6
@@ -139,6 +140,26 @@ detail = { number = "09", branch = "ev-agent.shared-insights.evaluator-contract"
 at = "2026-05-31T22:19:34.717Z"
 event = "phase-completed"
 detail = { phase = 4 }
+
+[[events]]
+at = "2026-05-31T22:43:11.793Z"
+event = "checkin-created"
+detail = { number = "10", branch = "ev-agent.shared-insights.missing-verbs" }
+
+[[events]]
+at = "2026-05-31T22:43:11.865Z"
+event = "checkin-created"
+detail = { number = "11", branch = "ev-agent.shared-insights.missing-verbs" }
+
+[[events]]
+at = "2026-05-31T22:43:11.937Z"
+event = "checkin-created"
+detail = { number = "12", branch = "ev-agent.shared-insights.missing-verbs" }
+
+[[events]]
+at = "2026-05-31T22:43:12.012Z"
+event = "phase-completed"
+detail = { phase = 5 }
 
 [[checkins]]
 schema_version = 1
@@ -265,3 +286,45 @@ scope = ["findAdvisoryBlock + approved-branch advisory surfacing", "tests"]
 changes_since_previous = "Only unit of Phase 4 (D1/D3a found already-shipped; D3b deferred). Phase 3 merged (PR #178)."
 verdict = { result = "approved", reasons = ["Panel (contract-fit + test-unit + naming) -> approved, zero blocking findings. Advisory surfaced on approved; verdict stays approved; Checks/plain-approved not false-positived; new name is a textbook find<Section>Block sibling. (The panel's own approved-advisory note was surfaced by the feature under test and folded in as a test.)"] }
 notes_for_pr = ["Phase 4 was mostly pre-shipped by substrate-tempering (D1 + the budget-discipline template); this PR is the one real remaining gap (D2). D3b (reviewer.md recused/advisory + evaluator re-fusion) is deferred to a reviewable codegen pass.", "Phase boundary single signal (last/only unit) -- no plan revision.", "End-to-end: the parse side now surfaces approved-advisories; once D3b documents the section in the codegen fragment, evaluators will emit them by default rather than only when the dense-packet template reminds them."]
+
+[[checkins]]
+schema_version = 1
+number = "10"
+created = "2026-05-31T22:43:11Z"
+phase = { number = 5, name = "Close the genuinely-missing substrate verbs" }
+branch = "ev-agent.shared-insights.missing-verbs"
+unit = "P5·D1 — loom plan/revise-plan auto-seed manifest phases (FOUND ALREADY SHIPPED)"
+contract = { goal = "Wire phase-seeding into plan/revise-plan so a multi-phase PLAN seeds all manifest phases with no hand-edit.", acceptance_criteria = ["loom plan seeds all PLAN phases on adopt", "revise-plan reconciles manifest phases against the revised PLAN"], rules_applied = ["Premise-verify against current source before drafting (substrate moves between planning and execution)"], disqualifiers = [], inputs = ["plugins/loom/cli/verbs/loom/plan.ts", "plugins/loom/cli/lib/manifest-toml.ts (backfillPhases)"] }
+execution = { actions = ["Verified against current source: loom plan ALREADY backfills all phases on adopt (plan.ts:207 backfillPhases(manifest, plan.phases)); reviseVerb ALREADY backfills too (plan.ts:374, parses the revised PLAN + reconciles). backfillPhases (manifest-toml.ts:640) appends missing + renames changed, idempotent.", "The PLAN's premise ('phase add not wired; loom plan seeded 1 instead of 4', INSIGHTS #3) is STALE — substrate-tempering (or a prior phase) shipped the fix. No code change needed."], files_touched = [], corrections = ["PREMISE STALENESS: the third Phase in a row (after P4 D1/D3a) found already-shipped. Verified, documented, no work done."] }
+scope = ["verification only — no code"]
+changes_since_previous = "First unit of Phase 5; found already-shipped."
+verdict = { result = "approved", reasons = ["No artifact to evaluate — verification-only. Both loom plan and revise-plan demonstrably backfill all phases via backfillPhases; the premise was stale."] }
+notes_for_pr = ["D1 was already shipped (loom plan + revise-plan both backfill phases). Recorded the premise-staleness; no code in this PR for D1."]
+
+[[checkins]]
+schema_version = 1
+number = "11"
+created = "2026-05-31T22:43:11Z"
+phase = { number = 5, name = "Close the genuinely-missing substrate verbs" }
+branch = "ev-agent.shared-insights.missing-verbs"
+unit = "P5·D2 — sync-shared --only / --exclude-lib (scoped, copy-only)"
+contract = { goal = "Add --only=<glob> and --exclude-lib to scripts/sync-shared.ts so a narrow doc edit doesn't trigger a full bare-run overreach. Scoped runs are copy-only (never delete orphans).", acceptance_criteria = ["--exclude-lib syncs docs not lib", "--only=<glob> keeps source-glob matches (* within segment, ** across)", "scoped runs never delete orphans even with --strict-orphan; full unchanged", "--check stays a full-tree gate", "tests cover each + the orphan contrast"], rules_applied = ["scoped = copy-only (the overreach was orphan deletion)", "--only matches SOURCE (the canonical edited file)", "--check stays full"], disqualifiers = ["a scoped run deleting any file", "--only matching destination not source", "scoping leaking into --check/detectDrift"], inputs = ["scripts/sync-shared.ts", "scripts/sync-shared.test.ts"] }
+execution = { actions = ["Added isLibSpec/globToRegExp/specInScope; applySync gained {only, excludeLib}, filters specs, and SKIPS the orphan sweep entirely when scoped. main parses the flags + prints '(scoped: …; orphans untouched)'.", "Verified live (--exclude-lib → 16 docs; --only → matching files; --only=nonexistent → 0; tree stayed clean) + 47 sync-shared tests (incl. */** distinction + orphan-safety contrast); full suite 1175; sync ok."], files_touched = ["scripts/sync-shared.ts", "scripts/sync-shared.test.ts"], corrections = [] }
+scope = ["scoping flags + copy-only safety", "tests"]
+changes_since_previous = "Second unit; D1 found already-shipped."
+verdict = { result = "approved", reasons = ["Panel (contract-fit + test-unit + naming) → approved, zero blocking. Scoped=copy-only verified; the orphan-safety contrast pins both directions; --only matches source; --check stays full."] }
+notes_for_pr = ["Advisory (naming, non-blocking): globToRegExp here vs globToRegex in guild's derive-panel — RegExp/Regex casing split across two private module-local helpers; align in a future cleanup (prefer globToRegExp). Added a **-crosses-segments test per a contract-fit advisory."]
+
+[[checkins]]
+schema_version = 1
+number = "12"
+created = "2026-05-31T22:43:11Z"
+phase = { number = 5, name = "Close the genuinely-missing substrate verbs" }
+branch = "ev-agent.shared-insights.missing-verbs"
+unit = "P5·D3 — loom project archive warns about *.test.ts referencing the slug"
+contract = { goal = "loom project archive scans the repo's *.test.ts for the archived slug and surfaces referencing files as a warning (advisory; archive proceeds) — catches Phase-8-shape breakage at archive time.", acceptance_criteria = ["result gains warnings: string[] naming referencing test files, else []", "archive still proceeds (exit 0, relocated)", "only *.test.ts containing the slug match (non-test ignored)", "scan skips node_modules/.git, fail-soft", "tests cover both directions + no-ref"], rules_applied = ["advisory not blocking (ADR-0005 fail-safe; a match can be benign)", "scan read-only, before relocate", "fail-soft walk"], disqualifiers = ["blocking/refusing on a match", "scanning non-test files", "scan throwing on unreadable file/dir", "changing relocate/manifest-flip"], inputs = ["plugins/loom/cli/verbs/loom/project.ts", "project.test.ts"] }
+execution = { actions = ["Added findTestReferences (recursive readdir, skips node_modules/.git, matches *.test.ts whose content includes the slug, fail-soft, sorted). projectArchive scans resolve(projectsRoot,'..') before relocating; result includes warnings.", "Harness change: nested projectsRoot under a repoRoot mkdtemp so the scan scope is controlled (also removed a latent cross-test-bleed hazard). Tests: referencing test → 1 named warning + archive proceeds; non-test + unrelated test → []; relocate path → [].", "Verified: 23 project tests (+2); full suite 1175; strip-only + sync ok."], files_touched = ["plugins/loom/cli/verbs/loom/project.ts", "plugins/loom/cli/verbs/loom/project.test.ts"], corrections = [] }
+scope = ["test-ref scan + warnings", "harness scope fix + tests"]
+changes_since_previous = "Third and final unit; phase boundary."
+verdict = { result = "approved", reasons = ["Panel (contract-fit + test-unit) → approved, zero blocking. Read-only fail-soft scan; advisory not blocking; both directions + no-ref pinned. (Naming eval skipped: single textbook-named find<X> helper.)"] }
+notes_for_pr = ["Chose WARN over the PLAN's 'warns/refuses' OR — advisory matches the substrate posture (a match can be a benign mention); a future --strict could escalate to refuse.", "Advisory (both evaluators, non-blocking): findTestReferences does a full synchronous repo walk per archive — fine at current scale + rare cadence; revisit only if archive becomes hot.", "Phase boundary single signal (last unit) — no plan revision."]
