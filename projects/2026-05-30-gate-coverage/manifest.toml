@@ -1,4 +1,3 @@
-checkins = []
 sessions = []
 revisions = []
 
@@ -20,7 +19,8 @@ worker_bindings = {}
 [[phases]]
 number = 1
 name = "Extend the node-real smoke net to guild + bin-shims"
-status = "not-started"
+status = "in-progress"
+branch = "ev-agent.gate-coverage.phase-1"
 
 [[phases]]
 number = 2
@@ -31,3 +31,27 @@ status = "not-started"
 at = "2026-05-30T23:54:17.644Z"
 event = "project-initialized"
 detail = {}
+
+[[events]]
+at = "2026-05-31T01:30:35.434Z"
+event = "checkin-created"
+detail = { number = "01", branch = "ev-agent.gate-coverage.phase-1" }
+
+[[events]]
+at = "2026-05-31T01:30:35.503Z"
+event = "phase-started"
+detail = { phase = 1, name = "Extend the node-real smoke net to guild + bin-shims" }
+
+[[checkins]]
+schema_version = 1
+number = "01"
+created = "2026-05-31T01:30:35.363Z"
+phase = { number = 1, name = "Extend the node-real smoke net to guild + bin-shims" }
+branch = "ev-agent.gate-coverage.phase-1"
+unit = "D1 — guild toml.ts strip-only smoke"
+contract = { goal = "Add a node-real strip-only loader smoke for guild's parse-only cli/lib/toml.ts, mirroring loom's toml.smoke.ts — a .smoke.ts that imports the module directly and parses a representative TOML under real node, shelled via spawnSync('node') from toml.test.ts asserting exit 0 + an ok-marker. Catches the ERR_UNSUPPORTED_TYPESCRIPT_SYNTAX class (parameter properties, JSDoc-close sequences, enums) in guild's lib before any verb imports it.", acceptance_criteria = ["New plugins/guild/cli/lib/toml.smoke.ts, first line '// sync-shared: plugin-local'; imports parseToml/isTomlTable; parses an inline representative TOML (scalars, [table], dotted [a.b.c], [[array-of-tables]], string array, empty array, trailing comment, # inside a quoted value); asserts shape via isTomlTable + deepEqual against expected; prints 'guild-toml.smoke ok' + exit 0, or console.error + process.exit(1) on mismatch.", "Shell test added to cli/lib/toml.test.ts (mirrors manifest-toml.test.ts:213-216): asserts result.status === 0 AND result.stdout contains 'guild-toml.smoke ok'.", "Assertions defend loader-compat + shallow structural parse, NOT value-correctness (that is toml.test.ts's job).", "node plugins/guild/cli/lib/toml.smoke.ts run directly exits 0 with the marker.", "npm test green; node scripts/sync-shared.ts --check clean."], rules_applied = ["Mirror loom toml.smoke.ts + manifest-toml.test.ts shell pattern + shallow-assertion posture.", "guild toml is parse-only -> parse-and-assert-structure (no round-trip; guild has no stringify).", "Plugin-local marker on the new smoke file (guild toml.ts is plugin-local).", "Smoke imports the module directly (not via a verb) — catch footguns before any verb does.", "Run guild/loom from source (node plugins/.../*.ts), not cached binaries (cache-skew caveat)."], disqualifiers = ["Adding stringify/round-trip the module lacks, or testing value-correctness (duplicating toml.test.ts).", "Modifying toml.ts source (this unit adds a smoke; it does not change the module).", "Scope creep to the compile pipeline / other modules (D2 / out of scope).", "Leaving the new smoke file unmarked (sync drift)."], inputs = ["plugins/guild/cli/lib/toml.ts (module under smoke; parse-only API)", "plugins/guild/cli/lib/toml.test.ts (where the shell test lands)", "plugins/loom/cli/lib/toml.smoke.ts (mirror pattern)", "plugins/loom/cli/lib/manifest-toml.test.ts:211-216 (spawnSync shell pattern)", "ADR-0005 plugin-local marker convention (commons-sync)"] }
+execution = { actions = ["Created plugins/guild/cli/lib/toml.smoke.ts: plugin-local header + strip-only rationale; imports parseToml/isTomlTable + types; an order-independent deepEqual helper (from loom's toml.smoke.ts); an inline `src` TOML exercising guild's full grammar (scalars, trailing comment, # plus a JSDoc-close sequence inside the quoted note value, string array, empty array, [meta], dotted [axis.phase.reviewer], two [[combinations]]); an `expected` tree; parseToml(src); isTomlTable + deepEqual assert -> exit 1 on mismatch, else logs 'guild-toml.smoke ok: parsed N top-level keys over M bytes'.", "Modified plugins/guild/cli/lib/toml.test.ts: added `import { spawnSync } from 'node:child_process'` + a describe('toml.ts — strip-only loader smoke') with one it() that spawnSync('node',[SMOKE]) and asserts status 0 + stdout contains the marker; SMOKE via fileURLToPath(import.meta.url).", "Verified: node toml.smoke.ts -> exit 0, 'guild-toml.smoke ok: parsed 9 top-level keys over 294 bytes'; npx vitest run toml.test.ts -> 14 passed; npm test -> 1094 passed (64 files); sync-shared --check -> ok (4 plugins synced).", "Antagonist panel (contract-fit + test-unit + naming; react-api dropped per derive-panel mis-derivation): aggregated VERDICT approved, zero blocking, zero advisory, zero conflicts."], files_touched = ["plugins/guild/cli/lib/toml.smoke.ts", "plugins/guild/cli/lib/toml.test.ts"], corrections = ["Panel-spawn namespace: the runtime Agent registry is the PRE-FLATTEN cache snapshot (guild:generated:evaluator-*, guild:retained:evaluator-contract-fit), NOT the flat guild:evaluator-* the session's agent list advertises. First spawn failed 'agent type not found'; re-spawned via the stale namespace (same evaluator bodies). This is the exact guild cache-skew this project's Phase 2 (loom doctor probes guild) is built to detect — a live self-validation of the plan's premise."] }
+scope = ["Add a strip-only loader smoke for guild's cli/lib/toml.ts (parse-only) + a spawnSync shell test in toml.test.ts.", "Out of scope: bin-shim exec smoke (D2), the compile pipeline, any toml.ts source change, value-correctness testing."]
+changes_since_previous = "First deliverable of phase 1. Branch cut from main with the gate-coverage plan merged (#160)."
+verdict = { result = "approved", reasons = ["Panel (contract-fit, test-unit, naming) aggregated verdict: approved; zero blocking, zero advisory, no conflicts.", "contract-fit: all 5 ACs met with file:line evidence; no disqualifiers fired; direct-import smoke aligns with the 'before any verb imports it' intent.", "test-unit: real-SUT (no mock), asserts both exit status 0 AND the stdout marker, parallel-safe SMOKE path, no snapshot/spy/skip/only.", "naming: identifiers cohere with the loom toml.smoke sibling; guild- marker prefix is meaningful namespacing."] }
+notes_for_pr = ["LIVE CACHE-SKEW (directly validates Phase 2): the runtime Agent registry in this session is the pre-flatten snapshot — evaluators are guild:generated:evaluator-* and guild:retained:evaluator-contract-fit, NOT the flat guild:evaluator-* the session agent list advertises. Flat names fail 'agent type not found'; the panel ran via the stale namespace. loom doctor does not probe this (loom-only) — exactly the gap Phase 2 closes. Strong evidence the P2 freshness probe is worth building.", "Non-blocking (all three evaluators noted it): toml.smoke.ts logs the byte count as `${src.length}`, which is JS string length (UTF-16 code units), not a byte count — harmless (ASCII doc, log-only, asserted nowhere). Optional one-word tweak to 'chars' on a future touch.", "parse-plan number:null: loom parse-plan extracts phase name/goal/exitCriteria but leaves `number` null for '### Phase N —' headings; the manifest backfill assigns numbers correctly, so it is cosmetic. Minor parser observation.", "node toml.smoke.ts emits a benign MODULE_TYPELESS_PACKAGE_JSON ESM-reparse perf warning (package.json has no type:module); loom's smokes emit the same. Non-blocking.", "Panel composition: derive-panel emitted evaluator-react-api for these non-React .ts files (bug #5, owned by guild-workflow-coverage P3); dropped it manually per the plan."]

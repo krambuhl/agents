@@ -1,3 +1,4 @@
+import { spawnSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -99,5 +100,14 @@ describe('parseToml — real source artifact (axes.toml)', () => {
     const phase = axis.phase as Record<string, Record<string, unknown>>;
     expect(phase.reviewer.base_tools).toEqual(['Read', 'Glob', 'Grep']);
     expect(phase.reviewer.writes).toBe(false);
+  });
+});
+
+describe('toml.ts — strip-only loader smoke', () => {
+  it('loads and runs toml.ts under the real node strip-only loader', () => {
+    const smoke = join(dirname(fileURLToPath(import.meta.url)), 'toml.smoke.ts');
+    const result = spawnSync('node', [smoke], { encoding: 'utf8' });
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain('guild-toml.smoke ok');
   });
 });
