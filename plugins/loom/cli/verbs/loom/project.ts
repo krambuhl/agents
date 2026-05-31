@@ -4,9 +4,10 @@ import {
   existsSync,
   mkdirSync,
   readFileSync,
+  readdirSync,
   renameSync,
 } from 'node:fs';
-import { join, sep } from 'node:path';
+import { join, relative, resolve, sep } from 'node:path';
 import {
   resolveProject,
   listProjects,
@@ -341,6 +342,44 @@ const ARCHIVE_OPTIONS = {
   pretty: { type: 'boolean' as const },
 };
 
+// Scan the repo's *.test.ts files for the slug being archived. A test that
+// reads `projects/<slug>/…` (a fixture path, a manifest assertion) silently
+// breaks once the project relocates to archive/, and that breakage surfaces
+// far from the archive. Catch it AT archive time: list the referencing test
+// files as a warning. The archive still proceeds (advisory, not blocking —
+// a match can be a benign mention, and ADR-0005's fail-safe posture favors
+// surfacing over refusing). Skips node_modules / .git; unreadable files and
+// directories are stepped over rather than fatal.
+function findTestReferences(repoRoot: string, slug: string): string[] {
+  const matches: string[] = [];
+  const skipDirs = new Set(['node_modules', '.git']);
+  const walk = (dir: string): void => {
+    let entries: ReturnType<typeof readdirSync>;
+    try {
+      entries = readdirSync(dir, { withFileTypes: true });
+    } catch {
+      return;
+    }
+    for (const entry of entries) {
+      if (skipDirs.has(entry.name)) continue;
+      const full = join(dir, entry.name);
+      if (entry.isDirectory()) {
+        walk(full);
+      } else if (entry.name.endsWith('.test.ts')) {
+        try {
+          if (readFileSync(full, 'utf8').includes(slug)) {
+            matches.push(relative(repoRoot, full));
+          }
+        } catch {
+          // unreadable file — step over it
+        }
+      }
+    }
+  };
+  walk(repoRoot);
+  return matches.sort();
+}
+
 export function projectArchive(rest: string[], ctx: CliContext): DispatchResult {
   const { values, positionals } = parseArgs({
     args: rest,
@@ -367,6 +406,10 @@ export function projectArchive(rest: string[], ctx: CliContext): DispatchResult 
     );
   }
   const slug = projectPath.split(sep).pop() as string;
+  // Scan for *.test.ts files that reference this slug BEFORE relocating, so
+  // the warning names what the move is about to break (advisory; the archive
+  // proceeds regardless). repoRoot = parent of projectsRoot, same as doctor.
+  const testReferences = findTestReferences(resolve(ctx.projectsRoot, '..'), slug);
   const archiveRoot = join(ctx.projectsRoot, ARCHIVE_DIRNAME);
   const destination = join(archiveRoot, slug);
   try {
@@ -394,8 +437,14 @@ export function projectArchive(rest: string[], ctx: CliContext): DispatchResult 
       ),
     );
   }
+  const warnings =
+    testReferences.length > 0
+      ? [
+          `${testReferences.length} test file${testReferences.length === 1 ? '' : 's'} reference the archived slug "${slug}" and may break now that it has moved to archive/: ${testReferences.join(', ')}. Update or remove those references.`,
+        ]
+      : [];
   return {
-    stdout: emit({ slug, destination }, values.pretty === true),
+    stdout: emit({ slug, destination, warnings }, values.pretty === true),
     exitCode: 0,
   };
 }
