@@ -358,6 +358,43 @@ export type AutoModeBudgetExhaustedEvent = EventBase<
   }
 >;
 
+// ---------- Evaluator events (Phase 3) ----------
+//
+// Emitted from the `guild-validate` panel flow (wired in D2) against the
+// active project's event log: one `evaluator-spawned` per evaluator the
+// panel launches, one `evaluator-finding-emitted` per finding it returns,
+// one `evaluator-recused` per evaluator that declines as non-applicable.
+//
+// Granularity is per-evaluator across all three (not per-panel) so the
+// lifecycle reads spawned -> (finding-emitted)* | recused for each
+// evaluator, and Phase 4's `loom events aggregate` folds the two headline
+// metrics without expanding a list: spawn-to-finding rate = findings /
+// spawns, non-applicability rate = recusals / spawns, both per evaluator.
+// `severity` mirrors the panel's blocking/advisory split; `reason` is the
+// evaluator's free-text recusal rationale.
+
+export type EvaluatorSpawnedEvent = EventBase<
+  'evaluator-spawned',
+  { slug: string; phase: number; unit: string; evaluator: string }
+>;
+
+export type EvaluatorFindingEmittedEvent = EventBase<
+  'evaluator-finding-emitted',
+  {
+    slug: string;
+    phase: number;
+    unit: string;
+    evaluator: string;
+    code: string;
+    severity: 'blocking' | 'advisory';
+  }
+>;
+
+export type EvaluatorRecusedEvent = EventBase<
+  'evaluator-recused',
+  { slug: string; phase: number; unit: string; evaluator: string; reason: string }
+>;
+
 export type Event =
   | ProjectInitializedEvent
   | PhaseStartedEvent
@@ -400,7 +437,10 @@ export type Event =
   | RpiInnerDeclinedEvent
   | AutoModeEnteredEvent
   | AutoModeConvergedEvent
-  | AutoModeBudgetExhaustedEvent;
+  | AutoModeBudgetExhaustedEvent
+  | EvaluatorSpawnedEvent
+  | EvaluatorFindingEmittedEvent
+  | EvaluatorRecusedEvent;
 
 export type EventName = Event['event'];
 
