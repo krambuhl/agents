@@ -299,7 +299,10 @@ For each deliverable (picked per the ordering rule):
    auto-derivation from the unit's file list (see § Panel
    auto-derivation below) — the result is contextual to the artifact
    rather than a fixed list. `evaluator-contract-fit` is always
-   included as the baseline. The spec (file-type → evaluator mapping,
+   included as the baseline. If a panel spawn fails with a transient
+   `529 Overloaded`, retry with backoff before treating it as a real
+   failure (see `docs/AGENT-CONVENTIONS.md` § Long-loop resilience) —
+   a single 529 mid-panel is capacity noise, not a verdict. The spec (file-type → evaluator mapping,
    precedence list, tokens-vs-naming boundary) lives in
    `docs/PANEL-COMPOSITION.md`; the derivation logic is
    `bin/guild derive-panel`.
