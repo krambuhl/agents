@@ -1,0 +1,63 @@
+checkins = []
+sessions = []
+revisions = []
+
+[meta]
+schema_version = 1
+title = "Shared Insights — substrate papercut remediation"
+slug = "2026-05-30-shared-insights"
+started = "2026-05-30"
+status = "active"
+strategy = "stacked via gt, three waves (setup/freshness, code-fix, convention/posture), one PR per phase"
+
+[config]
+base_branch = "main"
+reviewers = []
+labels = []
+verification = []
+worker_bindings = { default = "ev-loop-interactive" }
+
+[[phases]]
+number = 1
+name = "Dispatch preflight & freshness gate"
+status = "not-started"
+
+[[phases]]
+number = 2
+name = "Derive-don't-duplicate"
+status = "not-started"
+
+[[phases]]
+number = 3
+name = "Authoring-repo vs consumer-project path resolution"
+status = "not-started"
+
+[[phases]]
+number = 4
+name = "Evaluator-panel contract hardening"
+status = "not-started"
+
+[[phases]]
+number = 5
+name = "Close the genuinely-missing substrate verbs"
+status = "not-started"
+
+[[phases]]
+number = 6
+name = "Skill-convention & agent-discipline"
+status = "not-started"
+
+[[phases]]
+number = 7
+name = "Output-token / overload: diagnose, then remediate"
+status = "not-started"
+
+[[phases]]
+number = 8
+name = "Cleanup"
+status = "not-started"
+
+[[events]]
+at = "2026-05-31T18:58:02.360Z"
+event = "project-initialized"
+detail = {}
