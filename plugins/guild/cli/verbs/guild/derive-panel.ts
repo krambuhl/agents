@@ -39,7 +39,15 @@ export function globToRegex(glob: string): RegExp {
   let i = 0;
   while (i < trimmed.length) {
     const c = trimmed[i];
-    if (c === '*' && trimmed[i + 1] === '*') {
+    if (c === '*' && trimmed[i + 1] === '*' && trimmed[i + 2] === '/') {
+      // `**/` matches zero OR MORE path segments (standard glob). Emitting
+      // `.*/` (the naive form) requires a trailing slash, so `a/**/*.ts`
+      // would miss a file directly in `a/` (e.g. a `cli/` bin entrypoint or
+      // a file directly under `scripts/`) and only match nested ones. The
+      // optional group lets the segment(s) collapse to zero.
+      re += '(?:.*/)?';
+      i += 3;
+    } else if (c === '*' && trimmed[i + 1] === '*') {
       re += '.*';
       i += 2;
     } else if (c === '*') {
@@ -149,15 +157,22 @@ const FALLBACK_RULES: Rule[] = [
   fallbackRule(['*.json'], []),
   fallbackRule(
     [
-      '.claude/agents/*.md',
-      '.claude/skills/*/SKILL.md',
-      '.claude/skills/**/*.md',
+      'plugins/**/agents/*.md',
+      'plugins/**/skills/**/SKILL.md',
       'projects/**/checkins/**/*.md',
     ],
     [],
   ),
-  fallbackRule(['.claude/scripts/**/*.ts'], ['evaluator-naming']),
-  fallbackRule(['.claude/scripts/**/*.test.ts'], ['evaluator-test-unit']),
+  fallbackRule(
+    ['scripts/**/*.ts', 'plugins/**/scripts/**/*.ts'],
+    ['evaluator-naming'],
+  ),
+  fallbackRule(
+    ['scripts/**/*.test.ts', 'plugins/**/scripts/**/*.test.ts'],
+    ['evaluator-test-unit'],
+  ),
+  fallbackRule(['plugins/**/cli/**/*.ts'], ['evaluator-naming']),
+  fallbackRule(['plugins/**/cli/**/*.test.ts'], ['evaluator-test-unit']),
   fallbackRule(['*.test.ts', '*.test.tsx', '*.spec.ts', '*.spec.tsx'], ['evaluator-test-unit']),
   fallbackRule(['tests/e2e/**', 'tests/integration/**', 'e2e/**'], ['evaluator-test-integration']),
   fallbackRule(['tests/e2e/a11y/**'], ['evaluator-a11y']),

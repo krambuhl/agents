@@ -101,15 +101,39 @@ describe('derivePanel (live spec)', () => {
     ).toEqual(['evaluator-contract-fit']);
   });
 
-  test('substrate script (.claude/scripts/foo/bar.ts) → contract-fit + naming', () => {
-    expect(derivePanel(['.claude/scripts/foo/bar.ts'], spec)).toEqual([
+  test('substrate CLI (plugins/loom/cli/verbs/loom/doctor.ts) → contract-fit + naming, NOT react', () => {
+    expect(derivePanel(['plugins/loom/cli/verbs/loom/doctor.ts'], spec)).toEqual([
       'evaluator-contract-fit',
       'evaluator-naming',
     ]);
   });
 
-  test('substrate test (.claude/scripts/foo/bar.test.ts) → contract-fit + test-unit', () => {
-    expect(derivePanel(['.claude/scripts/foo/bar.test.ts'], spec)).toEqual([
+  test('substrate CLI top-level entrypoint (plugins/loom/cli/loom.ts, directly in cli/) → contract-fit + naming', () => {
+    // The `**/` zero-segment case: a file directly under cli/ (a bin
+    // entrypoint), no intervening directory. Must still resolve as substrate.
+    expect(derivePanel(['plugins/loom/cli/loom.ts'], spec)).toEqual([
+      'evaluator-contract-fit',
+      'evaluator-naming',
+    ]);
+  });
+
+  test('repo-root script directly under scripts/ (scripts/sync-shared.ts) → contract-fit + naming', () => {
+    // The other `**/` zero-segment case: a file directly under scripts/.
+    expect(derivePanel(['scripts/sync-shared.ts'], spec)).toEqual([
+      'evaluator-contract-fit',
+      'evaluator-naming',
+    ]);
+  });
+
+  test('plugin-local script (plugins/guild/scripts/convert-to-axes.ts) → contract-fit + naming', () => {
+    expect(derivePanel(['plugins/guild/scripts/convert-to-axes.ts'], spec)).toEqual([
+      'evaluator-contract-fit',
+      'evaluator-naming',
+    ]);
+  });
+
+  test('substrate CLI test (plugins/loom/cli/verbs/loom/doctor.test.ts) → contract-fit + test-unit', () => {
+    expect(derivePanel(['plugins/loom/cli/verbs/loom/doctor.test.ts'], spec)).toEqual([
       'evaluator-contract-fit',
       'evaluator-test-unit',
     ]);
@@ -330,11 +354,20 @@ describe('spec parsing', () => {
     ]);
   });
 
-  test('matchPath uses most-specific-wins (substrate script over generic .ts)', () => {
+  test('matchPath uses most-specific-wins (substrate CLI over generic .ts)', () => {
     const spec = loadRealSpec();
-    const matched = matchPath('.claude/scripts/foo/bar.ts', spec.rules);
+    const matched = matchPath('plugins/loom/cli/verbs/loom/doctor.ts', spec.rules);
     expect(matched).not.toContain('evaluator-react');
     expect(matched).toContain('evaluator-naming');
+  });
+
+  test('globToRegex: **/ matches zero path segments (file directly in the base dir)', () => {
+    // Regression guard for the bin-entrypoint gap: `a/**/*.ts` must match
+    // both `a/f.ts` (zero segments) and `a/b/f.ts` (one+ segments).
+    const re = globToRegex('plugins/**/cli/**/*.ts');
+    expect(re.test('plugins/loom/cli/loom.ts')).toBe(true); // zero segments after cli/
+    expect(re.test('plugins/loom/cli/verbs/loom/doctor.ts')).toBe(true); // nested
+    expect(globToRegex('scripts/**/*.ts').test('scripts/sync-shared.ts')).toBe(true);
   });
 
   test('parseRules is callable directly on a synthetic spec', () => {
