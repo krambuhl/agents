@@ -10,7 +10,7 @@ import {
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { researchVerb, RESEARCH_VERBS } from './research.ts';
+import { researchInit, RESEARCH_VERBS } from './research.ts';
 import type { GitRunner } from '../../lib/git.ts';
 import { manifestPath, readManifestFile } from '../../lib/manifest-toml.ts';
 import type { Event } from '../../lib/types.ts';
@@ -61,15 +61,15 @@ const baseCtx = () => ({
 
 // ---------- Registry shape ----------
 
-test('RESEARCH_VERBS exposes `research` as the only verb (verbless namespace)', () => {
-  expect(typeof RESEARCH_VERBS.research).toBe('function');
-  expect(Object.keys(RESEARCH_VERBS)).toEqual(['research']);
+test('RESEARCH_VERBS exposes `init` as a subverb (append/show land in the next unit)', () => {
+  expect(typeof RESEARCH_VERBS.init).toBe('function');
+  expect(Object.keys(RESEARCH_VERBS)).toEqual(['init']);
 });
 
 // ---------- Happy paths ----------
 
-test('researchVerb: happy path writes both research files + auto-adopts loom + commits + emits events', () => {
-  const result = researchVerb(
+test('researchInit: happy path writes both research files + auto-adopts loom + commits + emits events', () => {
+  const result = researchInit(
     [
       'New research topic',
       `--research-file=${researchFile}`,
@@ -138,8 +138,8 @@ test('researchVerb: happy path writes both research files + auto-adopts loom + c
   expect(message).toContain('2026-05-18-new-research-topic');
 });
 
-test('researchVerb: --no-loom skips auto-adopt AND skips event emission', () => {
-  const result = researchVerb(
+test('researchInit: --no-loom skips auto-adopt AND skips event emission', () => {
+  const result = researchInit(
     [
       'Topic',
       `--research-file=${researchFile}`,
@@ -168,7 +168,7 @@ test('researchVerb: --no-loom skips auto-adopt AND skips event emission', () => 
   expect((paths as string[]).length).toBe(2);
 });
 
-test('researchVerb: pre-existing manifest.toml skips loom adopt but still emits events', () => {
+test('researchInit: pre-existing manifest.toml skips loom adopt but still emits events', () => {
   // Recovery / coexistence case: a project that already adopted loom
   // (e.g. via `loom plan` earlier) and the user is now adding research.
   const slug = '2026-05-18-existing';
@@ -181,7 +181,7 @@ test('researchVerb: pre-existing manifest.toml skips loom adopt but still emits 
     readFileSync(join(FIXTURES, 'manifest-basic.toml'), 'utf8'),
   );
 
-  const result = researchVerb(
+  const result = researchInit(
     [
       slug,
       `--research-file=${researchFile}`,
@@ -202,8 +202,8 @@ test('researchVerb: pre-existing manifest.toml skips loom adopt but still emits 
   expect(names).toEqual(['research-started', 'research-completed']);
 });
 
-test('researchVerb: --no-commit writes files but skips git', () => {
-  const result = researchVerb(
+test('researchInit: --no-commit writes files but skips git', () => {
+  const result = researchInit(
     [
       'Topic',
       `--research-file=${researchFile}`,
@@ -225,8 +225,8 @@ test('researchVerb: --no-commit writes files but skips git', () => {
   expect(gitCalls.filter((c) => c.method === 'addAndCommit').length).toBe(0);
 });
 
-test('researchVerb: --pretty produces indented JSON output', () => {
-  const result = researchVerb(
+test('researchInit: --pretty produces indented JSON output', () => {
+  const result = researchInit(
     [
       'Topic',
       `--research-file=${researchFile}`,
@@ -240,8 +240,8 @@ test('researchVerb: --pretty produces indented JSON output', () => {
   expect(result.stdout).toContain('  "slug"');
 });
 
-test('researchVerb: derives slug from a topic via createSlug(topic, today)', () => {
-  const result = researchVerb(
+test('researchInit: derives slug from a topic via createSlug(topic, today)', () => {
+  const result = researchInit(
     [
       'CLI: research & shifts!',
       `--research-file=${researchFile}`,
@@ -254,8 +254,8 @@ test('researchVerb: derives slug from a topic via createSlug(topic, today)', () 
   expect(payload.slug).toBe('2026-05-18-cli-research-shifts');
 });
 
-test('researchVerb: full-slug positional passed through verbatim', () => {
-  const result = researchVerb(
+test('researchInit: full-slug positional passed through verbatim', () => {
+  const result = researchInit(
     [
       '2026-05-18-explicit-slug',
       `--research-file=${researchFile}`,
@@ -277,10 +277,10 @@ test('researchVerb: full-slug positional passed through verbatim', () => {
 
 // ---------- Directory exists but no RESEARCH.md ----------
 
-test('researchVerb: dir-exists-no-RESEARCH succeeds and writes files', () => {
+test('researchInit: dir-exists-no-RESEARCH succeeds and writes files', () => {
   const targetDir = join(projectsRoot, '2026-05-18-existing-dir');
   mkdirSync(targetDir, { recursive: true });
-  const result = researchVerb(
+  const result = researchInit(
     [
       'existing-dir',
       `--research-file=${researchFile}`,
@@ -295,12 +295,12 @@ test('researchVerb: dir-exists-no-RESEARCH succeeds and writes files', () => {
 
 // ---------- RESEARCH.md exists ----------
 
-test('researchVerb: uncommitted RESEARCH.md is overwritten (recovery case)', () => {
+test('researchInit: uncommitted RESEARCH.md is overwritten (recovery case)', () => {
   const targetDir = join(projectsRoot, '2026-05-18-recovery');
   mkdirSync(targetDir, { recursive: true });
   writeFileSync(join(targetDir, 'RESEARCH.md'), 'stale content');
   // committedPaths is empty → isCommitted returns false
-  const result = researchVerb(
+  const result = researchInit(
     [
       'recovery',
       `--research-file=${researchFile}`,
@@ -315,13 +315,13 @@ test('researchVerb: uncommitted RESEARCH.md is overwritten (recovery case)', () 
   );
 });
 
-test('researchVerb: committed RESEARCH.md throws research-exists-committed', () => {
+test('researchInit: committed RESEARCH.md throws research-exists-committed', () => {
   const targetDir = join(projectsRoot, '2026-05-18-committed');
   mkdirSync(targetDir, { recursive: true });
   const researchMdPath = join(targetDir, 'RESEARCH.md');
   writeFileSync(researchMdPath, 'committed research');
   committedPaths.add(researchMdPath);
-  const result = researchVerb(
+  const result = researchInit(
     [
       'committed',
       `--research-file=${researchFile}`,
@@ -340,8 +340,8 @@ test('researchVerb: committed RESEARCH.md throws research-exists-committed', () 
 
 // ---------- Missing args ----------
 
-test('researchVerb: missing positional throws missing-args', () => {
-  const result = researchVerb(
+test('researchInit: missing positional throws missing-args', () => {
+  const result = researchInit(
     [`--research-file=${researchFile}`, `--notes-file=${notesFile}`],
     baseCtx(),
   );
@@ -349,8 +349,8 @@ test('researchVerb: missing positional throws missing-args', () => {
   expect(JSON.parse(result.stderr as string).error).toBe('missing-args');
 });
 
-test('researchVerb: missing --research-file throws missing-args', () => {
-  const result = researchVerb(
+test('researchInit: missing --research-file throws missing-args', () => {
+  const result = researchInit(
     ['Topic', `--notes-file=${notesFile}`],
     baseCtx(),
   );
@@ -358,8 +358,8 @@ test('researchVerb: missing --research-file throws missing-args', () => {
   expect(JSON.parse(result.stderr as string).error).toBe('missing-args');
 });
 
-test('researchVerb: missing --notes-file throws missing-args', () => {
-  const result = researchVerb(
+test('researchInit: missing --notes-file throws missing-args', () => {
+  const result = researchInit(
     ['Topic', `--research-file=${researchFile}`],
     baseCtx(),
   );
@@ -369,8 +369,8 @@ test('researchVerb: missing --notes-file throws missing-args', () => {
 
 // ---------- Source-file existence ----------
 
-test('researchVerb: missing --research-file source throws research-file-not-found', () => {
-  const result = researchVerb(
+test('researchInit: missing --research-file source throws research-file-not-found', () => {
+  const result = researchInit(
     [
       'Topic',
       '--research-file=/nonexistent/research.md',
@@ -385,8 +385,8 @@ test('researchVerb: missing --research-file source throws research-file-not-foun
   );
 });
 
-test('researchVerb: missing --notes-file source throws notes-file-not-found', () => {
-  const result = researchVerb(
+test('researchInit: missing --notes-file source throws notes-file-not-found', () => {
+  const result = researchInit(
     [
       'Topic',
       `--research-file=${researchFile}`,

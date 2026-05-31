@@ -85,7 +85,12 @@ const RESEARCH_OPTIONS = {
   pretty: { type: 'boolean' as const },
 };
 
-export function researchVerb(
+// `init` — today's copy-in behavior: take a slug-or-topic + a prepared
+// RESEARCH.md / RESEARCH-NOTES.md and scaffold the dossier (auto-adopting
+// loom + emitting research-started/-completed). The verb-family's other
+// members (append, show) land in the next unit; `amend` is the
+// `/loom-research --mode=amend` skill, not a CLI verb.
+export function researchInit(
   rest: string[],
   ctx: ResearchCliContext,
 ): DispatchResult {
@@ -295,5 +300,5 @@ export function researchVerb(
 // wired the same way `loom plan` / `loom revise-plan` / `loom doctor`
 // are: a single-handler namespace.
 export const RESEARCH_VERBS = {
-  research: researchVerb,
+  init: researchInit,
 };

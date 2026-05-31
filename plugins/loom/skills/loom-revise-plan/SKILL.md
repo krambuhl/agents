@@ -285,6 +285,7 @@ Hardcoded writes via § Capture finding on:
   on `research-exists-committed`. Phase 4 punts this to operator
   judgment: the skill description says "the sub-agent should append
   to that file" but the CLI doesn't yet support the append path.
-  Future work: extend `bin/loom research` with an `--append` flag, or
-  ship the Deferred `loom revise-research` verb that PLAN.md
-  mentions.
+  Future work: the `loom research append` subverb (the research
+  verb-family's append-with-provenance path) is the intended home for
+  this — append a provenance-stamped block to the existing RESEARCH.md
+  rather than refusing or overwriting.

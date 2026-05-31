@@ -41,7 +41,8 @@ status = "completed"
 [[phases]]
 number = 5
 name = "RESEARCH as fact-canon"
-status = "not-started"
+status = "in-progress"
+branch = "ev-agent.substrate-tempering.research-fact-canon"
 
 [[events]]
 at = "2026-05-29T06:36:04.229Z"
@@ -183,6 +184,46 @@ at = "2026-05-31T05:45:43.431Z"
 event = "phase-completed"
 detail = { phase = 4 }
 
+[[events]]
+at = "2026-05-31T06:02:17.910Z"
+event = "evaluator-spawned"
+detail = { slug = "2026-05-29-substrate-tempering", phase = 5, unit = "11", evaluator = "evaluator-contract-fit" }
+
+[[events]]
+at = "2026-05-31T06:02:17.982Z"
+event = "evaluator-spawned"
+detail = { slug = "2026-05-29-substrate-tempering", phase = 5, unit = "11", evaluator = "evaluator-react" }
+
+[[events]]
+at = "2026-05-31T06:02:18.054Z"
+event = "evaluator-spawned"
+detail = { slug = "2026-05-29-substrate-tempering", phase = 5, unit = "11", evaluator = "evaluator-test-unit" }
+
+[[events]]
+at = "2026-05-31T06:02:18.126Z"
+event = "evaluator-spawned"
+detail = { slug = "2026-05-29-substrate-tempering", phase = 5, unit = "11", evaluator = "evaluator-naming" }
+
+[[events]]
+at = "2026-05-31T06:02:18.198Z"
+event = "evaluator-finding-emitted"
+detail = { slug = "2026-05-29-substrate-tempering", phase = 5, unit = "11", evaluator = "evaluator-naming", code = "naming-message-ambiguity", severity = "advisory" }
+
+[[events]]
+at = "2026-05-31T06:02:18.269Z"
+event = "evaluator-recused"
+detail = { slug = "2026-05-29-substrate-tempering", phase = 5, unit = "11", evaluator = "evaluator-react", reason = "no React/JSX/hooks/components in scope" }
+
+[[events]]
+at = "2026-05-31T06:03:41.184Z"
+event = "checkin-created"
+detail = { number = "11", branch = "ev-agent.substrate-tempering.research-fact-canon" }
+
+[[events]]
+at = "2026-05-31T06:03:41.258Z"
+event = "phase-started"
+detail = { phase = 5, name = "RESEARCH as fact-canon" }
+
 [[checkins]]
 schema_version = 1
 number = "01"
@@ -322,6 +363,20 @@ scope = ["plugins/loom/cli/verbs/loom/events.ts", "plugins/loom/cli/verbs/loom/e
 changes_since_previous = "First + only unit of Phase 4, on a fresh branch off main (Phase 3 merged as #167). Consumes the Phase 3 evaluator-* events to make the headline metrics computable."
 verdict = { result = "approved", reasons = ["guild-validate panel aggregated to approved, zero findings, 1 recusal (after an infra-driven rerun: agent rename + budget exhaustion, not artifact issues)", "all ACs met; npm test green (1124); real-run + spot-check pass; dogfood proves the metric path on real data (evaluator-spawned aggregate count 5, recused 2)"] }
 notes_for_pr = ["Phase 4 CLOSED. loom events aggregate folds per-(project,event) rows across active + archived projects; the Phase 3 evaluator-* events fold cleanly (spawn-to-finding + non-applicability now computable). Demonstrated on real data: aggregate --event=evaluator-spawned -> count 5, evaluator-recused -> count 2.", "Follow-up (panel infra, cross-cutting): bin/guild derive-panel emits stale agent names (evaluator-react-api) after the guild-matrix-precompile rename to evaluator-react. derive-panel needs to resync with the live agent registry, or the loop must map derive output -> current names. Recurrence of the registry-name-drift class.", "Follow-up (evaluator budget): the dense-packet budget-exhaustion fallback (emit VERDICT: flagged parse-failure) is not reliably honored — evaluators investigate to exhaustion instead. A stronger anti-investigation framing (AT MOST ONE spot-check, emit VERDICT now) reliably worked. Worth folding into the canonical dense-packet template.", "Follow-up (verb): relative-duration --since (e.g. 30d) is not supported (mirrors read ISO --since); the PLAN verification example assumed it. Add duration parsing if operators want it.", "Deferred (open question, decided no): a cross-project per-event total row. Derivable by the consumer; mixing granularities was judged not worth it at MVP.", "Carried from Phase 3 (project-level): a lightweight PLAN refresh would reconcile the Phase 3 text (understated: append verb + recusal convention) and the Phase 4 staleness notes above. Offered to operator."]
+
+[[checkins]]
+schema_version = 1
+number = "11"
+created = "2026-05-31T06:03:41.114Z"
+phase = { number = 5, name = "RESEARCH as fact-canon" }
+branch = "ev-agent.substrate-tempering.research-fact-canon"
+unit = "Phase 5 unit 1 — research verb-family refactor + hard cut to init"
+contract = { goal = "Refactor loom research from a verbless single-handler into a subverb family; ship init (today copy-in behavior, renamed from researchVerb) and hard-cut the bare loom research <slug> form to require loom research init; migrate every caller in the same PR. append/show/provenance are unit 2; amend is skill-only.", acceptance_criteria = ["AC1: researchVerb -> researchInit (behavior + events identical); RESEARCH_VERBS = { init }", "AC2: loom.ts removes 'research' from VERBLESS_NAMESPACES (+comment); loom research init <slug> works; bare loom research <slug> -> unknown-verb [init]; loom research -> missing-verb [init]", "AC3: callers migrated — loom-research SKILL.md Bash invocation -> loom research init; loom-revise-plan SKILL.md future-work note -> points at loom research append", "AC4: research.test.ts retargeted to researchInit (behavior preserved, green) + registry-shape asserts [init]; loom.test.ts dispatch test updated (bare errors / init routes)", "AC5: npm test green"], rules_applied = ["loom-authoritative (verb + dispatch + SKILL.md, not synced)", "hard cut migrates all callers in the same PR (operator decision)", "no emojis"], disqualifiers = ["leaving any caller on the bare loom research <slug> form", "changing init copy-in behavior or its research-started/-completed events", "adding append/show BEHAVIOR (unit 2)", "editing commons"], inputs = ["plugins/loom/cli/verbs/loom/research.ts (researchVerb, RESEARCH_VERBS, RESEARCH_OPTIONS)", "plugins/loom/cli/loom.ts (VERBLESS_NAMESPACES, dispatch)", "plugins/loom/cli/verbs/loom/research.test.ts, plugins/loom/cli/loom.test.ts", "plugins/loom/skills/loom-research/SKILL.md:255, plugins/loom/skills/loom-revise-plan/SKILL.md:288", "PLAN Phase 5 (:120-136); operator decisions (hard cut, amend skill-only)"] }
+execution = { actions = ["research.ts: renamed researchVerb -> researchInit (+doc comment naming the family init/append/show + amend-skill-only); RESEARCH_VERBS = { init: researchInit }", "loom.ts: removed 'research' from VERBLESS_NAMESPACES; rewrote the verbless comment to note research is now a subverb family + the bare-form hard cut", "Migrated callers: loom-research SKILL.md Bash(loom research ...) -> loom research init (+a note that the bare form is invalid); loom-revise-plan SKILL.md future-work note now points at loom research append", "research.test.ts: researchVerb -> researchInit (import + ~14 calls + test-name prefixes via replace_all); registry-shape test now asserts Object.keys === [init]. loom.test.ts: verbless-research dispatch test replaced with a subverb test (bare -> unknown-verb, init -> routes)", "npm test green (64 files, 1124; unchanged count — behavior-preserving refactor); targeted research+loom 38 passed; CLI smoke confirms missing-verb/unknown-verb/init-routes; grep confirms no bare-form invocation remains", "guild-validate panel (contract-fit, react, test-unit, naming; react mapped from derive-panel stale evaluator-react-api) -> aggregated approved, 1 recusal. Tight anti-investigation packets fixed the Phase-4 budget-exhaustion (all evaluators returned verdicts, <=3 tool uses). DOGFOOD: emitted phase=5 unit=11 panel events (4 spawned + 1 recused + 1 finding-emitted)."], files_touched = ["plugins/loom/cli/verbs/loom/research.ts", "plugins/loom/cli/loom.ts", "plugins/loom/cli/verbs/loom/research.test.ts", "plugins/loom/cli/loom.test.ts", "plugins/loom/skills/loom-research/SKILL.md", "plugins/loom/skills/loom-revise-plan/SKILL.md"], corrections = ["AGGREGATOR LIMITATION discovered: the naming evaluator emitted VERDICT: approved with a prose ADVISORY (LoomError messages say research requires... and will get ambiguous once append/show land — tighten to research init requires...). guild parse-and-aggregate reported advisory: 0 because it only extracts findings from FLAGGED verdicts — an approved verdict carrying a prose ADVISORY drops the advisory entirely. So advisories only survive aggregation if the evaluator emits VERDICT: flagged + ADVISORY: prefix (non-gating). The recusal convention (D2b-1) gave non-applicability a distinct channel; approved-with-advisory has no equivalent. Follow-up: parse-and-aggregate should surface ADVISORY-prefixed lines from approved verdicts too (or evaluators must flag-to-advise).", "I emitted evaluator-finding-emitted{evaluator:naming, code:naming-message-ambiguity, severity:advisory} for that advisory — the first genuine finding-emitted instance of the project. NOTE this deviates from the strict § Emit spec (emit per AGGREGATED finding); the aggregated advisory_findings was empty due to the limitation above. The emission faithfully records the advisory the evaluator actually raised; it is append-only so it stays. Honest framing: the event reflects evaluator intent, not aggregator output, because the aggregator dropped it.", "derive-panel STILL emits evaluator-react-api (renamed to evaluator-react); mapped manually again. Recurring; see prior checkin + project memory."] }
+scope = ["plugins/loom/cli/verbs/loom/research.ts", "plugins/loom/cli/loom.ts", "plugins/loom/cli/verbs/loom/research.test.ts", "plugins/loom/cli/loom.test.ts", "plugins/loom/skills/loom-research/SKILL.md", "plugins/loom/skills/loom-revise-plan/SKILL.md"]
+changes_since_previous = "First unit of Phase 5, fresh branch off main (Phase 4 merged as #168). Refactor + hard cut only; append/show/provenance + the /loom-research --mode=amend wiring are unit 2."
+verdict = { result = "approved", reasons = ["guild-validate panel aggregated to approved, zero blocking, 1 recusal (1 prose advisory raised by naming, dropped by the aggregator — captured as a follow-up + emitted)", "all ACs met; npm test green (1124, behavior-preserving); hard-cut dispatch verified; no caller left on the bare form"] }
+notes_for_pr = ["Phase 5 unit 1 of 2. loom research is now a subverb family: init (this unit) + append/show (unit 2). Bare loom research <slug> is a hard cut -> loom research init. The /loom-research skill + the revise-plan future-work note were migrated in this PR.", "Unit 2 (next, closes Phase 5): loom research append (--section --fact-file --citing, provenance-stamped delimited block, append-only) + loom research show (read dossier / one section) + wire /loom-research --mode=amend to call append. Two open design questions to negotiate: the provenance schema session-id source (the CLI has no session id — flag vs derive vs drop) and the block-delimiter/append format. ALSO: tighten the LoomError messages to research init requires... / research <subverb> requires... (the naming advisory) when the sibling subverbs land.", "Substrate follow-up (aggregator): parse-and-aggregate drops prose ADVISORY notes from approved verdicts (only flagged-verdict ADVISORY: reasons survive). An approved-with-advisory evaluator loses its advice. Surface approved-verdict ADVISORY lines, or require flag-to-advise.", "Substrate follow-up (recurring): bin/guild derive-panel emits stale agent names (evaluator-react-api -> evaluator-react). And the dense-packet budget-exhaustion fallback needs the tighter at-most-one-spot-check framing to be honored (worked here; worth baking into the canonical packet template)."]
 
 [[revisions]]
 timestamp = "2026-05-29T15:43:57.627Z"
