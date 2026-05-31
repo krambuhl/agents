@@ -1,10 +1,11 @@
-import { spawnSync } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import {
   chmodSync,
   copyFileSync,
   existsSync,
   mkdirSync,
   mkdtempSync,
+  readdirSync,
   rmSync,
   symlinkSync,
   writeFileSync,
@@ -218,6 +219,105 @@ describe('real-entry strip-only loader smoke', () => {
       expect(result.stderr).toMatch(/ERR_UNSUPPORTED_TYPESCRIPT_SYNTAX/);
     } finally {
       footgun.cleanup();
+    }
+  });
+});
+
+// Collect every .ts file (excluding *.test.ts) under `dir`, recursively.
+// Returns absolute paths; an absent dir yields []. Tests are excluded
+// deliberately: they run under vitest's full transform, never under node's
+// strip-only loader, so strip-only compatibility is not a constraint on them.
+function collectRuntimeTsFiles(dir: string): string[] {
+  if (!existsSync(dir)) return [];
+  const out: string[] = [];
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    const full = join(dir, entry.name);
+    if (entry.isDirectory()) {
+      out.push(...collectRuntimeTsFiles(full));
+    } else if (entry.name.endsWith('.ts') && !entry.name.endsWith('.test.ts')) {
+      out.push(full);
+    }
+  }
+  return out;
+}
+
+// `node --check <file.ts>` strips types (Node >= 24 default) and parses the
+// file WITHOUT executing it, resolving imports, or running side effects. A
+// strip-only-unsupported construct (parameter property, certain enum /
+// namespace forms, a JSDoc `*/` that closes a block comment early) fails the
+// parse with a non-zero exit. Async so the inventory can be checked with
+// bounded concurrency instead of N serial spawns.
+function nodeCheck(file: string): Promise<{ status: number | null; stderr: string }> {
+  return new Promise((resolveCheck) => {
+    const child = spawn('node', ['--check', file]);
+    let stderr = '';
+    child.stderr.on('data', (chunk) => {
+      stderr += chunk.toString();
+    });
+    child.on('error', (err) => resolveCheck({ status: 1, stderr: String(err) }));
+    child.on('close', (status) => resolveCheck({ status, stderr }));
+  });
+}
+
+// The exec smoke above loads each entry's STATIC import graph, so a footgun
+// in a statically-imported module is already caught there. This block closes
+// the remaining gaps exhaustively and by construction: standalone scripts the
+// bin shims never exec (scripts/*.ts, run via npm), any future dynamically-
+// imported module, and the general "an entrypoint the smoke forgot" coverage
+// lottery the skeptic flagged. Every .ts node runs at runtime must survive
+// type-stripping — proven file-by-file, not via remembered entrypoints.
+describe('exhaustive strip-only static gate (every runtime .ts)', () => {
+  const runtimeTsFiles = [
+    ...PLUGINS.flatMap((p) =>
+      collectRuntimeTsFiles(join(REPO_ROOT, 'plugins', p, 'cli')),
+    ),
+    ...collectRuntimeTsFiles(join(REPO_ROOT, 'scripts')),
+  ];
+
+  test('the inventory is non-empty (a broken glob must fail loudly, not pass vacuously)', () => {
+    // If the collection returns nothing, the exhaustive test below passes
+    // vacuously — the exact fixture-mask this gate exists to prevent. Pin a
+    // floor (current count is ~99) so a path change that empties the list
+    // fails here rather than silently covering nothing.
+    expect(runtimeTsFiles.length).toBeGreaterThan(50);
+  });
+
+  test('every runtime .ts survives node --check under the strip-only loader', async () => {
+    const CONCURRENCY = 8;
+    const failures: string[] = [];
+    let cursor = 0;
+    const worker = async (): Promise<void> => {
+      while (cursor < runtimeTsFiles.length) {
+        const file = runtimeTsFiles[cursor++];
+        const { status, stderr } = await nodeCheck(file);
+        if (
+          status !== 0 ||
+          /SyntaxError|ERR_UNSUPPORTED_TYPESCRIPT_SYNTAX/.test(stderr)
+        ) {
+          const firstLines = stderr.trim().split('\n').slice(0, 2).join(' ');
+          failures.push(`${file.replace(`${REPO_ROOT}/`, '')}: ${firstLines}`);
+        }
+      }
+    };
+    await Promise.all(Array.from({ length: CONCURRENCY }, () => worker()));
+    expect(
+      failures,
+      `strip-only failures (these ship broken under node even though vitest's transform passes):\n${failures.join('\n')}`,
+    ).toEqual([]);
+  }, 30_000);
+
+  test('the gate BITES: a parameter-property footgun fails node --check', () => {
+    // Independent proof the gate detects the class — mirrors the exec-path
+    // bite test above, at the --check layer.
+    const dir = mkdtempSync(join(tmpdir(), 'strip-only-bite-'));
+    try {
+      const footgun = join(dir, 'footgun.ts');
+      writeFileSync(footgun, 'class P {\n  constructor(public x: number) {}\n}\n');
+      const result = spawnSync('node', ['--check', footgun], { encoding: 'utf8' });
+      expect(result.status).not.toBe(0);
+      expect(result.stderr).toMatch(/SyntaxError|ERR_UNSUPPORTED_TYPESCRIPT_SYNTAX/);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
     }
   });
 });

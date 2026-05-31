@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { mkdtempSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
@@ -337,6 +338,50 @@ describe('compile CLI: --check', () => {
     expect(result.exitCode).toBe(1);
     const out = JSON.parse(result.stdout ?? '{}');
     expect(out.ok).toBe(false);
+    expect(out.drift.cells_with_prompt_drift.length).toBeGreaterThan(0);
+  });
+
+  // Self-compute the prompt-hash from fusion-prompt.md when --prompt-hash is
+  // omitted (shared-insights P1·D1). Pre-fix, an omitted flag defaulted to ''
+  // and false-flagged every cell as prompt-drifted, making `--check` unusable
+  // standalone (CI, loom doctor). The skill computes sha256(fusion-prompt.md)
+  // and passes it; --check now reproduces that hash itself.
+  function seedFusionTemplate(body: string): string {
+    const templateDir = join(
+      sandbox.cwd,
+      'plugins',
+      'guild',
+      'skills',
+      'guild-compile',
+    );
+    mkdirSync(templateDir, { recursive: true });
+    writeFileSync(join(templateDir, 'fusion-prompt.md'), body);
+    return createHash('sha256').update(body, 'utf8').digest('hex');
+  }
+
+  it('--check self-computes the prompt-hash from fusion-prompt.md when --prompt-hash is omitted', () => {
+    const promptHash = seedFusionTemplate('# Fusion prompt\n\nfuse the slots.\n');
+    // Seed the cache with the REAL template hash (what the skill passes).
+    const seed = compileVerb([`--prompt-hash=${promptHash}`], makeCtx(sandbox.cwd));
+    expect(seed.exitCode).toBe(0);
+    // --check with NO --prompt-hash must reproduce that hash and see no drift.
+    const result = compileVerb(['--check'], makeCtx(sandbox.cwd));
+    expect(result.exitCode).toBe(0);
+    const out = JSON.parse(result.stdout ?? '{}');
+    expect(out.ok).toBe(true);
+    expect(out.drift.cells_with_prompt_drift).toEqual([]);
+  });
+
+  it('--check: an explicit --prompt-hash= (empty) overrides self-compute — legacy escape hatch', () => {
+    const promptHash = seedFusionTemplate('# Fusion prompt\n\nfuse the slots.\n');
+    const seed = compileVerb([`--prompt-hash=${promptHash}`], makeCtx(sandbox.cwd));
+    expect(seed.exitCode).toBe(0);
+    // Explicit empty wins → compares against '' (not the template hash) →
+    // mismatches the seeded real hash → prompt drift. Proves explicit beats
+    // self-compute, preserving the pre-U3 legacy-match behavior.
+    const result = compileVerb(['--check', '--prompt-hash='], makeCtx(sandbox.cwd));
+    expect(result.exitCode).toBe(1);
+    const out = JSON.parse(result.stdout ?? '{}');
     expect(out.drift.cells_with_prompt_drift.length).toBeGreaterThan(0);
   });
 });

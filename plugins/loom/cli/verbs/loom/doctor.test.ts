@@ -9,7 +9,14 @@ import {
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { doctor, detectGuildSkew, queryGuildVerbs } from './doctor.ts';
+import {
+  doctor,
+  detectGuildSkew,
+  queryGuildVerbs,
+  probeResolvableGuild,
+  detectCodegenDrift,
+  runCodegenCheck,
+} from './doctor.ts';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const FIXTURES = join(__dirname, '..', '..', 'fixtures');
@@ -138,5 +145,128 @@ test('doctor: guild-skew probe degrades to null off-repo (healthy temp project s
   const report = JSON.parse(result.stdout as string);
   const codes = report.issues.map((i: { code: string }) => i.code);
   expect(codes).not.toContain('guild-cache-skew');
+  expect(codes).not.toContain('guild-codegen-drift');
   expect(report.ok).toBe(true);
+});
+
+// --- resolvable-guild probe trichotomy (shared-insights P1·D1) ---
+//
+// The gap this closes: the old queryGuildVerbs collapsed "no guild on PATH"
+// and "a guild ran but its output didn't parse" into the same null, so a
+// present-but-stale guild reported green. probeResolvableGuild distinguishes
+// absent / unqueryable / ok. Each state is exercised with a real spawn whose
+// stderr shape is controlled via `node -e`, so no real guild install needed.
+
+test('probeResolvableGuild: a command not on PATH → absent (ENOENT, skip silently)', () => {
+  expect(probeResolvableGuild('loom-doctor-definitely-not-a-real-binary')).toEqual(
+    { state: 'absent' },
+  );
+});
+
+test('probeResolvableGuild: ran but stderr is not JSON → unqueryable (NOT green)', () => {
+  const probe = probeResolvableGuild('node', [
+    '-e',
+    'process.stderr.write("plain text, not a JSON error payload")',
+  ]);
+  expect(probe.state).toBe('unqueryable');
+});
+
+test('probeResolvableGuild: JSON stderr without a candidates array → unqueryable', () => {
+  const probe = probeResolvableGuild('node', [
+    '-e',
+    'process.stderr.write(JSON.stringify({ error: "unknown-verb" }))',
+  ]);
+  expect(probe.state).toBe('unqueryable');
+});
+
+test('probeResolvableGuild: JSON stderr with candidates[] → ok with the verb list', () => {
+  const probe = probeResolvableGuild('node', [
+    '-e',
+    'process.stderr.write(JSON.stringify({ candidates: ["derive-panel", "compile"] }))',
+  ]);
+  expect(probe).toEqual({ state: 'ok', verbs: ['derive-panel', 'compile'] });
+});
+
+// --- guild codegen-drift (shared-insights P1·D1) ---
+//
+// detectCodegenDrift is the pure classifier; runCodegenCheck is the effectful
+// spawn-and-parse half. The pure tests cover both directions with injected
+// CheckResults; the effectful test proves the source-bootstrap parse-contract
+// seam against the REAL repo without asserting on its (churny) cleanliness.
+
+const cleanCheck = () => ({
+  ok: true,
+  drift: {
+    cells_with_source_drift: [] as { id: string; axis: string }[],
+    cells_with_output_drift: [] as string[],
+    cells_with_prompt_drift: [] as string[],
+    cells_missing_cache_entry: [] as string[],
+    cells_missing_on_disk: [] as string[],
+    stale_cache_entries: [] as string[],
+  },
+});
+
+test('detectCodegenDrift: null result (check could not run) → null', () => {
+  expect(detectCodegenDrift(null)).toBeNull();
+});
+
+test('detectCodegenDrift: a clean check (no drift) → null', () => {
+  expect(detectCodegenDrift(cleanCheck())).toBeNull();
+});
+
+test('detectCodegenDrift: output drift → warning naming the cell + the recompile command', () => {
+  const result = cleanCheck();
+  result.ok = false;
+  result.drift.cells_with_output_drift = ['evaluator-a11y'];
+  const issue = detectCodegenDrift(result);
+  expect(issue).not.toBeNull();
+  expect(issue?.code).toBe('guild-codegen-drift');
+  expect(issue?.severity).toBe('warning');
+  expect(issue?.detail).toContain('evaluator-a11y');
+  expect(issue?.detail).toContain('node plugins/guild/cli/guild.ts compile');
+});
+
+test('detectCodegenDrift: dedupes a cell flagged by multiple axes; counts distinct cells', () => {
+  const result = cleanCheck();
+  result.ok = false;
+  result.drift.cells_with_source_drift = [{ id: 'whiteboard-a11y', axis: 'domain' }];
+  result.drift.cells_with_output_drift = ['whiteboard-a11y']; // same cell, second axis
+  result.drift.cells_with_prompt_drift = ['evaluator-nextjs'];
+  const issue = detectCodegenDrift(result);
+  // 2 distinct cells (whiteboard-a11y counted once), not 3.
+  expect(issue?.detail).toMatch(/^2 guild agents/);
+  expect(issue?.detail).toContain('whiteboard-a11y');
+  expect(issue?.detail).toContain('evaluator-nextjs');
+});
+
+test('detectCodegenDrift: more than 6 drifted cells truncates with a "+N more" tail', () => {
+  const result = cleanCheck();
+  result.ok = false;
+  result.drift.cells_with_output_drift = Array.from(
+    { length: 9 },
+    (_, i) => `cell-${i}`,
+  );
+  const issue = detectCodegenDrift(result);
+  expect(issue?.detail).toMatch(/9 guild agents/);
+  expect(issue?.detail).toContain('+3 more');
+});
+
+test('runCodegenCheck: off-repo (no guild source entry) → null, never throws', () => {
+  // repoRoot = the temp projectsRoot's parent, which has no plugins/guild.
+  // Proves the verdict keys off the SOURCE entry's existence, not a cached
+  // `guild` on PATH.
+  expect(runCodegenCheck(tmpdir())).toBeNull();
+});
+
+test('runCodegenCheck: against the real repo, runs from source and parses the contract', () => {
+  // Up from plugins/loom/cli/verbs/loom → marketplace root.
+  const repoRoot = join(__dirname, '..', '..', '..', '..', '..');
+  const result = runCodegenCheck(repoRoot);
+  // Don't assert ok===true (couples to repo cleanliness / churns); assert the
+  // source-bootstrap parse-contract seam: it ran the real source guild and
+  // got back a shaped CheckResult.
+  expect(result).not.toBeNull();
+  expect(typeof result?.ok).toBe('boolean');
+  expect(result?.drift).toBeTypeOf('object');
+  expect(Array.isArray(result?.drift.cells_with_output_drift)).toBe(true);
 });
