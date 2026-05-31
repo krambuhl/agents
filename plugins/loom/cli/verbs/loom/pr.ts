@@ -140,6 +140,7 @@ const OPEN_OPTIONS = {
   title: { type: 'string' as const },
   'body-file': { type: 'string' as const },
   branch: { type: 'string' as const },
+  base: { type: 'string' as const },
 };
 
 export function prOpen(rest: string[], ctx: CliContext): DispatchResult {
@@ -167,6 +168,12 @@ export function prOpen(rest: string[], ctx: CliContext): DispatchResult {
   const ghArgs = ['pr', 'create', '--title', values.title, '--body-file', values['body-file']];
   if (values.branch !== undefined) {
     ghArgs.push('--head', values.branch);
+  }
+  // Forward --base so a stacked PR targets its parent branch rather than the
+  // repo default. Omitted → gh defaults to the repo's default branch (main),
+  // preserving the unstacked single-PR behavior.
+  if (values.base !== undefined) {
+    ghArgs.push('--base', values.base);
   }
   let stdout: string;
   try {

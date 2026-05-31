@@ -189,6 +189,52 @@ test('prOpen: composes gh pr create, parses URL, records no event', () => {
   expect(manifest.events.some((e) => (e.event as string) === 'pr-opened')).toBe(false);
 });
 
+test('prOpen: --base is forwarded to gh pr create (stacked PR targets its parent)', () => {
+  setupProjectWithCheckins(['01']);
+  const bodyFile = join(projectsRoot, 'body.md');
+  writeFileSync(bodyFile, '## Summary\nBody', 'utf8');
+
+  const ghCalls: string[][] = [];
+  const ghRunner = (args: string[]) => {
+    ghCalls.push(args);
+    return 'https://github.com/owner/repo/pull/78\n';
+  };
+
+  const result = prOpen(
+    [
+      'test-loom',
+      '--title=Stacked PR',
+      `--body-file=${bodyFile}`,
+      '--branch=loom-cli/phase-2',
+      '--base=loom-cli/phase-1',
+    ],
+    { projectsRoot, ghRunner },
+  );
+  expect(result.exitCode).toBe(0);
+  // --base <parent> is passed through so the PR targets its parent branch.
+  const idx = ghCalls[0].indexOf('--base');
+  expect(idx).toBeGreaterThan(-1);
+  expect(ghCalls[0][idx + 1]).toBe('loom-cli/phase-1');
+});
+
+test('prOpen: no --base → gh pr create omits it (gh defaults to the repo default branch)', () => {
+  setupProjectWithCheckins(['01']);
+  const bodyFile = join(projectsRoot, 'body.md');
+  writeFileSync(bodyFile, '## Summary\nBody', 'utf8');
+
+  const ghCalls: string[][] = [];
+  const ghRunner = (args: string[]) => {
+    ghCalls.push(args);
+    return 'https://github.com/owner/repo/pull/79\n';
+  };
+
+  prOpen(
+    ['test-loom', '--title=Plain PR', `--body-file=${bodyFile}`, '--branch=loom-cli/solo'],
+    { projectsRoot, ghRunner },
+  );
+  expect(ghCalls[0]).not.toContain('--base');
+});
+
 test('prOpen: gh failure surfaces as gh-failed', () => {
   setupProjectWithCheckins(['01']);
   const bodyFile = join(projectsRoot, 'body.md');
