@@ -49,7 +49,8 @@ branch = "ev-agent.shared-insights.missing-verbs"
 [[phases]]
 number = 6
 name = "Skill-convention & agent-discipline"
-status = "not-started"
+status = "completed"
+branch = "ev-agent.shared-insights.skill-conventions"
 
 [[phases]]
 number = 7
@@ -160,6 +161,26 @@ detail = { number = "12", branch = "ev-agent.shared-insights.missing-verbs" }
 at = "2026-05-31T22:43:12.012Z"
 event = "phase-completed"
 detail = { phase = 5 }
+
+[[events]]
+at = "2026-05-31T22:59:43.994Z"
+event = "checkin-created"
+detail = { number = "13", branch = "ev-agent.shared-insights.skill-conventions" }
+
+[[events]]
+at = "2026-05-31T22:59:44.060Z"
+event = "checkin-created"
+detail = { number = "14", branch = "ev-agent.shared-insights.skill-conventions" }
+
+[[events]]
+at = "2026-05-31T22:59:44.130Z"
+event = "checkin-created"
+detail = { number = "15", branch = "ev-agent.shared-insights.skill-conventions" }
+
+[[events]]
+at = "2026-05-31T22:59:44.204Z"
+event = "phase-completed"
+detail = { phase = 6 }
 
 [[checkins]]
 schema_version = 1
@@ -328,3 +349,45 @@ scope = ["test-ref scan + warnings", "harness scope fix + tests"]
 changes_since_previous = "Third and final unit; phase boundary."
 verdict = { result = "approved", reasons = ["Panel (contract-fit + test-unit) → approved, zero blocking. Read-only fail-soft scan; advisory not blocking; both directions + no-ref pinned. (Naming eval skipped: single textbook-named find<X> helper.)"] }
 notes_for_pr = ["Chose WARN over the PLAN's 'warns/refuses' OR — advisory matches the substrate posture (a match can be a benign mention); a future --strict could escalate to refuse.", "Advisory (both evaluators, non-blocking): findTestReferences does a full synchronous repo walk per archive — fine at current scale + rare cadence; revisit only if archive becomes hot.", "Phase boundary single signal (last unit) — no plan revision."]
+
+[[checkins]]
+schema_version = 1
+number = "13"
+created = "2026-05-31T22:59:05Z"
+phase = { number = 6, name = "Skill-convention & agent-discipline" }
+branch = "ev-agent.shared-insights.skill-conventions"
+unit = "P6·D1 — AskUserQuestion-discipline convention"
+contract = { goal = "Document when a human-paired decision MUST use structured AskUserQuestion vs free-form prose, in AGENT-CONVENTIONS.md, cited from grill-me + a loop body.", acceptance_criteria = ["the two-condition rule (changes-what-you-do-next AND discrete options) + prose cases", "names the failure mode both directions", "relates to the Auto-mode section (human-absent equivalent)", "cited from grill-me + ev-loop-interactive"], rules_applied = ["human-present mirror of auto-mode", "recommendation-first structured prompts"], disqualifiers = ["vague rule", "contradicting Auto-mode framing", "no citations"], inputs = ["plugins/commons/docs/AGENT-CONVENTIONS.md", "grill-me/SKILL.md", "ev-loop-interactive/SKILL.md"] }
+execution = { actions = ["Added '## Human-paired decisions: structured vs prose' before the Auto-mode section; cited from grill-me + ev-loop-interactive negotiate step.", "Verified: npm run check ok (doc propagated); npm test 1175."], files_touched = ["plugins/commons/docs/AGENT-CONVENTIONS.md (+3 synced)", "plugins/commons/skills/grill-me/SKILL.md", "plugins/ev/skills/ev-loop-interactive/SKILL.md"], corrections = [] }
+scope = ["AskUserQuestion-discipline convention + citations"]
+changes_since_previous = "First unit of Phase 6 (all 3 premises real — unlike P4/P5)."
+verdict = { result = "approved", reasons = ["Panel (contract-fit) → approved, zero findings. Rule concrete (a reader can tell which form), failure mode named both directions, framed as the human-present mirror of Auto-mode, cited from grill-me + the loop body."] }
+notes_for_pr = ["Phase 6 is genuine convention work (all premises hold), in contrast to the premise-staleness of P4/P5.", "Used my own AskUserQuestion discipline ~6x this session (whiteboard scope, D1 mechanism, prompt-hash, P4 scope) — the convention codifies observed practice."]
+
+[[checkins]]
+schema_version = 1
+number = "14"
+created = "2026-05-31T22:59:05Z"
+phase = { number = 6, name = "Skill-convention & agent-discipline" }
+branch = "ev-agent.shared-insights.skill-conventions"
+unit = "P6·D2 — reconcile checkin-write prose with create-once CLI"
+contract = { goal = "Reconcile the ev-loop 'Contract section only' negotiate prose to the create-once CLI: state the required envelope, that 'fill later' = a NEW numbered checkin, and offer the one-complete-checkin option for single-pass units.", acceptance_criteria = ["interactive negotiate clarifies envelope + create-once-new-checkin (not edit)", "offers one-complete-checkin option", "confidence gets the same parallel clarification", "extends not reverses the existing create-once framing"], rules_applied = ["reconcile prose to the CLI (CLI is correct)", "both checkin patterns valid"], disqualifiers = ["claiming you can edit a checkin", "dropping the envelope fact", "mandating/forbidding the two-checkin pattern"], inputs = ["plugins/ev/skills/ev-loop-interactive/SKILL.md", "plugins/ev/skills/ev-loop-confidence/SKILL.md"] }
+execution = { actions = ["Rewrote both negotiate steps: full schema-defined envelope required; loom checkin write hard-rejects missing schema_version/number/branch (created schema-expected); create-once → new numbered checkin; one-complete-checkin equally valid for single-pass units.", "Tightened the interactive envelope-vs-rejection asymmetry per a contract-fit advisory (the hard-reject names 3 fields; the schema defines 4).", "Verified: npm run check ok; npm test 1175."], files_touched = ["plugins/ev/skills/ev-loop-interactive/SKILL.md", "plugins/ev/skills/ev-loop-confidence/SKILL.md"], corrections = ["This is the exact drift I hit live across ~12 checkins this session (the create-once vs Contract-only-stub). The reconciliation is grounded in the observed CLI behavior."] }
+scope = ["checkin-negotiate prose reconciliation (both loops)"]
+changes_since_previous = "Second unit; builds on D1."
+verdict = { result = "approved", reasons = ["Panel (contract-fit) → approved, zero blocking. Envelope + create-once stated, one-checkin option offered, no claim you can edit a checkin, extends not reverses. Addressed the envelope-list asymmetry advisory."] }
+notes_for_pr = ["The PLAN named this as the canonical prose-vs-CLI drift; reconciled prose→CLI (the create-once CLI is intentional)."]
+
+[[checkins]]
+schema_version = 1
+number = "15"
+created = "2026-05-31T22:59:05Z"
+phase = { number = 6, name = "Skill-convention & agent-discipline" }
+branch = "ev-agent.shared-insights.skill-conventions"
+unit = "P6·D3 — branch-hygiene + demonstrate-before-done conventions"
+contract = { goal = "Codify branch-hygiene (loom skills commit to the current branch — confirm git branch --show-current first) + demonstrate-before-declaring-done (INSIGHTS #6) as conventions, with a branch-hygiene preflight line in the loop bodies.", acceptance_criteria = ["Branch-hygiene convention section (names the skills, the action, the cost)", "Demonstrate-before-done convention section (run-and-show, bar scales, say-so-when-pending)", "branch-hygiene preflight line in ev-run + both ev-loop bodies citing the convention"], rules_applied = ["conventions prescribe action not just describe", "cite from the loop preflight"], disqualifiers = ["convention that doesn't say what to do", "missing the loop-body citation", "contradicting Step-0 branch handling"], inputs = ["plugins/commons/docs/AGENT-CONVENTIONS.md", "ev-run/SKILL.md", "ev-loop-interactive/SKILL.md", "ev-loop-confidence/SKILL.md"] }
+execution = { actions = ["Added two AGENT-CONVENTIONS.md sections (Branch hygiene before substrate writes; Demonstrate before declaring done). Added branch-hygiene preflight lines to ev-run §0.5 + both ev-loop Step-0 branch blocks, each citing the convention.", "Verified: npm run check ok (doc propagated); npm test 1175."], files_touched = ["plugins/commons/docs/AGENT-CONVENTIONS.md (+3 synced)", "plugins/ev/skills/ev-run/SKILL.md", "plugins/ev/skills/ev-loop-interactive/SKILL.md", "plugins/ev/skills/ev-loop-confidence/SKILL.md"], corrections = [] }
+scope = ["branch-hygiene + demonstrate-done conventions + preflight citations"]
+changes_since_previous = "Third and final unit; phase boundary."
+verdict = { result = "approved", reasons = ["Panel (contract-fit) → approved, zero findings. Both conventions prescribe action; preflight lines present in all three loop bodies citing the convention; layers onto (not contradicts) Step-0 branch handling."] }
+notes_for_pr = ["Branch-hygiene matches the loom-skills-commit-current-branch memory I confirmed live this session (every phase I re-checked the branch before writing).", "Phase boundary single signal — no plan revision."]
