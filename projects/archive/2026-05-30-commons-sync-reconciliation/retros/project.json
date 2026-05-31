@@ -1,0 +1,57 @@
+{
+  "schema_version": 1,
+  "type": "project",
+  "created": "2026-05-31T00:11:23.000Z",
+  "findings": [
+    {
+      "category": "kept-well",
+      "description": "Phase 1's plugin-local marker + fail-safe-preserve composed cleanly into phase 2: the partial-consumer allowlist reused the very same marker for loom's now-plan-excluded forked files. Two mechanisms slotted together exactly as designed, with zero rework.",
+      "evidence": "#152 introduced the marker (ADR-0005); #157's LIB_MIRROR_ALLOWLIST excludes loom's adopt/config/project/types from the plan and the marker preserves them."
+    },
+    {
+      "category": "kept-well",
+      "description": "The gate validated itself on its own introducing PR: sync-check CI caught 3 latent fragile tests on its very first run, the fix landed, and the re-run passed - the enforce-then-catch-then-fix loop demonstrated end-to-end before merge.",
+      "evidence": "#159 CI run 26694980710 (failure: 3 subprocess-stderr tests) -> e4f60dc fix -> run 26697984399 (success)."
+    },
+    {
+      "category": "improvement",
+      "description": "The substrate's own drift bit repeatedly and cost orientation time each phase: cached binaries lag source (loom doctor false-greens), the real Agent registry names are guild:generated:*/retained:* not the documented guild:evaluator-*, ev-loop step 2.1 still says 'contract-only checkin' contra ADR-0002, and the whiteboard glob .claude/agents/whiteboard-*.md returns zero.",
+      "evidence": "Failed spawn of guild:evaluator-contract-fit (resolved to guild:retained:evaluator-contract-fit); ADR-0006; all flagged in substrate-tempering's notes too."
+    },
+    {
+      "category": "improvement",
+      "description": "The reconcile-then-propagate phase split left sync-shared --check transiently RED on main between the phase-2 and phase-3 merges (griot/loom/ev docs trailing the updated canonical). Harmless pre-gate, but a sharp edge a reviewer could misread as the PR breaking the check.",
+      "evidence": "#157 (phase 2) promoted PANEL-COMPOSITION.md to commons; --check showed 3 doc-divergence records until #158 (phase 3) resynced."
+    },
+    {
+      "category": "process-change",
+      "description": "A CLI's structured-error stderr should be guaranteed clean (suppress node warnings at the bin-shim level) so consumers parsing stderr don't break across node versions - a deeper fix than the per-test NODE_NO_WARNINGS applied here.",
+      "evidence": "#159 CI: CI's node 24.x emitted a type-stripping ExperimentalWarning to subprocess stderr (local node 24.10 is quiet), breaking JSON.parse(result.stderr) in 3 tests."
+    },
+    {
+      "category": "process-change",
+      "description": "ADRs keep shipping with unfilled 'TODO: operator to fill before commit' Consequences. The loom-adr flow should prompt for or enforce a filled Consequences section at write time.",
+      "evidence": "ADR-0002 and ADR-0005 both left the TODO stub; this project's ADR-0007/0008 filled theirs deliberately to break the pattern."
+    },
+    {
+      "category": "follow-up",
+      "description": "Fill the unfilled 'TODO' Consequences sections in ADR-0002 and ADR-0005 (a small cleanup pass).",
+      "evidence": "projects/adr-log/0002-*.md and 0005-*.md."
+    },
+    {
+      "category": "follow-up",
+      "description": "Fix the substrate papercuts surfaced this project: the Agent-registry name drift, the ev-loop step-2.1 wording contra ADR-0002, and the dead whiteboard glob path.",
+      "evidence": "Captured in agents-nebula memory + substrate-tempering's checkin notes_for_pr."
+    },
+    {
+      "category": "follow-up",
+      "description": "substrate-tempering Phase 3 is now unblocked: its commons event-union edit is safe (non-destructive sync) and gated (CI + hook).",
+      "evidence": "This project was substrate-tempering Phase 3's stated prerequisite."
+    },
+    {
+      "category": "follow-up",
+      "description": "Audit ev/griot for the same commons-lib fork. PLAN-deferred; phase 2's audit found griot's cli/lib byte-equal to commons and ev has no cli/lib, so this is likely a no-op - confirm and close.",
+      "evidence": "PLAN.md Deferred section; phase-2 byte-compare showed griot+guild lib clean (only guild's PANEL-COMPOSITION.md doc had forked)."
+    }
+  ]
+}
