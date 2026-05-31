@@ -97,8 +97,10 @@ remedies. Higher position = higher precedence.
    in production. High stakes, but downstream of a11y because the
    broken artifact may still build.
 4. **`evaluator-css-architecture`** (Phase 4 specialist) —
-   structural CSS correctness when paired with
-   `generator-css-codemod`. Selector specificity, cascade
+   structural CSS correctness when paired with the
+   write-capable css-architecture postures
+   (`implementer-css-architecture` / `fixer-css-architecture`).
+   Selector specificity, cascade
    behavior, composition vs. duplication, `:global` leakage,
    shared-primitive bypass, sketch-CSS load-bearing-pattern
    regressions. Elevated precedence over `evaluator-react`
@@ -184,8 +186,10 @@ that uses it.
 
 When two evaluators flag the same scope with compatible remedies,
 **`evaluator-css-architecture` wins overlap-resolution** when
-paired with `generator-css-codemod` (its elevated-precedence
-pairing); otherwise, the precedence list above resolves the tie.
+paired with the write-capable css-architecture postures
+(`implementer-css-architecture` / `fixer-css-architecture`, its
+elevated-precedence pairing); otherwise, the precedence list above
+resolves the tie.
 
 ### Tokens-vs-naming sub-boundary
 
