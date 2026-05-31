@@ -23,12 +23,23 @@ type Conflict = {
 
 type Verdict = 'approved' | 'flagged' | 'flagged-conflict';
 
+// A recusal is an evaluator declaring its domain non-applicable to the
+// artifact (e.g. react-api against a pure-CLI unit). It is NOT a finding —
+// it does not gate the verdict — but it is substrate signal: the panel's
+// non-applicability rate is recusals / spawns. Surfaced as its own list so
+// the caller (guild-validate) can emit an `evaluator-recused` event per entry.
+type Recusal = {
+  evaluator: string;
+  reason: string;
+};
+
 type Result = {
   verdict: Verdict;
   blocking_findings: Finding[];
   advisory_findings: Finding[];
   cli_runs: CliRun[];
   conflicts: Conflict[];
+  recusals: Recusal[];
 };
 
 class ValidationError extends Error {}
@@ -102,12 +113,37 @@ function parseReason(text: string): ParsedReason {
   return { advisory, code: 'criterion-unmet', evidence: remaining.trim() };
 }
 
+// A recused evaluator states its non-applicability rationale; pull it from an
+// explicit "Reason(s):" — either inline text after the colon, or the first
+// bullet of the block beneath it. Absent a reason, returns '' (the recusal
+// still counts; the rationale is just unstated).
+function findRecusalReason(output: string): string {
+  // Same-line text after "Reason(s):" only — [^\S\n]* is horizontal
+  // whitespace, so a bare "Reasons:" header (text on the next line as a
+  // bullet) falls through to the bullet extractor below rather than greedily
+  // swallowing the bullet line (and its "- " prefix).
+  const inline = output.match(/^[\s>]*\*?\*?Reasons?\*?\*?:[^\S\n]*(\S.*)$/im);
+  if (inline) return inline[1].trim();
+  const block = sliceFromHeader(
+    output,
+    /^[\s>]*\*?\*?Reasons?\*?\*?:?\s*$/im,
+    /^[\s>]*\*?\*?(?:Suggested remedies|Verification|## CLI runs|VERDICT)\b/im,
+  );
+  const bullets = extractBullets(block);
+  return bullets[0] ?? '';
+}
+
 function parseEvaluatorOutput(
   _agent: string,
   output: string,
-): { findings: ParsedReason[]; cliRuns: CliRun[]; parseFailure: boolean } {
+): {
+  findings: ParsedReason[];
+  cliRuns: CliRun[];
+  parseFailure: boolean;
+  recusal: string | null;
+} {
   const verdictMatch = output.match(
-    /^[\s>]*VERDICT:\s*(approved|flagged|flagged-conflict)\s*$/m,
+    /^[\s>]*VERDICT:\s*(approved|flagged|flagged-conflict|recused)\s*$/m,
   );
   if (!verdictMatch) {
     return {
@@ -116,16 +152,25 @@ function parseEvaluatorOutput(
           advisory: false,
           code: 'parse-failure',
           evidence:
-            'no VERDICT: line found in output (expected `VERDICT: approved` or `VERDICT: flagged`)',
+            'no VERDICT: line found in output (expected `VERDICT: approved`, `flagged`, or `recused`)',
         },
       ],
       cliRuns: [],
       parseFailure: true,
+      recusal: null,
     };
   }
   const verdict = verdictMatch[1];
+  if (verdict === 'recused') {
+    return {
+      findings: [],
+      cliRuns: [],
+      parseFailure: false,
+      recusal: findRecusalReason(output),
+    };
+  }
   if (verdict === 'approved') {
-    return { findings: [], cliRuns: [], parseFailure: false };
+    return { findings: [], cliRuns: [], parseFailure: false, recusal: null };
   }
 
   const reasonsBlock = findReasonsBlock(output);
@@ -141,15 +186,16 @@ function parseEvaluatorOutput(
       remedyBullets[i] ?? '';
   }
 
-  return { findings, cliRuns: [], parseFailure: false };
+  return { findings, cliRuns: [], parseFailure: false, recusal: null };
 }
 
 function aggregate(entries: AgentOutput[]): Result {
   const blocking: Finding[] = [];
   const advisory: Finding[] = [];
   const cliRuns: CliRun[] = [];
+  const recusals: Recusal[] = [];
   for (const entry of entries) {
-    const { findings, cliRuns: runs } = parseEvaluatorOutput(
+    const { findings, cliRuns: runs, recusal } = parseEvaluatorOutput(
       entry.agent,
       entry.output,
     );
@@ -162,6 +208,9 @@ function aggregate(entries: AgentOutput[]): Result {
       };
       if (f.advisory) advisory.push(finding);
       else blocking.push(finding);
+    }
+    if (recusal !== null) {
+      recusals.push({ evaluator: entry.agent, reason: recusal });
     }
     cliRuns.push(...runs);
   }
@@ -178,6 +227,7 @@ function aggregate(entries: AgentOutput[]): Result {
     advisory_findings: advisory,
     cli_runs: cliRuns,
     conflicts,
+    recusals,
   };
 }
 

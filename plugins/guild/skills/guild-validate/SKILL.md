@@ -76,11 +76,21 @@ depend on the shape:
       "evaluators": ["<a>", "<b>"],
       "findings": [ ...the conflicting finding objects... ]
     }
+  ],
+  "recusals": [
+    { "evaluator": "<agent name>", "reason": "<non-applicability rationale>" }
   ]
 }
 ```
 
 `conflicts` is only non-empty when `verdict` is `flagged-conflict`.
+
+`recusals` lists evaluators that declared their domain non-applicable to
+the artifact (verdict `recused`). A recusal is **not** a finding and does
+**not** gate the verdict — a panel of all-approved-plus-recused is still
+`approved`. It is surfaced so the caller can record non-applicability
+(e.g. emit an `evaluator-recused` event per entry) and compute the panel's
+non-applicability rate (`recusals / spawns`).
 
 ## Process
 
@@ -119,8 +129,11 @@ depend on the shape:
    - For each entry, locate `VERDICT:`. `approved` → no findings.
      `flagged` → extract the Reasons section bullets as findings, plus
      the optional Suggested remedies section (paired with reasons by
-     index). Missing or unparseable VERDICT line → one `parse-failure`
-     blocking finding.
+     index). `recused` → no findings; the evaluator declared its domain
+     non-applicable, so its `Reason(s):` rationale (same-line text or the
+     first bullet) becomes a `{evaluator, reason}` entry in `recusals`,
+     and it does not gate the verdict. Missing or unparseable VERDICT
+     line → one `parse-failure` blocking finding.
    - **v1 severity rule**: each reason is `blocking` by default. An
      explicit `BLOCKING:` or `ADVISORY:` prefix on the reason line
      overrides. (Today's evaluators emit unprefixed reasons; Phase 2
@@ -135,7 +148,8 @@ depend on the shape:
    - Verdict precedence: `conflicts` non-empty → `flagged-conflict`;
      else `blocking_findings` non-empty → `flagged`; else `approved`.
      Advisory-only is still `approved` — advisories surface but do not
-     gate.
+     gate. Recusals never gate either — a recused-plus-approved panel is
+     `approved`, with the recusals listed separately.
 4. **Return** the script's output (parsed back into a structured
    value) to the caller. This skill performs no further work.
 
