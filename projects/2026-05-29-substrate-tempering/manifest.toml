@@ -30,7 +30,7 @@ branch = "ev-agent.substrate-tempering.convention-drift-2-1"
 [[phases]]
 number = 3
 name = "Evaluator event emission"
-status = "in-progress"
+status = "completed"
 branch = "ev-agent.substrate-tempering.evaluator-events"
 
 [[phases]]
@@ -122,6 +122,31 @@ detail = { number = "07", branch = "ev-agent.substrate-tempering.evaluator-event
 at = "2026-05-31T05:20:01.253Z"
 event = "checkin-created"
 detail = { number = "08", branch = "ev-agent.substrate-tempering.evaluator-events" }
+
+[[events]]
+at = "2026-05-31T05:25:14.020Z"
+event = "evaluator-spawned"
+detail = { slug = "2026-05-29-substrate-tempering", phase = 3, unit = "09", evaluator = "evaluator-contract-fit" }
+
+[[events]]
+at = "2026-05-31T05:25:14.090Z"
+event = "evaluator-recused"
+detail = { slug = "2026-05-29-substrate-tempering", phase = 3, unit = "08", evaluator = "evaluator-react-api", reason = "react-api non-applicable: Node/CLI TypeScript + markdown only, no JSX/hooks/components" }
+
+[[events]]
+at = "2026-05-31T05:27:20.581Z"
+event = "scope-shift-detected"
+detail = { slug = "2026-05-29-substrate-tempering", phase = 3, unit = "09", signal_count = 2, signals = ["phase-boundary", "user-comment"] }
+
+[[events]]
+at = "2026-05-31T05:27:20.652Z"
+event = "checkin-created"
+detail = { number = "09", branch = "ev-agent.substrate-tempering.evaluator-events" }
+
+[[events]]
+at = "2026-05-31T05:27:27.942Z"
+event = "phase-completed"
+detail = { phase = 3 }
 
 [[checkins]]
 schema_version = 1
@@ -234,6 +259,20 @@ scope = ["plugins/guild/cli/verbs/guild/parse-and-aggregate.ts", "plugins/guild/
 changes_since_previous = "Third unit of Phase 3 (D2b split). Adds the recusals data path that D2b-2 will turn into evaluator-recused events; D2a (loom events append) is the emission primitive."
 verdict = { result = "approved", reasons = ["guild-validate panel aggregated to approved with zero findings and one (non-gating) recusal", "all ACs met; npm test green (1119); recusal convention validated end-to-end through the real verb (react-api emitted VERDICT: recused -> surfaced in recusals[])"] }
 notes_for_pr = ["D2b-2 (next, closes Phase 3): thread an optional slug into guild-validate; when present, after the panel emit evaluator-spawned per agent, evaluator-finding-emitted per blocking+advisory finding, evaluator-recused per recusals[] entry — all via loom events append. The packet instructs evaluators to emit VERDICT: recused when non-applicable (the bridge). Integration check: a real panel run lands the events in the manifest, assertable via loom events read --event=evaluator-spawned (PLAN Phase 3 verification).", "Carved follow-up (codegen): bake VERDICT: recused into the evaluator verdict-format fragment under guild/modes and recompile the fleet per docs/AGENT-CODEGEN.md + the live-spawn smoke (guild CLAUDE.md). Until then the packet bridge supplies the instruction at runtime. Tracked so the agents permanent contract catches up with the runtime convention.", "Recusal is deliberately non-gating: a recused-plus-approved panel is approved. recusals/spawns is the Phase 4 non-applicability metric."]
+
+[[checkins]]
+schema_version = 1
+number = "09"
+created = "2026-05-31T05:27:20.509Z"
+phase = { number = 3, name = "Evaluator event emission" }
+branch = "ev-agent.substrate-tempering.evaluator-events"
+unit = "D2b-2 — guild-validate emits evaluator events (closes Phase 3)"
+contract = { goal = "Wire guild-validate to emit evaluator-spawned / evaluator-finding-emitted / evaluator-recused into the active project event log via loom events append when a slug is threaded in; ev-loop passes slug/phase/unit; pure verdict-returner preserved when slug absent. Closes Phase 3 end-to-end.", acceptance_criteria = ["AC1: guild-validate SKILL.md +optional slug/phase/unit inputs + step 4 Emit panel events (slug present -> evaluator-spawned per agent, evaluator-finding-emitted per blocking+advisory finding, evaluator-recused per recusals[] entry, via loom events append; skip when absent; best-effort, after-verdict, non-gating)", "AC2: ev-loop-interactive SKILL.md § Evaluate passes slug/phase/unit; dense packet instructs VERDICT: recused for non-applicable domains (bridge)", "AC3: integration proof — real panel events land in the manifest; loom events read --event=evaluator-spawned returns them (PLAN Phase 3 verification)", "AC4: npm test green"], rules_applied = ["emission lives in guild-validate, slug threaded from caller (user decision)", "emission best-effort + non-gating", "guild/ev authoritative SKILL.md edits (not synced)", "no emojis"], disqualifiers = ["emitting when slug absent", "writing to events.jsonl instead of via loom events append", "gating the verdict on emission failures", "editing commons"], inputs = ["plugins/guild/skills/guild-validate/SKILL.md", "plugins/ev/skills/ev-loop-interactive/SKILL.md", "plugins/loom/cli/verbs/loom/events.ts (the append verb, D2a)", "plugins/guild/cli/verbs/guild/parse-and-aggregate.ts (recusals[], D2b-1)", "plugins/commons/cli/lib/types.ts (the three event detail shapes, D1)"] }
+execution = { actions = ["guild-validate SKILL.md: +optional slug/phase/unit inputs (defaults phase=0, unit=empty); +step 4 Emit panel events with the three loom events append shapes, skip-when-slug-absent, best-effort/after-verdict/non-gating; Return renumbered to step 5", "ev-loop-interactive SKILL.md: § Evaluate passes slug/phase/unit to guild-validate; dense-packet adds the VERDICT: recused instruction for non-applicable domains (the bridge until the codegen fleet recompile)", "guild-validate contract-fit panel -> approved, zero findings", "Integration proof: emitted D2b-2 own panel evaluator-spawned (contract-fit, unit 09) + the genuine evaluator-recused from D2b-1 panel (react-api, unit 08) into the manifest via loom events append; loom events read --event=evaluator-spawned + --event=evaluator-recused return them. PLAN Phase 3 verification PASSES.", "Also emitted scope-shift-detected (phase-boundary + user-comment) via loom events append — dogfooding a skill-side emit through the new verb", "npm test green (1119; doc-only edits, unchanged)"], files_touched = ["plugins/guild/skills/guild-validate/SKILL.md", "plugins/ev/skills/ev-loop-interactive/SKILL.md"], corrections = ["No genuine evaluator-finding-emitted instance exists to emit: every panel this session (D1, D2a, D2b-1, D2b-2) approved with zero findings. Did not fabricate one — its path is identical to spawned/recused and unit-tested in D2a. Proven by the spawned+recused emissions + mechanism-identity.", "contract-fit noted (not a flag) it did not verify the evaluator-* detail shapes against commons/types.ts (out of domain) — verified in D1 panel + the integration readback shows well-formed details."] }
+scope = ["plugins/guild/skills/guild-validate/SKILL.md", "plugins/ev/skills/ev-loop-interactive/SKILL.md"]
+changes_since_previous = "Final unit of Phase 3. Closes the end-to-end emission path D1 (types) -> D2a (append verb) -> D2b-1 (recusals[]) -> D2b-2 (guild-validate emission). Integration-proven: real panel events readable from the manifest."
+verdict = { result = "approved", reasons = ["contract-fit panel approved, zero findings", "all ACs met incl. the integration proof (loom events read --event=evaluator-spawned returns the manifest event); npm test green (1119)"] }
+notes_for_pr = ["Phase 3 CLOSED. End-to-end: a guild-validate panel with a slug threaded emits evaluator-spawned/finding-emitted/recused into the project manifest; loom events read + Phase 4 loom events aggregate consume them.", "scope-shift-detected (2 signals: phase-boundary + user-comment): the PLAN Phase 3 text understated the shipped work — it named only types + emission, but the work split into D2a (loom events append verb), D2b-1 (recusal convention), D2b-2 (emission). A lightweight PLAN Phase 3 refresh is worth doing at project level (offered to operator at phase close; full inner-RPI not run mid-close).", "Carved follow-up still open: bake VERDICT: recused into the codegen evaluator verdict-format fragment + recompile the fleet + live-spawn smoke (guild CLAUDE.md). Until then the ev-loop dense-packet supplies the instruction at runtime (this unit added it).", "Carved follow-up: no genuine evaluator-finding-emitted instance was produced this session (all panels approved); the first real one appears when a panel flags. The path is unit-tested + identical to the proven spawned/recused paths.", "Broader substrate sweep (from D2a): route loom-research + ev-loop documented skill-side emits through loom events append instead of the documented events.jsonl fallback."]
 
 [[revisions]]
 timestamp = "2026-05-29T15:43:57.627Z"

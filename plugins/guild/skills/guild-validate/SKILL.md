@@ -47,6 +47,18 @@ agent's output uniformly.
   flag the same issue with non-contradictory remedies, the higher-
   precedence one's finding is reported in the consolidated list.
   Defaults to input order when absent.
+- `slug` (optional) — the active loom project slug. When present, the
+  panel's activity is emitted to that project's event log (see § Emit
+  panel events). When absent, `guild-validate` is a pure verdict-
+  returner and emits nothing — standalone use (no loom project) is
+  unaffected.
+- `phase` (optional) — the phase number for the emitted events' detail.
+  Threaded alongside `slug` by a loop that knows its phase (e.g.
+  `/ev-loop-interactive`). Defaults to `0` when `slug` is present but
+  `phase` is not.
+- `unit` (optional) — the unit id (e.g. checkin number or deliverable
+  name) for the emitted events' detail. Defaults to `""` when `slug` is
+  present but `unit` is not.
 
 ## Output format (locked to the design plan)
 
@@ -150,7 +162,45 @@ non-applicability rate (`recusals / spawns`).
      Advisory-only is still `approved` — advisories surface but do not
      gate. Recusals never gate either — a recused-plus-approved panel is
      `approved`, with the recusals listed separately.
-4. **Return** the script's output (parsed back into a structured
+4. **Emit panel events** (only when `slug` is present; skip this entire
+   step otherwise). Record the panel's activity to the project's event
+   log via `bin/loom events append`, one event per item. This is
+   best-effort observability: it runs *after* the verdict is computed and
+   **never** changes it — if an append fails (e.g. `loom` not on PATH in
+   a standalone session), log a one-line note and continue to the return
+   with the verdict intact. Emission never gates.
+
+   For each `agent` in the input `agents` list (the evaluators that were
+   spawned), emit one `evaluator-spawned`:
+
+   ```bash
+   loom events append <slug> --event=evaluator-spawned \
+     --detail='{"slug":"<slug>","phase":<phase>,"unit":"<unit>","evaluator":"<agent>"}'
+   ```
+
+   For each finding in the aggregated `blocking_findings` and
+   `advisory_findings`, emit one `evaluator-finding-emitted` (severity is
+   `blocking` or `advisory` per which list it came from):
+
+   ```bash
+   loom events append <slug> --event=evaluator-finding-emitted \
+     --detail='{"slug":"<slug>","phase":<phase>,"unit":"<unit>","evaluator":"<finding.evaluator>","code":"<finding.code>","severity":"blocking|advisory"}'
+   ```
+
+   For each entry in the aggregated `recusals`, emit one
+   `evaluator-recused`:
+
+   ```bash
+   loom events append <slug> --event=evaluator-recused \
+     --detail='{"slug":"<slug>","phase":<phase>,"unit":"<unit>","evaluator":"<recusal.evaluator>","reason":"<recusal.reason>"}'
+   ```
+
+   The per-evaluator lifecycle this records is `spawned → finding* |
+   recused`. `loom events append` dedupes on (name + detail), so a
+   re-run with identical context is idempotent. The detail shapes match
+   the `evaluator-*` event types in `commons/cli/lib/types.ts`.
+
+5. **Return** the script's output (parsed back into a structured
    value) to the caller. This skill performs no further work.
 
 ## Conflict detection (v1: future-work)
