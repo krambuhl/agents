@@ -1,0 +1,72 @@
+{
+  "schema_version": 1,
+  "type": "project",
+  "created": "2026-05-31T15:24:58.987Z",
+  "findings": [
+    {
+      "category": "kept-well",
+      "description": "The dogfood loop: phases 3-5 each emitted their own evaluator events through the very machinery they were building, so loom events aggregate reported real metrics (13 spawned, 4 recused, 1 finding) by Phase 5 — the substrate validating itself end-to-end.",
+      "evidence": "event histogram (44 events); checkins 09-12; PR #168/#170"
+    },
+    {
+      "category": "kept-well",
+      "description": "Reconcile-as-base-commit cleanly resolved the opening manifest-vs-git drift (Phase 2 merged but manifest stale, reconcile + a handoff stranded on an unpushed branch) without losing prior work.",
+      "evidence": "checkin 06 base commit 4fd5676; PR #167"
+    },
+    {
+      "category": "kept-well",
+      "description": "Incremental decomposition under discovery: Phase 3 began as one type-change and became D1/D2a/D2b-1/D2b-2 as real gaps surfaced (no skill-callable append primitive; recusal had no first-class signal), each a clean reviewable unit.",
+      "evidence": "checkins 06-09"
+    },
+    {
+      "category": "improvement",
+      "description": "The PLAN consistently understated reality: Phase 3 split into 4 units it never named (the append verb, the recusal convention); Phase 4 cited an unsupported --since=30d form + JSONL-era \"drop trailing partials\" language; Phase 5 provenance named a \"session id\" the CLI had no source for. The PLAN lagged a substrate that moved between planning and execution.",
+      "evidence": "checkins 07/10/11 corrections; scope-shift-detected event"
+    },
+    {
+      "category": "improvement",
+      "description": "Evaluator panel infrastructure friction on every panel: derive-panel emitted a stale agent name (evaluator-react-api, renamed to evaluator-react) requiring manual remap, and evaluators twice exhausted their tool budget without emitting a verdict until re-prompted with a stricter packet.",
+      "evidence": "checkin 10 corrections; the Phase 4 panel rerun"
+    },
+    {
+      "category": "improvement",
+      "description": "parse-and-aggregate blind spots: recusal needed a whole new convention (D2b-1) because \"approved + note\" was structurally invisible to aggregation, and it silently drops prose ADVISORY notes from approved verdicts (the project's only real finding-emitted surfaced only by deviating from the emit spec).",
+      "evidence": "checkins 08, 11"
+    },
+    {
+      "category": "process-change",
+      "description": "Bake the budget-discipline framing (\"do AT MOST ONE spot-check, trust the pre-computed verification, emit VERDICT now\") into the canonical dense-packet template — it reliably fixed evaluator budget-exhaustion across three panels where the soft \"emit parse-failure on running out\" fallback failed.",
+      "evidence": "checkins 10/12; saved to project memory (evaluator-packet-budget-discipline)"
+    },
+    {
+      "category": "process-change",
+      "description": "derive-panel must resync with the live agent registry (or the loop must map its output to current names) — stale agent names on every panel is a standing tax, not a one-off.",
+      "evidence": "every panel across Phases 3-5"
+    },
+    {
+      "category": "process-change",
+      "description": "Verify each unit's premise against current source at contract time rather than trusting the PLAN — the units that re-grounded before drafting went smoothest; the substrate (binaries, codegen'd agents, conventions) moves under a stale plan.",
+      "evidence": "PLAN-lag corrections, checkins 07/10/11; cached-binary lag forced node-source invocation all session"
+    },
+    {
+      "category": "follow-up",
+      "description": "parse-and-aggregate should surface approved-verdict prose ADVISORY notes (or require evaluators to flag-to-advise); today an approved-with-advisory evaluator loses its advice entirely.",
+      "evidence": "checkin 11"
+    },
+    {
+      "category": "follow-up",
+      "description": "Bake VERDICT: recused into the codegen evaluator verdict-format fragment + recompile the fleet + run the live-spawn smoke; the ev-loop dense packet only bridges the recusal instruction at runtime today.",
+      "evidence": "checkins 08-09 (D2b-1/D2b-2)"
+    },
+    {
+      "category": "follow-up",
+      "description": "Bring the stale events-all-types.jsonl fixture + the EVENT_NAMES set in types.test.ts current to the full Event union — they are a core-13 snapshot missing ~20 members (research-*, plan-*, scope-shift, rpi-*, auto-mode-*, evaluator-*).",
+      "evidence": "checkin 06"
+    },
+    {
+      "category": "follow-up",
+      "description": "An end-marker variant for research append blocks — the chosen heading+provenance-comment format has no terminator, so block boundaries are the next ## / --- and appended prose must avoid those. Also open: route loom-research + ev-loop skill-side emits through loom events append, and add a tsc gate to CI (npm test is vitest-only, so type guarantees are unenforced).",
+      "evidence": "checkins 12, 09, 06"
+    }
+  ]
+}
