@@ -1,5 +1,4 @@
 sessions = []
-revisions = []
 
 [meta]
 schema_version = 1
@@ -25,7 +24,7 @@ branch = "ev-agent.guild-workflow-coverage.phase-1"
 [[phases]]
 number = 2
 name = "Instantiate implementer and author fixer"
-status = "in-progress"
+status = "completed"
 branch = "ev-agent.guild-workflow-coverage.phase-2"
 
 [[phases]]
@@ -68,6 +67,41 @@ at = "2026-05-30T01:34:16.358Z"
 event = "checkin-created"
 detail = { number = "03", branch = "ev-agent.guild-workflow-coverage.phase-2" }
 
+[[events]]
+at = "2026-05-31T15:36:00.801Z"
+event = "plan-revise-started"
+detail = { slug = "guild-workflow-coverage" }
+
+[[events]]
+at = "2026-05-31T15:37:04.651Z"
+event = "plan-revise-flavor-selected"
+detail = { slug = "guild-workflow-coverage", flavor = "mechanical" }
+
+[[events]]
+at = "2026-05-31T16:02:14.761Z"
+event = "plan-revise-panel-spawned"
+detail = { slug = "guild-workflow-coverage", agents = ["evaluator-contract-fit", "evaluator-naming"] }
+
+[[events]]
+at = "2026-05-31T16:04:31.823Z"
+event = "plan-revise-panel-verdict"
+detail = { slug = "guild-workflow-coverage", verdict = "approved", blocking = 0, advisory = 0 }
+
+[[events]]
+at = "2026-05-31T16:04:46.481Z"
+event = "plan-revised"
+detail = { slug = "guild-workflow-coverage", plan_path = "projects/2026-05-29-guild-workflow-coverage/PLAN.md", rationale = "mechanical reconcile with substrate landed May 30-31" }
+
+[[events]]
+at = "2026-05-31T16:29:27.640Z"
+event = "phase-completed"
+detail = { phase = 2 }
+
+[[events]]
+at = "2026-05-31T16:29:54.169Z"
+event = "phase-exit-verified"
+detail = { phase = 2, criterion = "live-spawn-smoke", result = "passed", agents = ["guild:implementer-css-architecture", "guild:fixer-css-architecture"], evidence = "both resolved under flat namespace, responded in-role read-only (0 tool uses); implementer write-capable/contract-scoped/no-verdict; fixer finding-scoped, explicit no-self-approval", note = "smoke ran before the phase-completed mark; log order is append-only so this entry trails it" }
+
 [[checkins]]
 schema_version = 1
 number = "01"
@@ -109,3 +143,8 @@ scope = ["Instantiate the fixer phase for css-architecture only (the proof domai
 changes_since_previous = "Third and final deliverable of phase 2. fixer-css-architecture generated, completing the implement-verify-fix posture set (implementer-css-architecture from D1, the existing evaluator-css-architecture reviewer, and now fixer-css-architecture) for the proof domain. Builds on D1's proven instantiation pattern + D2's fixer phase."
 verdict = { result = "approved", reasons = ["Panel (contract-fit, test-unit) verdict: approved; zero blocking, zero advisory, no conflicts.", "contract-fit: all 5 ACs met with file:line evidence; fixer-css-architecture.md is one coherent finding-scoped voice with explicit no-self-approval, role=fixer + write-capable tools, fusion-generated not hand-edited; disqualifiers none fired.", "test-unit: the CANONICAL_PHASES += fixer fixture strengthens coverage (newly subjects axis.phase.fixer to structural checks) rather than weakening it."] }
 notes_for_pr = ["Phase 2 completes its AUTHORING this session but stays in-progress (done-gate decision): the live-spawn smoke for implementer-css-architecture and fixer-css-architecture cannot run this session — the agent registry is a pre-phase-1 cache snapshot, so the newly-generated agents are not spawnable via the Agent tool until the guild plugin cache re-syncs and Claude Code restarts. Next-session task: re-sync cache, restart, run the live-spawn smoke for both agents, then mark phase 2 completed. This is the only exit criterion not yet proven (reasoned-not-proven per the empirical-proof posture).", "axes-schema.test.ts hardcodes CANONICAL_PHASES (the valid-phase list) rather than deriving it from the [axis.phase.*] keys — so every new phase requires a hand-update to this test (fixer needed it here). Minor test-hygiene coupling; could derive from the parsed axis.phase table instead. Substrate test-quality observation.", "P3 inputs gathered this phase (the next phase is 'wire postures into the workflow path' — these feed it directly): (1) derive-panel emits dangling/mis-fit evaluator-react-api for substrate .ts and bare names need manual mapping to the spawnable namespaced types — the 'simplify the name-mapping' + dangling-ref work; (2) the implementer/fixer write-capable tool floor grants lint+build but no test runner, and css-architecture grants none either, so re-verify-by-test is unavailable — relevant to the 'write-capable output schema' + tool-grant design; (3) the guild-compile SKILL.md has pre-flatten stale paths (agents/personalities/ + bare-guild rule) that break against the cached binary."]
+
+[[revisions]]
+timestamp = "2026-05-31T16:04:40.505Z"
+target = "PLAN.md"
+seq = 1
