@@ -417,3 +417,32 @@ future-you) will trust as done gets a demonstration in the same breath
 as the claim. When you can't demonstrate — the run is external, the
 result is pending — say *that* plainly ("opened, awaiting CI") rather
 than rounding up to done.
+
+## Long-loop resilience
+
+Long multi-call runs (`/ev-run` dispatching subagents, `/guild-validate`
+panels, repeated CLI writes) accumulate two failure risks. The diagnosis
+behind this section — which is a real, transient API error vs an unconfirmed
+output cap — lives in
+`projects/2026-05-30-shared-insights/OUTPUT-OVERLOAD-DIAGNOSIS.md`; the two
+items below are scoped deliberately to match what that diagnosis confirmed.
+
+**Overload retry-with-backoff (a confirmed remedy — do this).** An API
+`529 Overloaded` is a transient capacity signal, not a length cap or a
+content error: the same request often succeeds on retry. When a subagent
+spawn, a panel, or a CLI call fails with `529` (or a comparable transient
+overload), **retry with exponential backoff** — a few attempts (e.g. ~1s,
+2s, 4s) before surfacing it as a failure — rather than treating the first
+529 as fatal and stranding the loop. A 529 that survives a few backed-off
+retries is a real outage; surface it then.
+
+**Large-deliverable hygiene (defensive, NOT a cap-workaround).** Writing a
+large deliverable (a PLAN, a long PR body, a diagnosis, a research dossier)
+to a file incrementally — and streaming short progress per phase rather than
+emitting one giant terminal response — bounds the blast radius if a long
+session's transcript is lost or truncated for *any* reason. Treat this as
+good loop hygiene, **not** as a workaround for a confirmed output cap: per
+the diagnosis above, no real ~500-token general cap is established, so this
+is recommended practice on its own merits (smaller diffs, resumable work,
+legible progress), not a mandated mitigation for a ceiling that may not
+exist.
