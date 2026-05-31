@@ -24,7 +24,7 @@ branch = "ev-agent.guild-workflow-coverage.phase-1"
 [[phases]]
 number = 2
 name = "Instantiate implementer and author fixer"
-status = "in-progress"
+status = "completed"
 branch = "ev-agent.guild-workflow-coverage.phase-2"
 
 [[phases]]
@@ -91,6 +91,16 @@ detail = { slug = "guild-workflow-coverage", verdict = "approved", blocking = 0,
 at = "2026-05-31T16:04:46.481Z"
 event = "plan-revised"
 detail = { slug = "guild-workflow-coverage", plan_path = "projects/2026-05-29-guild-workflow-coverage/PLAN.md", rationale = "mechanical reconcile with substrate landed May 30-31" }
+
+[[events]]
+at = "2026-05-31T16:29:27.640Z"
+event = "phase-completed"
+detail = { phase = 2 }
+
+[[events]]
+at = "2026-05-31T16:29:54.169Z"
+event = "phase-exit-verified"
+detail = { phase = 2, criterion = "live-spawn-smoke", result = "passed", agents = ["guild:implementer-css-architecture", "guild:fixer-css-architecture"], evidence = "both resolved under flat namespace, responded in-role read-only (0 tool uses); implementer write-capable/contract-scoped/no-verdict; fixer finding-scoped, explicit no-self-approval", note = "smoke ran before the phase-completed mark; log order is append-only so this entry trails it" }
 
 [[checkins]]
 schema_version = 1
