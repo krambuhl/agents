@@ -297,6 +297,14 @@ For each deliverable (picked per the ordering rule):
      default is dense — verbose packets correlate with budget-exhaustion
      failures under `evaluator-*`'s `maxTurns=5`. Live examples in
      PR #13's checkins 02-06.
+   - `slug`, `phase`, `unit`: thread the project slug, the phase number,
+     and this unit's id (checkin number) so `/guild-validate` emits the
+     panel's `evaluator-spawned` / `evaluator-finding-emitted` /
+     `evaluator-recused` events to the project log (its § Emit panel
+     events step). The loop holds all three; passing them is what turns
+     panel activity into substrate observability that Phase 4's
+     `loom events aggregate` folds. Omit only when running a panel
+     outside a project context.
 
    **Dense packet shape** (three sections, in this order):
 
@@ -309,7 +317,11 @@ For each deliverable (picked per the ordering rule):
    contradicts itself. Spot-check at most ONE or TWO criteria with
    targeted reads, then emit `VERDICT:`. If you cannot reach a verdict
    within budget, emit `VERDICT: flagged` with `parse-failure:
-   budget-exhausted` so the loop escalates rather than no-ops.
+   budget-exhausted` so the loop escalates rather than no-ops. If your
+   evaluator domain does not apply to this artifact at all (e.g. a
+   React evaluator on a pure-CLI unit), emit `VERDICT: recused` with a
+   one-line `Reason:` rather than a hollow `approved` — recusal is
+   non-gating and feeds the panel's non-applicability signal.
 
    ## Contract (paraphrased)
 

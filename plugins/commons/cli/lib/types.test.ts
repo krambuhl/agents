@@ -103,6 +103,21 @@ test('manifest-basic.json covers all four PhaseStatus values', () => {
   expect(statuses.has('completed')).toBe(true);
 });
 
+test('EventName widens to include the Phase 3 evaluator events', () => {
+  // Annotated as EventName[] so an unwidened union fails at compile time.
+  // (No tsc gate in `npm test`; this guards in-editor / future typecheck.)
+  // Deliberately NOT added to EVENT_NAMES above — that set + the
+  // events-all-types.jsonl fixture are a stale core-13 snapshot missing
+  // ~20 union members (research-*, plan-*, scope-shift, rpi-*, auto-mode-*);
+  // bringing them current is a separate test-infra cleanup (follow-up).
+  const evaluatorEvents: EventName[] = [
+    'evaluator-spawned',
+    'evaluator-finding-emitted',
+    'evaluator-recused',
+  ];
+  expect(new Set(evaluatorEvents).size).toBe(3);
+});
+
 test('events-all-types.jsonl has every event in the vocabulary', () => {
   const text = readFixture('events-all-types.jsonl');
   const lines = text.trim().split('\n');

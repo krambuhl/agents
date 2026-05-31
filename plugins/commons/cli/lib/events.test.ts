@@ -4,6 +4,7 @@ import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { readEvents, appendEvent } from './events.ts';
+import type { Event } from './types.ts';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const FIXTURE = join(__dirname, '..', 'fixtures', 'events-all-types.jsonl');
@@ -71,5 +72,68 @@ test('appendEvent preserves prior lines (append-only)', () => {
   expect(events).toHaveLength(2);
   expect((events[0].detail as { text: string }).text).toBe('first');
   expect((events[1].detail as { text: string }).text).toBe('second');
+  rmSync(tmp, { recursive: true, force: true });
+});
+
+test('appendEvent round-trips the three Phase 3 evaluator events', () => {
+  const tmp = mkdtempSync(join(tmpdir(), 'loom-events-evaluator-'));
+  const target = join(tmp, 'events.jsonl');
+
+  // Annotated as Event[] so the three names + detail shapes are checked
+  // against the union at compile time — the load-bearing guard that
+  // EventName widened. `npm test` is vitest-only (esbuild strips types,
+  // no tsc gate), so this is enforced in-editor / by any future
+  // typecheck step, not at vitest runtime; the round-trip below is the
+  // runtime guard that each event is a well-formed line.
+  const events: Event[] = [
+    {
+      at: '2026-05-30T10:00:00Z',
+      event: 'evaluator-spawned',
+      detail: {
+        slug: '2026-05-29-substrate-tempering',
+        phase: 3,
+        unit: 'D1',
+        evaluator: 'evaluator-contract-fit',
+      },
+    },
+    {
+      at: '2026-05-30T10:01:00Z',
+      event: 'evaluator-finding-emitted',
+      detail: {
+        slug: '2026-05-29-substrate-tempering',
+        phase: 3,
+        unit: 'D1',
+        evaluator: 'evaluator-naming',
+        code: 'visual-literal-name',
+        severity: 'advisory',
+      },
+    },
+    {
+      at: '2026-05-30T10:02:00Z',
+      event: 'evaluator-recused',
+      detail: {
+        slug: '2026-05-29-substrate-tempering',
+        phase: 3,
+        unit: 'D1',
+        evaluator: 'evaluator-a11y',
+        reason: 'no jsx artifacts in unit',
+      },
+    },
+  ];
+  for (const e of events) appendEvent(target, e);
+
+  const readBack = readEvents(target);
+  expect(readBack.map((e) => e.event)).toEqual([
+    'evaluator-spawned',
+    'evaluator-finding-emitted',
+    'evaluator-recused',
+  ]);
+  expect(
+    (readBack[0].detail as { evaluator: string }).evaluator,
+  ).toBe('evaluator-contract-fit');
+  expect((readBack[1].detail as { severity: string }).severity).toBe('advisory');
+  expect((readBack[2].detail as { reason: string }).reason).toBe(
+    'no jsx artifacts in unit',
+  );
   rmSync(tmp, { recursive: true, force: true });
 });

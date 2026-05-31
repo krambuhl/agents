@@ -174,7 +174,7 @@ test('suggested remedies pair with reasons by index', () => {
   expect(result.blocking_findings[1].remedy).toBe('remedy for second');
 });
 
-test('output shape locked: all five fields present even when result is approved', () => {
+test('output shape locked: all six fields present even when result is approved', () => {
   const input = JSON.stringify([{ agent: 'x', output: approvedOutput() }]);
   const res = parseAndAggregateVerb([], ctx(input));
   expect(res.exitCode).toBe(0);
@@ -184,4 +184,69 @@ test('output shape locked: all five fields present even when result is approved'
   expect(result).toHaveProperty('advisory_findings');
   expect(result).toHaveProperty('cli_runs');
   expect(result).toHaveProperty('conflicts');
+  expect(result).toHaveProperty('recusals');
+  expect(result.recusals).toEqual([]);
+});
+
+test('single recused evaluator → verdict approved, recusal surfaced, no findings', () => {
+  const output = `VERDICT: recused
+
+Reason: no JSX artifacts in this unit — react-api rubric does not apply.
+`;
+  const input = JSON.stringify([{ agent: 'evaluator-react-api', output }]);
+  const res = parseAndAggregateVerb([], ctx(input));
+  expect(res.exitCode).toBe(0);
+  const result = JSON.parse(res.stdout as string);
+  expect(result.verdict).toBe('approved');
+  expect(result.blocking_findings).toEqual([]);
+  expect(result.advisory_findings).toEqual([]);
+  expect(result.recusals).toHaveLength(1);
+  expect(result.recusals[0].evaluator).toBe('evaluator-react-api');
+  expect(result.recusals[0].reason).toMatch(/no JSX artifacts/);
+});
+
+test('recused with a Reasons: bullet block extracts the first bullet', () => {
+  const output = `VERDICT: recused
+
+Reasons:
+- domain non-applicable: no CSS modules in scope
+`;
+  const input = JSON.stringify([{ agent: 'evaluator-tokens', output }]);
+  const res = parseAndAggregateVerb([], ctx(input));
+  const result = JSON.parse((res.stdout as string));
+  expect(result.recusals[0].reason).toBe('domain non-applicable: no CSS modules in scope');
+});
+
+test('recused with no reason → empty reason string, still counted', () => {
+  const input = JSON.stringify([{ agent: 'evaluator-a11y', output: 'VERDICT: recused' }]);
+  const res = parseAndAggregateVerb([], ctx(input));
+  const result = JSON.parse(res.stdout as string);
+  expect(result.recusals).toHaveLength(1);
+  expect(result.recusals[0].reason).toBe('');
+});
+
+test('mixed panel: recused + flagged → recusal and blocking both surface, verdict flagged', () => {
+  const recused = `VERDICT: recused\n\nReason: not applicable here.`;
+  const input = JSON.stringify([
+    { agent: 'evaluator-react-api', output: recused },
+    { agent: 'evaluator-contract-fit', output: flaggedOutput(['criterion-unmet: a thing']) },
+  ]);
+  const res = parseAndAggregateVerb([], ctx(input));
+  const result = JSON.parse(res.stdout as string);
+  expect(result.verdict).toBe('flagged');
+  expect(result.blocking_findings).toHaveLength(1);
+  expect(result.recusals).toHaveLength(1);
+  expect(result.recusals[0].evaluator).toBe('evaluator-react-api');
+});
+
+test('recused does NOT gate: recused + approved → verdict approved', () => {
+  const recused = `VERDICT: recused\n\nReason: n/a`;
+  const input = JSON.stringify([
+    { agent: 'evaluator-react-api', output: recused },
+    { agent: 'evaluator-contract-fit', output: approvedOutput() },
+  ]);
+  const res = parseAndAggregateVerb([], ctx(input));
+  const result = JSON.parse(res.stdout as string);
+  expect(result.verdict).toBe('approved');
+  expect(result.recusals).toHaveLength(1);
 });
