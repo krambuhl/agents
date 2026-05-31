@@ -48,24 +48,59 @@ Bash("command -v loom guild griot >/dev/null 2>&1 || { echo 'ev-run requires loo
 If exit code is non-zero, stop and surface the message to the
 operator verbatim — do not dispatch to any loop.
 
-**Tier 2 — format-skew.** Tier 1 confirms the binaries are *present*;
-it does not confirm the *installed* `loom` is new enough to read this
-project's `manifest.toml`. A binary that predates a state-format
-cutover answers `command -v` yes while silently failing every read —
-the false-green this substrate has lived inside. The slug isn't known
-until § 0 parses arguments, so run this probe as the first action
-after the slug resolves (before § 1 Orient's `loom project read`):
+**Tier 2 — format-skew & Tier 3 — freshness.** Tier 1 confirms the
+binaries are *present*; it does not confirm the *installed* `loom` is
+new enough to read this project's `manifest.toml`, nor that the
+resolvable `guild` and its codegen'd agents are current with source. A
+binary that predates a state-format cutover answers `command -v` yes
+while silently failing every read — the false-green this substrate has
+lived inside. The slug isn't known until § 0 parses arguments, so run
+this probe as the first action after the slug resolves (before § 1
+Orient's `loom project read`):
 
 ```
-Bash("loom doctor <slug> 2>/dev/null || echo 'installed loom cannot read this project manifest (format/version skew) — fall back to repo-local node plugins/loom/cli/loom.ts (and node plugins/guild/cli/guild.ts) for all loom/guild operations this session' >&2")
+Bash("loom doctor <slug>")
 ```
 
-Tier 2 is **advisory, not blocking**: on failure, surface the message
-and switch to the repo-local `node` entries for substrate ops — do
-NOT stop. A false-positive hard stop would train operators to bypass
-preflight, making the gate decorative. Tier 2 probes loom's project
-manifest only; guild's panel manifest and codegen freshness are a
-separate gate, out of scope here.
+`loom doctor` prints a JSON report `{ok, issues: [{code, severity,
+detail}], ...}` and exits non-zero only when the installed `loom`
+cannot read the manifest. Read both the exit code and the `issues`
+across the two tiers below. This is the single point in the substrate
+where freshness is gated, once per dispatch; downstream loops trust
+the result (see § 4 Dispatch).
+
+- **Tier 2 (format-skew)** — non-zero exit, or a parse error on the
+  output: the installed `loom` can't read this manifest. Surface
+  "installed loom cannot read this project manifest (format/version
+  skew) — fall back to repo-local `node plugins/loom/cli/loom.ts` (and
+  `node plugins/guild/cli/guild.ts`) for all loom/guild operations
+  this session" and switch to those repo-local entries.
+
+- **Tier 3 (freshness)** — exit 0 with one or more `severity:
+  "warning"` entries in `issues` (warnings keep `ok` true and the exit
+  code 0, so they are easy to miss — do not discard stdout). Surface
+  each in the dispatch report's caveat line:
+  - `guild-cache-skew` — the resolvable `guild` on PATH lags source
+    (missing verbs, or present-but-unqueryable). Codegen / live-spawn
+    may run on stale state.
+  - `guild-codegen-drift` — the committed agent bodies no longer match
+    their source fragments/cache; live-spawned agents may be stale.
+
+  Each issue's `detail` carries the exact remediation command — relay
+  it verbatim. The operator decides; if they want certainty, switch
+  guild/loom ops to the repo-local `node` entries and (for a skew or
+  drift finding) re-sync the plugin cache and restart before
+  dispatching.
+
+Tiers 2 and 3 are **advisory, not blocking**: a false-positive hard
+stop would train operators to bypass preflight, making the gate
+decorative. **Scope honesty** — this gate catches *entry* skew, the
+state standing at dispatch. It does NOT catch *recompile* skew: a
+phase that runs `guild compile` mid-loop changes the world after the
+gate passed, so a loop with a codegen step should re-read freshness
+after that step rather than trust the dispatch-time green. Once-per-
+dispatch is the agreed cost/catch tradeoff, not a claim of total
+coverage.
 
 ## Process
 
