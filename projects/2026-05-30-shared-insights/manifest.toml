@@ -55,7 +55,8 @@ branch = "ev-agent.shared-insights.skill-conventions"
 [[phases]]
 number = 7
 name = "Output-token / overload: diagnose, then remediate"
-status = "not-started"
+status = "completed"
+branch = "ev-agent.shared-insights.overload-diagnosis"
 
 [[phases]]
 number = 8
@@ -181,6 +182,21 @@ detail = { number = "15", branch = "ev-agent.shared-insights.skill-conventions" 
 at = "2026-05-31T22:59:44.204Z"
 event = "phase-completed"
 detail = { phase = 6 }
+
+[[events]]
+at = "2026-05-31T23:50:25.408Z"
+event = "checkin-created"
+detail = { number = "16", branch = "ev-agent.shared-insights.overload-diagnosis" }
+
+[[events]]
+at = "2026-05-31T23:50:25.482Z"
+event = "checkin-created"
+detail = { number = "17", branch = "ev-agent.shared-insights.overload-diagnosis" }
+
+[[events]]
+at = "2026-05-31T23:50:25.560Z"
+event = "phase-completed"
+detail = { phase = 7 }
 
 [[checkins]]
 schema_version = 1
@@ -391,3 +407,31 @@ scope = ["branch-hygiene + demonstrate-done conventions + preflight citations"]
 changes_since_previous = "Third and final unit; phase boundary."
 verdict = { result = "approved", reasons = ["Panel (contract-fit) → approved, zero findings. Both conventions prescribe action; preflight lines present in all three loop bodies citing the convention; layers onto (not contradicts) Step-0 branch handling."] }
 notes_for_pr = ["Branch-hygiene matches the loom-skills-commit-current-branch memory I confirmed live this session (every phase I re-checked the branch before writing).", "Phase boundary single signal — no plan revision."]
+
+[[checkins]]
+schema_version = 1
+number = "16"
+created = "2026-05-31T23:49:48Z"
+phase = { number = 7, name = "Output-token / overload: diagnose, then remediate" }
+branch = "ev-agent.shared-insights.overload-diagnosis"
+unit = "P7·D1 — written output-overload diagnosis (gated finding)"
+contract = { goal = "Produce a written diagnosis naming the cause of INSIGHTS #1 (output-token/overload crashes) with evidence; where it can't be forensically confirmed, name the most-likely cause and flag the inference. Gate the remediation on the finding.", acceptance_criteria = ["written diagnosis names cause(s) with evidence", "disentangles output-cap vs 529 (deterministic length cap vs stochastic transient overload)", "honest about confidence (reasoned inference; names what would confirm)", "states the gated remediation (only the confirmed mode gets a shipped fix)"], rules_applied = ["confirm the cause before changing habits (PLAN gate)", "proceed on inference (operator-confirmed via AskUserQuestion)"], disqualifiers = ["asserting an unsupported confirmed cause", "mandating cap-workarounds as if the cap were confirmed", "failing to separate cap from 529"], inputs = ["projects/2026-05-30-shared-insights/INSIGHTS.md (#1)", "this project's own session as counter-evidence"] }
+execution = { actions = ["Wrote OUTPUT-OVERLOAD-DIAGNOSIS.md: (A) no real ~500-token cap [this project's multi-hour session emitted dozens of multi-thousand-token responses with zero cap-truncations/529s; no repo max_tokens config; 'wiped transcripts' reads as capture/transport failure not clean truncation; '~500' likely an analyzer artifact] vs (B) 529 Overloaded real+transient+separately-remediable. Flagged as reasoned inference; named what would upgrade to confirmation; gated remediation table.", "Tightened a 'two independent sightings' overclaim per a contract-fit advisory (my session + boulder are the same observation class; the grep is the separate leg).", "Operator confirmed (AskUserQuestion) to proceed on inference with no new evidence."], files_touched = ["projects/2026-05-30-shared-insights/OUTPUT-OVERLOAD-DIAGNOSIS.md"], corrections = ["This phase is investigative — the deliverable is the written finding, and the honest conclusion is 'the cap framing is unsupported; ship only the confirmed 529 fix'. No forensic access to the wiped sessions/harness; the diagnosis is explicitly inference."] }
+scope = ["the written diagnosis artifact"]
+changes_since_previous = "First unit of Phase 7; the diagnose half."
+verdict = { result = "approved", reasons = ["Panel (contract-fit) → approved, zero blocking. The two failure modes are cleanly separated; confidence is graded honestly (high: no real cap; moderate: precise artifact mechanism); remediation gated on confirmation; no unsupported cause asserted."] }
+notes_for_pr = ["Investigative phase: the diagnosis is reasoned inference, operator-confirmed to proceed without the harness/session evidence. The 529 fix stands under any reading; cap-habits are demoted to hygiene (D2)."]
+
+[[checkins]]
+schema_version = 1
+number = "17"
+created = "2026-05-31T23:49:48Z"
+phase = { number = 7, name = "Output-token / overload: diagnose, then remediate" }
+branch = "ev-agent.shared-insights.overload-diagnosis"
+unit = "P7·D2 — remediation gated on the diagnosis"
+contract = { goal = "Ship only the confirmed fix (529 retry-with-backoff) as a loop convention; document write-to-files + stream-progress as defensive hygiene NOT a mandated cap-workaround (the cap is unconfirmed); ship nothing for the non-existent max_tokens budget.", acceptance_criteria = ["retry-with-backoff codified as a convention for the long loops", "cap-habits documented as hygiene, explicitly not a mandated cap-fix", "raise-budget NOT shipped", "convention cites the diagnosis; loops cite the retry-backoff"], rules_applied = ["remediation matches the finding", "no habit changes before the cause is confirmed"], disqualifiers = ["mandating cap-workarounds as a cap fix", "inventing a max_tokens config", "a retry that masks a persistent outage"], inputs = ["plugins/commons/docs/AGENT-CONVENTIONS.md", "ev-loop-interactive/SKILL.md", "ev-loop-confidence/SKILL.md", "OUTPUT-OVERLOAD-DIAGNOSIS.md"] }
+execution = { actions = ["Added AGENT-CONVENTIONS.md '## Long-loop resilience': retry-with-backoff as a confirmed remedy (529 = transient, retry ~1s/2s/4s, surface only after a few attempts); large-deliverable hygiene as defensive-not-cap-workaround (tied to the no-confirmed-cap finding). Both ev-loop Evaluate steps cite it for panel spawns.", "Verified: npm run check ok (doc propagated via scoped --only sync); npm test 1175."], files_touched = ["plugins/commons/docs/AGENT-CONVENTIONS.md (+3 synced)", "plugins/ev/skills/ev-loop-interactive/SKILL.md", "plugins/ev/skills/ev-loop-confidence/SKILL.md"], corrections = [] }
+scope = ["Long-loop resilience convention + loop citations"]
+changes_since_previous = "Second and final unit; the gated remediate half."
+verdict = { result = "approved", reasons = ["Panel (contract-fit) → approved, zero findings. retry-backoff shipped as a requirement; cap-habits framed as hygiene-not-cap-fix tied to the diagnosis; raise-budget not shipped; retry surfaces a real outage after a few attempts; convention + loops cite the diagnosis."] }
+notes_for_pr = ["Phase boundary single signal — no plan revision.", "The remediation deliberately ships LESS than the PLAN's 'Direction' bullet listed, because the diagnosis didn't confirm the cap — which is exactly the gate working."]
