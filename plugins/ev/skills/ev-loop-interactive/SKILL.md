@@ -179,7 +179,11 @@ Claude Code process start; `/clear` is NOT a session boundary.
   `<project-name>.<phase-lazy-name>` (e.g.
   `marketplace-portable-install.migration`). Otherwise confirm the
   current branch matches the manifest's recorded phase branch; if not,
-  stop and ask whether to switch.
+  stop and ask whether to switch. **Branch hygiene**: every checkin /
+  phase / event write below commits to whatever branch is checked out,
+  so re-confirm `git branch --show-current` is the phase branch before
+  the first write — a write on the wrong branch strands the work (see
+  `docs/AGENT-CONVENTIONS.md` § Branch hygiene before substrate writes).
 
 ### Step 1. Enumerate deliverables
 

@@ -176,7 +176,12 @@ Before any work:
   `<project-name>.<phase-lazy-name>` (e.g.
   `loom-absorb-draft.phase-7-griot-writes`). Otherwise confirm the
   current branch matches the phase's recorded branch in the manifest;
-  if not, stop and ask whether to switch.
+  if not, stop and ask whether to switch. **Branch hygiene**: every
+  checkin / phase / event write below commits to whatever branch is
+  checked out, so re-confirm `git branch --show-current` is the phase
+  branch before the first write — a write on the wrong branch strands
+  the work (see `docs/AGENT-CONVENTIONS.md` § Branch hygiene before
+  substrate writes).
 - Run the verification commands from `config.json` as a baseline.
   Record exit status. A red baseline before any work means the loop
   stops — you are not making a red build redder.

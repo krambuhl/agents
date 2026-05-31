@@ -384,3 +384,36 @@ Bad: "Someone else can speak to this better."
 
 Good: "Deferring to `whiteboard-substrate-engineer` on the schema
 shape — that's their lens."
+
+## Branch hygiene before substrate writes
+
+The loom authoring skills (`loom plan` / `revise-plan` / `archive`,
+and the ev-loop checkin / phase / event writes) commit to **whatever
+branch is currently checked out** — they have no branch-awareness of
+their own. Invoke one on the wrong branch and the work strands there:
+a checkin meant for a phase branch lands on `main`, or a phase update
+lands on a sibling branch and the manifest reads stale everywhere else.
+
+**Before invoking any branch-committing substrate skill, confirm the
+branch** — `git branch --show-current` — and that it matches the
+phase/work you intend. This is cheap; the recovery (cherry-picking a
+stranded commit onto the right branch, reconciling a split manifest)
+is not. Loop bodies carry this as a preflight line; outside a loop,
+make it a habit before the first `loom`/`ev` write of a session.
+
+## Demonstrate before declaring done
+
+Do not report a task complete on the strength of reasoning alone —
+**demonstrate it**. Run the command and show the output; execute the
+probe and paste what it returned; open the artifact and confirm the
+change is there. "It should now work" / "the check fired with nothing
+to do" is a claim, not evidence, and the gap between the two is where
+false-green hides (a `Stop` hook catching a "done" that wasn't is the
+expensive version of learning this).
+
+The bar scales with reversibility and audience: a throwaway scratch
+note needs no ceremony, but anything another engineer (or a gate, or
+future-you) will trust as done gets a demonstration in the same breath
+as the claim. When you can't demonstrate — the run is external, the
+result is pending — say *that* plainly ("opened, awaiting CI") rather
+than rounding up to done.
