@@ -5,7 +5,7 @@ schema_version = 1
 title = "Guild Workflow Coverage"
 slug = "2026-05-29-guild-workflow-coverage"
 started = "2026-05-29"
-status = "active"
+status = "archived"
 strategy = "interactive"
 
 [config]
@@ -123,6 +123,16 @@ at = "2026-05-31T18:14:39.574Z"
 event = "checkin-created"
 detail = { number = "03", branch = "ev-agent.guild-workflow-coverage.phase-3" }
 
+[[events]]
+at = "2026-05-31T18:21:52.694Z"
+event = "retro-written"
+detail = { type = "project" }
+
+[[events]]
+at = "2026-05-31T18:22:01.189Z"
+event = "archived"
+detail = { destination = "/Users/krambuhl/Sites/agents-nebula/projects/archive/2026-05-29-guild-workflow-coverage" }
+
 [[checkins]]
 schema_version = 1
 number = "01"
@@ -196,6 +206,7 @@ notes_for_pr = ["D2 was framed as 'mechanical' in the revised PLAN but is a ligh
 [[checkins]]
 schema_version = 1
 number = "03"
+created = "2026-05-31T18:14:39Z"
 phase = { number = 3, name = "Wire postures into the workflow path" }
 branch = "ev-agent.guild-workflow-coverage.phase-3"
 unit = "D3 — Define the write-capable output schema + prove end-to-end"
@@ -205,7 +216,6 @@ scope = ["Consolidate the write-capable output schema as a guild-local AGENT-COD
 changes_since_previous = "Third and final deliverable of phase 3 — the design-heavy finale, paired closely. Builds on D1 (the renamed evaluator names the reviewer/panel use) and the Phase-2 posture set (implementer/fixer-css-architecture, proven spawnable in the Phase-2 close smoke). Completes the phase."
 verdict = { result = "approved", reasons = ["Panel (contract-fit; the derived single-evaluator panel for the substrate-doc artifact) verdict: approved; zero blocking, zero advisory.", "contract-fit: all 5 ACs met; the schema reference documents all three posture outputs + the handoff and aligns the verifier-finding shape with evaluator-finding-emitted; the real four-spawn proof cycle validated each posture's output schema and terminated on re-approval; the synthesized-fixer-finding accommodation was honestly disclosed and accepted; no disqualifiers fired (firing layer left deferred, fixture removed, fragments not restructured)."] }
 notes_for_pr = ["End-to-end proof was a REAL cycle (4 live agent spawns), not a tabletop: implementer wrote -> reviewer approved -> fixer cleared a finding -> reviewer re-approved. All four outputs conformed to the documented schema; the fixture (tmp/d3-proof/) was removed, so nothing throwaway landed in the repo.", "Honest caveat (disclosed in corrections): the implementer's CSS was sound, so verify came back clean and the fixer ran on a representative finding (the reviewer's own noted flat-modifier alternative) rather than an organically-failing artifact. The schema is still validated end-to-end; a future proof against a deliberately-flawed seed artifact would exercise the organic verify->fix path.", "Deferred, carried forward from this phase: (1) the ev-loop-as-firing-layer that would actually orchestrate this documented cycle (PLAN 'Out and deferred'); (2) the *.ts->react panel-derivation mis-fit (D1 note) — derive-panel's substrate-path globs key off the pre-plugins layout; (3) implementer/fixer write-capable tool floor grants lint+build but no test-runner (P2 note), so re-verify-by-test is unavailable for css-architecture.", "Phase 3 complete: D1 (name-mapping rename), D2 (generator-css-codemod repoint), D3 (output-schema + end-to-end proof). The implement-verify-fix posture set is now wired into the workflow path, documented, and proven to hand off end-to-end on the css-architecture proof domain."]
-created = "2026-05-31T18:14:39Z"
 
 [[revisions]]
 timestamp = "2026-05-31T16:04:40.505Z"

@@ -1,0 +1,67 @@
+{
+  "schema_version": 1,
+  "type": "project",
+  "findings": [
+    {
+      "category": "kept-well",
+      "description": "The empirical-proof posture held: Phase 2 stayed in-progress across sessions on its one unproven exit criterion (the live-spawn smoke) rather than being waved through. When the plugin cache re-synced, the smoke ran in seconds and the generated implementer/fixer agents resolved under the flat namespace and held role — so the proof was real, not asserted.",
+      "evidence": "phase-exit-verified event; P2 checkin 03 done-gate note ('reasoned-not-proven until the smoke runs')"
+    },
+    {
+      "category": "kept-well",
+      "description": "The Phase-3 D3 end-to-end proof was a real four-spawn implement-verify-fix cycle, and the codegen'd postures behaved exactly to spec: the implementer caught a domain-boundary nuance (a raw hex is tokens' lane, not css-architecture's), the fixer held its no-self-approval invariant, and the cycle terminated on reviewer re-approval. The fused agents are genuinely coherent voices.",
+      "evidence": "P3 checkin 03 (implementer->reviewer->fixer->reviewer proof cycle)"
+    },
+    {
+      "category": "kept-well",
+      "description": "The three-phase decomposition (flatten -> instantiate -> wire) held cleanly: Phase 1's agent-namespace flatten made Phase 3's 'simplify the name-mapping' collapse to a pure rename, because post-flatten the logical->workflow mapping is just a `guild:` prefix. Setup-gate-first earned its keep.",
+      "evidence": "PLAN decomposition; P3 checkin 01 (rename-only, mapping already trivial)"
+    },
+    {
+      "category": "improvement",
+      "description": "Cached-binary lag cost real time more than once: Phase 2's smoke was deferred an entire session because the agent registry was a pre-flatten snapshot, and this session the installed `loom` still lacked the `events append` verb despite `loom doctor` reporting ok:true — forcing repeated `node plugins/loom/cli/loom.ts` fallbacks. `loom doctor` green does not mean every source verb is installed.",
+      "evidence": "P2 checkin notes (cache-skew); this session's events-append fallback to repo-local node"
+    },
+    {
+      "category": "improvement",
+      "description": "Phase-3 D1 was under-scoped at contract time: the contract named only the derive-panel surface, but a repo-wide grep mid-unit surfaced the stale evaluator-react-api name in three more files (parse-and-aggregate + its tests, guild-validate SKILL). The fold-in was operator-approved, but the full rename surface should have been grepped before drafting the contract.",
+      "evidence": "P3 checkin 01 correction (scope-expansion mid-unit)"
+    },
+    {
+      "category": "improvement",
+      "description": "Branch hygiene slipped between sessions: the plan revision was committed onto a different project's archive branch (substrate-tempering.archive, open PR #171), requiring deliberate split-surgery (rebase the revision onto its own branch off main, reset the archive branch to origin) before Phase 3 could proceed cleanly.",
+      "evidence": "this session's branch split (revision -> ev-agent.guild-workflow-coverage.revise-plan -> PR #172)"
+    },
+    {
+      "category": "process-change",
+      "description": "derive-panel's substrate-path mapping rules in PANEL-COMPOSITION.md key off the pre-plugins repo layout (.claude/scripts/**, .claude/cli/**), so substrate CLI .ts no longer matches the intended substrate rules and falls through to the generic *.ts -> evaluator-react rule. The globs should be updated to plugins/**/cli/** + plugins/**/scripts/** (or the *.ts->react rule qualified).",
+      "evidence": "P3 checkin 01 notes_for_pr (the over-include that pulled evaluator-react into D1's own panel)"
+    },
+    {
+      "category": "process-change",
+      "description": "Contract-drafting for any identifier rename should include a repo-wide grep of the identifier across all plugins before scoping the unit, so the contract names the full surface up front rather than discovering it mid-execution.",
+      "evidence": "P3 D1 under-scope (rename surface was 3 files larger than the drafted contract)"
+    },
+    {
+      "category": "follow-up",
+      "description": "The ev-loop-as-firing-layer that would actually orchestrate the documented implement-verify-fix cycle (fire implementer -> reviewer -> fixer, collect structured outputs) is deferred per the plan and is the natural next project. D3 documented the contract shape that layer will fire.",
+      "evidence": "PLAN 'Out and deferred'; P3 checkin 03 (AGENT-CODEGEN output-contract section marks firing deferred)"
+    },
+    {
+      "category": "follow-up",
+      "description": "The *.ts -> evaluator-react panel-derivation mis-fit (substrate-path globs keying off the pre-plugins layout) is noted but not fixed — paired with the process-change finding above.",
+      "evidence": "P3 checkin 01 notes_for_pr"
+    },
+    {
+      "category": "follow-up",
+      "description": "The implementer/fixer write-capable tool floor grants lint + build but no test-runner, and css-architecture grants none either, so re-verify-by-test is unavailable for the write-capable postures. Either grant a test runner on the write-capable phase floor, or soften the fragment prose from 'tests' to 'lint, build'.",
+      "evidence": "P2 D2 contract-fit observation; P3 D3 deferred-items note"
+    },
+    {
+      "category": "follow-up",
+      "description": "Expanding the implementer/fixer postures past the css-architecture proof domain to the full domain set is the follow-up wave the plan named once the proof domain validated the pattern (now validated end-to-end via D3).",
+      "evidence": "PLAN 'Out and deferred' (expansion beyond css-architecture)"
+    }
+  ],
+  "created": "2026-05-31T18:21:52Z"
+}
