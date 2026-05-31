@@ -37,7 +37,8 @@ branch = "ev-agent.shared-insights.path-resolution"
 [[phases]]
 number = 4
 name = "Evaluator-panel contract hardening"
-status = "not-started"
+status = "completed"
+branch = "ev-agent.shared-insights.evaluator-contract"
 
 [[phases]]
 number = 5
@@ -128,6 +129,16 @@ detail = { number = "08", branch = "ev-agent.shared-insights.path-resolution" }
 at = "2026-05-31T21:58:48.805Z"
 event = "phase-completed"
 detail = { phase = 3 }
+
+[[events]]
+at = "2026-05-31T22:19:34.644Z"
+event = "checkin-created"
+detail = { number = "09", branch = "ev-agent.shared-insights.evaluator-contract" }
+
+[[events]]
+at = "2026-05-31T22:19:34.717Z"
+event = "phase-completed"
+detail = { phase = 4 }
 
 [[checkins]]
 schema_version = 1
@@ -240,3 +251,17 @@ scope = ["--base forwarding in pr open", "tests + recipe doc"]
 changes_since_previous = "Third and final unit of Phase 3; independent of D1/D2 (different surface)."
 verdict = { result = "approved", reasons = ["Panel (contract-fit + test-unit) -> approved, zero findings. --base forwarded only when provided, only to pr create; omitted-default behavior preserved; both directions tested with flag+value adjacency."] }
 notes_for_pr = ["Phase boundary (last deliverable of Phase 3) -- single scope signal, no concurrence, no plan revision.", "This makes future gt-style stacked-PR phases targetable via the loom substrate (loom pr open --base=<parent>), though the loom flow remains gh-based not gt-native."]
+
+[[checkins]]
+schema_version = 1
+number = "09"
+created = "2026-05-31T22:19:34Z"
+phase = { number = 4, name = "Evaluator-panel contract hardening" }
+branch = "ev-agent.shared-insights.evaluator-contract"
+unit = "P4·D2 — approved-with-advisory survives in parse-and-aggregate"
+contract = { goal = "On an approved verdict, parse-and-aggregate surfaces an Advisory notes: section's bullets as advisory_findings instead of returning empty, so an evaluator can approve AND note a non-blocking concern without mislabeling its verdict flagged. Verdict stays approved (advisory never gates).", acceptance_criteria = ["approved + Advisory notes section -> verdict approved AND advisory_findings populated (code extracted when prefixed, else criterion-unmet).", "Aggregate verdict stays approved on advisory-only.", "No false positives: a Checks: section or a plain approved -> advisory_findings empty.", "Tests cover each, plus per-bullet independence (mixed prefixed/un-prefixed)."], rules_applied = ["Reuse the existing helpers (sliceFromHeader/extractBullets/parseReason)", "Advisory never gates the verdict", "Parallel the Flagged path's Reasons-block shape"], disqualifiers = ["advisory flipping the verdict to flagged", "mistaking Checks/Summary bullets for advisories", "changing the flagged or recused path"], inputs = ["plugins/guild/cli/verbs/guild/parse-and-aggregate.ts", "parse-and-aggregate.test.ts"] }
+execution = { actions = ["Added findAdvisoryBlock (sibling of findReasonsBlock/findRemediesBlock); the approved branch now extracts advisory bullets + forces advisory:true.", "Added approvedWithAdvisory/approvedWithChecks helpers + 4 tests (surface w/ code, multi un-prefixed, Checks-not-mistaken, per-bullet independence).", "Verified: 24 parse-and-aggregate tests + full suite green; strip-only + sync ok; live aggregate of the real D2 panel surfaced the test-unit evaluator's own Advisory notes bullet (coverage-gap) that would previously have been dropped."], files_touched = ["plugins/guild/cli/verbs/guild/parse-and-aggregate.ts", "plugins/guild/cli/verbs/guild/parse-and-aggregate.test.ts"], corrections = ["PREMISE STALENESS (substrate-tempering shipped ahead of this PLAN): P4 D1 (own-line VERDICT + recused parsing) and D3a (budget-discipline in the dense-packet template) were ALREADY DONE on main before this phase. Verified against current source. The phase reduced to D2 + an optional D3b.", "SCOPE DECISION (operator-chosen): deferred D3b (edit reviewer.md to document recused + an approved-advisory section, then re-fuse all ~9 reviewer-phase evaluators) -- a large LLM-regenerated codegen diff that wants human review. The emit-side is already covered by the dense-packet template; the parse-side gap (this unit) was the real fix."] }
+scope = ["findAdvisoryBlock + approved-branch advisory surfacing", "tests"]
+changes_since_previous = "Only unit of Phase 4 (D1/D3a found already-shipped; D3b deferred). Phase 3 merged (PR #178)."
+verdict = { result = "approved", reasons = ["Panel (contract-fit + test-unit + naming) -> approved, zero blocking findings. Advisory surfaced on approved; verdict stays approved; Checks/plain-approved not false-positived; new name is a textbook find<Section>Block sibling. (The panel's own approved-advisory note was surfaced by the feature under test and folded in as a test.)"] }
+notes_for_pr = ["Phase 4 was mostly pre-shipped by substrate-tempering (D1 + the budget-discipline template); this PR is the one real remaining gap (D2). D3b (reviewer.md recused/advisory + evaluator re-fusion) is deferred to a reviewable codegen pass.", "Phase boundary single signal (last/only unit) -- no plan revision.", "End-to-end: the parse side now surfaces approved-advisories; once D3b documents the section in the codegen fragment, evaluators will emit them by default rather than only when the dense-packet template reminds them."]
