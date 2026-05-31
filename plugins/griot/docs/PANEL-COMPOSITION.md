@@ -45,11 +45,11 @@ different files is a no-op.
 | Files under `sketches/` | Same mapping as `*.tsx` based on extension; trust each evaluator's `sketches/`-specific carve-outs to suppress flags on p5 idioms (single-letter math vars, `setup`/`draw` callbacks, intentional literal colors as artistic statement) |
 | `*.md` | `evaluator-contract-fit` only — domain evaluators don't apply to prose documents |
 | `*.json`, `package.json`, lock files | `evaluator-contract-fit` only |
-| `.claude/agents/*.md`, `.claude/skills/*/SKILL.md`, `projects/**/checkins/**/*.md` | `evaluator-contract-fit` only — this is substrate authoring; domain evaluators don't apply to agent definitions, skill bodies, or checkin files |
-| `.claude/scripts/**/*.ts` (substrate scripts) | `evaluator-contract-fit`, `evaluator-naming` (script identifiers / function names are public-API surface for substrate consumers) |
-| `.claude/scripts/**/*.test.ts` (substrate tests) | `evaluator-test-unit` — vitest antipattern catalog applies; the naming evaluator's `test files` carve-out still applies |
-| `.claude/cli/**/*.ts` (substrate CLI) | `evaluator-contract-fit`, `evaluator-naming` — same rationale as `.claude/scripts/`; CLI verb names + exported types are public-API surface for loops and humans |
-| `.claude/cli/**/*.test.ts` (substrate CLI tests) | `evaluator-test-unit` — vitest antipattern catalog applies; same rationale as substrate scripts |
+| `plugins/**/agents/*.md`, `plugins/**/skills/**/SKILL.md`, `projects/**/checkins/**/*.md` | `evaluator-contract-fit` only — this is substrate authoring; domain evaluators don't apply to agent definitions, skill bodies, or checkin files |
+| `scripts/**/*.ts`, `plugins/**/scripts/**/*.ts` (substrate scripts) | `evaluator-contract-fit`, `evaluator-naming` (script identifiers / function names are public-API surface for substrate consumers) |
+| `scripts/**/*.test.ts`, `plugins/**/scripts/**/*.test.ts` (substrate script tests) | `evaluator-test-unit` — vitest antipattern catalog applies; the naming evaluator's `test files` carve-out still applies |
+| `plugins/**/cli/**/*.ts` (substrate CLI) | `evaluator-contract-fit`, `evaluator-naming` — same rationale as substrate scripts; CLI verb names + exported types are public-API surface for loops and humans |
+| `plugins/**/cli/**/*.test.ts` (substrate CLI tests) | `evaluator-test-unit` — vitest antipattern catalog applies; same rationale as substrate scripts |
 | `*.test.ts`, `*.test.tsx`, `*.spec.ts`, `*.spec.tsx` (general test files; more-specific paths below override) | `evaluator-test-unit` — vitest unit-test antipattern catalog |
 | `tests/e2e/**`, `tests/integration/**`, `e2e/**` | `evaluator-test-integration` — Playwright integration-test antipattern catalog; the `tests/e2e/a11y/**` subtree overrides below |
 | `tests/e2e/a11y/**` | `evaluator-a11y` — a11y test specs run via `playwright.config.a11y.ts` are accessibility's lane, not test-integration's |

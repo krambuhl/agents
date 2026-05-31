@@ -360,7 +360,8 @@ After `pr open` succeeds, the loop calls `§ Phase update` with `--status=in-pro
 bin/loom pr discover <slug> --branch=<branch>
 
 # if no PR exists yet:
-bin/loom pr open <slug> --branch=<branch> --title=<title> --body-file=<path>
+bin/loom pr open <slug> --branch=<branch> --title=<title> --body-file=<path> \
+  [--base=<parent-branch>]   # stacked PR: target the parent, not the repo default
 
 # if a PR exists:
 bin/loom pr update <slug> --pr=<number> --body-file=<path>

@@ -23,6 +23,77 @@ function run(args: string[], stdin?: string) {
   return derivePanelVerb(args, ctx);
 }
 
+// ---- React-gating: *.ts gets react only when it imports react (D1) ----
+
+describe('derivePanel react-gating (Phase 3 D1)', () => {
+  const spec = loadRealSpec();
+  // Inject a reader stub mapping paths → contents; any path not in the map
+  // is "unreadable" (undefined), exercising the conservative-keep path.
+  const reader =
+    (contents: Record<string, string>) =>
+    (p: string): string | undefined =>
+      contents[p];
+
+  test('non-JSX .ts that imports react → react KEPT', () => {
+    const r = reader({ 'src/useThing.ts': "import { useState } from 'react';" });
+    expect(derivePanel(['src/useThing.ts'], spec, r)).toContain('evaluator-react');
+  });
+
+  test('non-JSX .ts that does NOT import react → react DROPPED (naming stays)', () => {
+    const r = reader({
+      'src/math.ts': 'export const add = (a: number, b: number) => a + b;',
+    });
+    const panel = derivePanel(['src/math.ts'], spec, r);
+    expect(panel).not.toContain('evaluator-react');
+    expect(panel).toContain('evaluator-naming');
+    expect(panel).toContain('evaluator-contract-fit');
+  });
+
+  test('.ts importing a sibling package (react-router) → react DROPPED', () => {
+    const r = reader({ 'src/routes.ts': "import { Router } from 'react-router';" });
+    expect(derivePanel(['src/routes.ts'], spec, r)).not.toContain('evaluator-react');
+  });
+
+  test('.tsx keeps react unconditionally even with no react import', () => {
+    const r = reader({ 'src/Page.tsx': 'export const Page = () => null;' });
+    expect(derivePanel(['src/Page.tsx'], spec, r)).toContain('evaluator-react');
+  });
+
+  test('unreadable .ts → react KEPT (never strip a lens we cannot disprove)', () => {
+    expect(derivePanel(['src/mystery.ts'], spec, reader({}))).toContain(
+      'evaluator-react',
+    );
+  });
+
+  test('react-dom (and a react subpath) counts as a react import', () => {
+    const r = reader({ 'src/root.ts': "import { createRoot } from 'react-dom/client';" });
+    expect(derivePanel(['src/root.ts'], spec, r)).toContain('evaluator-react');
+  });
+
+  test('require() and dynamic import() of react both count', () => {
+    expect(
+      derivePanel(['a.ts'], spec, reader({ 'a.ts': "const React = require('react');" })),
+    ).toContain('evaluator-react');
+    expect(
+      derivePanel(['b.ts'], spec, reader({ 'b.ts': "const m = await import('react');" })),
+    ).toContain('evaluator-react');
+  });
+
+  test('the gate is per-file: a react .ts and a non-react .ts in one call both resolve correctly', () => {
+    // Proves the gate filters each file independently rather than all-or-
+    // nothing: the union still contains react (from the react file) AND
+    // naming (from both), and react is not stripped just because a sibling
+    // file lacked the import.
+    const r = reader({
+      'src/hook.ts': "import { useEffect } from 'react';",
+      'src/pure.ts': 'export const id = <T>(x: T): T => x;',
+    });
+    const panel = derivePanel(['src/hook.ts', 'src/pure.ts'], spec, r);
+    expect(panel).toContain('evaluator-react');
+    expect(panel).toContain('evaluator-naming');
+  });
+});
+
 // ---- Pure-function unit tests on the parsed spec ----
 
 describe('derivePanel (live spec)', () => {
@@ -101,15 +172,39 @@ describe('derivePanel (live spec)', () => {
     ).toEqual(['evaluator-contract-fit']);
   });
 
-  test('substrate script (.claude/scripts/foo/bar.ts) → contract-fit + naming', () => {
-    expect(derivePanel(['.claude/scripts/foo/bar.ts'], spec)).toEqual([
+  test('substrate CLI (plugins/loom/cli/verbs/loom/doctor.ts) → contract-fit + naming, NOT react', () => {
+    expect(derivePanel(['plugins/loom/cli/verbs/loom/doctor.ts'], spec)).toEqual([
       'evaluator-contract-fit',
       'evaluator-naming',
     ]);
   });
 
-  test('substrate test (.claude/scripts/foo/bar.test.ts) → contract-fit + test-unit', () => {
-    expect(derivePanel(['.claude/scripts/foo/bar.test.ts'], spec)).toEqual([
+  test('substrate CLI top-level entrypoint (plugins/loom/cli/loom.ts, directly in cli/) → contract-fit + naming', () => {
+    // The `**/` zero-segment case: a file directly under cli/ (a bin
+    // entrypoint), no intervening directory. Must still resolve as substrate.
+    expect(derivePanel(['plugins/loom/cli/loom.ts'], spec)).toEqual([
+      'evaluator-contract-fit',
+      'evaluator-naming',
+    ]);
+  });
+
+  test('repo-root script directly under scripts/ (scripts/sync-shared.ts) → contract-fit + naming', () => {
+    // The other `**/` zero-segment case: a file directly under scripts/.
+    expect(derivePanel(['scripts/sync-shared.ts'], spec)).toEqual([
+      'evaluator-contract-fit',
+      'evaluator-naming',
+    ]);
+  });
+
+  test('plugin-local script (plugins/guild/scripts/convert-to-axes.ts) → contract-fit + naming', () => {
+    expect(derivePanel(['plugins/guild/scripts/convert-to-axes.ts'], spec)).toEqual([
+      'evaluator-contract-fit',
+      'evaluator-naming',
+    ]);
+  });
+
+  test('substrate CLI test (plugins/loom/cli/verbs/loom/doctor.test.ts) → contract-fit + test-unit', () => {
+    expect(derivePanel(['plugins/loom/cli/verbs/loom/doctor.test.ts'], spec)).toEqual([
       'evaluator-contract-fit',
       'evaluator-test-unit',
     ]);
@@ -330,11 +425,20 @@ describe('spec parsing', () => {
     ]);
   });
 
-  test('matchPath uses most-specific-wins (substrate script over generic .ts)', () => {
+  test('matchPath uses most-specific-wins (substrate CLI over generic .ts)', () => {
     const spec = loadRealSpec();
-    const matched = matchPath('.claude/scripts/foo/bar.ts', spec.rules);
+    const matched = matchPath('plugins/loom/cli/verbs/loom/doctor.ts', spec.rules);
     expect(matched).not.toContain('evaluator-react');
     expect(matched).toContain('evaluator-naming');
+  });
+
+  test('globToRegex: **/ matches zero path segments (file directly in the base dir)', () => {
+    // Regression guard for the bin-entrypoint gap: `a/**/*.ts` must match
+    // both `a/f.ts` (zero segments) and `a/b/f.ts` (one+ segments).
+    const re = globToRegex('plugins/**/cli/**/*.ts');
+    expect(re.test('plugins/loom/cli/loom.ts')).toBe(true); // zero segments after cli/
+    expect(re.test('plugins/loom/cli/verbs/loom/doctor.ts')).toBe(true); // nested
+    expect(globToRegex('scripts/**/*.ts').test('scripts/sync-shared.ts')).toBe(true);
   });
 
   test('parseRules is callable directly on a synthetic spec', () => {

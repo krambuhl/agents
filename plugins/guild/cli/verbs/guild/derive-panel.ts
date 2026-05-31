@@ -39,7 +39,15 @@ export function globToRegex(glob: string): RegExp {
   let i = 0;
   while (i < trimmed.length) {
     const c = trimmed[i];
-    if (c === '*' && trimmed[i + 1] === '*') {
+    if (c === '*' && trimmed[i + 1] === '*' && trimmed[i + 2] === '/') {
+      // `**/` matches zero OR MORE path segments (standard glob). Emitting
+      // `.*/` (the naive form) requires a trailing slash, so `a/**/*.ts`
+      // would miss a file directly in `a/` (e.g. a `cli/` bin entrypoint or
+      // a file directly under `scripts/`) and only match nested ones. The
+      // optional group lets the segment(s) collapse to zero.
+      re += '(?:.*/)?';
+      i += 3;
+    } else if (c === '*' && trimmed[i + 1] === '*') {
       re += '.*';
       i += 2;
     } else if (c === '*') {
@@ -149,15 +157,22 @@ const FALLBACK_RULES: Rule[] = [
   fallbackRule(['*.json'], []),
   fallbackRule(
     [
-      '.claude/agents/*.md',
-      '.claude/skills/*/SKILL.md',
-      '.claude/skills/**/*.md',
+      'plugins/**/agents/*.md',
+      'plugins/**/skills/**/SKILL.md',
       'projects/**/checkins/**/*.md',
     ],
     [],
   ),
-  fallbackRule(['.claude/scripts/**/*.ts'], ['evaluator-naming']),
-  fallbackRule(['.claude/scripts/**/*.test.ts'], ['evaluator-test-unit']),
+  fallbackRule(
+    ['scripts/**/*.ts', 'plugins/**/scripts/**/*.ts'],
+    ['evaluator-naming'],
+  ),
+  fallbackRule(
+    ['scripts/**/*.test.ts', 'plugins/**/scripts/**/*.test.ts'],
+    ['evaluator-test-unit'],
+  ),
+  fallbackRule(['plugins/**/cli/**/*.ts'], ['evaluator-naming']),
+  fallbackRule(['plugins/**/cli/**/*.test.ts'], ['evaluator-test-unit']),
   fallbackRule(['*.test.ts', '*.test.tsx', '*.spec.ts', '*.spec.tsx'], ['evaluator-test-unit']),
   fallbackRule(['tests/e2e/**', 'tests/integration/**', 'e2e/**'], ['evaluator-test-integration']),
   fallbackRule(['tests/e2e/a11y/**'], ['evaluator-a11y']),
@@ -224,10 +239,55 @@ export function matchPath(path: string, rules: Rule[]): string[] {
   return best ? best.rule.evaluators : [];
 }
 
-export function derivePanel(files: string[], spec: Spec): string[] {
+// Detect an import of `react` or `react-dom` (static `from`, bare
+// side-effect `import 'react'`, `require('react')`, or dynamic
+// `import('react')`; also a `react/...` subpath like `react/jsx-runtime`).
+// Deliberately does NOT match sibling packages like `react-router` or a
+// local `./react-utils` — the specifier must be exactly react / react-dom.
+const REACT_IMPORT =
+  /(?:from|import|require\(|import\()\s*['"]react(?:-dom)?(?:\/[^'"]*)?['"]/;
+
+export type FileReader = (path: string) => string | undefined;
+
+function defaultFileReader(cwd: string): FileReader {
+  return (path) => {
+    try {
+      return readFileSync(resolve(cwd, path), 'utf8');
+    } catch {
+      return undefined;
+    }
+  };
+}
+
+// Honor the spec's `*.ts → evaluator-react (only when the file imports from
+// react / react-dom)` condition. A non-JSX `.ts` warrants the React lens
+// only when it actually pulls in React (a hook, a context, a non-JSX
+// helper) — bare `.ts` substrate / Node code does not. `.tsx`/`.jsx` are
+// JSX by definition and keep react unconditionally. When the file can't be
+// read (a path outside the working tree, a consumer-project path, a deleted
+// file), KEEP react — never strip a lens we cannot disprove.
+function gateReact(
+  file: string,
+  evaluators: string[],
+  readFile: FileReader,
+): string[] {
+  if (!evaluators.includes('evaluator-react')) return evaluators;
+  if (file.endsWith('.tsx') || file.endsWith('.jsx')) return evaluators;
+  if (!file.endsWith('.ts')) return evaluators;
+  const content = readFile(file);
+  if (content === undefined) return evaluators;
+  if (REACT_IMPORT.test(content)) return evaluators;
+  return evaluators.filter((e) => e !== 'evaluator-react');
+}
+
+export function derivePanel(
+  files: string[],
+  spec: Spec,
+  readFile: FileReader = defaultFileReader(process.cwd()),
+): string[] {
   const set = new Set<string>([BASELINE]);
   for (const file of files) {
-    const matched = matchPath(file, spec.rules);
+    const matched = gateReact(file, matchPath(file, spec.rules), readFile);
     for (const e of matched) set.add(e);
   }
   const ordered: string[] = [];
@@ -259,7 +319,7 @@ export function derivePanelVerb(
   }
   // Empty input is fine — emit baseline.
   const { spec, warning } = loadSpec(ctx.cwd);
-  const panel = derivePanel(files, spec);
+  const panel = derivePanel(files, spec, defaultFileReader(ctx.cwd));
   const result: DispatchResult = {
     stdout: panel.join(','),
     exitCode: 0,
