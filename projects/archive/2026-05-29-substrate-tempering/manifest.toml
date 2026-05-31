@@ -3,7 +3,7 @@ schema_version = 1
 title = "Substrate Tempering"
 slug = "2026-05-29-substrate-tempering"
 started = "2026-05-29"
-status = "active"
+status = "archived"
 strategy = "interactive"
 
 [config]
@@ -261,6 +261,16 @@ detail = { number = "12", branch = "ev-agent.substrate-tempering.research-append
 at = "2026-05-31T07:34:59.447Z"
 event = "phase-completed"
 detail = { phase = 5 }
+
+[[events]]
+at = "2026-05-31T15:24:59.063Z"
+event = "retro-written"
+detail = { type = "project" }
+
+[[events]]
+at = "2026-05-31T15:25:14.987Z"
+event = "archived"
+detail = { destination = "/Users/krambuhl/Sites/agents-nebula/projects/archive/2026-05-29-substrate-tempering" }
 
 [[checkins]]
 schema_version = 1
