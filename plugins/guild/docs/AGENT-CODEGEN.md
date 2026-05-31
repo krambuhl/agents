@@ -163,6 +163,62 @@ cross-perspective courtesy) is now carried by the phase fragments
 (`modes/phases/{reviewer,planner}.md` after Phase 1.0's rewrite)
 and inlined into every composed body by the fusion-prompt.
 
+## The implement-verify-fix output contract
+
+The write-capable postures (implementer, fixer) and the reviewer
+compose into a single implement-verify-fix cycle. Each posture's
+output is specified in its own phase fragment's `## Output
+contract`; this section is the consolidated reference for how the
+three hand off, so a caller wiring the cycle (a loop, a workflow)
+knows the shape each step produces and consumes.
+
+**Implementer** (`modes/phases/implementer.md`) returns: the
+artifact (created/modified files), a description of what was done
+(actions, files touched, and any fork decision the contract didn't
+cover), verification evidence (read-only command output — lint and
+build, plus tests where the domain grants a runner), and
+corrections (anything the contract got wrong). It emits **no
+verdict** — the artifact goes to the reviewer.
+
+**Reviewer** (the `reviewer` phase, e.g. `evaluator-css-architecture`)
+returns the evaluator verdict shape (the `evaluator-base` stance,
+parsed by `guild parse-and-aggregate`): a `VERDICT:` line
+(`approved | flagged | recused`) plus, when flagged, a Reasons
+section whose bullets become findings. Each finding carries
+`{code, evidence, remedy}` and a `blocking | advisory` severity.
+This shape is **consistent with the `evaluator-finding-emitted`
+event** (`{slug, phase, unit, evaluator, code, severity}` — see
+`commons/cli/lib/types.ts`): the panel emits one such event per
+finding, so a finding's `code` and `severity` are the same fields
+the reviewer's output already carries. The reviewer invents no
+parallel shape; the event is the telemetry projection of the
+finding.
+
+**Fixer** (`modes/phases/fixer.md`) consumes the reviewer's flagged
+findings and returns: the corrected artifact, a description of what
+was fixed mapped to the finding each change clears, re-verification
+evidence, and corrections (any finding it could not fix or believes
+is wrong). Like the implementer it emits **no verdict** — the
+corrected artifact returns to the reviewer, which decides whether
+the findings are cleared.
+
+The handoff:
+
+```
+implementer --(artifact + what-changed)--------------> reviewer
+reviewer    --(VERDICT + findings: code/severity/----> fixer      (when flagged)
+               evidence/remedy)
+fixer       --(corrected artifact + what-fixed)------> reviewer    (re-review)
+```
+
+The cycle terminates when the reviewer returns `approved` (or
+`recused` — domain non-applicable). Neither write-capable posture
+self-approves; the reviewer is the only verdict-emitter, which keeps
+the gate honest — an agent never grades its own homework. Wiring
+this cycle into an automated firing layer (the ev-loop becoming the
+fire-and-collect layer) is a deferred, separate effort; this
+contract is the shape that layer will orchestrate.
+
 ## Generated output is committed in-place
 
 Fused agents live committed flat at `plugins/guild/agents/`.
