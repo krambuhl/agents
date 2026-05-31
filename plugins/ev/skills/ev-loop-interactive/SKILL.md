@@ -201,7 +201,21 @@ and confirm the decomposition before Step 2.
 For each deliverable (picked per the ordering rule):
 
 1. **Negotiate.** Draft the unit contract for this deliverable and
-   write it into a new numbered checkin (Contract section only).
+   write it into a new numbered checkin. A contract-stage checkin
+   still carries the **full envelope the schema defines** —
+   `schema_version`, `number`, `created`, `branch` — with `contract`
+   populated and the `execution` / `verdict` / `notes_for_pr` fields
+   left empty; "Contract section only" describes which substructure
+   you've *filled*, not a licence to omit the envelope (`loom checkin
+   write` hard-rejects a file missing `schema_version` / `number` /
+   `branch`, and the schema expects `created` too). Loom checkins are
+   **create-once** (immutable; a duplicate `(branch, number)` is
+   rejected), so "fill execution in later" means *write a new numbered
+   checkin*, never edit this one. For a unit that resolves in a single
+   pass, writing ONE complete checkin after the panel approves
+   (contract + execution + verdict together) is simpler and equally
+   valid — the create-once store doesn't care whether the unit's story
+   is told in one checkin or two.
    The negotiation has two shapes, selected by where ambiguity sits
    in the drafted contract:
 

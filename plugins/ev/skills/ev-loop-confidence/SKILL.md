@@ -283,15 +283,20 @@ unit-specific deltas.
 
 For each unit inside a tier:
 
-1. **Negotiate.** Compose a Checkin JSON with just the Contract
-   substructure populated and write it per § Checkin write. Pick the
-   items for this batch from inventory.md (mark them with a tier tag if
-   not already). Execution / Verdict / Notes-for-PR substructures stay
+1. **Negotiate.** Compose a Checkin JSON with the Contract
+   substructure populated and write it per § Checkin write. The file
+   still needs the full required envelope (`schema_version`, `number`,
+   `created`, `branch`) even when only `contract` carries content —
+   `loom checkin write` rejects a file missing those. Pick the items
+   for this batch from inventory.md (mark them with a tier tag if not
+   already). Execution / Verdict / Notes-for-PR substructures stay
    empty for now — they're filled in by a later checkin once the work
    resolves. (Loom checkins are immutable, so the "fill it in later"
    pattern is "write a new numbered checkin," not "edit the existing
    one." The negotiation checkin and the resolution checkin together
-   tell the story.)
+   tell the story.) For a tier unit that resolves in one pass, a single
+   complete checkin after the panel approves is equally valid — the
+   create-once store doesn't require the two-checkin split.
 2. **Execute.** Do the transform on the batch. Keep to scope.
 3. **Evaluate.** Invoke `/guild-validate` via the `Skill` tool to run
    the antagonist panel against this unit. Compose the panel by
