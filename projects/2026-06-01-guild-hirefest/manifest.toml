@@ -67,6 +67,11 @@ at = "2026-06-01T15:06:09.831Z"
 event = "checkin-created"
 detail = { number = "03", branch = "ev-agent.guild-hirefest.setup" }
 
+[[events]]
+at = "2026-06-01T15:15:31.117Z"
+event = "checkin-created"
+detail = { number = "04", branch = "ev-agent.guild-hirefest.setup" }
+
 [[checkins]]
 schema_version = 1
 number = "01"
@@ -108,3 +113,17 @@ scope = ["plugins/guild/skills/guild-compile/fusion-prompt.md", "plugins/guild/s
 changes_since_previous = "Completes the codegen-template prerequisites: every phase posture (incl. fixer) now has fusion guidance, so the Unit-5 recompile can fuse the full roster deterministically."
 verdict = { result = "approved", reasons = [] }
 notes_for_pr = ["Closes a verified gap: fixer was a real phase (axes.toml [axis.phase.fixer], fixer.md fragment, fixer-css-architecture agent) but the fusion template had no cross-axis guidance block, no role-enum entry, and no role-mapping line for it — so a fixer recompile would have been improvised. Now deterministic.", "fusion-prompt.test.ts adds an axes.toml drift guard: PHASE_ROLES must cover every [axis.phase.*] declared in axes.toml. This makes the 'every phase needs a guidance block' invariant real (not just a fixed five-item list) and will fail loudly in Phase 2b (planner->plan, researcher->research rename) and Phase 3 (research staffing), forcing fusion-prompt + the test to move in lockstep.", "Meta-note (recurring): all three Phase-1 units drew a test-unit advisory about loose string assertions (different signatures, so the per-signature recurring threshold never tripped). Captured as a session-learning."]
+
+[[checkins]]
+schema_version = 1
+number = "04"
+created = "2026-06-01T15:15:31Z"
+phase = { number = 1, name = "Escalation contract + codegen prerequisites (setup gate)" }
+branch = "ev-agent.guild-hirefest.setup"
+unit = "reviewer-gap inventory"
+contract = { goal = "Enumerate, against current axes.toml, which artifact domains lack a reviewer cell and which lack a runnable verify grant, producing the prerequisite inventory Phase 4's write-hire waves consume.", acceptance_criteria = ["Inventory at projects/2026-06-01-guild-hirefest/reviewer-gap-inventory.md", "Full domain x {planner?, reviewer?, implementer/fixer?, verify-grant} table + the reviewer base_tools nuance", "Two gap lists (no-reviewer-cell; no-verify-grant) with css-architecture's blind-reviewer asymmetry called out", "Cross-reference to Phase 4 waves (4a/4b/4c): each hire domain marked ready or prerequisite; css-architecture flagged as the Phase-5-lint exemplar", "Data verified against current axes.toml"], rules_applied = ["Accuracy grounded in a fresh axes.toml read (not the earlier Explore snapshot)", "Markdown matches the project doc idiom"], disqualifiers = ["implementing the validate.ts writes coherence lint (Phase 5)", "modifying axes.toml or adding reviewer/verify cells (Phase 4)", "a test (point-in-time artifact; the programmatic version is Phase 5's lint)"], inputs = ["plugins/guild/modes/axes.toml", "projects/2026-06-01-guild-hirefest/PLAN.md (Phase 4 waves)", "plugins/guild/docs/AGENT-CODEGEN.md (cell model)"] }
+execution = { actions = ["Read current axes.toml in full; built the domain x phase x verify-grant matrix", "Identified the load-bearing nuance: reviewer base_tools are Read/Glob/Grep only (no Bash), so a reviewer's runnable verification = its domain tool_grants; implementer/fixer base_tools already carry lint/build/git", "Enumerated Gap A (no reviewer: abstraction/composition/performance/substrate) and Gap B (no verify grant: those four + css-architecture)", "Cross-referenced Phase 4 waves: all 7 hire domains already have a reviewer + a non-empty verify grant -> zero prerequisites; flagged css-architecture's blind reviewer as the Phase-5-lint exemplar", "Wrote projects/2026-06-01-guild-hirefest/reviewer-gap-inventory.md"], files_touched = ["projects/2026-06-01-guild-hirefest/reviewer-gap-inventory.md"], corrections = [] }
+scope = ["projects/2026-06-01-guild-hirefest/reviewer-gap-inventory.md"]
+changes_since_previous = "Produces the read-only prerequisite analysis Phase 4 consumes; no source code touched."
+verdict = { result = "approved", reasons = [] }
+notes_for_pr = ["Key finding: every Phase-4 hire domain (tokens, test-unit, test-integration, nextjs, naming, a11y, react) ALREADY has both a reviewer cell and a runnable verify grant. Phase 4's 'add a reviewer cell where missing' provision has ZERO triggers among hire domains. Phase 4 can proceed without reviewer/grant prerequisites.", "css-architecture is the one real latent gap: it already ships implementer+fixer but its domain tool_grants=[], so its REVIEWER (reviewer base_tools have no Bash) is blind — cannot run lint/build/test, while its implementer/fixer can (write-phase base_tools carry lint/build/git). It is the exemplar for Phase 5's validate.ts writes coherence lint; resolution (grant the css-architecture reviewer lint/build) is deferred to Phase 5.", "The 4 no-reviewer / no-verify-grant domains (abstraction, composition, performance, substrate) are design-only planner domains — expected, not defects, not Phase-4 prerequisites.", "Substrate observation (out of scope, not acted on): the spawned evaluators report that .claude/agents/evaluator-base.md is not at the referenced path (per AGENT-CODEGEN.md it was deleted in a prior guild phase, but agent bodies/packets still cite it). Evaluators still function via inlined constraints. Worth a separate guild cleanup, not this plan."]
