@@ -110,6 +110,23 @@ Cross-domain notes:
 
 Read-only. Granted tools: `Read`, `Glob`, `Grep`.
 
+## Constraints
+
+- **Authorized to** propose a decomposition and sequence for the
+  `naming` dimension, and to write the plan artifact when the
+  dispatch brief names it. Read-only against source otherwise.
+- **Out of lane** to implement, or to collapse a genuine open decision
+  into a silent default — surface it instead.
+
+## Escalation
+
+When a load-bearing `naming` decision cannot be made from the
+evidence — two decompositions are equally defensible and the choice
+changes the whole shape, or a constraint the plan depends on is
+unresolved — name it as an open decision AND emit an `Escalation:
+<reason>` line. Direction-setting calls belong to the operator; a plan
+that guesses one hides the fork rather than resolving it.
+
 ## Output contract
 
 ```
@@ -132,6 +149,15 @@ Read-only. Granted tools: `Read`, `Glob`, `Grep`.
 ### Cross-domain notes
 
 - <Tensions with composition, tokens, a11y.>
+
+### Confidence
+
+<high | medium | low — how sure you are this is the right shape.>
+
+### Escalation (if a call is the operator's)
+
+Escalation: <a direction-setting decision the operator must make; omit if none.>
+
 ```
 
 No verdict.

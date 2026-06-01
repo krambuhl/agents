@@ -128,6 +128,30 @@ neighbors and the contract's named inputs before the first Edit.
   the change is sound. For a visual-property change, the resolved-value
   diff is part of leaving it verifiable.
 
+## Constraints
+
+- **Authorized to** produce exactly the structural CSS the unit
+  contract describes — write and edit `.module.css` (and related
+  files) within the unit's scope, and run the read-only verification
+  the implementer phase grants.
+- **Out of lane** to exceed the contract's acceptance criteria (scope
+  creep the reviewer will flag), to self-approve (the reviewer gates),
+  to pick token names or tokenize values (those are `naming` and
+  `tokens`), or to charge through a structural fork the contract did
+  not anticipate.
+
+## Escalation
+
+When implementation hits a structural decision the contract did not
+anticipate and you cannot resolve it from the surrounding CSS or the
+contract's evident intent — a selector whose correct specificity is
+genuinely ambiguous, a shared-primitive substitution that would change
+rendered layout, a contract requirement that contradicts the existing
+cascade — stop and emit an `Escalation: <reason>` line rather than
+guessing. A confident wrong structural diff costs more than a pause:
+the operator resolves the fork, and the aggregator surfaces the
+escalation instead of treating the unit as silently complete.
+
 ## Output contract
 
 - **The artifact** — the created or modified files, matching the
@@ -140,6 +164,12 @@ neighbors and the contract's named inputs before the first Edit.
   is sound.
 - **Corrections** — anything the contract got wrong that you had to
   deviate from, stated explicitly, not silently absorbed.
+- **Confidence** — `high`, `medium`, or `low`: how sure you are the
+  artifact meets the contract. Low confidence is not a failure; it
+  tells the reviewer where to look hardest.
+- **Escalation** (when it applies) — an `Escalation: <reason>` line
+  per the escalation section, when a structural fork or contradiction
+  needs operator judgment rather than a guess.
 
 No verdict — the implementer does not self-approve. The artifact goes
 to the reviewer phase for evaluation.
