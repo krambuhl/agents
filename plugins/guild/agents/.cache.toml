@@ -8,7 +8,7 @@ schema_version = 1
 
 [[cells]]
 cell_id = "evaluator-a11y"
-fused_at = "2026-06-01T17:52:35.277Z"
+fused_at = "2026-06-01T18:13:46.182Z"
 output_hash = "58640a19d04c2de1ffaff13e7b2ac74ae995633afaee882a5c17a1cee146fa0d"
 prompt_hash = "e861cdacac7d62f17a3af40c6aa145c2d4d0e2555fd96e2b84460ffa64bc5335"
 source_hash_phase = "cd765f4f791cf6f994eef28fa46e8fb37c2b09713714a79a3e424c77964fe575"
@@ -17,7 +17,7 @@ source_hash_domain = "a90f85b5eba035898d8f2eb0c4ac295cafdf5f107b1928c7e239be78d0
 
 [[cells]]
 cell_id = "evaluator-css-architecture"
-fused_at = "2026-06-01T17:52:35.277Z"
+fused_at = "2026-06-01T18:13:46.182Z"
 output_hash = "cc1819c7906e7b3170a023fe71e2de5fe26a227747c0bc8ec476a7964a05b0a1"
 prompt_hash = "e861cdacac7d62f17a3af40c6aa145c2d4d0e2555fd96e2b84460ffa64bc5335"
 source_hash_phase = "cd765f4f791cf6f994eef28fa46e8fb37c2b09713714a79a3e424c77964fe575"
@@ -26,7 +26,7 @@ source_hash_domain = "4f8ed553e76249d83797506c33235d5dcea795d6b733f67de09d613504
 
 [[cells]]
 cell_id = "evaluator-naming"
-fused_at = "2026-06-01T17:52:35.277Z"
+fused_at = "2026-06-01T18:13:46.182Z"
 output_hash = "70634cb90c5561c282fa98eb35876dbca40f38002da99c88fb9713c3b18a2b7a"
 prompt_hash = "e861cdacac7d62f17a3af40c6aa145c2d4d0e2555fd96e2b84460ffa64bc5335"
 source_hash_phase = "cd765f4f791cf6f994eef28fa46e8fb37c2b09713714a79a3e424c77964fe575"
@@ -35,7 +35,7 @@ source_hash_domain = "8a374ea38d559cda7059762ca510de9220a3b74cc0c628243b5856d6aa
 
 [[cells]]
 cell_id = "evaluator-nextjs"
-fused_at = "2026-06-01T17:52:35.277Z"
+fused_at = "2026-06-01T18:13:46.182Z"
 output_hash = "f92f8fa49d8fd55f8919765eb2462ce13c5d7bc4822124467b1a06dc01466890"
 prompt_hash = "e861cdacac7d62f17a3af40c6aa145c2d4d0e2555fd96e2b84460ffa64bc5335"
 source_hash_phase = "cd765f4f791cf6f994eef28fa46e8fb37c2b09713714a79a3e424c77964fe575"
@@ -44,7 +44,7 @@ source_hash_domain = "6d548d876b021a2073a9d43ed9637ef07f9c3941b351aedd1c2f20fba1
 
 [[cells]]
 cell_id = "evaluator-react"
-fused_at = "2026-06-01T17:52:35.277Z"
+fused_at = "2026-06-01T18:13:46.182Z"
 output_hash = "2dc5b0eeacd41b55a9c9affeb7fef7e9ebe5aa1fcf56feec4f78f7739ee7fdb4"
 prompt_hash = "e861cdacac7d62f17a3af40c6aa145c2d4d0e2555fd96e2b84460ffa64bc5335"
 source_hash_phase = "cd765f4f791cf6f994eef28fa46e8fb37c2b09713714a79a3e424c77964fe575"
@@ -53,7 +53,7 @@ source_hash_domain = "0721e1f44c8b08fb058dd64b2ef430fc2daa361ae10196169904dfc8f6
 
 [[cells]]
 cell_id = "evaluator-test-integration"
-fused_at = "2026-06-01T17:52:35.277Z"
+fused_at = "2026-06-01T18:13:46.182Z"
 output_hash = "48f2df8d12230c8ad4a45f23152ce35112140764e4fc2c981340da17dcf690cf"
 prompt_hash = "e861cdacac7d62f17a3af40c6aa145c2d4d0e2555fd96e2b84460ffa64bc5335"
 source_hash_phase = "cd765f4f791cf6f994eef28fa46e8fb37c2b09713714a79a3e424c77964fe575"
@@ -62,7 +62,7 @@ source_hash_domain = "7aff467b9c94eac6915114406305e8f227dcea5ea180c400787ce42e00
 
 [[cells]]
 cell_id = "evaluator-test-unit"
-fused_at = "2026-06-01T17:52:35.277Z"
+fused_at = "2026-06-01T18:13:46.182Z"
 output_hash = "956025d8bab7f61a5eb36bd48a6e1d18465cd55f9a5dee9eb56efb5edefe1c04"
 prompt_hash = "e861cdacac7d62f17a3af40c6aa145c2d4d0e2555fd96e2b84460ffa64bc5335"
 source_hash_phase = "cd765f4f791cf6f994eef28fa46e8fb37c2b09713714a79a3e424c77964fe575"
@@ -71,7 +71,7 @@ source_hash_domain = "ed783f2c96729f11aa313b5ade6467a514fbca4875f39643bfede6b955
 
 [[cells]]
 cell_id = "evaluator-tokens"
-fused_at = "2026-06-01T17:52:35.277Z"
+fused_at = "2026-06-01T18:13:46.182Z"
 output_hash = "407521b6f88f51f0de1d444660429309eedc74d950d9625e0d3dec25b8585e98"
 prompt_hash = "e861cdacac7d62f17a3af40c6aa145c2d4d0e2555fd96e2b84460ffa64bc5335"
 source_hash_phase = "cd765f4f791cf6f994eef28fa46e8fb37c2b09713714a79a3e424c77964fe575"
@@ -80,7 +80,7 @@ source_hash_domain = "30db1c358ec8a537f7414e9c591a3585fdb5f2d7bf05f6b92077835c13
 
 [[cells]]
 cell_id = "fixer-css-architecture"
-fused_at = "2026-06-01T17:52:35.277Z"
+fused_at = "2026-06-01T18:13:46.182Z"
 output_hash = "6dbee444de9faf9dceab0d94f0218c8edc95935ea421509ceb88aa0f44fdc66d"
 prompt_hash = "e861cdacac7d62f17a3af40c6aa145c2d4d0e2555fd96e2b84460ffa64bc5335"
 source_hash_phase = "38f156b56f5b22d304e66b946452b7c5ed0f1036bec47255aefe71464416a179"
@@ -88,8 +88,17 @@ source_hash_personality = "16e7149bdb8fe0f671c113ab145059829d3a32acafebdb3017aee
 source_hash_domain = "4f8ed553e76249d83797506c33235d5dcea795d6b733f67de09d613504b1ea76"
 
 [[cells]]
+cell_id = "fixer-tokens"
+fused_at = "2026-06-01T18:13:46.182Z"
+output_hash = "d42e5d65c7c107922274acd419fe89abcbf2ef0276fc9595e6809ce79deacda5"
+prompt_hash = "e861cdacac7d62f17a3af40c6aa145c2d4d0e2555fd96e2b84460ffa64bc5335"
+source_hash_phase = "38f156b56f5b22d304e66b946452b7c5ed0f1036bec47255aefe71464416a179"
+source_hash_personality = "16e7149bdb8fe0f671c113ab145059829d3a32acafebdb3017aee6e92e90d6b1"
+source_hash_domain = "30db1c358ec8a537f7414e9c591a3585fdb5f2d7bf05f6b92077835c13616322"
+
+[[cells]]
 cell_id = "implementer-css-architecture"
-fused_at = "2026-06-01T17:52:35.277Z"
+fused_at = "2026-06-01T18:13:46.182Z"
 output_hash = "d09d613f83790b3d52911fe2bb5ab7e19b8f19ef590ca82f8b55dd543ef14f7a"
 prompt_hash = "e861cdacac7d62f17a3af40c6aa145c2d4d0e2555fd96e2b84460ffa64bc5335"
 source_hash_phase = "04d673569eb0635841885ac01be6694d35b81940f7ae8c0ee955558d8f46d878"
@@ -97,8 +106,17 @@ source_hash_personality = "16e7149bdb8fe0f671c113ab145059829d3a32acafebdb3017aee
 source_hash_domain = "4f8ed553e76249d83797506c33235d5dcea795d6b733f67de09d613504b1ea76"
 
 [[cells]]
+cell_id = "implementer-tokens"
+fused_at = "2026-06-01T18:13:46.182Z"
+output_hash = "ff853172550859a95ad92e139e2f521623ab49930df1b9808702c63f6ef9322c"
+prompt_hash = "e861cdacac7d62f17a3af40c6aa145c2d4d0e2555fd96e2b84460ffa64bc5335"
+source_hash_phase = "04d673569eb0635841885ac01be6694d35b81940f7ae8c0ee955558d8f46d878"
+source_hash_personality = "16e7149bdb8fe0f671c113ab145059829d3a32acafebdb3017aee6e92e90d6b1"
+source_hash_domain = "30db1c358ec8a537f7414e9c591a3585fdb5f2d7bf05f6b92077835c13616322"
+
+[[cells]]
 cell_id = "plan-a11y"
-fused_at = "2026-06-01T17:52:35.277Z"
+fused_at = "2026-06-01T18:13:46.182Z"
 output_hash = "359319e4b548046a98ceb737b7c2aecd052cd4c37bee0f54bdbdc89a053278a9"
 prompt_hash = "e861cdacac7d62f17a3af40c6aa145c2d4d0e2555fd96e2b84460ffa64bc5335"
 source_hash_phase = "6ce09127b7b2236176cd3c69c055601ab102b9d9fdeba730e156eb099cc19394"
@@ -107,7 +125,7 @@ source_hash_domain = "a90f85b5eba035898d8f2eb0c4ac295cafdf5f107b1928c7e239be78d0
 
 [[cells]]
 cell_id = "plan-abstraction"
-fused_at = "2026-06-01T17:52:35.277Z"
+fused_at = "2026-06-01T18:13:46.182Z"
 output_hash = "c9a88a462bda3d5f56137353f4329582900aba9162326cbcaecd3a0c9af1a139"
 prompt_hash = "e861cdacac7d62f17a3af40c6aa145c2d4d0e2555fd96e2b84460ffa64bc5335"
 source_hash_phase = "6ce09127b7b2236176cd3c69c055601ab102b9d9fdeba730e156eb099cc19394"
@@ -116,7 +134,7 @@ source_hash_domain = "2a8adcc86b2492844262b514fab9cc49cd9152848bbbd594cf602ef52c
 
 [[cells]]
 cell_id = "plan-composition"
-fused_at = "2026-06-01T17:52:35.277Z"
+fused_at = "2026-06-01T18:13:46.182Z"
 output_hash = "e154f75b33d4af0d88c5c59ef3430d9207b3e5081ff4196ce3432522388ad425"
 prompt_hash = "e861cdacac7d62f17a3af40c6aa145c2d4d0e2555fd96e2b84460ffa64bc5335"
 source_hash_phase = "6ce09127b7b2236176cd3c69c055601ab102b9d9fdeba730e156eb099cc19394"
@@ -125,7 +143,7 @@ source_hash_domain = "a7cb03296dd9051c9db0342e374d0176e8c39634779829f4870151dc76
 
 [[cells]]
 cell_id = "plan-naming"
-fused_at = "2026-06-01T17:52:35.277Z"
+fused_at = "2026-06-01T18:13:46.182Z"
 output_hash = "5262e379dd36df0f894c7931c9de7290acf5389f985c0ecf9436530c0ec66407"
 prompt_hash = "e861cdacac7d62f17a3af40c6aa145c2d4d0e2555fd96e2b84460ffa64bc5335"
 source_hash_phase = "6ce09127b7b2236176cd3c69c055601ab102b9d9fdeba730e156eb099cc19394"
@@ -134,7 +152,7 @@ source_hash_domain = "8a374ea38d559cda7059762ca510de9220a3b74cc0c628243b5856d6aa
 
 [[cells]]
 cell_id = "plan-performance"
-fused_at = "2026-06-01T17:52:35.277Z"
+fused_at = "2026-06-01T18:13:46.182Z"
 output_hash = "f0f69caa107832978cd47237e6576ed5428d893ae182e8c9cfb41947243b3bdf"
 prompt_hash = "e861cdacac7d62f17a3af40c6aa145c2d4d0e2555fd96e2b84460ffa64bc5335"
 source_hash_phase = "6ce09127b7b2236176cd3c69c055601ab102b9d9fdeba730e156eb099cc19394"
@@ -143,7 +161,7 @@ source_hash_domain = "4c54348c72679cb5f8b5257f2ed59affa32aa4c717399556092553da31
 
 [[cells]]
 cell_id = "plan-react"
-fused_at = "2026-06-01T17:52:35.277Z"
+fused_at = "2026-06-01T18:13:46.182Z"
 output_hash = "eaf26bfde60a4ac233d5ab0c36c6ac816547e35474dad64d3986a352e5122f7e"
 prompt_hash = "e861cdacac7d62f17a3af40c6aa145c2d4d0e2555fd96e2b84460ffa64bc5335"
 source_hash_phase = "6ce09127b7b2236176cd3c69c055601ab102b9d9fdeba730e156eb099cc19394"
@@ -152,7 +170,7 @@ source_hash_domain = "0721e1f44c8b08fb058dd64b2ef430fc2daa361ae10196169904dfc8f6
 
 [[cells]]
 cell_id = "plan-skeptic"
-fused_at = "2026-06-01T17:52:35.277Z"
+fused_at = "2026-06-01T18:13:46.182Z"
 output_hash = "8879605b36309e5e905a947c3bd9bbbbde59d55659550bd007336b685a60a4d0"
 prompt_hash = "e861cdacac7d62f17a3af40c6aa145c2d4d0e2555fd96e2b84460ffa64bc5335"
 source_hash_phase = "6ce09127b7b2236176cd3c69c055601ab102b9d9fdeba730e156eb099cc19394"
@@ -161,7 +179,7 @@ source_hash_domain = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b78
 
 [[cells]]
 cell_id = "plan-substrate"
-fused_at = "2026-06-01T17:52:35.277Z"
+fused_at = "2026-06-01T18:13:46.182Z"
 output_hash = "4e83b4f8ba33a4221f2a3c47e2c82c17295968519bcba8e619efc8c114d22fdf"
 prompt_hash = "e861cdacac7d62f17a3af40c6aa145c2d4d0e2555fd96e2b84460ffa64bc5335"
 source_hash_phase = "6ce09127b7b2236176cd3c69c055601ab102b9d9fdeba730e156eb099cc19394"
@@ -170,7 +188,7 @@ source_hash_domain = "8bb9519838cb54216446de2bf86931a5696bd9d8e73318b31db4282b22
 
 [[cells]]
 cell_id = "plan-test-integration"
-fused_at = "2026-06-01T17:52:35.277Z"
+fused_at = "2026-06-01T18:13:46.182Z"
 output_hash = "94cdaf5d32ea276fcb4643af7ce854ae3dd639325ce619da33229d916d231b8b"
 prompt_hash = "e861cdacac7d62f17a3af40c6aa145c2d4d0e2555fd96e2b84460ffa64bc5335"
 source_hash_phase = "6ce09127b7b2236176cd3c69c055601ab102b9d9fdeba730e156eb099cc19394"
@@ -179,7 +197,7 @@ source_hash_domain = "7aff467b9c94eac6915114406305e8f227dcea5ea180c400787ce42e00
 
 [[cells]]
 cell_id = "plan-test-unit"
-fused_at = "2026-06-01T17:52:35.277Z"
+fused_at = "2026-06-01T18:13:46.182Z"
 output_hash = "8f93f97f866dd0259b6492e797ec2cff6b5d641a596bc8714402a6f308350348"
 prompt_hash = "e861cdacac7d62f17a3af40c6aa145c2d4d0e2555fd96e2b84460ffa64bc5335"
 source_hash_phase = "6ce09127b7b2236176cd3c69c055601ab102b9d9fdeba730e156eb099cc19394"
@@ -188,7 +206,7 @@ source_hash_domain = "ed783f2c96729f11aa313b5ade6467a514fbca4875f39643bfede6b955
 
 [[cells]]
 cell_id = "plan-tokens"
-fused_at = "2026-06-01T17:52:35.277Z"
+fused_at = "2026-06-01T18:13:46.182Z"
 output_hash = "b4e515191e2b264deaf10c383a8fd6d46e243ac4e2c9fb607dc768ef75255944"
 prompt_hash = "e861cdacac7d62f17a3af40c6aa145c2d4d0e2555fd96e2b84460ffa64bc5335"
 source_hash_phase = "6ce09127b7b2236176cd3c69c055601ab102b9d9fdeba730e156eb099cc19394"
@@ -197,7 +215,7 @@ source_hash_domain = "30db1c358ec8a537f7414e9c591a3585fdb5f2d7bf05f6b92077835c13
 
 [[cells]]
 cell_id = "research-a11y"
-fused_at = "2026-06-01T17:52:35.277Z"
+fused_at = "2026-06-01T18:13:46.182Z"
 output_hash = "2d57502ebbb284dc17c6c261b588969cf76625ad113516c738e91a51f9b4c72a"
 prompt_hash = "e861cdacac7d62f17a3af40c6aa145c2d4d0e2555fd96e2b84460ffa64bc5335"
 source_hash_phase = "aed5601eb12dc11ad918191bbe9bbce16a553a0ac750d2e0b95a8b946f1fc9cb"
@@ -206,7 +224,7 @@ source_hash_domain = "a90f85b5eba035898d8f2eb0c4ac295cafdf5f107b1928c7e239be78d0
 
 [[cells]]
 cell_id = "research-abstraction"
-fused_at = "2026-06-01T17:52:35.277Z"
+fused_at = "2026-06-01T18:13:46.182Z"
 output_hash = "143560551873d21adeb83bdb9c42ddd9887e56a1e2607ab04a07bad4c3c7eadc"
 prompt_hash = "e861cdacac7d62f17a3af40c6aa145c2d4d0e2555fd96e2b84460ffa64bc5335"
 source_hash_phase = "aed5601eb12dc11ad918191bbe9bbce16a553a0ac750d2e0b95a8b946f1fc9cb"
@@ -215,7 +233,7 @@ source_hash_domain = "2a8adcc86b2492844262b514fab9cc49cd9152848bbbd594cf602ef52c
 
 [[cells]]
 cell_id = "research-composition"
-fused_at = "2026-06-01T17:52:35.277Z"
+fused_at = "2026-06-01T18:13:46.182Z"
 output_hash = "d176bc3ec4bf384765ec856f0871d7b06b722f6c2120c5efba50ffa8576273d3"
 prompt_hash = "e861cdacac7d62f17a3af40c6aa145c2d4d0e2555fd96e2b84460ffa64bc5335"
 source_hash_phase = "aed5601eb12dc11ad918191bbe9bbce16a553a0ac750d2e0b95a8b946f1fc9cb"
@@ -224,7 +242,7 @@ source_hash_domain = "a7cb03296dd9051c9db0342e374d0176e8c39634779829f4870151dc76
 
 [[cells]]
 cell_id = "research-naming"
-fused_at = "2026-06-01T17:52:35.277Z"
+fused_at = "2026-06-01T18:13:46.182Z"
 output_hash = "1c607869a74a1019ec3fd0d8935edc921046e0385a2c31acba98fe42c33910e6"
 prompt_hash = "e861cdacac7d62f17a3af40c6aa145c2d4d0e2555fd96e2b84460ffa64bc5335"
 source_hash_phase = "aed5601eb12dc11ad918191bbe9bbce16a553a0ac750d2e0b95a8b946f1fc9cb"
@@ -233,7 +251,7 @@ source_hash_domain = "8a374ea38d559cda7059762ca510de9220a3b74cc0c628243b5856d6aa
 
 [[cells]]
 cell_id = "research-performance"
-fused_at = "2026-06-01T17:52:35.277Z"
+fused_at = "2026-06-01T18:13:46.182Z"
 output_hash = "a8cb2ea718bcd245c0639a7f1c5907b0e81fb08f4a8a173af643db0e542e1435"
 prompt_hash = "e861cdacac7d62f17a3af40c6aa145c2d4d0e2555fd96e2b84460ffa64bc5335"
 source_hash_phase = "aed5601eb12dc11ad918191bbe9bbce16a553a0ac750d2e0b95a8b946f1fc9cb"
@@ -242,7 +260,7 @@ source_hash_domain = "4c54348c72679cb5f8b5257f2ed59affa32aa4c717399556092553da31
 
 [[cells]]
 cell_id = "research-react"
-fused_at = "2026-06-01T17:52:35.277Z"
+fused_at = "2026-06-01T18:13:46.182Z"
 output_hash = "d05000669bbd9d8205c39193b1d2bfc0142281be9ad517004bf47f19dfa63a40"
 prompt_hash = "e861cdacac7d62f17a3af40c6aa145c2d4d0e2555fd96e2b84460ffa64bc5335"
 source_hash_phase = "aed5601eb12dc11ad918191bbe9bbce16a553a0ac750d2e0b95a8b946f1fc9cb"
@@ -251,7 +269,7 @@ source_hash_domain = "0721e1f44c8b08fb058dd64b2ef430fc2daa361ae10196169904dfc8f6
 
 [[cells]]
 cell_id = "research-substrate"
-fused_at = "2026-06-01T17:52:35.277Z"
+fused_at = "2026-06-01T18:13:46.182Z"
 output_hash = "cdb72213d46a076159c4a967806edb11dc35ffd79b679cada65ee783d3bd625c"
 prompt_hash = "e861cdacac7d62f17a3af40c6aa145c2d4d0e2555fd96e2b84460ffa64bc5335"
 source_hash_phase = "aed5601eb12dc11ad918191bbe9bbce16a553a0ac750d2e0b95a8b946f1fc9cb"
@@ -260,7 +278,7 @@ source_hash_domain = "8bb9519838cb54216446de2bf86931a5696bd9d8e73318b31db4282b22
 
 [[cells]]
 cell_id = "research-test-integration"
-fused_at = "2026-06-01T17:52:35.277Z"
+fused_at = "2026-06-01T18:13:46.182Z"
 output_hash = "51a9930a57fd469310b74da90b9bf8dd56caf7b434d5c5bbac42655cede1c197"
 prompt_hash = "e861cdacac7d62f17a3af40c6aa145c2d4d0e2555fd96e2b84460ffa64bc5335"
 source_hash_phase = "aed5601eb12dc11ad918191bbe9bbce16a553a0ac750d2e0b95a8b946f1fc9cb"
@@ -269,7 +287,7 @@ source_hash_domain = "7aff467b9c94eac6915114406305e8f227dcea5ea180c400787ce42e00
 
 [[cells]]
 cell_id = "research-test-unit"
-fused_at = "2026-06-01T17:52:35.277Z"
+fused_at = "2026-06-01T18:13:46.182Z"
 output_hash = "9bbebb9c8710dca2a1d27cbb75019545b114c56945a2b2661cbbfd2291cc86fa"
 prompt_hash = "e861cdacac7d62f17a3af40c6aa145c2d4d0e2555fd96e2b84460ffa64bc5335"
 source_hash_phase = "aed5601eb12dc11ad918191bbe9bbce16a553a0ac750d2e0b95a8b946f1fc9cb"
@@ -278,7 +296,7 @@ source_hash_domain = "ed783f2c96729f11aa313b5ade6467a514fbca4875f39643bfede6b955
 
 [[cells]]
 cell_id = "research-tokens"
-fused_at = "2026-06-01T17:52:35.277Z"
+fused_at = "2026-06-01T18:13:46.182Z"
 output_hash = "dd953b6ee6483686f6b20618121d3389c22110f1fee114bba4568e662c67f4e0"
 prompt_hash = "e861cdacac7d62f17a3af40c6aa145c2d4d0e2555fd96e2b84460ffa64bc5335"
 source_hash_phase = "aed5601eb12dc11ad918191bbe9bbce16a553a0ac750d2e0b95a8b946f1fc9cb"
