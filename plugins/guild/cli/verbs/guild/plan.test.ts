@@ -265,6 +265,93 @@ describe('verb: append', () => {
   });
 });
 
+describe('verb: append agent_signals (recusal observability at the plan phase)', () => {
+  let dir: string;
+  let path: string;
+  beforeEach(() => {
+    dir = mkdtempSync(join(tmpdir(), 'plan-signals-test-'));
+    path = join(dir, 'wb.md');
+  });
+  afterEach(() => rmSync(dir, { recursive: true, force: true }));
+
+  function signalsFor(sections: { engineer: string; section: string }[]) {
+    const result = run(['append', path], dir, JSON.stringify(sections));
+    expect(result.exitCode).toBe(0);
+    return JSON.parse(result.stdout as string).agent_signals;
+  }
+
+  it('a plain prose section gates by default (no marker)', () => {
+    expect(
+      signalsFor([{ engineer: 'plan-react', section: 'Use a Stack here.' }]),
+    ).toEqual([
+      { agent: 'plan-react', confidence: null, outcome: 'gated', reason: null },
+    ]);
+  });
+
+  it('a VERDICT: recused section is recused, with the Reason as rationale', () => {
+    expect(
+      signalsFor([
+        {
+          engineer: 'plan-performance',
+          section: 'VERDICT: recused\nReason: no perf surface in this brief.',
+        },
+      ]),
+    ).toEqual([
+      {
+        agent: 'plan-performance',
+        confidence: null,
+        outcome: 'recused',
+        reason: 'no perf surface in this brief.',
+      },
+    ]);
+  });
+
+  it('an Escalation: line is operator-judgment, carrying the line as reason', () => {
+    expect(
+      signalsFor([
+        {
+          engineer: 'plan-a11y',
+          section: 'Escalation: the brief conflicts with WCAG; a human must decide.',
+        },
+      ]),
+    ).toEqual([
+      {
+        agent: 'plan-a11y',
+        confidence: null,
+        outcome: 'operator-judgment',
+        reason: 'the brief conflicts with WCAG; a human must decide.',
+      },
+    ]);
+  });
+
+  it('captures a Confidence: marker on an otherwise-gated signal', () => {
+    const [signal] = signalsFor([
+      { engineer: 'plan-react', section: 'Confidence: high\n\nGo with composition.' },
+    ]);
+    expect(signal).toEqual({
+      agent: 'plan-react',
+      confidence: 'high',
+      outcome: 'gated',
+      reason: null,
+    });
+  });
+
+  it('emits exactly one signal per engineer, in section order', () => {
+    const signals = signalsFor([
+      { engineer: 'plan-a', section: 'a' },
+      { engineer: 'plan-b', section: 'VERDICT: recused\nReason: n/a.' },
+      { engineer: 'plan-c', section: 'c' },
+    ]);
+    expect(
+      signals.map((s: { agent: string; outcome: string }) => [s.agent, s.outcome]),
+    ).toEqual([
+      ['plan-a', 'gated'],
+      ['plan-b', 'recused'],
+      ['plan-c', 'gated'],
+    ]);
+  });
+});
+
 describe('verb: read-state', () => {
   let dir: string;
   let path: string;
