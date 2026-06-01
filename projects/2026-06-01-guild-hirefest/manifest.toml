@@ -31,7 +31,8 @@ branch = "ev-agent.guild-hirefest.alignment"
 [[phases]]
 number = 3
 name = "Staff the `research` posture"
-status = "not-started"
+status = "completed"
+branch = "ev-agent.guild-hirefest.staff-research"
 
 [[phases]]
 number = 4
@@ -92,6 +93,16 @@ detail = { number = "01", branch = "ev-agent.guild-hirefest.alignment" }
 at = "2026-06-01T17:31:32.141Z"
 event = "phase-completed"
 detail = { phase = 2 }
+
+[[events]]
+at = "2026-06-01T17:58:42.240Z"
+event = "checkin-created"
+detail = { number = "01", branch = "ev-agent.guild-hirefest.staff-research" }
+
+[[events]]
+at = "2026-06-01T17:58:42.313Z"
+event = "phase-completed"
+detail = { phase = 3 }
 
 [[checkins]]
 schema_version = 1
@@ -176,3 +187,17 @@ scope = ["plugins/guild/", "plugins/loom/", "plugins/ev/", "plugins/griot/", "pl
 changes_since_previous = "First unit of Phase 2; the cross-plugin atomic rename retiring the whiteboard metaphor. Phase 1 (escalation contract) merged as #187."
 verdict = { result = "approved", reasons = [] }
 notes_for_pr = ["Atomic cross-plugin rename (~90 files): the whiteboard metaphor fully retires. phase token = agent surface = loom verb for the RPI-aligned phases (plan, research). reviewer keeps the evaluator prefix (an established role/phase seam, documented at phase-prefix.ts source).", "Naming caveat (per the naming evaluator): token=surface=verb is fully three-way only for plan/research; implementer/fixer are token=surface with no loom verb to align to. Not a regression; don't read the three-way claim as universal.", "Deferred + flagged: the loom projects/<slug>/whiteboards/ artifact DIRECTORY convention was NOT renamed (it brushes against PLAN.md and was outside the approved concrete scope). It is the one remaining whiteboard-named surface; renaming it (to plans/ or another name) is a follow-up loom-convention call. Archived projects/*/whiteboards/ dirs are historical data, untouched.", "AGENT-CODEGEN.md historical baked->generated table preserved as-is (it documents real pre-codegen agent names) with a forward-note that the generated whiteboard-* names are now plan-*.", "Verification: whole-repo 1240 tests green; guild compile --check zero drift (cache re-emitted on plan-*); sync-shared clean; grep-gate clean except the historical table; toolchain smoke (guild plan verb, derive-panel, parse-and-aggregate) green."]
+
+[[checkins]]
+schema_version = 1
+number = "01"
+created = "2026-06-01T17:58:42Z"
+phase = { number = 3, name = "Staff the research posture" }
+branch = "ev-agent.guild-hirefest.staff-research"
+unit = "Staff research across the plan-domains (full RPI symmetry)"
+contract = { goal = "Add read-only, methodical, constraint-aware research-* agents at the research phase across every domain that has a plan agent. New cells inherit the escalation contract. Read-only completion of the roster.", acceptance_criteria = ["research added to the 10 plan-domains' phases + methodical personality; research-default recipe (phase=research, personality=methodical, 10 domains)", "10 research-* agents fused (methodical x domain x research), each carrying ## Constraints + ## Escalation + Confidence, read-only (Glob/Grep/Read), role: research", "roster recompiled; cache has research-*; guild compile --check clean", "research agents are methodical evidence-gathering, distinct from plan-* (surface unknowns + viable directions WITHOUT one recommendation; no verdict)"], rules_applied = ["Section-aware axes.toml edit (phases = [\"plan\"] also matches generative/synthesizer/skeptic personalities — only methodical gains research)", "Offloaded the 10 fusions to parallel subagents to preserve orchestrator context; verified centrally", "PLAN-literal: research staffs domains-with-plan only (css-architecture/nextjs excluded; no research-skeptic singleton)"], disqualifiers = ["staffing research for domains without a plan agent (css-architecture, nextjs)", "adding a research-skeptic singleton", "running Live-spawn smoke this session (impossible per L-004; deferred)"], inputs = ["axes.toml", "modes/phases/research.md", "modes/personalities/methodical.md", "the 10 domain fragments", "fusion-prompt.md"] }
+execution = { actions = ["axes.toml: research added to 10 plan-domains + methodical personality; research-default recipe", "Verified resolve derives 10 research-* cells (31 total); axes-schema green", "Spawned 10 parallel fusion subagents (one per domain) — each read fusion-prompt + research.md + methodical + domain fragment + a plan-<domain> style ref, wrote research-<domain>.md", "Verified all 10: frontmatter (role: research, tools Glob/Grep/Read), ## Constraints + ## Escalation + Confidence, no curly apostrophes", "Fixed 2 fusion slips: prose 'researcher' (old token) -> 'sharper pass' in research-composition/naming", "Emitted full roster (31 cells); guild compile --check zero drift", "Added rpi-symmetry.test.ts (every plan-domain has research; research-default covers exactly the plan-domain set)"], files_touched = ["plugins/guild/modes/axes.toml", "plugins/guild/agents/research-*.md (10 new)", "plugins/guild/agents/.cache.toml", "plugins/guild/modes/rpi-symmetry.test.ts"], corrections = ["2 fused bodies used 'researcher' as a prose common-noun (confusing now the token retired); rephrased.", "Live-spawn smoke deferred to next session per L-004 (new agents register at next session start). Static verification (body-shape test, frontmatter, compile-check, full suite) stands in."] }
+scope = ["plugins/guild/modes/axes.toml", "plugins/guild/agents/", "plugins/guild/modes/rpi-symmetry.test.ts"]
+changes_since_previous = "Completes the read-only side of the roster: 10 research-* agents mirror the 10 plan-* domains. Builds on the escalation contract (Phase 1) + the plan/research naming (Phase 2, merged #188)."
+verdict = { result = "approved", reasons = [] }
+notes_for_pr = ["10 new research-* agents (methodical, read-only) staff the research posture across every domain that has a plan agent — full RPI symmetry. Each inherits the escalation contract (Constraints/Escalation/Confidence) via the fusion prompt. css-architecture and nextjs have no plan agent, so no research agent (correct). No research-skeptic singleton (PLAN: 'every domain that has a plan agent' — the singleton is not a domain).", "Fusion was offloaded to 10 parallel subagents (one per domain) to keep the orchestrator context lean; verified centrally (frontmatter, contract sections, compile --check, body-shape test). New cells = full LLM fusion (no body to additively inject).", "rpi-symmetry.test.ts locks the invariant: every plan-domain has research, and research-default covers exactly the plan-domain set — a future plan-domain added without research fails loudly.", "DEFERRED (L-004): the Live-spawn smoke (dispatch research-react, confirm methodical output) can't run this session — newly-authored agents register at next session start. Static verification stands in; run the live smoke next session and record at learnings/session-notes/<date>-guild-research-smoke.md.", "Verification: whole-repo 1265 tests green; guild compile --check zero drift (31 cells, cache has research-*); sync-shared clean; zero residual 'researcher' token."]

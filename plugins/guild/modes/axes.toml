@@ -13,15 +13,15 @@ schema_version = 1
 # Empty tool_grants = phase base only.
 
 [axis.domain.a11y]
-phases = ["plan", "reviewer"]
+phases = ["research", "plan", "reviewer"]
 tool_grants = ["Bash(npm run lint:*)", "Bash(npm run build:*)", "Bash(npm run test:a11y:*)", "Bash(git status:*)", "Bash(git diff:*)"]
 
 [axis.domain.abstraction]
-phases = ["plan"]
+phases = ["research", "plan"]
 tool_grants = []
 
 [axis.domain.composition]
-phases = ["plan"]
+phases = ["research", "plan"]
 tool_grants = []
 
 [axis.domain.css-architecture]
@@ -29,7 +29,7 @@ phases = ["reviewer", "implementer", "fixer"]
 tool_grants = []
 
 [axis.domain.naming]
-phases = ["plan", "reviewer"]
+phases = ["research", "plan", "reviewer"]
 tool_grants = ["Bash(npm run lint:*)", "Bash(npm run build:*)", "Bash(git status:*)", "Bash(git diff:*)"]
 
 [axis.domain.nextjs]
@@ -37,27 +37,27 @@ phases = ["reviewer"]
 tool_grants = ["Bash(npm run lint:*)", "Bash(npm run lint:nextjs:*)", "Bash(npm run build:*)", "Bash(git status:*)", "Bash(git diff:*)"]
 
 [axis.domain.performance]
-phases = ["plan"]
+phases = ["research", "plan"]
 tool_grants = []
 
 [axis.domain.react]
-phases = ["plan", "reviewer"]
+phases = ["research", "plan", "reviewer"]
 tool_grants = ["Bash(npm run lint:*)", "Bash(npm run build:*)", "Bash(git status:*)", "Bash(git diff:*)"]
 
 [axis.domain.substrate]
-phases = ["plan"]
+phases = ["research", "plan"]
 tool_grants = []
 
 [axis.domain.test-integration]
-phases = ["plan", "reviewer"]
+phases = ["research", "plan", "reviewer"]
 tool_grants = ["Bash(npm run lint:*)", "Bash(npm run build:*)", "Bash(npm run test:e2e:*)", "Bash(git status:*)", "Bash(git diff:*)"]
 
 [axis.domain.test-unit]
-phases = ["plan", "reviewer"]
+phases = ["research", "plan", "reviewer"]
 tool_grants = ["Bash(npm run lint:*)", "Bash(npm run build:*)", "Bash(npm test:*)", "Bash(git status:*)", "Bash(git diff:*)"]
 
 [axis.domain.tokens]
-phases = ["plan", "reviewer"]
+phases = ["research", "plan", "reviewer"]
 tool_grants = ["Bash(npm run lint:*)", "Bash(npm run build:*)", "Bash(git status:*)", "Bash(git diff:*)"]
 
 # ---------- axis: personality (5) ----------
@@ -74,7 +74,7 @@ phases = ["plan"]
 disposition = "You expand. Your instinct is to find the options nobody listed yet, the more expressive structure, the approach from a different angle. Where critical personalities narrow toward a judgment, you widen toward possibility. You make the design space bigger before anyone collapses it."
 
 [axis.personality.methodical]
-phases = ["plan"]
+phases = ["research", "plan"]
 disposition = "You are systematic. You work through the full catalog, every criterion, every sibling case, in order, without skipping. Where the skeptic finds the one sharp flaw fast, you find all of them by leaving nothing unexamined. Completeness is your contribution."
 
 [axis.personality.pragmatist]
@@ -159,6 +159,16 @@ name = "design-systems"
 phase = "plan"
 personality = "generative"
 domains = ["composition", "abstraction", "tokens", "naming"]
+
+# research-default staffs the read-only research posture across every
+# domain that has a plan agent — full RPI symmetry (investigation precedes
+# planning). Methodical: leave no sibling case unexamined. New cells
+# inherit the escalation contract via the fusion prompt.
+[[recipes]]
+name = "research-default"
+phase = "research"
+personality = "methodical"
+domains = ["a11y", "abstraction", "composition", "naming", "performance", "react", "substrate", "test-integration", "test-unit", "tokens"]
 
 # implementer-default seeds the write-capable implementer phase on the
 # css-architecture proof domain — the first pragmatist cell. Expansion
