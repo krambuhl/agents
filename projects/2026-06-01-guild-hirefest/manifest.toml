@@ -37,8 +37,8 @@ branch = "ev-agent.guild-hirefest.staff-research"
 [[phases]]
 number = 4
 name = "Hire implementer/fixer (wave-sequenced)"
-status = "in-progress"
-branch = "ev-agent.guild-hirefest.hire-tokens"
+status = "completed"
+branch = "ev-agent.guild-hirefest.hire-react"
 
 [[phases]]
 number = 5
@@ -129,6 +129,16 @@ detail = { number = "01", branch = "ev-agent.guild-hirefest.hire-naming" }
 at = "2026-06-01T18:36:58.491Z"
 event = "checkin-created"
 detail = { number = "01", branch = "ev-agent.guild-hirefest.hire-a11y" }
+
+[[events]]
+at = "2026-06-01T18:40:40.035Z"
+event = "checkin-created"
+detail = { number = "01", branch = "ev-agent.guild-hirefest.hire-react" }
+
+[[events]]
+at = "2026-06-01T18:40:40.106Z"
+event = "phase-completed"
+detail = { phase = 4 }
 
 [[checkins]]
 schema_version = 1
@@ -283,3 +293,17 @@ scope = ["plugins/guild/modes/axes.toml", "plugins/guild/agents/"]
 changes_since_previous = "Second judgment-heavy hire (after naming, #192). a11y now has the full implement-verify-fix posture set, with test:a11y (axe-core) as its runnable verify grant."
 verdict = { result = "approved", reasons = [] }
 notes_for_pr = ["Wave 4c, domain 2 of 3 (a11y). Isolated PR. a11y had a reviewer + a runnable verify grant (lint/build/test:a11y, axe-core), so no prerequisite. The write cells carry the test:a11y grant so the reviewer gates against the real accessibility runner.", "Escalation contract as guardrail: implementer/fixer-a11y escalate on contested a11y remedies or fixes that depend on unflagged context (confirmed by panel spot-check).", "DEFERRED (L-004): Live-spawn smoke next session.", "Phase 4 still IN-PROGRESS: react is the last hire (isolated PR), then Phase 5.", "Verification: 1289 tests green; compile --check zero drift (43 cells); sync clean."]
+
+[[checkins]]
+schema_version = 1
+number = "01"
+created = "2026-06-01T18:40:39Z"
+phase = { number = 4, name = "Hire implementer/fixer (wave-sequenced)" }
+branch = "ev-agent.guild-hirefest.hire-react"
+unit = "Wave 4c (react) — hire implementer + fixer; completes Phase 4"
+contract = { goal = "Hire write-capable implementer + fixer for react, the 3rd and FINAL judgment-heavy 4c domain. Completes the write-hire roster. react has reviewer + lint/build grant. Escalation contract is the guardrail.", acceptance_criteria = ["react gains implementer + fixer phases; write recipes extended", "implementer-react + fixer-react fused (pragmatist), correct role, write tools, contract sections, no self-verdict", "recompiled; cache has 2 new cells (45 total); guild compile --check clean", "escalation leans on operator judgment for contested React-design forks"], rules_applied = ["Isolated PR (judgment-heavy 4c)", "Parallel-fusion offload", "Escalation contract as guardrail"], disqualifiers = ["hiring without reviewer/verify grant (react has both)", "Live-spawn smoke this session (L-004)"], inputs = ["plugins/guild/modes/axes.toml", "modes/phases/{implementer,fixer}.md", "modes/personalities/pragmatist.md", "modes/domains/react.md", "the reviewer-gap inventory"] }
+execution = { actions = ["axes.toml: react phases += implementer, fixer; write recipes extended (now all hire domains)", "Resolve derives implementer-react + fixer-react (45 cells)", "Spawned 2 parallel fusion subagents; each wrote its body", "Verified roles/contract/tools; emitted; compile --check zero drift; roster at 46 agent files"], files_touched = ["plugins/guild/modes/axes.toml", "plugins/guild/agents/implementer-react.md", "plugins/guild/agents/fixer-react.md", "plugins/guild/agents/.cache.toml"], corrections = ["Live-spawn smoke deferred per L-004 — now accumulated across all hire waves + research; recommend a dedicated smoke session before Phase 5."] }
+scope = ["plugins/guild/modes/axes.toml", "plugins/guild/agents/"]
+changes_since_previous = "Final hire. Completes Phase 4 (all waves: 4a tokens, 4b test-unit/test-integration/nextjs, 4c naming/a11y/react). The write-capable roster is fully staffed."
+verdict = { result = "approved", reasons = [] }
+notes_for_pr = ["Wave 4c, domain 3 of 3 (react) — the FINAL hire, completing Phase 4. react had a reviewer + lint/build grant, so no prerequisite. Escalation contract as guardrail: implementer/fixer-react escalate on contested React-design forks (state location, server/client boundary, effect cadence) rather than guess (panel-confirmed).", "Phase 4 COMPLETE: every domain that should be write-capable now has implementer + fixer. The full RPI roster is staffed: research/plan (read-only) + implementer/reviewer/fixer (write cycle) across the appropriate domains. 45 cells, 46 agent files.", "DEFERRED (L-004): the Live-spawn smokes for ALL the new agents this project (research-* from Phase 3, all write hires from Phase 4) remain — they need a fresh session to register + spawn. STRONGLY recommend a dedicated smoke session before Phase 5 closes the loop.", "Next: Phase 5 (cleanup) — re-introduce the validate.ts writes coherence lint (gate write-phase cells against a reviewer + verify-grant invariant), fix stale generator-* references, close the css-architecture verify-grant gap (the inventory's exemplar).", "Verification: 1293 tests green; compile --check zero drift (45 cells); sync clean."]
