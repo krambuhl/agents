@@ -24,14 +24,14 @@ const fusionPrompt = readFileSync(
 const axesToml = readFileSync(join(pluginRoot, 'modes', 'axes.toml'), 'utf8');
 
 // The five phase postures and the `role:` value each composes to (the
-// phase-prefix mapping: reviewer→evaluator, planner→whiteboard, the rest
+// phase-prefix mapping: reviewer→evaluator, plan→plan, the rest
 // map to themselves).
 const PHASE_ROLES: ReadonlyArray<[string, string]> = [
   ['reviewer', 'evaluator'],
   ['implementer', 'implementer'],
   ['fixer', 'fixer'],
-  ['planner', 'whiteboard'],
-  ['researcher', 'researcher'],
+  ['plan', 'plan'],
+  ['research', 'research'],
 ];
 
 describe('fusion-prompt: every phase posture has cross-axis guidance', () => {

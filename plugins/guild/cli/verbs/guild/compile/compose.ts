@@ -44,7 +44,7 @@ import type {
 
 const PHASE_ROLE: Record<string, string> = {
   reviewer: 'evaluator',
-  planner: 'whiteboard',
+  plan: 'plan',
 };
 
 const AXIS_ORDER = ['phase', 'personality', 'domain'] as const;

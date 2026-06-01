@@ -194,7 +194,7 @@ the `a11y` domain's lane, not this one.)
   synchronous in-process `*.test.ts` tier. "This integration test is
   exercising logic a unit test would defend just as well" flags at the
   file boundary (wrong tier), not per-assertion.
-- Phase split within this domain: at the **planner** phase the same
+- Phase split within this domain: at the **plan** phase the same
   knowledge advises tier choice and fixture shape before tests exist;
   at the **reviewer** phase it catches what slipped through after. Same
   domain, different lifecycle position.

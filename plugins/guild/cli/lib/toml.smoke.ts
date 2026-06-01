@@ -66,7 +66,7 @@ const src = [
   'phase = "reviewer"',
   '',
   '[[combinations]]',
-  'phase = "planner"',
+  'phase = "plan"',
   '',
 ].join('\n');
 
@@ -79,7 +79,7 @@ const expected: TomlTable = {
   empty: [],
   meta: { title: 'smoke' },
   axis: { phase: { reviewer: { writes: false } } },
-  combinations: [{ phase: 'reviewer' }, { phase: 'planner' }],
+  combinations: [{ phase: 'reviewer' }, { phase: 'plan' }],
 };
 
 const parsed = parseToml(src);

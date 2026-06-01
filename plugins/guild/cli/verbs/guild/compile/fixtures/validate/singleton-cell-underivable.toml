@@ -4,7 +4,7 @@ schema_version = 1
 phases = ["reviewer"]
 tool_grants = []
 
-# skeptic's phases doesn't include planner but singleton places it there.
+# skeptic's phases doesn't include plan but singleton places it there.
 [axis.personality.skeptic]
 phases = ["reviewer"]
 disposition = "doubt by default"
@@ -14,14 +14,14 @@ base_tools = ["Read", "Glob", "Grep"]
 writes = false
 default_personality = "skeptic"
 
-[axis.phase.planner]
+[axis.phase.plan]
 base_tools = ["Read", "Glob", "Grep"]
 writes = false
 default_personality = "skeptic"
 
 [[singletons]]
-name = "whiteboard-skeptic"
-phase = "planner"
+name = "plan-skeptic"
+phase = "plan"
 personality = "skeptic"
 
 [[retained]]

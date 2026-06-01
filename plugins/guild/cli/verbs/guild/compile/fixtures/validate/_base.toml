@@ -20,7 +20,7 @@ personality = "skeptic"
 domains = ["foo"]
 
 [[singletons]]
-name = "whiteboard-skeptic"
+name = "plan-skeptic"
 phase = "reviewer"
 personality = "skeptic"
 

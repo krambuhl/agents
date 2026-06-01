@@ -316,7 +316,7 @@ export type RpiInnerDeclinedEvent = EventBase<
 //
 // Auto-mode is the substrate-wide pattern where a skill runs without
 // human input by delegating decisions to panels (evaluators for
-// convergent / auditing questions; whiteboards for divergent /
+// convergent / auditing questions; plans for divergent /
 // generative questions). The events here mark the auto-mode session
 // boundary: entered when a skill begins an auto-mode run; converged
 // when the silent-panel condition fires; budget-exhausted when the

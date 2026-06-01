@@ -13,15 +13,15 @@ schema_version = 1
 # Empty tool_grants = phase base only.
 
 [axis.domain.a11y]
-phases = ["planner", "reviewer"]
+phases = ["plan", "reviewer"]
 tool_grants = ["Bash(npm run lint:*)", "Bash(npm run build:*)", "Bash(npm run test:a11y:*)", "Bash(git status:*)", "Bash(git diff:*)"]
 
 [axis.domain.abstraction]
-phases = ["planner"]
+phases = ["plan"]
 tool_grants = []
 
 [axis.domain.composition]
-phases = ["planner"]
+phases = ["plan"]
 tool_grants = []
 
 [axis.domain.css-architecture]
@@ -29,7 +29,7 @@ phases = ["reviewer", "implementer", "fixer"]
 tool_grants = []
 
 [axis.domain.naming]
-phases = ["planner", "reviewer"]
+phases = ["plan", "reviewer"]
 tool_grants = ["Bash(npm run lint:*)", "Bash(npm run build:*)", "Bash(git status:*)", "Bash(git diff:*)"]
 
 [axis.domain.nextjs]
@@ -37,27 +37,27 @@ phases = ["reviewer"]
 tool_grants = ["Bash(npm run lint:*)", "Bash(npm run lint:nextjs:*)", "Bash(npm run build:*)", "Bash(git status:*)", "Bash(git diff:*)"]
 
 [axis.domain.performance]
-phases = ["planner"]
+phases = ["plan"]
 tool_grants = []
 
 [axis.domain.react]
-phases = ["planner", "reviewer"]
+phases = ["plan", "reviewer"]
 tool_grants = ["Bash(npm run lint:*)", "Bash(npm run build:*)", "Bash(git status:*)", "Bash(git diff:*)"]
 
 [axis.domain.substrate]
-phases = ["planner"]
+phases = ["plan"]
 tool_grants = []
 
 [axis.domain.test-integration]
-phases = ["planner", "reviewer"]
+phases = ["plan", "reviewer"]
 tool_grants = ["Bash(npm run lint:*)", "Bash(npm run build:*)", "Bash(npm run test:e2e:*)", "Bash(git status:*)", "Bash(git diff:*)"]
 
 [axis.domain.test-unit]
-phases = ["planner", "reviewer"]
+phases = ["plan", "reviewer"]
 tool_grants = ["Bash(npm run lint:*)", "Bash(npm run build:*)", "Bash(npm test:*)", "Bash(git status:*)", "Bash(git diff:*)"]
 
 [axis.domain.tokens]
-phases = ["planner", "reviewer"]
+phases = ["plan", "reviewer"]
 tool_grants = ["Bash(npm run lint:*)", "Bash(npm run build:*)", "Bash(git status:*)", "Bash(git diff:*)"]
 
 # ---------- axis: personality (5) ----------
@@ -70,11 +70,11 @@ tool_grants = ["Bash(npm run lint:*)", "Bash(npm run build:*)", "Bash(git status
 # pragmatist default_personality.
 
 [axis.personality.generative]
-phases = ["planner"]
+phases = ["plan"]
 disposition = "You expand. Your instinct is to find the options nobody listed yet, the more expressive structure, the approach from a different angle. Where critical personalities narrow toward a judgment, you widen toward possibility. You make the design space bigger before anyone collapses it."
 
 [axis.personality.methodical]
-phases = ["planner"]
+phases = ["plan"]
 disposition = "You are systematic. You work through the full catalog, every criterion, every sibling case, in order, without skipping. Where the skeptic finds the one sharp flaw fast, you find all of them by leaving nothing unexamined. Completeness is your contribution."
 
 [axis.personality.pragmatist]
@@ -82,11 +82,11 @@ phases = ["implementer", "fixer"]
 disposition = "You decide. Your instinct is to find the simplest thing that works and reads well, ship it, and move on. You separate what's load-bearing from what's cosmetic and spend judgment only on the former. \"Good enough for now\" is a real answer when it's honestly true."
 
 [axis.personality.skeptic]
-phases = ["planner", "reviewer"]
+phases = ["plan", "reviewer"]
 disposition = "You doubt by default. Your instinct is to find what's wrong, what breaks, what was assumed without evidence. You pressure-test; you do not validate. An idea that survives you is stronger for it."
 
 [axis.personality.synthesizer]
-phases = ["planner"]
+phases = ["plan"]
 disposition = "You integrate. Your instinct is to take competing constraints, contradictory perspectives, and partial positions, and find the coherent shape that honors what matters in each. Where generative widens and pragmatist picks one, you find the structure that reconciles. You seek cohesion always."
 
 # ---------- axis: phase (5) ----------
@@ -95,12 +95,12 @@ disposition = "You integrate. Your instinct is to take competing constraints, co
 # that leads a hypothetical recipe at this phase if not explicitly
 # named). Rationale for each default is the trailing comment.
 
-[axis.phase.researcher]
+[axis.phase.research]
 base_tools = ["Read", "Glob", "Grep"]
 writes = false
 default_personality = "methodical"  # leave nothing unexamined maps to methodical's exhaustive evidence-gathering disposition
 
-[axis.phase.planner]
+[axis.phase.plan]
 base_tools = ["Read", "Glob", "Grep"]
 writes = false
 default_personality = "synthesizer"  # reconcile competing constraints into one coherent plan maps to synthesizer's disposition
@@ -137,26 +137,26 @@ personality = "skeptic"
 domains = ["a11y", "react", "naming", "tokens", "test-unit", "test-integration", "css-architecture", "nextjs"]
 
 [[recipes]]
-name = "planner-performance"
-phase = "planner"
+name = "plan-performance"
+phase = "plan"
 personality = "methodical"
 domains = ["performance", "substrate"]
 
 [[recipes]]
-name = "planner-react"
-phase = "planner"
+name = "plan-react"
+phase = "plan"
 personality = "synthesizer"
 domains = ["react", "test-unit", "test-integration"]
 
 [[recipes]]
-name = "planner-a11y"
-phase = "planner"
+name = "plan-a11y"
+phase = "plan"
 personality = "generative"
 domains = ["a11y"]
 
 [[recipes]]
 name = "design-systems"
-phase = "planner"
+phase = "plan"
 personality = "generative"
 domains = ["composition", "abstraction", "tokens", "naming"]
 
@@ -180,20 +180,20 @@ domains = ["css-architecture"]
 
 # ---------- singletons (1) ----------
 # A singleton is a (phase, personality) pair with NO domain — the
-# domain-agnostic agent. whiteboard-skeptic is the skeptic at
-# planner that pressure-tests whatever brief it receives, taking
+# domain-agnostic agent. plan-skeptic is the skeptic at
+# plan that pressure-tests whatever brief it receives, taking
 # the brief's domain at dispatch rather than baking one in.
 
 [[singletons]]
-name = "whiteboard-skeptic"
-phase = "planner"
+name = "plan-skeptic"
+phase = "plan"
 personality = "skeptic"
 
 # ---------- retained (1) ----------
 # Hand-authored agents codegen never touches. contract-fit is the
 # always-on baseline reviewer — a panel-composition role, not a
 # personality x domain combination — the one principled exception
-# to the cross-product. evaluator-base and whiteboard-base are
+# to the cross-product. evaluator-base and plan-base are
 # documentation roots inlined into every generated body by
 # codegen; they are not separately retained at the axes-level.
 

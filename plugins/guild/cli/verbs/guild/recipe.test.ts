@@ -14,10 +14,10 @@ test('recipe: resolves a known recipe to its members as JSON', () => {
   const out = JSON.parse(result.stdout as string);
   expect(out.name).toBe('design-systems');
   expect(out.members).toEqual([
-    'whiteboard-composition',
-    'whiteboard-abstraction',
-    'whiteboard-tokens',
-    'whiteboard-naming',
+    'plan-composition',
+    'plan-abstraction',
+    'plan-tokens',
+    'plan-naming',
   ]);
 });
 

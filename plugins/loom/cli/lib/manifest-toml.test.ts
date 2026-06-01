@@ -3,7 +3,7 @@
 // Three tiers:
 //   1. Real-artifact regression — readManifest against the hand-authored
 //      genuine manifest.toml fixture (mirrors this project's state), the
-//      regression target the testing-strategy whiteboard called for. A
+//      regression target the testing-strategy plan called for. A
 //      glob-floor test over a real corpus is deferred to post-migration
 //      (no manifest.toml corpus exists during Phase 2).
 //   2. Unit — section reconstruction, null-via-absence, empty sections,

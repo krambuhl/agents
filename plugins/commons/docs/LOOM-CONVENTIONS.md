@@ -28,7 +28,7 @@ projects/<slug>/
 ├── retros/
 │   ├── session-<phase>-<tier>.json
 │   └── project.json
-├── whiteboards/
+├── plans/
 │   └── <phase>-<topic-slug>.md      # multi-perspective design artifacts
 └── responses/                 # PR-comment response markdowns; created
     └── <branch>/              #   on-demand by `bin/loom pr respond`
@@ -413,17 +413,17 @@ per phase/tier combination). The project retro lands at
 `retros/project.json` and is the artifact `/loom-archive` writes
 at project close.
 
-### `whiteboards/<phase>-<topic-slug>.md`
+### `plans/<phase>-<topic-slug>.md`
 
-Multi-perspective design artifacts produced by `/guild-whiteboard`.
-**Write surface**: `bin/guild whiteboard {init,append}`. **Single-
+Multi-perspective design artifacts produced by `/guild-plan`.
+**Write surface**: `bin/guild plan {init,append}`. **Single-
 writer-serialized** per `projects/CONVENTIONS.md` § Category 3
 (the round-numbering invariant requires serial appends).
 
 Shape:
 
 ```markdown
-# Whiteboard: <topic>
+# Plan: <topic>
 
 ## Round 1
 
@@ -440,9 +440,9 @@ Shape:
 ...
 ```
 
-Per the always-on whiteboard step in `/ev-loop-interactive` (and
-the dedicated whiteboard spawns in `/loom-research`), each phase
-typically has one round-1 whiteboard at `whiteboards/<phase>-<topic-slug>.md`.
+Per the always-on plan step in `/ev-loop-interactive` (and
+the dedicated plan spawns in `/loom-research`), each phase
+typically has one round-1 plan at `plans/<phase>-<topic-slug>.md`.
 
 ### `RECOVERY-STATUS.json`
 

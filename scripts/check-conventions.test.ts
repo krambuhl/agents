@@ -202,7 +202,7 @@ tools: Read
     ).toBe(true);
   });
 
-  test('appliesTo does NOT match personality-base, whiteboard-*, or non-evaluator files', () => {
+  test('appliesTo does NOT match personality-base, plan-*, or non-evaluator files', () => {
     expect(
       convention.appliesTo(
         'plugins/guild/modes/personalities/personality-base.md',
@@ -210,7 +210,7 @@ tools: Read
     ).toBe(false);
     expect(
       convention.appliesTo(
-        'plugins/guild/agents/whiteboard-a11y.md',
+        'plugins/guild/agents/plan-a11y.md',
       ),
     ).toBe(false);
     expect(convention.appliesTo('scripts/check-conventions.ts')).toBe(false);
@@ -268,14 +268,14 @@ describe('bullet-pair-coherence convention', () => {
   )!;
 
   // Lean-toward content bounded inline by an "X over Y" stance bullet.
-  const boundedWhiteboard = `---
-name: whiteboard-example
-role: whiteboard
-description: example whiteboard
+  const boundedPlan = `---
+name: plan-example
+role: plan
+description: example plan
 tools: Read
 ---
 
-# Whiteboard: example
+# Plan: example
 
 ## Stance
 
@@ -289,14 +289,14 @@ The systematic walk.
 
   // Lean-toward content with no boundary anywhere (no "X over Y",
   // no "Anti-patterns to avoid" section, no "Not a …" / "don't").
-  const unboundedWhiteboard = `---
-name: whiteboard-example
-role: whiteboard
-description: example whiteboard
+  const unboundedPlan = `---
+name: plan-example
+role: plan
+description: example plan
 tools: Read
 ---
 
-# Whiteboard: example
+# Plan: example
 
 ## Stance
 
@@ -309,23 +309,23 @@ The systematic walk.
 `;
 
   // No lean-toward section at all — nothing to bound.
-  const noLeanWhiteboard = `---
-name: whiteboard-example
-role: whiteboard
-description: example whiteboard
+  const noLeanPlan = `---
+name: plan-example
+role: plan
+description: example plan
 tools: Read
 ---
 
-# Whiteboard: example
+# Plan: example
 
 ## What to surface
 
 The systematic walk.
 `;
 
-  test('appliesTo matches whiteboard-* under plugins/.../agents, not evaluator-*', () => {
+  test('appliesTo matches plan-* under plugins/.../agents, not evaluator-*', () => {
     expect(
-      convention.appliesTo('plugins/guild/agents/whiteboard-substrate.md'),
+      convention.appliesTo('plugins/guild/agents/plan-substrate.md'),
     ).toBe(true);
     expect(
       convention.appliesTo('plugins/guild/agents/evaluator-contract-fit.md'),
@@ -335,16 +335,16 @@ The systematic walk.
 
   test('positive case: lean-toward bounded by an "X over Y" stance yields zero findings', () => {
     const findings = convention.check(
-      'plugins/guild/agents/whiteboard-example.md',
-      boundedWhiteboard,
+      'plugins/guild/agents/plan-example.md',
+      boundedPlan,
     );
     expect(findings).toEqual([]);
   });
 
   test('negative case: lean-toward with no boundary signal yields one finding', () => {
     const findings = convention.check(
-      'plugins/guild/agents/whiteboard-example.md',
-      unboundedWhiteboard,
+      'plugins/guild/agents/plan-example.md',
+      unboundedPlan,
     );
     expect(findings).toHaveLength(1);
     expect(findings[0]).toMatchObject<Partial<Finding>>({
@@ -356,17 +356,17 @@ The systematic walk.
 
   test('no lean-toward section: nothing to bound, zero findings', () => {
     const findings = convention.check(
-      'plugins/guild/agents/whiteboard-example.md',
-      noLeanWhiteboard,
+      'plugins/guild/agents/plan-example.md',
+      noLeanPlan,
     );
     expect(findings).toEqual([]);
   });
 });
 
 describe('deriveAgentRoster', () => {
-  test('extracts whiteboard-* / evaluator-* domains, ignores non-agent paths', () => {
+  test('extracts plan-* / evaluator-* domains, ignores non-agent paths', () => {
     const roster = deriveAgentRoster([
-      'plugins/guild/agents/whiteboard-substrate.md',
+      'plugins/guild/agents/plan-substrate.md',
       'plugins/guild/agents/evaluator-contract-fit.md',
       'plugins/guild/agents/evaluator-css-architecture.md',
       'plugins/guild/modes/personalities/personality-base.md',
@@ -389,12 +389,12 @@ describe('sibling-reference-resolution convention', () => {
   ]);
   const convention = makeSiblingReferenceConvention(roster);
 
-  const resolvingWhiteboard = `---
-name: whiteboard-example
-role: whiteboard
+  const resolvingPlan = `---
+name: plan-example
+role: plan
 ---
 
-# Whiteboard: example
+# Plan: example
 
 ## Cross-domain notes
 
@@ -402,34 +402,34 @@ role: whiteboard
 - **contract-fit overlap.** Correctness after the fact is its lane.
 `;
 
-  const danglingWhiteboard = `---
-name: whiteboard-example
-role: whiteboard
+  const danglingPlan = `---
+name: plan-example
+role: plan
 ---
 
-# Whiteboard: example
+# Plan: example
 
 ## Cross-domain notes
 
 - **ghostdomain overlap.** References a domain that no longer exists.
 `;
 
-  const qualifierWhiteboard = `---
-name: whiteboard-example
-role: whiteboard
+  const qualifierPlan = `---
+name: plan-example
+role: plan
 ---
 
-# Whiteboard: example
+# Plan: example
 
 ## Cross-domain notes
 
 - **nextjs reviewer overlap.** Framework concerns are nextjs's lane.
 `;
 
-  test('name + appliesTo: sibling-reference-resolution on whiteboard-*, not evaluator-*', () => {
+  test('name + appliesTo: sibling-reference-resolution on plan-*, not evaluator-*', () => {
     expect(convention.name).toBe('sibling-reference-resolution');
     expect(
-      convention.appliesTo('plugins/guild/agents/whiteboard-react.md'),
+      convention.appliesTo('plugins/guild/agents/plan-react.md'),
     ).toBe(true);
     expect(
       convention.appliesTo('plugins/guild/agents/evaluator-react.md'),
@@ -438,16 +438,16 @@ role: whiteboard
 
   test('positive case: references that resolve to the roster yield zero findings', () => {
     const findings = convention.check(
-      'plugins/guild/agents/whiteboard-example.md',
-      resolvingWhiteboard,
+      'plugins/guild/agents/plan-example.md',
+      resolvingPlan,
     );
     expect(findings).toEqual([]);
   });
 
   test('negative case: a dangling sibling reference yields one advisory finding', () => {
     const findings = convention.check(
-      'plugins/guild/agents/whiteboard-example.md',
-      danglingWhiteboard,
+      'plugins/guild/agents/plan-example.md',
+      danglingPlan,
     );
     expect(findings).toHaveLength(1);
     expect(findings[0]).toMatchObject<Partial<Finding>>({
@@ -459,8 +459,8 @@ role: whiteboard
 
   test('qualifier case: "nextjs reviewer overlap" resolves via the "nextjs" token', () => {
     const findings = convention.check(
-      'plugins/guild/agents/whiteboard-example.md',
-      qualifierWhiteboard,
+      'plugins/guild/agents/plan-example.md',
+      qualifierPlan,
     );
     expect(findings).toEqual([]);
   });

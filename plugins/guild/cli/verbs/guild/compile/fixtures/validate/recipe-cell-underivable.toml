@@ -2,7 +2,7 @@ schema_version = 1
 
 # foo's phases doesn't include "reviewer" but recipe-default places it there.
 [axis.domain.foo]
-phases = ["planner"]
+phases = ["plan"]
 tool_grants = []
 
 [axis.personality.skeptic]
@@ -14,7 +14,7 @@ base_tools = ["Read", "Glob", "Grep"]
 writes = false
 default_personality = "skeptic"
 
-[axis.phase.planner]
+[axis.phase.plan]
 base_tools = ["Read", "Glob", "Grep"]
 writes = false
 default_personality = "skeptic"

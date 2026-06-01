@@ -20,7 +20,7 @@
     {
       "name": "guild",
       "source": "./plugins/guild",
-      "description": "Panel substrate: guild-validate / guild-whiteboard / guild-spawn skills + guild CLI + whiteboard-* / evaluator-* / generator-* agents.",
+      "description": "Panel substrate: guild-validate / guild-plan / guild-spawn skills + guild CLI + plan-* / evaluator-* / generator-* agents.",
       "dependencies": ["commons"]
     },
     {

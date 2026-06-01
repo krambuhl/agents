@@ -217,7 +217,7 @@ describe('marketplace manifest: substrate-first dependency ordering', () => {
   // peer." If a future re-order alphabetizes the array for tidiness,
   // this test catches the drift.
   //
-  // From the design-systems whiteboard finding (Phase 1, round 1):
+  // From the design-systems plan finding (Phase 1, round 1):
   // "Order the dependency array by kind: substrate first, peer second."
 
   const m = readMarketplace();

@@ -43,7 +43,7 @@ granted tools include Read, Grep, Glob (to understand context first),
 Write and Edit (to produce the artifact), and Bash (to verify — run
 tests, lint, build).
 
-- **Write + Edit are the point.** Unlike the researcher, planner, and
+- **Write + Edit are the point.** Unlike the research, plan, and
   reviewer phases — which are read-only — the implementer phase
   actively produces file changes. This is the phase whose granted
   tools include write capability.

@@ -71,12 +71,12 @@ Examples:
   exception: `manifest.json`)
 - `loom project scaffold` (target:
   `projects/<slug>/manifest.json`, exception: `manifest.json`)
-- `guild whiteboard init` (target:
-  `projects/<slug>/whiteboards/{name}.md`, exception:
-  `whiteboard`)
-- `guild whiteboard append` (target:
-  `projects/<slug>/whiteboards/{name}.md`, exception:
-  `whiteboard`)
+- `guild plan init` (target:
+  `projects/<slug>/plans/{name}.md`, exception:
+  `plan`)
+- `guild plan append` (target:
+  `projects/<slug>/plans/{name}.md`, exception:
+  `plan`)
 
 ### Declared exceptions
 
@@ -92,9 +92,9 @@ entry in this section AND a corresponding line in the registry.
   `loom phase update` and `loom project scaffold`. The manifest is
   the single source of truth for project state; serial access is a
   property of the human-driven loom session model.
-- **`whiteboard`** — the per-phase whiteboard artifact.
-  `guild whiteboard {init,append}` write here; concurrent rounds
-  against the same whiteboard file are unsupported and would
+- **`plan`** — the per-phase plan artifact.
+  `guild plan {init,append}` write here; concurrent rounds
+  against the same plan file are unsupported and would
   corrupt the round-numbering invariant.
 - **`gitignore-amendment`** — a consumer-repo `.gitignore` file at
   the project root. `griot init` writes here to add a `learnings/`

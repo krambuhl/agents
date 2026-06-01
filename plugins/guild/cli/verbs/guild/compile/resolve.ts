@@ -10,7 +10,7 @@ import { ResolveError } from './types.ts';
 //   tools = phase.base_tools ∪ domain.tool_grants
 //                          (at verification phases — reviewer + implementer + fixer)
 //   tools = phase.base_tools
-//                          (everywhere else — planner + researcher)
+//                          (everywhere else — plan + research)
 //
 // For singletons (no domain): domain_fragment is the empty string;
 // tool_grants don't apply (no domain to fold from). tools =

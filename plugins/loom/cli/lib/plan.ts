@@ -61,7 +61,7 @@ const EXIT_RE = /^\*\*(?:Exit|Output|Verification)\*\*:\s*(.*?)\s*$/;
 
 const DEPENDS_RE = /^\*\*Depends on\*\*:\s*(.+?)\s*$/;
 
-const WHITEBOARD_RE = /^\*\*Whiteboard\*\*:\s*(.+?)\s*$/;
+const PLAN_OVERRIDE_RE = /^\*\*Plan\*\*:\s*(.+?)\s*$/;
 
 const BULLET_RE = /^\s*[-*]\s+(.+?)\s*$/;
 
@@ -146,7 +146,7 @@ export function parsePlan(text: string): ParsePlanResult {
   let currentMilestone: Milestone | undefined;
   let currentPhase: ParsedPhase | undefined;
   let loopStrategy: string | undefined;
-  let planWhiteboard: string | undefined;
+  let planOverride: string | undefined;
   let sawHeading = false;
 
   // 1-based source lines, kept out of the public ParsedPhase shape so the
@@ -242,12 +242,12 @@ export function parsePlan(text: string): ParsePlanResult {
       }
     }
 
-    const whiteboardMatch = line.match(WHITEBOARD_RE);
-    if (whiteboardMatch !== null) {
+    const planOverrideMatch = line.match(PLAN_OVERRIDE_RE);
+    if (planOverrideMatch !== null) {
       if (currentPhase !== undefined) {
-        currentPhase.whiteboard = whiteboardMatch[1];
+        currentPhase.plan = planOverrideMatch[1];
       } else {
-        planWhiteboard = whiteboardMatch[1];
+        planOverride = planOverrideMatch[1];
       }
       continue;
     }
@@ -315,7 +315,7 @@ export function parsePlan(text: string): ParsePlanResult {
   if (loopStrategy !== undefined && loopStrategy.length > 0) {
     plan.loopStrategy = loopStrategy;
   }
-  if (planWhiteboard !== undefined) plan.whiteboard = planWhiteboard;
+  if (planOverride !== undefined) plan.plan = planOverride;
 
   return { plan, diagnostics };
 }

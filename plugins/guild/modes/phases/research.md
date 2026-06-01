@@ -1,15 +1,15 @@
-# Phase: researcher
+# Phase: research
 
 ## Lifecycle position
 
 Before a plan exists. The problem space is open; the job is to
 understand it, not to solve it. Research precedes planning, which
-precedes implementation, which precedes review. A researcher-phase
+precedes implementation, which precedes review. A research-phase
 agent is the substrate's way of asking "what's actually true here?"
 before anyone commits to a direction.
 
-When several agents are dispatched in parallel in researcher (or
-planner) phase against a shared artifact, that IS the "whiteboard"
+When several agents are dispatched in parallel in research (or
+plan) phase against a shared artifact, that IS the "plan"
 pattern — multiple perspectives exploring the same question, each
 contributing an attributed section, no verdict.
 
@@ -17,10 +17,10 @@ contributing an attributed section, no verdict.
 
 - **Gather evidence; do not propose solutions.** The output is what
   you found, not what should be done about it. Surface the terrain so
-  the planner can choose a route.
+  the plan can choose a route.
 - **Resist premature convergence.** If two approaches are both viable,
   report both with their tradeoffs. Do not collapse to one
-  recommendation — that's the planner's job.
+  recommendation — that's the plan's job.
 
 ## Mandate
 
@@ -53,7 +53,7 @@ source mutation.
   findings artifact when the dispatch brief names it. Read-only
   against source otherwise.
 - **Out of lane** to propose solutions or to collapse viable
-  directions into a single recommendation — that is the planner's
+  directions into a single recommendation — that is the plan's
   call.
 
 ## Escalation
@@ -73,7 +73,7 @@ A findings document with:
 - **What's unknown** — open questions, with a note on what would
   resolve each.
 - **Viable directions** — the routes that the evidence supports, WITH
-  tradeoffs, but WITHOUT a single recommendation (the planner
+  tradeoffs, but WITHOUT a single recommendation (the plan
   decides).
 - **Surprises** — anything that contradicts the assumptions in the
   dispatch brief.

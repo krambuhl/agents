@@ -11,7 +11,7 @@ loop. It is not infrastructure (CI/deploy), not tooling (editor
 config), not DX (consumer ergonomics). The lens asks whether a proposed
 change preserves the substrate's invariants or quietly breaks them.
 
-This is a **design-phase domain** — researcher and planner, upstream of
+This is a **design-phase domain** — research and plan, upstream of
 any unit contract. It has **no reviewer cell**: there is no
 substrate evaluator, because the substrate state is small enough that
 the `contract-fit` lens covers correctness after the fact. This
@@ -61,8 +61,8 @@ is written.
 
 ## Antipattern catalog
 
-No reviewer-cell catalog — this is a design-phase domain (researcher
-and planner only). The `contract-fit` lens covers after-the-fact
+No reviewer-cell catalog — this is a design-phase domain (research
+and plan only). The `contract-fit` lens covers after-the-fact
 correctness of substrate changes, and the concerns above shape the
 contract before code is written. See § Cross-domain notes for the
 boundaries that downstream reviewer-cell domains (`naming` for verb
@@ -111,7 +111,7 @@ verbs) own once a substrate change ships.
 
 ## Cross-domain notes
 
-- Phase scoping: this domain is **planner/researcher-only**, with no
+- Phase scoping: this domain is **plan/research-only**, with no
   reviewer cell — `contract-fit` covers after-the-fact correctness, so
   the value here is upstream shape advice.
 - Boundary with the **skeptic** personality: the skeptic asks "do we

@@ -19,13 +19,14 @@ worker_bindings = {}
 [[phases]]
 number = 1
 name = "Escalation contract + codegen prerequisites (setup gate)"
-status = "in-progress"
+status = "completed"
 branch = "ev-agent.guild-hirefest.setup"
 
 [[phases]]
 number = 2
 name = "RPI posture-name alignment"
-status = "not-started"
+status = "completed"
+branch = "ev-agent.guild-hirefest.alignment"
 
 [[phases]]
 number = 3
@@ -76,6 +77,21 @@ detail = { number = "04", branch = "ev-agent.guild-hirefest.setup" }
 at = "2026-06-01T15:53:30.183Z"
 event = "checkin-created"
 detail = { number = "05", branch = "ev-agent.guild-hirefest.setup" }
+
+[[events]]
+at = "2026-06-01T16:06:57.939Z"
+event = "phase-completed"
+detail = { phase = 1 }
+
+[[events]]
+at = "2026-06-01T17:31:32.067Z"
+event = "checkin-created"
+detail = { number = "01", branch = "ev-agent.guild-hirefest.alignment" }
+
+[[events]]
+at = "2026-06-01T17:31:32.141Z"
+event = "phase-completed"
+detail = { phase = 2 }
 
 [[checkins]]
 schema_version = 1
@@ -146,3 +162,17 @@ scope = ["plugins/guild/agents/"]
 changes_since_previous = "Bakes the escalation contract (Units 1+3 template/fragment edits) into every committed agent body; closes Phase 1's codegen prerequisites. 678 insertions, 0 deletions across 22 bodies (purely additive)."
 verdict = { result = "approved", reasons = [] }
 notes_for_pr = ["Additive recompile: 678 insertions / 0 deletions across 22 agent bodies. Produced by additive injection (preserve existing fused content, add the contract sections) rather than from-scratch re-fusion, so the diff is uniform and reviewable and no prior fusion quality is lost. guild compile --check is clean (cache re-emitted with the new prompt_hash).", "Whole panel constraint-aware: 21 codegen agents + the retained evaluator-contract-fit (hand-folded, operator-approved) all carry ## Constraints + ## Escalation + a Confidence signal; all 9 reviewers carry the VERDICT: operator-judgment-required shape.", "Two-layer test guard now closed: modes/escalation-contract.test.ts (source: fragments + fusion-prompt mandate the contract) + agents/escalation-contract-compiled.test.ts (compiled: every body embodies it). Together they satisfy the PLAN's body-shape verification line.", "phase-boundary signal (single; no concurrence): Phase 1 complete. The css-architecture blind-reviewer gap (Unit 4) and the missing .claude/agents/evaluator-base.md reference remain as noted Phase-5 / separate follow-ups; neither blocks Phase 1.", "Recurring test-assertion theme resolved: the test-unit evaluator confirmed this unit's test avoided the loose-assertion pattern flagged in Units 1-3 (heading-anchored checks). Captured as a session-learning earlier this phase."]
+
+[[checkins]]
+schema_version = 1
+number = "01"
+created = "2026-06-01T17:31:31Z"
+phase = { number = 2, name = "RPI posture-name alignment" }
+branch = "ev-agent.guild-hirefest.alignment"
+unit = "Full whiteboard retirement + phase-token alignment (2a+2b)"
+contract = { goal = "Retire the whiteboard metaphor and align the plan/research postures so phase token = agent surface = loom verb. Operator chose full retirement: skill, verb, error prefixes, loom metadata + parser, cross-plugin callers, marketplace. 2a (roster+skill) and 2b (phase tokens) executed atomically because they are intertwined via phase-prefix.", acceptance_criteria = ["11 whiteboard-* agents -> plan-* (files, role:, bodies); roster recompiled, cache keyed on plan-*", "phase tokens planner->plan, researcher->research across axes.toml + phase-prefix + fragment files (plan.md, research.md)", "guild-whiteboard skill -> guild-plan (dir, name, body); guild whiteboard verb -> guild plan; guild-whiteboard-error: -> guild-plan-error:", "loom **Whiteboard**: PLAN metadata -> **Plan**: + plan.ts parser + ParsedPhase/ParsedPlan .plan field", "4 cross-plugin invocations (ev-loop-interactive/confidence, loom-research/archive) /guild-whiteboard -> /guild-plan", "marketplace.json + plugin.json updated; commons docs updated + resynced", "grep-gate: zero residual whiteboard/planner/researcher in code/config except AGENT-CODEGEN.md historical-record table (preserved + forward-note)"], rules_applied = ["Ordered targeted replacements (longest-first) to avoid planner-contains-plan collisions", "Preserve documented historical records (AGENT-CODEGEN.md baked->generated table)", "Hand-edit identifier-collision-risk files (loom plan.ts) rather than blind-script", "Verify toolchain still works (rename touches the guild verb + loom parser I use to do the work)"], disqualifiers = ["corrupting the AGENT-CODEGEN.md historical record", "leaving the toolchain broken", "renaming the loom projects/<slug>/whiteboards/ artifact DIRECTORY (deferred + flagged)"], inputs = ["projects/2026-06-01-guild-hirefest/PLAN.md Phase 2", "the comprehensive rename map (Explore)", "operator decision: full whiteboard retirement"] }
+execution = { actions = ["git mv: 2 fragments, 11 agents, skill dir, 2 verb files", "Ran ordered-replacement script over 88 curated code/config/doc files", "Hand-edited excluded files: loom plan.ts (PLAN_OVERRIDE_RE + .plan field), plan.test.ts, AGENT-CODEGEN.md (live refs updated, historical table preserved + forward-note)", "phase-prefix.ts: plan->plan, research->research (token=surface)", "Recompiled roster: resolve derives plan-* cells; emitted; guild compile --check zero drift", "sync-shared: commons docs -> consumer copies", "Verified: 1240 tests green, drift clean, grep-gate clean (except historical), toolchain smoke (guild plan verb, derive-panel, parse-and-aggregate)"], files_touched = ["~90 files across guild, loom, ev, griot, commons, scripts, marketplace"], corrections = ["Caught + fixed: injection script emitted no curly-apostrophes this time; loom types.ts .plan field collided with plan.ts (excluded from script, hand-reconciled)", "Naming advisory (texture, non-blocking): the token=surface=verb framing is fully three-way only for plan/research; implementer/fixer are token=surface with no loom verb leg. Folded into the PR body so it is not oversold.", "Manifest reconcile: phase-1 completed status (stranded after the Unit-5 commit) carried into this branch and committed here."] }
+scope = ["plugins/guild/", "plugins/loom/", "plugins/ev/", "plugins/griot/", "plugins/commons/", ".claude-plugin/marketplace.json", "scripts/"]
+changes_since_previous = "First unit of Phase 2; the cross-plugin atomic rename retiring the whiteboard metaphor. Phase 1 (escalation contract) merged as #187."
+verdict = { result = "approved", reasons = [] }
+notes_for_pr = ["Atomic cross-plugin rename (~90 files): the whiteboard metaphor fully retires. phase token = agent surface = loom verb for the RPI-aligned phases (plan, research). reviewer keeps the evaluator prefix (an established role/phase seam, documented at phase-prefix.ts source).", "Naming caveat (per the naming evaluator): token=surface=verb is fully three-way only for plan/research; implementer/fixer are token=surface with no loom verb to align to. Not a regression; don't read the three-way claim as universal.", "Deferred + flagged: the loom projects/<slug>/whiteboards/ artifact DIRECTORY convention was NOT renamed (it brushes against PLAN.md and was outside the approved concrete scope). It is the one remaining whiteboard-named surface; renaming it (to plans/ or another name) is a follow-up loom-convention call. Archived projects/*/whiteboards/ dirs are historical data, untouched.", "AGENT-CODEGEN.md historical baked->generated table preserved as-is (it documents real pre-codegen agent names) with a forward-note that the generated whiteboard-* names are now plan-*.", "Verification: whole-repo 1240 tests green; guild compile --check zero drift (cache re-emitted on plan-*); sync-shared clean; grep-gate clean except the historical table; toolchain smoke (guild plan verb, derive-panel, parse-and-aggregate) green."]

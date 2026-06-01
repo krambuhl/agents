@@ -107,8 +107,8 @@ test('doctor: no slug arg → uses cwd discovery (not-in-project error if absent
 
 test('detectGuildSkew: resolvable missing source verbs → warning naming them', () => {
   const issue = detectGuildSkew(
-    ['derive-panel', 'whiteboard', 'compile', 'recipe'],
-    ['derive-panel', 'whiteboard'],
+    ['derive-panel', 'plan', 'compile', 'recipe'],
+    ['derive-panel', 'plan'],
   );
   expect(issue).not.toBeNull();
   expect(issue?.code).toBe('guild-cache-skew');
@@ -229,13 +229,13 @@ test('detectCodegenDrift: output drift → warning naming the cell + the recompi
 test('detectCodegenDrift: dedupes a cell flagged by multiple axes; counts distinct cells', () => {
   const result = cleanCheck();
   result.ok = false;
-  result.drift.cells_with_source_drift = [{ id: 'whiteboard-a11y', axis: 'domain' }];
-  result.drift.cells_with_output_drift = ['whiteboard-a11y']; // same cell, second axis
+  result.drift.cells_with_source_drift = [{ id: 'plan-a11y', axis: 'domain' }];
+  result.drift.cells_with_output_drift = ['plan-a11y']; // same cell, second axis
   result.drift.cells_with_prompt_drift = ['evaluator-nextjs'];
   const issue = detectCodegenDrift(result);
-  // 2 distinct cells (whiteboard-a11y counted once), not 3.
+  // 2 distinct cells (plan-a11y counted once), not 3.
   expect(issue?.detail).toMatch(/^2 guild agents/);
-  expect(issue?.detail).toContain('whiteboard-a11y');
+  expect(issue?.detail).toContain('plan-a11y');
   expect(issue?.detail).toContain('evaluator-nextjs');
 });
 

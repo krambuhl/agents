@@ -1,16 +1,16 @@
-// Tests for whiteboard verb (sibling per .claude/scripts conventions).
+// Tests for plan verb (sibling per .claude/scripts conventions).
 
 import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
-import { detectNextRound, formatRoundBlock, parseState, whiteboardVerb } from './whiteboard.ts';
+import { detectNextRound, formatRoundBlock, parseState, planVerb } from './plan.ts';
 import type { GuildCliContext } from './index.ts';
 
 function run(args: string[], cwd: string, stdin?: string) {
   const ctx: GuildCliContext = { cwd, stdin: stdin ?? '' };
-  return whiteboardVerb(args, ctx);
+  return planVerb(args, ctx);
 }
 
 describe('parseState (unit)', () => {
@@ -19,20 +19,20 @@ describe('parseState (unit)', () => {
   });
 
   it('returns no rounds for a header-only file', () => {
-    expect(parseState('# Whiteboard: foo\n')).toEqual({ rounds: [] });
+    expect(parseState('# Plan: foo\n')).toEqual({ rounds: [] });
   });
 
   it('parses a single round with two sections', () => {
     const md = [
-      '# Whiteboard: foo',
+      '# Plan: foo',
       '',
       '## Round 1',
       '',
-      '### From whiteboard-react-architect',
+      '### From plan-react-architect',
       '',
       'React take.',
       '',
-      '### From whiteboard-design-systems',
+      '### From plan-design-systems',
       '',
       'DS take.',
       '',
@@ -42,8 +42,8 @@ describe('parseState (unit)', () => {
         {
           number: 1,
           sections: [
-            { engineer: 'whiteboard-react-architect', section: 'React take.' },
-            { engineer: 'whiteboard-design-systems', section: 'DS take.' },
+            { engineer: 'plan-react-architect', section: 'React take.' },
+            { engineer: 'plan-design-systems', section: 'DS take.' },
           ],
         },
       ],
@@ -52,21 +52,21 @@ describe('parseState (unit)', () => {
 
   it('parses multi-round content preserving order', () => {
     const md = [
-      '# Whiteboard: foo',
+      '# Plan: foo',
       '',
       '## Round 1',
       '',
-      '### From whiteboard-a',
+      '### From plan-a',
       '',
       'Round 1 a.',
       '',
       '## Round 2',
       '',
-      '### From whiteboard-a',
+      '### From plan-a',
       '',
       'Round 2 a.',
       '',
-      '### From whiteboard-b',
+      '### From plan-b',
       '',
       'Round 2 b.',
       '',
@@ -74,8 +74,8 @@ describe('parseState (unit)', () => {
     const state = parseState(md);
     expect(state.rounds.map((r) => r.number)).toEqual([1, 2]);
     expect(state.rounds[1].sections.map((s) => s.engineer)).toEqual([
-      'whiteboard-a',
-      'whiteboard-b',
+      'plan-a',
+      'plan-b',
     ]);
     expect(state.rounds[1].sections[1].section).toBe('Round 2 b.');
   });
@@ -87,11 +87,11 @@ describe('detectNextRound (unit)', () => {
   });
 
   it('returns 1 for a header-only file', () => {
-    expect(detectNextRound('# Whiteboard: foo\n')).toBe(1);
+    expect(detectNextRound('# Plan: foo\n')).toBe(1);
   });
 
   it('returns 2 after one round', () => {
-    const md = '# Whiteboard: foo\n\n## Round 1\n\n### From eng-a\n\nbody\n';
+    const md = '# Plan: foo\n\n## Round 1\n\n### From eng-a\n\nbody\n';
     expect(detectNextRound(md)).toBe(2);
   });
 
@@ -104,13 +104,13 @@ describe('detectNextRound (unit)', () => {
 describe('formatRoundBlock (unit)', () => {
   it('renders a round with attributed sections', () => {
     const block = formatRoundBlock(2, [
-      { engineer: 'whiteboard-a', section: 'a body' },
-      { engineer: 'whiteboard-b', section: 'b body' },
+      { engineer: 'plan-a', section: 'a body' },
+      { engineer: 'plan-b', section: 'b body' },
     ]);
     expect(block).toContain('## Round 2');
-    expect(block).toContain('### From whiteboard-a');
+    expect(block).toContain('### From plan-a');
     expect(block).toContain('a body');
-    expect(block).toContain('### From whiteboard-b');
+    expect(block).toContain('### From plan-b');
     expect(block).toContain('b body');
   });
 });
@@ -119,7 +119,7 @@ describe('verb: init', () => {
   let dir: string;
   let path: string;
   beforeEach(() => {
-    dir = mkdtempSync(join(tmpdir(), 'whiteboard-verb-test-'));
+    dir = mkdtempSync(join(tmpdir(), 'plan-verb-test-'));
     path = join(dir, 'wb.md');
   });
   afterEach(() => rmSync(dir, { recursive: true, force: true }));
@@ -127,7 +127,7 @@ describe('verb: init', () => {
   it('creates a new file with the topical header', () => {
     const result = run(['init', path, '--topic=Design Card adaptation'], dir);
     expect(result.exitCode).toBe(0);
-    expect(readFileSync(path, 'utf-8')).toBe('# Whiteboard: Design Card adaptation\n');
+    expect(readFileSync(path, 'utf-8')).toBe('# Plan: Design Card adaptation\n');
   });
 
   it('is idempotent (re-run does not duplicate header)', () => {
@@ -142,13 +142,13 @@ describe('verb: init', () => {
     const nested = join(dir, 'sub/nested/wb.md');
     const result = run(['init', nested, '--topic=t'], dir);
     expect(result.exitCode).toBe(0);
-    expect(readFileSync(nested, 'utf-8')).toContain('# Whiteboard: t');
+    expect(readFileSync(nested, 'utf-8')).toContain('# Plan: t');
   });
 
   it('errors when --topic is omitted', () => {
     const result = run(['init', path], dir);
     expect(result.exitCode).not.toBe(0);
-    expect(result.stderr).toContain('guild-whiteboard-error:');
+    expect(result.stderr).toContain('guild-plan-error:');
   });
 });
 
@@ -156,7 +156,7 @@ describe('verb: detect-round', () => {
   let dir: string;
   let path: string;
   beforeEach(() => {
-    dir = mkdtempSync(join(tmpdir(), 'whiteboard-verb-test-'));
+    dir = mkdtempSync(join(tmpdir(), 'plan-verb-test-'));
     path = join(dir, 'wb.md');
   });
   afterEach(() => rmSync(dir, { recursive: true, force: true }));
@@ -179,7 +179,7 @@ describe('verb: append', () => {
   let dir: string;
   let path: string;
   beforeEach(() => {
-    dir = mkdtempSync(join(tmpdir(), 'whiteboard-verb-test-'));
+    dir = mkdtempSync(join(tmpdir(), 'plan-verb-test-'));
     path = join(dir, 'wb.md');
   });
   afterEach(() => rmSync(dir, { recursive: true, force: true }));
@@ -187,16 +187,16 @@ describe('verb: append', () => {
   it('writes a Round 1 block with attributed sections', () => {
     run(['init', path, '--topic=t'], dir);
     const input = JSON.stringify([
-      { engineer: 'whiteboard-a', section: 'a body' },
-      { engineer: 'whiteboard-b', section: 'b body' },
+      { engineer: 'plan-a', section: 'a body' },
+      { engineer: 'plan-b', section: 'b body' },
     ]);
     const result = run(['append', path], dir, input);
     expect(result.exitCode).toBe(0);
     const content = readFileSync(path, 'utf-8');
     expect(content).toContain('## Round 1');
-    expect(content).toContain('### From whiteboard-a');
+    expect(content).toContain('### From plan-a');
     expect(content).toContain('a body');
-    expect(content).toContain('### From whiteboard-b');
+    expect(content).toContain('### From plan-b');
     expect(content).toContain('b body');
   });
 
@@ -217,13 +217,13 @@ describe('verb: append', () => {
     const result = run(
       ['append', path],
       dir,
-      JSON.stringify([{ engineer: 'whiteboard-a', section: 'body' }]),
+      JSON.stringify([{ engineer: 'plan-a', section: 'body' }]),
     );
     const parsed = JSON.parse(result.stdout as string);
     expect(parsed).toMatchObject({
-      whiteboard_path: path,
+      plan_path: path,
       round: 1,
-      sections: [{ engineer: 'whiteboard-a', section: 'body' }],
+      sections: [{ engineer: 'plan-a', section: 'body' }],
       contradictions: [],
     });
   });
@@ -236,21 +236,21 @@ describe('verb: append', () => {
     );
     expect(result.exitCode).toBe(0);
     const content = readFileSync(path, 'utf-8');
-    expect(content).toContain('# Whiteboard');
+    expect(content).toContain('# Plan');
     expect(content).toContain('## Round 1');
   });
 
   it('errors on empty stdin', () => {
     const result = run(['append', path], dir);
     expect(result.exitCode).not.toBe(0);
-    expect(result.stderr).toContain('guild-whiteboard-error:');
+    expect(result.stderr).toContain('guild-plan-error:');
     expect(result.stderr).toContain('empty input');
   });
 
   it('errors on unparseable JSON stdin', () => {
     const result = run(['append', path], dir, '{ not json');
     expect(result.exitCode).not.toBe(0);
-    expect(result.stderr).toContain('guild-whiteboard-error:');
+    expect(result.stderr).toContain('guild-plan-error:');
     expect(result.stderr).toContain('JSON parse error');
   });
 
@@ -269,7 +269,7 @@ describe('verb: read-state', () => {
   let dir: string;
   let path: string;
   beforeEach(() => {
-    dir = mkdtempSync(join(tmpdir(), 'whiteboard-verb-test-'));
+    dir = mkdtempSync(join(tmpdir(), 'plan-verb-test-'));
     path = join(dir, 'wb.md');
   });
   afterEach(() => rmSync(dir, { recursive: true, force: true }));
@@ -307,33 +307,33 @@ describe('verb: read-state', () => {
 
 describe('verb: error paths', () => {
   it('errors on unknown verb', () => {
-    const dir = mkdtempSync(join(tmpdir(), 'whiteboard-verb-test-'));
+    const dir = mkdtempSync(join(tmpdir(), 'plan-verb-test-'));
     try {
       const result = run(['frobnicate', join(dir, 'x')], dir);
       expect(result.exitCode).not.toBe(0);
-      expect(result.stderr).toContain('guild-whiteboard-error: unknown verb');
+      expect(result.stderr).toContain('guild-plan-error: unknown verb');
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }
   });
 
   it('errors when path argument is missing', () => {
-    const dir = mkdtempSync(join(tmpdir(), 'whiteboard-verb-test-'));
+    const dir = mkdtempSync(join(tmpdir(), 'plan-verb-test-'));
     try {
       const result = run(['detect-round'], dir);
       expect(result.exitCode).not.toBe(0);
-      expect(result.stderr).toContain('guild-whiteboard-error:');
+      expect(result.stderr).toContain('guild-plan-error:');
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }
   });
 
   it('errors when subverb is missing', () => {
-    const dir = mkdtempSync(join(tmpdir(), 'whiteboard-verb-test-'));
+    const dir = mkdtempSync(join(tmpdir(), 'plan-verb-test-'));
     try {
       const result = run([], dir);
       expect(result.exitCode).not.toBe(0);
-      expect(result.stderr).toContain('guild-whiteboard-error:');
+      expect(result.stderr).toContain('guild-plan-error:');
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }

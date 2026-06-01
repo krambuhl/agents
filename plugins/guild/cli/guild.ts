@@ -26,8 +26,8 @@ export const VERBS: Record<string, string> = {
     'Aggregate evaluator outputs into a structured verdict (JSON stdin → JSON stdout)',
   recipe:
     'Resolve a named panel recipe to its member agent names (read-only; fails loud on unknown)',
-  whiteboard:
-    'Compose multi-round design whiteboards. Subverbs: init, detect-round, append, read-state',
+  plan:
+    'Compose multi-round design plans. Subverbs: init, detect-round, append, read-state',
 };
 
 // ---------- Pure helpers (exported for direct unit tests) ----------
@@ -118,7 +118,7 @@ function main(argv: string[]): never {
   });
 
   // Eagerly read stdin when the process is not running in a TTY.
-  // Verbs that consume stdin (parse-and-aggregate, whiteboard append)
+  // Verbs that consume stdin (parse-and-aggregate, plan append)
   // read ctx.stdin; verbs that don't (findings count, derive-panel)
   // ignore it. The TTY check prevents the dispatcher from blocking
   // on an interactive terminal when the verb doesn't need stdin.

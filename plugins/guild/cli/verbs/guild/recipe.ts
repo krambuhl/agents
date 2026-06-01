@@ -2,10 +2,10 @@
 // recipe to its member agent names.
 //
 // axes.toml's [[recipes]] declare named panels (e.g. design-systems =
-// composition + abstraction + tokens + naming under the planner phase).
+// composition + abstraction + tokens + naming under the plan phase).
 // The /guild-compile pipeline folds them into per-cell agent files;
 // this verb is the invocation-time counterpart, so a caller (the
-// ev-loop whiteboard dispatch) can learn WHO to spawn for a recipe
+// ev-loop plan dispatch) can learn WHO to spawn for a recipe
 // by name. The same recipe declaration drives both codegen and
 // runtime resolution, so the roster this emits and the files
 // /guild-compile writes cannot drift.
@@ -14,7 +14,7 @@
 // empty roster, which would let a mis-cited recipe become a silent thin
 // panel. This is a CRUD-shaped read: it resolves names, it does not
 // spawn agents or write any file (that stays the loop's / guild
-// whiteboard's job).
+// plan's job).
 
 import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';

@@ -307,7 +307,7 @@ export type RpiInnerDeclinedEvent = EventBase<
 //
 // Auto-mode is the substrate-wide pattern where a skill runs without
 // human input by delegating decisions to panels (evaluators for
-// convergent / auditing questions; whiteboards for divergent /
+// convergent / auditing questions; plans for divergent /
 // generative questions). The events here mark the auto-mode session
 // boundary: entered when a skill begins an auto-mode run; converged
 // when the silent-panel condition fires; budget-exhausted when the
@@ -580,7 +580,7 @@ export type PlanMilestoneRef = {
 // `exitCriteria` are the raw `**Exit**:`/`**Output**:` bullet strings,
 // opaque and not sub-parsed (consumers decompose units from them at
 // runtime). `dependsOn` is resolved to phase-id strings with ranges
-// expanded. `whiteboard` carries the raw `**Whiteboard**:` override
+// expanded. `plan` carries the raw `**Plan**:` override
 // string when present at this phase (overrides the plan-level default).
 export type ParsedPhase = {
   id: string;
@@ -589,7 +589,7 @@ export type ParsedPhase = {
   goal?: string;
   exitCriteria: string[];
   dependsOn: string[];
-  whiteboard?: string;
+  plan?: string;
 };
 
 export type Milestone = {
@@ -602,14 +602,14 @@ export type Milestone = {
 // indexes it for the dependency resolver and for ev-run's actionability
 // math (lookup by id, not by walking the milestone nesting). `milestones`
 // is present only when the plan has milestone headers. `loopStrategy`
-// and `whiteboard` are plan-level raw strings, captured but not
+// and `plan` are plan-level raw strings, captured but not
 // sub-parsed.
 export type ParsedPlan = {
   phases: ParsedPhase[];
   phasesById: Record<string, ParsedPhase>;
   milestones?: Milestone[];
   loopStrategy?: string;
-  whiteboard?: string;
+  plan?: string;
 };
 
 export type ParsePlanResult = {

@@ -2,9 +2,9 @@
 name: loom-research
 description: >-
   Birth a fact-anchored RESEARCH.md via relentless grill-me interview,
-  with domain-shift detection that spawns a whiteboard panel per shift
+  with domain-shift detection that spawns a plan panel per shift
   and an evaluator-contract-fit fact-check pass before commit. Composes
-  /guild-whiteboard for panel rounds and /guild-validate for the
+  /guild-plan for panel rounds and /guild-validate for the
   fact-check gate; dispatches the deterministic file IO through
   `bin/loom research`. Supports human-paired and `--mode=auto` flows
   with the substrate two-budget(3 rounds × 5 shifts). Use when the user
@@ -20,10 +20,10 @@ allowed-tools: Read, Write, Bash, Skill, AskUserQuestion
 
 Birth a research dossier by interviewing the user (or the auto-panel)
 relentlessly, detecting domain shifts in real time, spawning a
-whiteboard per shift, fact-checking the synthesized text against an
+plan per shift, fact-checking the synthesized text against an
 evidence-anchored rubric, and committing two artifacts via the loom
 CLI: `RESEARCH.md` (synthesized, evidence-anchored) and
-`RESEARCH-NOTES.md` (raw interview + per-engineer whiteboard
+`RESEARCH-NOTES.md` (raw interview + per-engineer plan
 contributions). The skill is the research half of the RPI loop — the
 output is consumed by `/loom-plan` (Phase 4) or by `/ev-loop-interactive`'s
 inner-RPI hop (Phase 5).
@@ -47,7 +47,7 @@ sentences are flagged at the fact-check gate, not at commit time.
   ill-defined when the skill starts; the grill-me first half is about
   pressing that into concrete questions.
 - `--mode=auto` (optional) — run without human input. Auto-mode uses
-  the registered whiteboard roster as the panel and the substrate
+  the registered plan roster as the panel and the substrate
   two-budget as the convergence cap. See § Human / auto duality.
 - `--mode=amend` (optional) — research INTO an existing dossier rather
   than scaffolding a fresh one. The grill-me + research loop runs as
@@ -89,8 +89,8 @@ they're researching. Otherwise summarize back what you heard in one
 sentence and ask the user to confirm or refine before pressing into
 the interview.
 
-In auto-mode, frame the topic by spawning the registered whiteboard
-roster against the topic-as-given (using `/guild-whiteboard`) and
+In auto-mode, frame the topic by spawning the registered plan
+roster against the topic-as-given (using `/guild-plan`) and
 treating the first round of engineer questions as the frame.
 
 ### 3. Grill-me interview with shift detection
@@ -107,7 +107,7 @@ each question:
   document, a person responsible. Mark claims without a source as
   candidates for the fact-check pass.
 
-In auto-mode, the "user" is the whiteboard panel spawned at frame
+In auto-mode, the "user" is the plan panel spawned at frame
 time. Each round, the panel raises 0-N new questions; the skill
 resolves them one at a time against the panel itself. A round with
 zero new questions is the **silent-panel** signal — convergence.
@@ -170,32 +170,32 @@ topic in a one-sentence summary, append an entry to
 `RESEARCH-NOTES.md` under `## Shift N — <topic>`, and emit a
 `research-shift` event. Proceed to step 4 for the panel composition.
 
-### 4. Whiteboard composition per shift
+### 4. Plan composition per shift
 
 For each detected shift:
 
-- Resolve the **full registered whiteboard roster** via
-  `Glob(".claude/agents/whiteboard-*.md")`. Engineers self-recuse
+- Resolve the **full registered plan roster** via
+  `Glob(".claude/agents/plan-*.md")`. Engineers self-recuse
   off-topic — there's no domain-shape filtering at this layer; the
   skill spawns the whole roster and trusts each engineer to declare
   inapplicability when it doesn't apply (consistent with the
   evaluator non-applicability pattern documented in
   `agents/evaluator-base.md`).
-- Compose a whiteboard artifact path:
-  `projects/<slug>/whiteboards/research-shift-NN-<topic-slug>.md`
+- Compose a plan artifact path:
+  `projects/<slug>/plans/research-shift-NN-<topic-slug>.md`
   where `NN` is the zero-padded shift number and `<topic-slug>` is
   a kebab-case derivation of the shift's one-sentence topic.
-- Invoke `/guild-whiteboard` via the `Skill` tool with
+- Invoke `/guild-plan` via the `Skill` tool with
   `engineers=<resolved roster>`, `brief=<shift topic + relevant
-  context from the interview so far>`, `whiteboard=<path>`. Emit a
+  context from the interview so far>`, `plan=<path>`. Emit a
   `research-panel-spawned` event with the engineer list.
 - Wait for the panel's response. Aggregate the round's contributions.
 
 Append raw per-engineer contributions to `RESEARCH-NOTES.md` under
 the `## Shift N — <topic>` heading (verbatim, attributed). Synthesize
-the load-bearing signal into `RESEARCH.md` under a `## Whiteboard
+the load-bearing signal into `RESEARCH.md` under a `## Plan
 contributions` section — one synthesized paragraph per shift, each
-citing the whiteboard artifact path.
+citing the plan artifact path.
 
 Emit a `research-panel-verdict` event with:
 - `verdict: 'silent'` if no engineer raised a new question this round
@@ -206,13 +206,13 @@ Emit a `research-panel-verdict` event with:
 
 #### Griot `[portable]` scan
 
-At each whiteboard close, scan each engineer's contribution for
+At each plan close, scan each engineer's contribution for
 `[portable]` markers (the convention is documented in
 `docs/AGENT-CONVENTIONS.md`). For each marker found, write a
 session-note via `§ Capture finding` (the
 `bin/griot capture --evaluator-finding=...` pathway — the verb's
 classification names need extension in a future workstream to cover
-whiteboard-portable markers; for now, document the capture intent
+plan-portable markers; for now, document the capture intent
 here and accept the verb-shape gap as a Phase 7 follow-up).
 
 ### 5. Fact-check pass
@@ -221,7 +221,7 @@ After the interview converges (silent panel or interview-exhausted
 shifts), but **before** the commit:
 
 - Compose the candidate `RESEARCH.md` (synthesized from interview
-  answers + whiteboard contributions).
+  answers + plan contributions).
 - Write it to a temp file `/tmp/loom-research-<slug>.md`.
 - Invoke `/guild-validate` via the `Skill` tool with
   `agents=evaluator-contract-fit` and a packet whose Contract section
@@ -252,7 +252,7 @@ Write the two candidate files to temp paths:
 
 ```
 /tmp/loom-research-<slug>.md           ← synthesized RESEARCH.md
-/tmp/loom-research-notes-<slug>.md     ← raw interview + whiteboards
+/tmp/loom-research-notes-<slug>.md     ← raw interview + plans
 ```
 
 Invoke:
@@ -307,7 +307,7 @@ One short paragraph in this shape:
 ```
 Created research dossier: <topic>
 Location: projects/<slug>/
-Files: RESEARCH.md, RESEARCH-NOTES.md, manifest.json, config.json, events.jsonl, whiteboards/research-shift-*.md
+Files: RESEARCH.md, RESEARCH-NOTES.md, manifest.json, config.json, events.jsonl, plans/research-shift-*.md
 Shifts completed: <N>
 Fact-check: <approved | N flagged claims resolved>
 Next: run /loom-plan <slug> to compose a PLAN.md grounded in this research, OR cite the dossier from an /ev-loop-interactive inner-RPI hop.
@@ -322,7 +322,7 @@ this skill runs in two modes:
   question and every shift. The interview pace is conversational.
   The skill surfaces flagged claims at the fact-check gate one at a
   time and waits for grounding before re-running the check.
-- **Auto** (`--mode=auto`): the registered whiteboard roster
+- **Auto** (`--mode=auto`): the registered plan roster
   substitutes for the user. Convergence is reached when a round
   produces no new questions (**silent panel**) OR when the
   two-budget caps out.
@@ -358,7 +358,7 @@ override. Skill-specific use of the existing fields:
 - `parent_skill`: `/loom-research`.
 - `failed_step` and `resume_from`: one of `shift-N` (per shift
   number), `fact-check` (per fact-check round), or
-  `sub-agent-spawn` (per `/guild-whiteboard` or `/guild-validate`
+  `sub-agent-spawn` (per `/guild-plan` or `/guild-validate`
   invocation).
 - `context`: carries the current shift number, the last shift's
   one-sentence topic, the path to the partial `RESEARCH.md` temp
@@ -392,7 +392,7 @@ classification gap is a Phase 7 follow-up.
   (and the panel) to anticipate it during the interview.
 - **One question at a time during the interview.** Resolve before
   moving on (same shape as `/loom-plan`).
-- **Whiteboard composition is per-shift, full-roster.** Engineers
+- **Plan composition is per-shift, full-roster.** Engineers
   self-recuse off-topic; the skill does NOT filter by domain at the
   spawn layer.
 - **Event emission is the skill's responsibility for shift / panel /
@@ -425,7 +425,7 @@ classification gap is a Phase 7 follow-up.
   may be too speculative for an evidence-anchored RESEARCH.md.
   Suggest the user reframe the research goal (e.g. "exploratory
   hypothesis catalog" rather than "grounded dossier") and re-run.
-- Whiteboard panel returns zero engineers (registry empty): stop
+- Plan panel returns zero engineers (registry empty): stop
   with the bootstrap-skip note from
   `/ev-loop-interactive`'s convention — the skill cannot fulfill its
   shift-panel obligation without a registered roster.

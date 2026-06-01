@@ -32,9 +32,9 @@ describe('resolve: seed axes.toml cells', () => {
     expect(resolved.tools.some((t) => t.startsWith('Bash(npm run test:a11y'))).toBe(true);
   });
 
-  it('resolves a whiteboard (planner) cell with base_tools only — no domain grants at planner', () => {
+  it('resolves a plan (plan) cell with base_tools only — no domain grants at plan', () => {
     const data = makeData();
-    const cell = derive(data).find((c: Cell) => c.id === 'whiteboard-react')!;
+    const cell = derive(data).find((c: Cell) => c.id === 'plan-react')!;
     expect(cell).toBeDefined();
     const resolved = resolve(data, cell, realReader());
     expect(resolved.tools).toEqual(['Glob', 'Grep', 'Read']);
@@ -42,7 +42,7 @@ describe('resolve: seed axes.toml cells', () => {
 
   it('resolves a singleton cell with empty domain_fragment + phase base_tools only', () => {
     const data = makeData();
-    const cell = derive(data).find((c: Cell) => c.id === 'whiteboard-skeptic')!;
+    const cell = derive(data).find((c: Cell) => c.id === 'plan-skeptic')!;
     expect(cell).toBeDefined();
     const resolved = resolve(data, cell, realReader());
     expect(resolved.domain).toBeNull();
@@ -115,11 +115,11 @@ describe('resolve: tool fold by verification phase', () => {
     expect(resolved.tools).toContain('Bash(npm test:*)');
   });
 
-  it('planner phase does NOT fold in domain grants', () => {
-    const data = makeMinimalData('planner', false, ['Bash(npm run lint:*)']);
+  it('plan phase does NOT fold in domain grants', () => {
+    const data = makeMinimalData('plan', false, ['Bash(npm run lint:*)']);
     const cell: Cell = {
-      id: 'whiteboard-foo',
-      phase: 'planner',
+      id: 'plan-foo',
+      phase: 'plan',
       personality: 'skeptic',
       domain: 'foo',
       source: 'recipe',
@@ -129,11 +129,11 @@ describe('resolve: tool fold by verification phase', () => {
     expect(resolved.tools).toEqual(['Grep', 'Read']);
   });
 
-  it('researcher phase does NOT fold in domain grants', () => {
-    const data = makeMinimalData('researcher', false, ['Bash(npm run lint:*)']);
+  it('research phase does NOT fold in domain grants', () => {
+    const data = makeMinimalData('research', false, ['Bash(npm run lint:*)']);
     const cell: Cell = {
-      id: 'whiteboard-foo',
-      phase: 'researcher',
+      id: 'plan-foo',
+      phase: 'research',
       personality: 'skeptic',
       domain: 'foo',
       source: 'recipe',

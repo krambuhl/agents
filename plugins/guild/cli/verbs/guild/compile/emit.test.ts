@@ -39,14 +39,14 @@ describe('emit: per-cell files', () => {
   it('writes one .md per cell to outputDir/<id>.md', () => {
     const agents = [
       makeAgent({ id: 'evaluator-foo' }),
-      makeAgent({ id: 'whiteboard-bar' }),
+      makeAgent({ id: 'plan-bar' }),
     ];
     const { fileWriter, writes } = makeWriter();
     const result = emit(agents, 'agents/generated', fileWriter, FUSED_AT);
     expect(writes.has('agents/generated/evaluator-foo.md')).toBe(true);
-    expect(writes.has('agents/generated/whiteboard-bar.md')).toBe(true);
+    expect(writes.has('agents/generated/plan-bar.md')).toBe(true);
     expect(result.written_files).toContain('agents/generated/evaluator-foo.md');
-    expect(result.written_files).toContain('agents/generated/whiteboard-bar.md');
+    expect(result.written_files).toContain('agents/generated/plan-bar.md');
   });
 
   it('preserves composed_body byte-for-byte', () => {
@@ -62,7 +62,7 @@ describe('emit: .cache.toml', () => {
   it('writes a .cache.toml with one [[cells]] per agent', () => {
     const agents = [
       makeAgent({ id: 'evaluator-foo' }),
-      makeAgent({ id: 'whiteboard-bar' }),
+      makeAgent({ id: 'plan-bar' }),
     ];
     const { fileWriter, writes } = makeWriter();
     emit(agents, 'agents/generated', fileWriter, FUSED_AT);

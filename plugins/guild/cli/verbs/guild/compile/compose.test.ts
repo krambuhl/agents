@@ -29,9 +29,9 @@ describe('compose: frontmatter', () => {
     expect(result.composed_body).toContain('maxTurns: 5');
   });
 
-  it('uses "whiteboard" role for planner phase cells', () => {
-    const result = compose(makeCell({ phase: 'planner', id: 'whiteboard-foo' }));
-    expect(result.composed_body).toContain('role: whiteboard');
+  it('uses "plan" role for plan phase cells', () => {
+    const result = compose(makeCell({ phase: 'plan', id: 'plan-foo' }));
+    expect(result.composed_body).toContain('role: plan');
   });
 
   it('description names personality + domain + role for recipe cells', () => {
@@ -42,14 +42,14 @@ describe('compose: frontmatter', () => {
   it('description for singletons (no domain) omits the domain term', () => {
     const result = compose(
       makeCell({
-        id: 'whiteboard-skeptic',
-        phase: 'planner',
+        id: 'plan-skeptic',
+        phase: 'plan',
         domain: null,
         source: 'singleton',
         domain_fragment: '',
       }),
     );
-    expect(result.composed_body).toContain('skeptic whiteboard');
+    expect(result.composed_body).toContain('skeptic plan');
     expect(result.composed_body).not.toContain('skeptic null');
   });
 });
@@ -71,8 +71,8 @@ describe('compose: body composition', () => {
   it('omits the domain section for singletons (empty domain_fragment + null domain)', () => {
     const result = compose(
       makeCell({
-        id: 'whiteboard-skeptic',
-        phase: 'planner',
+        id: 'plan-skeptic',
+        phase: 'plan',
         domain: null,
         source: 'singleton',
         domain_fragment: '',

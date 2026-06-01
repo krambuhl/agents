@@ -11,12 +11,12 @@ schema_version = 1
 # Core base / phase / personality fragments + tools-map come from the
 # installed plugin (resolved module-relative); only the domain fragment
 # is project-local. This manifest emits exactly one agent —
-# whiteboard-sketch-ideation — composed from the core generative
-# personality + planner phase + this project's sketch-ideation domain.
-# tools resolve to the planner base alone (a design-phase domain takes
+# plan-sketch-ideation — composed from the core generative
+# personality + plan phase + this project's sketch-ideation domain.
+# tools resolve to the plan base alone (a design-phase domain takes
 # no Bash grants).
 
 [[combinations]]
-phase = "planner"
+phase = "plan"
 personality = "generative"
 domains = ["sketch-ideation"]

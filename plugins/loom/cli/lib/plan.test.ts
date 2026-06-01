@@ -134,22 +134,22 @@ test('flags a dependency on a nonexistent phase as structural', () => {
   expect(dangling?.line).toBe(10);
 });
 
-// ---------- Heading-level tolerance, ranges, whiteboard blocks ----------
+// ---------- Heading-level tolerance, ranges, plan-override blocks ----------
 
-test('accepts ASCII-hyphen headings, expands en-dash ranges, captures whiteboard', () => {
+test('accepts ASCII-hyphen headings, expands en-dash ranges, captures plan override', () => {
   const { plan, diagnostics } = parsePlan(fixture('plan-hyphen-range'));
 
   // Phases declared with an ASCII hyphen still parse.
   expect(plan.phases.map((p) => p.id)).toEqual(['1', '2', '3']);
 
-  // Plan-level whiteboard (before any phase) vs phase-level override.
-  expect(plan.whiteboard).toBe(
-    'engineers=guild:whiteboard-skeptic; topic=plan-level default; rounds=1',
+  // Plan-level override (before any phase) vs phase-level override.
+  expect(plan.plan).toBe(
+    'engineers=guild:plan-skeptic; topic=plan-level default; rounds=1',
   );
-  expect(plan.phases[1].whiteboard).toBe(
-    'engineers=guild:whiteboard-substrate-engineer; topic=phase override; rounds=2',
+  expect(plan.phases[1].plan).toBe(
+    'engineers=guild:plan-substrate-engineer; topic=phase override; rounds=2',
   );
-  expect(plan.phases[0].whiteboard).toBeUndefined();
+  expect(plan.phases[0].plan).toBeUndefined();
 
   // `Phases 1–2` (en-dash range) expands to each id.
   expect(plan.phases[2].dependsOn).toEqual(['1', '2']);

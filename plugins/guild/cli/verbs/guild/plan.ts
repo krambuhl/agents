@@ -1,7 +1,7 @@
-// Helper verb for /guild-whiteboard.
+// Helper verb for /guild-plan.
 //
 // Four subverbs:
-//   init <path> --topic=<str>   — create the whiteboard file with the
+//   init <path> --topic=<str>   — create the plan file with the
 //                                  topical header. Idempotent.
 //   detect-round <path>         — return max(existing ## Round N) + 1
 //                                  (or 1 if file is new/empty).
@@ -13,7 +13,7 @@
 //                                  emit {rounds: [{number, sections:
 //                                  [{engineer, section}]}]} on stdout.
 //
-// Error prefix: `guild-whiteboard-error:` (mirrors
+// Error prefix: `guild-plan-error:` (mirrors
 // `parse-and-aggregate-error:` and `derive-panel-error:` conventions
 // in the sibling guild verbs).
 
@@ -26,22 +26,22 @@ type Section = { engineer: string; section: string };
 type Round = { number: number; sections: Section[] };
 type State = { rounds: Round[] };
 type AppendResult = {
-  whiteboard_path: string;
+  plan_path: string;
   round: number;
   sections: Section[];
   contradictions: never[];
 };
 
-class WhiteboardError extends Error {}
+class PlanError extends Error {}
 
 function fail(reason: string): DispatchResult {
   return {
-    stderr: `guild-whiteboard-error: ${reason}`,
+    stderr: `guild-plan-error: ${reason}`,
     exitCode: 1,
   };
 }
 
-// Parse the whiteboard file into {rounds: [{number, sections}]}.
+// Parse the plan file into {rounds: [{number, sections}]}.
 function parseState(content: string): State {
   if (!content.trim()) return { rounds: [] };
 
@@ -107,7 +107,7 @@ function initSubverb(path: string, args: string[]): DispatchResult {
   try {
     topic = parseTopic(args);
   } catch (err) {
-    if (err instanceof WhiteboardError) return fail(err.message);
+    if (err instanceof PlanError) return fail(err.message);
     throw err;
   }
   if (existsSync(path)) {
@@ -115,7 +115,7 @@ function initSubverb(path: string, args: string[]): DispatchResult {
     return { exitCode: 0 };
   }
   ensureParentDir(path);
-  const header = `# Whiteboard: ${topic.trim()}\n`;
+  const header = `# Plan: ${topic.trim()}\n`;
   writeFileSync(path, header, 'utf-8');
   return { exitCode: 0 };
 }
@@ -126,7 +126,7 @@ function detectRoundSubverb(path: string): DispatchResult {
     try {
       content = readFileSync(path, 'utf-8');
     } catch (err) {
-      return fail(`could not read whiteboard at ${path}: ${(err as Error).message}`);
+      return fail(`could not read plan at ${path}: ${(err as Error).message}`);
     }
   }
   const next = detectNextRound(content);
@@ -135,7 +135,7 @@ function detectRoundSubverb(path: string): DispatchResult {
 
 function validateAppendInput(parsed: unknown): Section[] {
   if (!Array.isArray(parsed)) {
-    throw new WhiteboardError(
+    throw new PlanError(
       'append input must be a JSON array of {engineer, section} entries',
     );
   }
@@ -143,16 +143,16 @@ function validateAppendInput(parsed: unknown): Section[] {
   for (let i = 0; i < parsed.length; i++) {
     const e = parsed[i];
     if (typeof e !== 'object' || e === null || Array.isArray(e)) {
-      throw new WhiteboardError(`entry [${i}] must be an object`);
+      throw new PlanError(`entry [${i}] must be an object`);
     }
     const obj = e as Record<string, unknown>;
     if (typeof obj.engineer !== 'string' || obj.engineer.length === 0) {
-      throw new WhiteboardError(
+      throw new PlanError(
         `entry [${i}] must have a non-empty string \`engineer\` field`,
       );
     }
     if (typeof obj.section !== 'string') {
-      throw new WhiteboardError(`entry [${i}] must have a string \`section\` field`);
+      throw new PlanError(`entry [${i}] must have a string \`section\` field`);
     }
     sections.push({ engineer: obj.engineer, section: obj.section });
   }
@@ -181,7 +181,7 @@ function appendSubverb(path: string, stdin: string): DispatchResult {
   try {
     sections = validateAppendInput(parsed);
   } catch (err) {
-    if (err instanceof WhiteboardError) return fail(err.message);
+    if (err instanceof PlanError) return fail(err.message);
     throw err;
   }
 
@@ -190,13 +190,13 @@ function appendSubverb(path: string, stdin: string): DispatchResult {
     try {
       existing = readFileSync(path, 'utf-8');
     } catch (err) {
-      return fail(`could not read whiteboard at ${path}: ${(err as Error).message}`);
+      return fail(`could not read plan at ${path}: ${(err as Error).message}`);
     }
   }
   const round = detectNextRound(existing);
   const block = formatRoundBlock(round, sections);
 
-  const base = existing.length > 0 ? existing : '# Whiteboard\n';
+  const base = existing.length > 0 ? existing : '# Plan\n';
   const separator = base.endsWith('\n\n') ? '' : base.endsWith('\n') ? '\n' : '\n\n';
   const next = `${base}${separator}${block}`;
 
@@ -204,7 +204,7 @@ function appendSubverb(path: string, stdin: string): DispatchResult {
   writeFileSync(path, next, 'utf-8');
 
   const result: AppendResult = {
-    whiteboard_path: path,
+    plan_path: path,
     round,
     sections,
     contradictions: [],
@@ -218,7 +218,7 @@ function readStateSubverb(path: string): DispatchResult {
     try {
       content = readFileSync(path, 'utf-8');
     } catch (err) {
-      return fail(`could not read whiteboard at ${path}: ${(err as Error).message}`);
+      return fail(`could not read plan at ${path}: ${(err as Error).message}`);
     }
   }
   const state = parseState(content);
@@ -233,25 +233,25 @@ function parseTopic(args: string[]): string {
     strict: false,
   });
   if (typeof values.topic !== 'string' || values.topic.length === 0) {
-    throw new WhiteboardError('init requires --topic=<string>');
+    throw new PlanError('init requires --topic=<string>');
   }
   return values.topic;
 }
 
-export function whiteboardVerb(
+export function planVerb(
   rest: string[],
   ctx: GuildCliContext,
 ): DispatchResult {
   const subverb = rest[0];
   if (!subverb) {
     return fail(
-      'usage: whiteboard <init|detect-round|append|read-state> <path> [args]',
+      'usage: plan <init|detect-round|append|read-state> <path> [args]',
     );
   }
   const pathArg = rest[1];
   if (!pathArg) {
     return fail(
-      `verb \`${subverb}\` requires a whiteboard path as the first positional argument`,
+      `verb \`${subverb}\` requires a plan path as the first positional argument`,
     );
   }
   const path = resolve(ctx.cwd, pathArg);

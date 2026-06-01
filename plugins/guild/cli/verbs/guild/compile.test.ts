@@ -42,7 +42,7 @@ describe('compile: end-to-end smoke against the real seed axes.toml', () => {
 
     expect(writes.has('out/.cache.toml')).toBe(true);
     expect(writes.has('out/evaluator-a11y.md')).toBe(true);
-    expect(writes.has('out/whiteboard-skeptic.md')).toBe(true);
+    expect(writes.has('out/plan-skeptic.md')).toBe(true);
   });
 
   it('every emitted .md carries the YAML frontmatter and provenance comment', () => {
@@ -322,8 +322,8 @@ describe('compile: --check smoke (Phase 2.1 exit criteria 4 + 5)', () => {
     expect(result.ok).toBe(false);
     const drift = result.drift.cells_with_source_drift;
     expect(drift.length).toBeGreaterThan(0);
-    // a11y is a domain on both reviewer and planner phases, so both
-    // evaluator-a11y and whiteboard-a11y drift. Every drift entry
+    // a11y is a domain on both reviewer and plan phases, so both
+    // evaluator-a11y and plan-a11y drift. Every drift entry
     // should be axis=domain and on a cell whose id ends with `-a11y`.
     expect(drift.every((d) => d.axis === 'domain')).toBe(true);
     expect(drift.every((d) => d.id.endsWith('-a11y'))).toBe(true);

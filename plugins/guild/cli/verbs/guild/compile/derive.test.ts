@@ -35,12 +35,12 @@ describe('derive: seed axes.toml', () => {
     }
   });
 
-  it('planner recipes emit whiteboard-<domain> cells', () => {
+  it('plan recipes emit plan-<domain> cells', () => {
     const cells = deriveSeed();
-    const plannerCells = cells.filter((c: Cell) => c.phase === 'planner' && c.source === 'recipe');
-    expect(plannerCells.length).toBeGreaterThan(0);
-    for (const cell of plannerCells) {
-      expect(cell.id).toBe(`whiteboard-${cell.domain}`);
+    const planCells = cells.filter((c: Cell) => c.phase === 'plan' && c.source === 'recipe');
+    expect(planCells.length).toBeGreaterThan(0);
+    for (const cell of planCells) {
+      expect(cell.id).toBe(`plan-${cell.domain}`);
     }
   });
 

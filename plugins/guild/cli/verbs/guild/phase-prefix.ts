@@ -1,7 +1,8 @@
 // phase-prefix — the single source of truth for the axes.toml phase axis →
-// agent-name / cell-id prefix mapping. `reviewer`/`planner` keep their
-// historical prefixes (evaluator/whiteboard); write-capable phases prefix
-// with their own name.
+// agent-name / cell-id prefix mapping. `reviewer` keeps its historical
+// prefix (evaluator); every other phase prefixes with its own name, so the
+// phase token, the agent surface, and the loom verb read the same word
+// (`plan`, `research`, `implementer`, `fixer`).
 //
 // Both the compile pipeline (derive.ts → cell ids) and the runtime recipe
 // resolver (recipe.ts → agent names) read this. It was previously two
@@ -12,7 +13,8 @@
 
 export const PHASE_PREFIX: Record<string, string> = {
   reviewer: 'evaluator',
-  planner: 'whiteboard',
+  plan: 'plan',
+  research: 'research',
   implementer: 'implementer',
   fixer: 'fixer',
 };
