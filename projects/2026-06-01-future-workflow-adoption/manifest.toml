@@ -31,3 +31,8 @@ detail = {}
 at = "2026-06-01T02:01:35.233Z"
 event = "research-started"
 detail = { slug = "2026-06-01-future-workflow-adoption", topic = "future-workflow-adoption" }
+
+[[events]]
+at = "2026-06-01T02:01:35.320Z"
+event = "research-completed"
+detail = { slug = "2026-06-01-future-workflow-adoption", research_path = "RESEARCH.md", notes_path = "RESEARCH-NOTES.md" }
