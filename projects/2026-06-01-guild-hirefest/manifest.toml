@@ -1,0 +1,48 @@
+checkins = []
+sessions = []
+revisions = []
+
+[meta]
+schema_version = 1
+title = "Guild Hirefest"
+slug = "2026-06-01-guild-hirefest"
+started = "2026-06-01"
+status = "active"
+strategy = "interactive"
+
+[config]
+base_branch = "main"
+reviewers = []
+labels = []
+verification = []
+worker_bindings = {}
+
+[[phases]]
+number = 1
+name = "Escalation contract + codegen prerequisites (setup gate)"
+status = "not-started"
+
+[[phases]]
+number = 2
+name = "RPI posture-name alignment"
+status = "not-started"
+
+[[phases]]
+number = 3
+name = "Staff the `research` posture"
+status = "not-started"
+
+[[phases]]
+number = 4
+name = "Hire implementer/fixer (wave-sequenced)"
+status = "not-started"
+
+[[phases]]
+number = 5
+name = "Cleanup / coherence (close the loop)"
+status = "not-started"
+
+[[events]]
+at = "2026-06-01T03:18:26.776Z"
+event = "project-initialized"
+detail = {}
