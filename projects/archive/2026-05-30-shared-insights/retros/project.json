@@ -1,0 +1,57 @@
+{
+  "schema_version": 1,
+  "type": "project",
+  "created": "2026-06-01T00:22:10Z",
+  "findings": [
+    {
+      "category": "kept-well",
+      "description": "The pre-draft premise check (verify each phase's premise against current source before contracting) caught three deliverables already-shipped by substrate-tempering and several stale file:line refs — turning would-be rebuilds into 'verified, recorded, moved on'.",
+      "evidence": "checkins 09 + 10 (P4-D1/D3a, P5-D1 found already-shipped); the premise-staleness memory."
+    },
+    {
+      "category": "kept-well",
+      "description": "The remediation dogfooded itself and the fixes compounded — each phase's output improved later phases.",
+      "evidence": "P5's --only synced P6/P7's docs; P4's Advisory-notes channel surfaced advisories that shaped P5-P8; P3's derive-panel fix let later panels derive correctly; P1's freshness gate flagged a real stale guild (missing compile/recipe) on its first live run."
+    },
+    {
+      "category": "kept-well",
+      "description": "The P7 diagnosis-gate held under pressure: shipped only the confirmed 529 retry-with-backoff and refused to mandate habit-changes for an unconfirmed output cap — the 'confirm the cause before changing habits' gate working as designed.",
+      "evidence": "OUTPUT-OVERLOAD-DIAGNOSIS.md; checkin 16."
+    },
+    {
+      "category": "improvement",
+      "description": "PLAN premises were substantially stale — the diagnosis was a 2026-05-30 snapshot and substrate-tempering moved under it, shrinking or reshaping Phases 4-5 mid-execution. Author remediation plans closer to execution, or treat premise re-verification as a formal first step.",
+      "evidence": "3 deliverables already-shipped (checkins 09, 10); the cross-project premise-staleness memory."
+    },
+    {
+      "category": "improvement",
+      "description": "The checkin create-once vs 'Contract section only' prose drift recurred across ~12-17 checkins before Phase 6 reconciled it — the ev-loop skill prose described a two-write pattern the create-once CLI never supported.",
+      "evidence": "checkins 01 + 14; ADR-0002; the create-once correction."
+    },
+    {
+      "category": "improvement",
+      "description": "Several 'mechanical' deliverables hid a required deeper fix that the PLAN's framing understated — the glob **/ zero-segment fix was needed for the P3 repoint to match bin entrypoints; compile --check needed prompt-hash self-compute before it was usable standalone.",
+      "evidence": "checkin 06 (the scope-expansion correction); checkin 01."
+    },
+    {
+      "category": "process-change",
+      "description": "Make the pre-draft premise check a formal phase-0 step in remediation loops — it was ad-hoc here but load-bearing every single phase.",
+      "evidence": "every phase opened with a premise audit; 3 caught already-shipped."
+    },
+    {
+      "category": "process-change",
+      "description": "Schedule a periodic 'audit skill-prose against actual verb behavior' sweep — the create-once drift and the derive-panel positional-arg footgun are the same authoring-vs-runtime drift class.",
+      "evidence": "Phase 6 D2 (prose reconciliation); the derive-panel positional-arg discovery (checkin 06)."
+    },
+    {
+      "category": "follow-up",
+      "description": "P4-D3b deferred: edit reviewer.md to document VERDICT: recused + an approved-advisory section, then re-fuse all ~9 reviewer-phase evaluators (a large LLM-regenerated codegen diff that wants human review). The parse-side gap was fixed in P4; the emit-side codegen is open.",
+      "evidence": "checkin 09."
+    },
+    {
+      "category": "follow-up",
+      "description": "Open robustness/debris: (1) guild derive-panel silently baselines on positional args — add a guard that errors instead; (2) ADR-0004 reconciliation — supersede toward the --only/--exclude-lib flag shape or build the decided per-tier verbs; (3) small: globToRegExp/globToRegex casing alignment, the griot/loom doctor-contract convergence deferred in P1.",
+      "evidence": "checkins 06, 20; ADR-0004 Consequences."
+    }
+  ]
+}

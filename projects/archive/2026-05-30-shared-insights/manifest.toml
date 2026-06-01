@@ -6,7 +6,7 @@ schema_version = 1
 title = "Shared Insights — substrate papercut remediation"
 slug = "2026-05-30-shared-insights"
 started = "2026-05-30"
-status = "active"
+status = "archived"
 strategy = "stacked via gt, three waves (setup/freshness, code-fix, convention/posture), one PR per phase"
 
 [config]
@@ -223,6 +223,16 @@ detail = { type = "session", phase = 8, tier = 1 }
 at = "2026-06-01T00:09:46.238Z"
 event = "phase-completed"
 detail = { phase = 8 }
+
+[[events]]
+at = "2026-06-01T00:22:39.100Z"
+event = "retro-written"
+detail = { type = "project" }
+
+[[events]]
+at = "2026-06-01T00:22:51.675Z"
+event = "archived"
+detail = { destination = "/Users/krambuhl/Sites/agents-nebula/projects/archive/2026-05-30-shared-insights" }
 
 [[checkins]]
 schema_version = 1
