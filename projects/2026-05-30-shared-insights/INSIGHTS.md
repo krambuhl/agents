@@ -72,6 +72,23 @@ Most of these are integration-seam / authoring-vs-runtime failures, not reasonin
 
 A large share of the shape-3 and shape-4 papercuts were already found-and-closed in the `substrate-followups` sweep (loom doctor exit code, phase update PR-flags, griot capture catalog-gap, revise-plan manifest delta). The dogfooding loop earning its keep: most of what trips us up is the substrate telling us where it's thin, and the fixes compound.
 
+## Remediation outcomes (2026-05-31)
+
+The 8-phase remediation ran to completion (PRs #176–#183, driven through `/ev-run` + the ev-loops). What it actually shipped, mapped back to the diagnosis above:
+
+- **#1 Output-token / overload** → Phase 7, *diagnosis-first*. The "~500-token cap" framing is **not supported** (this remediation's own multi-hour session emitted dozens of multi-thousand-token responses with zero cap-truncations or 529s; no repo `max_tokens` exists to misconfigure). Boulder's dissent was right. Shipped only the confirmed fix — **529 retry-with-backoff** as a loop convention; demoted write-to-files / stream-progress to *hygiene, not a mandated cap-workaround*. Full finding: `OUTPUT-OVERLOAD-DIAGNOSIS.md`.
+- **#2 Looks-green-breaks-later** → Phase 1 (`loom doctor` agent-cache + codegen-drift signal; an exhaustive `node --check` strip-only gate over every runtime `.ts`) + Phase 2 (derive-don't-duplicate: `CANONICAL_PHASES` derived from parsed keys, the dual `PHASE_PREFIX` collapsed). The "move the catch earlier" lever, applied.
+- **#3 Orchestration preconditions at dispatch** → Phase 1 (the once-per-dispatch freshness preflight, wired into `ev-run` Tier 3) + Phase 5 (the missing verbs that were *actually* missing — `sync-shared --only`/`--exclude-lib`; `project archive` test-ref warning).
+- **#4 Authoring-vs-consumer path resolution** → Phase 3 (`derive-panel` substrate globs repointed to `plugins/**`, `globToRegex` `**/` zero-segment fix, react gated on a real import; `loom pr open --base` forwarded).
+- **#5 Evaluator-panel brittleness** → Phase 4 (approved-with-advisory now survives `parse-and-aggregate` — advisories stopped being silently dropped). Own-line VERDICT + `recused` were already shipped by substrate-tempering.
+- **#6 Declaring-done-before-demonstrating** → Phase 6, codified as a convention alongside AskUserQuestion-discipline, the checkin prose↔create-once reconciliation, and branch-hygiene.
+
+**Newly-mined findings (not in the original six):**
+
+- **Plan premises go stale across projects.** *Three* deliverables (P4-D1, P4-D3a, P5-D1) were found already-shipped by `substrate-tempering` before execution reached them. The pre-draft source check caught each. This is the through-line above, recursed onto the remediation itself: the diagnosis was a snapshot, and the substrate moved under it.
+- **`guild derive-panel` silently baselines on positional args** (it reads `--files=`/stdin only) — a silent-degradation footgun that masqueraded as "the panel under-returns." The documented recipe is correct; a guard that errors on positional args is a worthwhile follow-up.
+- **Small naming/perf debris** surfaced and deferred: `globToRegExp` (sync-shared) vs `globToRegex` (derive-panel) casing split; the archive test-ref scan is a full synchronous repo walk (fine at current scale).
+
 ---
 
 *Consolidated 2026-05-30 from three independent `/insights` analyses — main, nebula, boulder. Convergence = high-confidence; preserved dissent = validate-before-adopting.*
