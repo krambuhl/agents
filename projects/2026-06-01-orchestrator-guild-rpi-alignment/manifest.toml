@@ -1,0 +1,33 @@
+checkins = []
+sessions = []
+revisions = []
+
+[meta]
+schema_version = 1
+title = "Orchestrator Guild Rpi Alignment"
+slug = "2026-06-01-orchestrator-guild-rpi-alignment"
+started = "2026-06-01"
+status = "active"
+strategy = "interactive"
+
+[config]
+base_branch = "main"
+reviewers = []
+labels = []
+verification = []
+worker_bindings = {}
+
+[[phases]]
+number = 1
+name = "Phase 1"
+status = "not-started"
+
+[[events]]
+at = "2026-06-01T20:17:52.792Z"
+event = "project-initialized"
+detail = {}
+
+[[events]]
+at = "2026-06-01T20:17:52.793Z"
+event = "research-started"
+detail = { slug = "2026-06-01-orchestrator-guild-rpi-alignment", topic = "orchestrator-guild-rpi-alignment" }
