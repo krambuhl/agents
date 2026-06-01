@@ -1,0 +1,67 @@
+{
+  "schema_version": 1,
+  "type": "project",
+  "created": "2026-06-01T19:48:25Z",
+  "findings": [
+    {
+      "category": "kept-well",
+      "description": "Escalation-contract-first sequencing: Phase 1 put Constraints/Escalation/Confidence in the fragments, mandated them in the fusion-prompt, and locked them with a source-level body-shape test — every later phase (2 recompiles, 20 new fusions) inherited the contract for free.",
+      "evidence": "PR #187; modes/escalation-contract.test.ts + agents/escalation-contract-compiled.test.ts"
+    },
+    {
+      "category": "kept-well",
+      "description": "Context-lean codegen techniques kept huge waves reviewable: additive-injection recompile (preserve body + inject) and parallel-fusion offload (one subagent per new cell, writes to disk, returns one line) instead of from-scratch re-fusion in the orchestrator.",
+      "evidence": "Phase 1 U5 = 678 insertions / 0 deletions across 22 bodies; Phases 3-4 spawned 20 fusion subagents"
+    },
+    {
+      "category": "kept-well",
+      "description": "The axes.toml<->fusion-prompt drift guard (a test added in Phase 1 U3) forced lockstep updates in Phases 2b/3 exactly as designed — it caught the rename the moment it would have desynced the template and the schema.",
+      "evidence": "skills/guild-compile/fusion-prompt.test.ts (PHASE_ROLES vs [axis.phase.*])"
+    },
+    {
+      "category": "improvement",
+      "description": "Phase 2 was badly under-scoped by the PLAN: 'mechanical rename, grep-gated' was actually a 110-file cross-plugin atomic change with an internal PLAN contradiction (grep-gate 'zero residual' vs deliverable 'update skill references') that needed an operator decision mid-flight, plus collision hazards (planner contains plan; the loom .plan field).",
+      "evidence": "PR #188; AskUserQuestion on the whiteboard-skill-retirement scope"
+    },
+    {
+      "category": "improvement",
+      "description": "L-004 turned the Live-spawn smokes into unpayable in-flight debt: agents authored in a session only register at the next session start, so the smokes deferred across all 6 hire/staff PRs and remain open at archive — the roster ships statically-verified but runtime-unverified.",
+      "evidence": "Live-spawn-smoke-deferred corrections in every hire/staff checkin"
+    },
+    {
+      "category": "improvement",
+      "description": "A cluster of recurring papercuts cost re-work: my own loose test assertions (flagged by evaluator-test-unit nearly every early unit until internalized), the loom manifest-reconcile stranding (phase status committed after the unit commit), and the checkin schema rejecting a contract missing 'inputs' mid-commit.",
+      "evidence": "corrections in setup checkins 01-03; alignment + hire-4b corrections"
+    },
+    {
+      "category": "process-change",
+      "description": "Fold axes.toml tool_grants into the codegen cache signature. The cache hashes only the fragments + fusion-prompt, so a grant edit shows as cache-hit and silently leaves the compiled tools: line stale; grant edits should invalidate the cache like fragment edits.",
+      "evidence": "Phase 5 had to hand-sync evaluator-css-architecture's tools after adding the grant"
+    },
+    {
+      "category": "process-change",
+      "description": "A rename deliverable should map its full cross-plugin blast radius and resolve any grep-gate-vs-scope tension at PLAN time, not discover both mid-execution.",
+      "evidence": "Phase 2 (PR #188)"
+    },
+    {
+      "category": "process-change",
+      "description": "Sequence Live-spawn smokes as an explicit terminal step in the plan. Same-session smokes are structurally impossible (L-004), so a plan should account for a dedicated post-merge smoke session rather than letting each phase defer into a void.",
+      "evidence": "the accumulated smoke debt across this project"
+    },
+    {
+      "category": "follow-up",
+      "description": "Run the Live-spawn smokes for all 20 new agents (10 research-* + 10 implementer/fixer-*) in a fresh session: dispatch a sample across postures, confirm conformant output + the Constraints/Escalation/Confidence contract, record at learnings/session-notes/. This is the gate before the roster is runtime-trusted.",
+      "evidence": "AGENT-CODEGEN.md Live-spawn smoke checklist (refreshed in Phase 5)"
+    },
+    {
+      "category": "follow-up",
+      "description": "Two deferred substrate cleanups: the dangling .claude/agents/evaluator-base.md reference (deleted in a prior guild phase but still cited by agent bodies/packets; panel evaluators flagged it repeatedly), and the loom projects/<slug>/whiteboards/ artifact-directory convention (the one whiteboard-named surface left un-renamed in Phase 2, pending a loom-convention decision).",
+      "evidence": "Phase 1 U4 substrate observation; Phase 2 PR #188 'what's next'"
+    },
+    {
+      "category": "follow-up",
+      "description": "The downstream deployment plan depends on this one: it consumes the staffed roster and routes the operator-judgment-required outcome to a human (the loop-layer wiring this project deliberately left as a forward-compatible seam).",
+      "evidence": "PLAN.md § Dependencies; parse-and-aggregate operator-judgment-required outcome (PR #187)"
+    }
+  ]
+}

@@ -6,7 +6,7 @@ schema_version = 1
 title = "Guild Hirefest"
 slug = "2026-06-01-guild-hirefest"
 started = "2026-06-01"
-status = "active"
+status = "archived"
 strategy = "interactive"
 
 [config]
@@ -150,6 +150,16 @@ detail = { number = "01", branch = "ev-agent.guild-hirefest.cleanup" }
 at = "2026-06-01T18:53:00.277Z"
 event = "phase-completed"
 detail = { phase = 5 }
+
+[[events]]
+at = "2026-06-01T19:48:25.909Z"
+event = "retro-written"
+detail = { type = "project" }
+
+[[events]]
+at = "2026-06-01T19:48:39.001Z"
+event = "archived"
+detail = { destination = "/Users/krambuhl/Sites/agents-nebula/projects/archive/2026-06-01-guild-hirefest" }
 
 [[checkins]]
 schema_version = 1
