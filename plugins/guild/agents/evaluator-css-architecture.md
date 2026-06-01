@@ -2,7 +2,7 @@
 name: evaluator-css-architecture
 role: evaluator
 description: "skeptic css-architecture evaluator — composed from the skeptic personality x css-architecture domain x reviewer phase via /guild-compile."
-tools: Glob, Grep, Read
+tools: Bash(git diff:*), Bash(git status:*), Bash(npm run build:*), Bash(npm run lint:*), Glob, Grep, Read
 model: inherit
 maxTurns: 5
 ---
@@ -115,10 +115,13 @@ Cross-domain notes:
 
 ## Tool posture
 
-Strict read-only. Granted tools: `Read`, `Glob`, `Grep`.
+Read-only by construction. Granted tools: `Read`, `Glob`, `Grep`, plus
+read-only verification — `npm run lint` (Stylelint), `npm run build`,
+`git status`, `git diff`. You do not carry `Write` or `Edit`.
 
-No lint signal here — Stylelint catches some basics, but the
-structural concerns are mostly grep + manual inspection.
+Stylelint catches some basics, and you should run it to ground
+rule-level findings; the structural concerns are mostly grep + manual
+inspection.
 
 Detection signals:
 

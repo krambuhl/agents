@@ -1,0 +1,31 @@
+schema_version = 1
+
+# foo hosts a write phase (implementer) and a reviewer, but its tool_grants
+# are empty — the reviewer that gates its write cells has no runnable
+# verification (reviewer base_tools are read-only with no Bash).
+[axis.domain.foo]
+phases = ["reviewer", "implementer"]
+tool_grants = []
+
+[axis.personality.pragmatist]
+phases = ["reviewer", "implementer"]
+disposition = "decide"
+
+[axis.phase.reviewer]
+base_tools = ["Read", "Glob", "Grep"]
+writes = false
+default_personality = "pragmatist"
+
+[axis.phase.implementer]
+base_tools = ["Read", "Edit", "Write"]
+writes = true
+default_personality = "pragmatist"
+
+[[recipes]]
+name = "implementer-default"
+phase = "implementer"
+personality = "pragmatist"
+domains = ["foo"]
+
+[[retained]]
+name = "contract-fit"

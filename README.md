@@ -16,7 +16,7 @@ The marketplace ships as six self-contained Claude Code plugins:
 |---|---|---|
 | `commons@krambuhl` | Foundation substrate: cross-cutting helpers (shared CLI lib + agent-conventions docs + interview/review skills) used by the rest of the family | — |
 | `griot@krambuhl` | Learnings substrate: `griot` CLI + `griot-*` skills + judge/rewriter agents | `commons` |
-| `guild@krambuhl` | Antagonist-panel substrate: `guild` CLI + `guild-*` skills + `plan-*` / `evaluator-*` / `generator-*` agents | `commons` |
+| `guild@krambuhl` | Antagonist-panel substrate: `guild` CLI + `guild-*` skills + `plan-*` / `research-*` / `evaluator-*` / `implementer-*` / `fixer-*` agents | `commons` |
 | `loom@krambuhl` | Project substrate: `loom` CLI + `loom-*` skills (plans, research, sessions, checkins, retros, archives) | `commons`, `guild`, `griot` |
 | `ev@krambuhl` | Execution loops: `ev-loop-confidence`, `ev-loop-interactive`, `ev-run` skills | `commons`, `loom`, `guild`, `griot` |
 | `agent-loop-full@krambuhl` | Meta-bundle: zero-content plugin that cascade-installs the full family | all five above |

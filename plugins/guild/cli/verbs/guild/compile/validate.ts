@@ -20,6 +20,8 @@ import type { AxesData, Finding, ValidationResult } from './types.ts';
 //   - singleton-cell-underivable  singleton.phase not in singleton.personality's phases
 //   - retained-collides-with-derived-cell retained.name matches a domain or singleton name
 //   - phase-default-personality-unknown axis.phase.X.default_personality not in axis.personality.*
+//   - writes-domain-missing-reviewer    domain hosts a write phase but no reviewer to gate it
+//   - writes-domain-missing-verify-grant domain hosts a write phase but has empty tool_grants
 //
 // Deferred lint (PLAN's "etc."): "personality declares fit at a phase
 // with writes=false while requesting Write" — not well-defined in the
@@ -188,6 +190,39 @@ export function validate(data: AxesData): ValidationResult {
         'phase-default-personality-unknown',
         `phase "${name}" default_personality "${phase.default_personality}" is not in axis.personality.*`,
         `axis.phase.${name}.default_personality`,
+      );
+    }
+  }
+
+  // Writes coherence: a domain that hosts a write phase (writes=true, i.e.
+  // implementer/fixer) must also host the reviewer phase that gates its output
+  // AND carry a runnable verify grant. The reviewer phase's base_tools are
+  // read-only with no Bash, so a reviewer's entire verification capability
+  // comes from the domain's tool_grants — a write-capable domain with empty
+  // grants has a blind reviewer gating it. (guild-hirefest reviewer-gap
+  // inventory; css-architecture was the exemplar this closes.)
+  const writePhaseNames = new Set(
+    Object.entries(data.phases)
+      .filter(([, phase]) => phase.writes)
+      .map(([name]) => name),
+  );
+  for (const [name, domain] of Object.entries(data.domains)) {
+    const hostsWrite = domain.phases.some((p: string) => writePhaseNames.has(p));
+    if (!hostsWrite) continue;
+    if (!domain.phases.includes('reviewer')) {
+      flag(
+        errors,
+        'writes-domain-missing-reviewer',
+        `domain "${name}" hosts a write phase but has no "reviewer" phase to gate its output`,
+        `axis.domain.${name}.phases`,
+      );
+    }
+    if (domain.tool_grants.length === 0) {
+      flag(
+        errors,
+        'writes-domain-missing-verify-grant',
+        `domain "${name}" hosts a write phase but declares no tool_grants — the reviewer gating it cannot run verification`,
+        `axis.domain.${name}.tool_grants`,
       );
     }
   }

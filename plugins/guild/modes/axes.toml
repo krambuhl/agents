@@ -26,7 +26,7 @@ tool_grants = []
 
 [axis.domain.css-architecture]
 phases = ["reviewer", "implementer", "fixer"]
-tool_grants = []
+tool_grants = ["Bash(npm run lint:*)", "Bash(npm run build:*)", "Bash(git status:*)", "Bash(git diff:*)"]
 
 [axis.domain.naming]
 phases = ["research", "plan", "reviewer", "implementer", "fixer"]

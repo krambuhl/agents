@@ -1,4 +1,4 @@
 {
   "name": "guild",
-  "description": "Panel substrate: guild-validate / guild-plan / guild-spawn skills + guild CLI + plan-* / evaluator-* / generator-* agents."
+  "description": "Panel substrate: guild-validate / guild-plan / guild-spawn skills + guild CLI + plan-* / research-* / evaluator-* / implementer-* / fixer-* agents."
 }

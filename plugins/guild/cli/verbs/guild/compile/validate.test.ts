@@ -164,4 +164,36 @@ describe('validate: lints', () => {
       expect(f.location).toContain('axis.phase.reviewer.default_personality');
     }
   });
+
+  it('flags writes-domain-missing-reviewer when a write domain has no reviewer', () => {
+    const result = loadAndValidate('writes-domain-missing-reviewer.toml');
+    expect(result.ok).toBe(false);
+    const codes = findingCodes(result);
+    expect(codes).toContain('writes-domain-missing-reviewer');
+    // The grant is present, so the verify-grant lint must NOT also fire.
+    expect(codes).not.toContain('writes-domain-missing-verify-grant');
+    if (!result.ok) {
+      const f = result.errors.find(
+        (e: Finding) => e.code === 'writes-domain-missing-reviewer',
+      )!;
+      expect(f.message).toContain('domain "foo"');
+      expect(f.location).toContain('axis.domain.foo.phases');
+    }
+  });
+
+  it('flags writes-domain-missing-verify-grant when a write domain has empty tool_grants', () => {
+    const result = loadAndValidate('writes-domain-missing-verify-grant.toml');
+    expect(result.ok).toBe(false);
+    const codes = findingCodes(result);
+    expect(codes).toContain('writes-domain-missing-verify-grant');
+    // The reviewer phase is present, so the missing-reviewer lint must NOT fire.
+    expect(codes).not.toContain('writes-domain-missing-reviewer');
+    if (!result.ok) {
+      const f = result.errors.find(
+        (e: Finding) => e.code === 'writes-domain-missing-verify-grant',
+      )!;
+      expect(f.message).toContain('domain "foo"');
+      expect(f.location).toContain('axis.domain.foo.tool_grants');
+    }
+  });
 });
