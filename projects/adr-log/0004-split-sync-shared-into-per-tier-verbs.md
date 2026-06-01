@@ -23,4 +23,7 @@ Alternative considered: keep one verb but gate execution on consumer-tier consis
 
 ## Consequences
 
-TODO: operator to fill before commit
+- **The decided shape (per-tier verbs `sync-shared docs`/`lib`/`all`) was not implemented as stated.** `2026-05-30-shared-insights` Phase 5 instead added scoping *flags* — `--only=<glob>` and `--exclude-lib` — to the single `sync-shared` entrypoint, reaching the same operator-intent isolation (propagate a docs change without dragging lib drift into the same run) with less surface, and additionally making a scoped run *copy-only* (it never deletes orphans), which a per-tier-verb split did not address.
+- This makes the per-tier-verb decision **superseded in practice** by the flag approach. Per the append-only ADR convention, if the flag shape is adopted as canonical a future ADR should formally supersede this one — the ADR and the shipped mechanism currently disagree, which is itself the authoring-vs-runtime drift the remediation targets.
+- `--check` stays a full-tree gate under the flag shape (scoping applies to the write path only), preserving the "CI gates on the whole tree" property this decision wanted from per-tier `--check`.
+- Watch: reconcile the record with reality — either supersede this ADR toward the flag shape, or build the per-tier verbs as decided.

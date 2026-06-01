@@ -61,7 +61,8 @@ branch = "ev-agent.shared-insights.overload-diagnosis"
 [[phases]]
 number = 8
 name = "Cleanup"
-status = "not-started"
+status = "completed"
+branch = "ev-agent.shared-insights.cleanup"
 
 [[events]]
 at = "2026-05-31T18:58:02.360Z"
@@ -197,6 +198,31 @@ detail = { number = "17", branch = "ev-agent.shared-insights.overload-diagnosis"
 at = "2026-05-31T23:50:25.560Z"
 event = "phase-completed"
 detail = { phase = 7 }
+
+[[events]]
+at = "2026-06-01T00:09:45.927Z"
+event = "checkin-created"
+detail = { number = "18", branch = "ev-agent.shared-insights.cleanup" }
+
+[[events]]
+at = "2026-06-01T00:09:46.004Z"
+event = "checkin-created"
+detail = { number = "19", branch = "ev-agent.shared-insights.cleanup" }
+
+[[events]]
+at = "2026-06-01T00:09:46.079Z"
+event = "checkin-created"
+detail = { number = "20", branch = "ev-agent.shared-insights.cleanup" }
+
+[[events]]
+at = "2026-06-01T00:09:46.161Z"
+event = "retro-written"
+detail = { type = "session", phase = 8, tier = 1 }
+
+[[events]]
+at = "2026-06-01T00:09:46.238Z"
+event = "phase-completed"
+detail = { phase = 8 }
 
 [[checkins]]
 schema_version = 1
@@ -435,3 +461,45 @@ scope = ["Long-loop resilience convention + loop citations"]
 changes_since_previous = "Second and final unit; the gated remediate half."
 verdict = { result = "approved", reasons = ["Panel (contract-fit) → approved, zero findings. retry-backoff shipped as a requirement; cap-habits framed as hygiene-not-cap-fix tied to the diagnosis; raise-budget not shipped; retry surfaces a real outage after a few attempts; convention + loops cite the diagnosis."] }
 notes_for_pr = ["Phase boundary single signal — no plan revision.", "The remediation deliberately ships LESS than the PLAN's 'Direction' bullet listed, because the diagnosis didn't confirm the cap — which is exactly the gate working."]
+
+[[checkins]]
+schema_version = 1
+number = "18"
+created = "2026-06-01T00:09:00Z"
+phase = { number = 8, name = "Cleanup" }
+branch = "ev-agent.shared-insights.cleanup"
+unit = "P8·D3 — align loom --help namespace column"
+contract = { goal = "Fix loom --help namespace misalignment (padEnd(8) but revise-plan is 11 chars) by deriving the pad width; pin with a test.", acceptance_criteria = ["descriptions all start at the same column", "width derived from the longest name (not hardcoded)", "a test pins the alignment"], rules_applied = ["derive-don't-duplicate (derive the width)"], disqualifiers = ["hardcoding 11", "changing verbs/descriptions", "breaking the lists-every-namespace test"], inputs = ["plugins/loom/cli/loom.ts", "plugins/loom/cli/loom.test.ts"] }
+execution = { actions = ["formatHelp now computes width=Math.max(...names.map(n=>n.length)) and pads with padEnd(width). Added an alignment test (descStarts all equal, length==names.length anti-vacuous).", "Verified: loom --help aligned; 23 loom tests (+1); full suite 1176; strip-only ok."], files_touched = ["plugins/loom/cli/loom.ts", "plugins/loom/cli/loom.test.ts"], corrections = [] }
+scope = ["derived pad width + alignment test"]
+changes_since_previous = "First unit of Phase 8 (the mechanical cleanup tier)."
+verdict = { result = "approved", reasons = ["Panel (contract-fit + test-unit) → approved, zero findings. Width derived (not hardcoded), alignment test pins same-column + guards vacuous pass, existing test still green."] }
+notes_for_pr = ["Derived the width so a future longer verb can't silently re-break alignment — the same derive-don't-duplicate move as Phase 2."]
+
+[[checkins]]
+schema_version = 1
+number = "19"
+created = "2026-06-01T00:09:00Z"
+phase = { number = 8, name = "Cleanup" }
+branch = "ev-agent.shared-insights.cleanup"
+unit = "P8·D2 — refresh INSIGHTS.md with remediation outcomes"
+contract = { goal = "Fold the 8-phase remediation outcomes + newly-mined papercuts into INSIGHTS.md so the diagnosis stays current.", acceptance_criteria = ["dated Remediation outcomes section", "each #1-6 cluster mapped to what shipped", "newly-mined findings recorded (premise-staleness, derive-panel positional footgun)", "accurate, no overclaiming"], rules_applied = ["append, don't rewrite the existing diagnosis", "no overclaiming (the cap unconfirmed; #5 pre-shipped noted)"], disqualifiers = ["claiming unshipped remediations", "misattributing a cluster", "rewriting #1-6"], inputs = ["projects/2026-05-30-shared-insights/INSIGHTS.md"] }
+execution = { actions = ["Added '## Remediation outcomes (2026-05-31)': #1→P7 (cap unsupported; only 529 shipped), #2→P1+P2, #3→P1+P5, #4→P3, #5→P4, #6→P6; newly-mined findings (plan-premises-go-stale ×3, derive-panel positional footgun, deferred debris). Original #1-6 intact.", "Verified: suite 1176; sync ok."], files_touched = ["projects/2026-05-30-shared-insights/INSIGHTS.md"], corrections = [] }
+scope = ["INSIGHTS remediation-outcomes section"]
+changes_since_previous = "Second unit; documentation."
+verdict = { result = "approved", reasons = ["Panel (contract-fit) → approved. Dated section, clusters mapped to phases, newly-mined findings recorded, no overclaiming (cap explicitly disclaimed; pre-shipped #5 noted), original diagnosis appended-to not rewritten."] }
+notes_for_pr = ["Advisory (non-blocking): per-cluster bullets mix single/multi-phase mappings; accurate, the prose handles it."]
+
+[[checkins]]
+schema_version = 1
+number = "20"
+created = "2026-06-01T00:09:00Z"
+phase = { number = 8, name = "Cleanup" }
+branch = "ev-agent.shared-insights.cleanup"
+unit = "P8·D1 — fill ADR Consequences (0002-0006), operator-reviewed"
+contract = { goal = "Fill the TODO Consequences in every ADR carrying them (PLAN named 0002+0005; grep found 0002-0006) so no ADR carries a TODO; grounded in the realized effects; operator confirmed to commit drafts for PR review.", acceptance_criteria = ["no ADR carries a TODO Consequences", "each filled section grounded in the ADR's decision + realized effects", "accurate incl. 0004's verbs-vs-flags divergence"], rules_applied = ["these are operator's record — drafted for review (operator confirmed via AskUserQuestion)", "ground in realized effects not invented opinion"], disqualifiers = ["leaving any TODO", "a Consequences that contradicts its Decision", "inventing baseless consequences"], inputs = ["projects/adr-log/0002-0006*.md"] }
+execution = { actions = ["Filled all 5: 0002 (atomic-snapshot; skill-rephrase landed in P6), 0003 (two-boundary vocab; branch-hygiene corollary), 0004 (divergence: per-tier verbs not built, P5 shipped --only/--exclude-lib flags → superseded-in-practice), 0005 (fail-safe-preserve; P5 copy-only scoped sync), 0006 (loom doctor skew-check landed P1; detected-not-fixed).", "Operator confirmed (AskUserQuestion) to commit drafts + revise on the PR.", "Verified: grep → no TODO remains; suite 1176."], files_touched = ["projects/adr-log/0002-0006*.md (5 files)"], corrections = ["The PLAN named 2 ADRs; grep found 5 with the TODO — the cleanup scope was larger than stated. Filled all 5 to meet the exit criterion."] }
+scope = ["5 ADR Consequences sections"]
+changes_since_previous = "Third and final unit; phase + project boundary."
+verdict = { result = "approved", reasons = ["Panel (contract-fit) → approved. No TODO remains; 0004's divergence accurately recorded as superseded-in-practice (not a false completion claim); grounded in realized effects; operator-confirmed to commit drafts for review."] }
+notes_for_pr = ["AGENT-DRAFTED for operator review — esp. 0004's 'superseded in practice' framing is an architectural call to confirm.", "Phase + PROJECT boundary: all 8 phases complete after this — /loom-archive is the next step."]

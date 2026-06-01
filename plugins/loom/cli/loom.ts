@@ -98,8 +98,12 @@ export function parseInvocation(argv: string[]): Invocation {
 }
 
 export function formatHelp(): string {
+  // Pad to the longest namespace name so descriptions align in a column.
+  // Derived (not a hardcoded 8) so a longer verb like `revise-plan` can't
+  // silently break the alignment again.
+  const width = Math.max(...Object.keys(NAMESPACES).map((n) => n.length));
   const namespaceLines = Object.entries(NAMESPACES).map(
-    ([name, purpose]) => `  ${name.padEnd(8)}  ${purpose}`,
+    ([name, purpose]) => `  ${name.padEnd(width)}  ${purpose}`,
   );
   return [
     'loom — project-substrate CLI',

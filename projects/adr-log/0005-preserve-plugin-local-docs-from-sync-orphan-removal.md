@@ -26,4 +26,7 @@ This is consistent with the broader substrate philosophy of operator-opt-in dest
 
 ## Consequences
 
-TODO: operator to fill before commit
+- The default sync posture is fail-safe-preserve: an unknown file in a consumer `docs/` is kept, not deleted, unless `--strict-orphan` is passed explicitly — consistent with the substrate's operator-opt-in-for-destructive-actions philosophy (cf. `/ev-run` § 0.5 refusing to auto-discard a dirty tree).
+- The in-file marker (`// sync-shared: plugin-local` / `<!-- sync-shared: plugin-local -->`) became the primary mechanism and ships in `sync-shared.ts` (`isPluginLocal`); the per-plugin manifest stayed optional and unbuilt — the marker proved sufficient.
+- `2026-05-30-shared-insights` Phase 5 extended the same fail-safe-preserve reasoning: a *scoped* sync (`--only`/`--exclude-lib`) is copy-only and never deletes, because files outside the operator's stated scope are unmanaged this run, not orphans.
+- Watch: `--strict-orphan` remains the one path that deletes; a marker typo silently re-exposes a plugin-local file to it.
