@@ -40,7 +40,7 @@ type Confidence = 'high' | 'medium' | 'low';
 // signal exists here so it can be built without re-touching this verb).
 type AgentOutcome = 'gated' | 'recused' | 'operator-judgment';
 
-type AgentSignal = {
+export type AgentSignal = {
   agent: string;
   confidence: Confidence | null;
   outcome: AgentOutcome;
@@ -181,41 +181,48 @@ function findEscalationReason(output: string): string | null {
   return m ? m[1].trim() : null;
 }
 
-function parseEvaluatorOutput(
-  _agent: string,
-  output: string,
-): {
-  findings: ParsedReason[];
-  cliRuns: CliRun[];
-  parseFailure: boolean;
-  confidence: Confidence | null;
-  outcome: AgentOutcome;
-  reason: string | null;
-} {
+// The shared per-agent signal: confidence + how the agent engaged with its
+// gate (`gated` / `recused` / `operator-judgment`), independent of any
+// findings. Both the reviewer aggregator (this verb) and the plan aggregator
+// (`guild plan append`) read it, so recusal and escalation are observed the
+// same way at every phase rather than re-parsed two different ways. An agent
+// with no recusal/escalation marker — including one that emitted no VERDICT:
+// line at all, such as a plan engineer writing prose — is `gated` by default.
+export function computeAgentSignal(agent: string, output: string): AgentSignal {
   const confidence = findConfidence(output);
   const escalationReason = findEscalationReason(output);
-  const verdictMatch = output.match(
+  const verdict = output.match(
     /^[\s>]*VERDICT:\s*(approved|flagged|flagged-conflict|recused|operator-judgment-required)\s*$/m,
-  );
-  const verdict = verdictMatch?.[1];
+  )?.[1];
 
   // Escalation dominates. An agent that escalates is punting to the operator
   // regardless of any verdict line it also emitted. The reviewer's canonical
   // shape pairs `VERDICT: operator-judgment-required` with an `Escalation:`
   // line; write-phase agents (a deferred consumer) emit only the line. Either
-  // signal routes to the operator-judgment outcome — no findings, the
-  // escalation reason carries the rationale.
+  // routes to operator-judgment, with the escalation reason as the rationale.
   if (escalationReason !== null || verdict === 'operator-judgment-required') {
-    return {
-      findings: [],
-      cliRuns: [],
-      parseFailure: false,
-      confidence,
-      outcome: 'operator-judgment',
-      reason: escalationReason,
-    };
+    return { agent, confidence, outcome: 'operator-judgment', reason: escalationReason };
+  }
+  if (verdict === 'recused') {
+    return { agent, confidence, outcome: 'recused', reason: findRecusalReason(output) || null };
+  }
+  return { agent, confidence, outcome: 'gated', reason: null };
+}
+
+// Classify the findings an evaluator emitted, given its already-computed
+// outcome. Escalation and recusal carry no findings — the signal is the
+// message. A gated agent's findings depend on its VERDICT: line.
+function classifyFindings(
+  output: string,
+  outcome: AgentOutcome,
+): { findings: ParsedReason[]; parseFailure: boolean } {
+  if (outcome === 'operator-judgment' || outcome === 'recused') {
+    return { findings: [], parseFailure: false };
   }
 
+  const verdictMatch = output.match(
+    /^[\s>]*VERDICT:\s*(approved|flagged|flagged-conflict|recused|operator-judgment-required)\s*$/m,
+  );
   if (!verdictMatch) {
     return {
       findings: [
@@ -226,24 +233,10 @@ function parseEvaluatorOutput(
             'no VERDICT: line found in output (expected `VERDICT: approved`, `flagged`, `recused`, or `operator-judgment-required`)',
         },
       ],
-      cliRuns: [],
       parseFailure: true,
-      confidence,
-      outcome: 'gated',
-      reason: null,
     };
   }
-  if (verdict === 'recused') {
-    return {
-      findings: [],
-      cliRuns: [],
-      parseFailure: false,
-      confidence,
-      outcome: 'recused',
-      reason: findRecusalReason(output) || null,
-    };
-  }
-  if (verdict === 'approved') {
+  if (verdictMatch[1] === 'approved') {
     // Surface any advisory notes the evaluator attached to its approval.
     // Bullets under the Advisory section are advisory by construction (the
     // section IS the advisory channel), so force the flag regardless of an
@@ -251,37 +244,19 @@ function parseEvaluatorOutput(
     const advisoryFindings = extractBullets(findAdvisoryBlock(output)).map(
       (bullet) => ({ ...parseReason(bullet), advisory: true }),
     );
-    return {
-      findings: advisoryFindings,
-      cliRuns: [],
-      parseFailure: false,
-      confidence,
-      outcome: 'gated',
-      reason: null,
-    };
+    return { findings: advisoryFindings, parseFailure: false };
   }
 
-  const reasonsBlock = findReasonsBlock(output);
-  const reasonBullets = extractBullets(reasonsBlock);
-  const remediesBlock = findRemediesBlock(output);
-  const remedyBullets = extractBullets(remediesBlock);
-
+  // flagged / flagged-conflict: reasons paired with remedies by index; any
+  // extra remedies are dropped, missing remedies become empty strings.
+  const reasonBullets = extractBullets(findReasonsBlock(output));
+  const remedyBullets = extractBullets(findRemediesBlock(output));
   const findings = reasonBullets.map((reason) => parseReason(reason));
-  // Pair remedies to reasons by index; any extra remedies are dropped,
-  // missing remedies become empty strings.
   for (let i = 0; i < findings.length; i++) {
     (findings[i] as ParsedReason & { remedy?: string }).remedy =
       remedyBullets[i] ?? '';
   }
-
-  return {
-    findings,
-    cliRuns: [],
-    parseFailure: false,
-    confidence,
-    outcome: 'gated',
-    reason: null,
-  };
+  return { findings, parseFailure: false };
 }
 
 function aggregate(entries: AgentOutput[]): Result {
@@ -290,8 +265,8 @@ function aggregate(entries: AgentOutput[]): Result {
   const cliRuns: CliRun[] = [];
   const agentSignals: AgentSignal[] = [];
   for (const entry of entries) {
-    const { findings, cliRuns: runs, confidence, outcome, reason } =
-      parseEvaluatorOutput(entry.agent, entry.output);
+    const signal = computeAgentSignal(entry.agent, entry.output);
+    const { findings } = classifyFindings(entry.output, signal.outcome);
     for (const f of findings as (ParsedReason & { remedy?: string })[]) {
       const finding: Finding = {
         evaluator: entry.agent,
@@ -304,8 +279,7 @@ function aggregate(entries: AgentOutput[]): Result {
     }
     // One signal per agent — including gated ones, so a downstream consumer
     // can read every agent's confidence, not just the non-gating ones.
-    agentSignals.push({ agent: entry.agent, confidence, outcome, reason });
-    cliRuns.push(...runs);
+    agentSignals.push(signal);
   }
   // v1: conflict detection is a documented no-op. See guild-validate
   // SKILL.md § "Conflict detection (v1: future-work)".
