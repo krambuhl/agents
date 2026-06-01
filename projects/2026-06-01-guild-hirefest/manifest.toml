@@ -125,6 +125,11 @@ at = "2026-06-01T18:32:10.307Z"
 event = "checkin-created"
 detail = { number = "01", branch = "ev-agent.guild-hirefest.hire-naming" }
 
+[[events]]
+at = "2026-06-01T18:36:58.491Z"
+event = "checkin-created"
+detail = { number = "01", branch = "ev-agent.guild-hirefest.hire-a11y" }
+
 [[checkins]]
 schema_version = 1
 number = "01"
@@ -264,3 +269,17 @@ scope = ["plugins/guild/modes/axes.toml", "plugins/guild/agents/"]
 changes_since_previous = "First judgment-heavy hire (wave 4c). After tokens (#190) + test/nextjs (#191). naming now has the full implement-verify-fix posture set."
 verdict = { result = "approved", reasons = [] }
 notes_for_pr = ["Wave 4c, domain 1 of 3 (naming). Isolated PR per the PLAN — the judgment-heavy domains get individual review, sequenced last so the write-hire pattern is proven before the agents most likely to escalate. naming had a reviewer + lint/build grant, so no prerequisite.", "The escalation contract is the load-bearing guardrail here: implementer-naming/fixer-naming escalate (rather than guess) on contested naming choices and renames whose blast radius exceeds the contract. Confirmed by the panel spot-check.", "DEFERRED (L-004): Live-spawn smoke next session.", "Phase 4 still IN-PROGRESS: a11y and react (the remaining 4c domains) are separate isolated PRs, then Phase 5.", "Verification: 1285 tests green; compile --check zero drift (41 cells); sync clean."]
+
+[[checkins]]
+schema_version = 1
+number = "01"
+created = "2026-06-01T18:36:58Z"
+phase = { number = 4, name = "Hire implementer/fixer (wave-sequenced)" }
+branch = "ev-agent.guild-hirefest.hire-a11y"
+unit = "Wave 4c (a11y) — hire implementer + fixer for the a11y domain"
+contract = { goal = "Hire write-capable implementer + fixer for a11y, the 2nd judgment-heavy 4c domain (isolated PR). a11y has a reviewer + a runnable verify grant (lint/build/test:a11y). Escalation contract is the guardrail.", acceptance_criteria = ["a11y gains implementer + fixer phases; write recipes extended", "implementer-a11y + fixer-a11y fused (pragmatist), correct role, write tools incl. test:a11y, contract sections, no self-verdict", "recompiled; cache has 2 new cells (43 total); guild compile --check clean", "escalation leans on operator judgment for contested a11y remedies"], rules_applied = ["Isolated PR (judgment-heavy 4c)", "Parallel-fusion offload", "Escalation contract as guardrail"], disqualifiers = ["hiring without reviewer/verify grant (a11y has both)", "Live-spawn smoke this session (L-004)", "doing react here"], inputs = ["plugins/guild/modes/axes.toml", "modes/phases/{implementer,fixer}.md", "modes/personalities/pragmatist.md", "modes/domains/a11y.md", "the reviewer-gap inventory"] }
+execution = { actions = ["axes.toml: a11y phases += implementer, fixer; write recipes extended", "Resolve derives implementer-a11y + fixer-a11y (43 cells) with test:a11y grant", "Spawned 2 parallel fusion subagents (judgment-heavy briefs); each wrote its body", "Verified roles/contract/tools; emitted; compile --check zero drift"], files_touched = ["plugins/guild/modes/axes.toml", "plugins/guild/agents/implementer-a11y.md", "plugins/guild/agents/fixer-a11y.md", "plugins/guild/agents/.cache.toml"], corrections = ["Live-spawn smoke deferred per L-004."] }
+scope = ["plugins/guild/modes/axes.toml", "plugins/guild/agents/"]
+changes_since_previous = "Second judgment-heavy hire (after naming, #192). a11y now has the full implement-verify-fix posture set, with test:a11y (axe-core) as its runnable verify grant."
+verdict = { result = "approved", reasons = [] }
+notes_for_pr = ["Wave 4c, domain 2 of 3 (a11y). Isolated PR. a11y had a reviewer + a runnable verify grant (lint/build/test:a11y, axe-core), so no prerequisite. The write cells carry the test:a11y grant so the reviewer gates against the real accessibility runner.", "Escalation contract as guardrail: implementer/fixer-a11y escalate on contested a11y remedies or fixes that depend on unflagged context (confirmed by panel spot-check).", "DEFERRED (L-004): Live-spawn smoke next session.", "Phase 4 still IN-PROGRESS: react is the last hire (isolated PR), then Phase 5.", "Verification: 1289 tests green; compile --check zero drift (43 cells); sync clean."]
