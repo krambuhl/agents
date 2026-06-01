@@ -21,6 +21,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { parseArgs } from 'node:util';
 import type { DispatchResult, GuildCliContext } from './index.ts';
+import { type AgentSignal, computeAgentSignal } from './parse-and-aggregate.ts';
 
 type Section = { engineer: string; section: string };
 type Round = { number: number; sections: Section[] };
@@ -30,6 +31,12 @@ type AppendResult = {
   round: number;
   sections: Section[];
   contradictions: never[];
+  // One recusal/escalation signal per engineer, computed the same way
+  // /guild-validate computes it for evaluators (shared computeAgentSignal),
+  // so recusal is observable at the plan phase. Engineers writing prose with
+  // no marker read `gated` — the expected default until plan-engineer bodies
+  // emit recusal/escalation lines (a deferred follow-up).
+  agent_signals: AgentSignal[];
 };
 
 class PlanError extends Error {}
@@ -208,6 +215,7 @@ function appendSubverb(path: string, stdin: string): DispatchResult {
     round,
     sections,
     contradictions: [],
+    agent_signals: sections.map((s) => computeAgentSignal(s.engineer, s.section)),
   };
   return { stdout: JSON.stringify(result, null, 2), exitCode: 0 };
 }
