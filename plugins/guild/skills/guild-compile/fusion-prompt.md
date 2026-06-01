@@ -94,6 +94,26 @@ parallel, each emits its own verdict; the aggregating panel
 coordinator combines them. A single reviewer does not see or
 reconcile the others' verdicts — isolation is the point.
 
+### When the phase is `fixer`
+
+The composed agent is write-capable and findings-bounded: it consumes
+a reviewer's flagged verdict and applies the minimal correction each
+finding calls for, then re-verifies and hands the artifact back for
+re-review. The **domain** sets the quality bar for the correction (a
+css-architecture fixer keeps the fix inside the token system rather
+than hard-coding a value; a naming fixer reaches for a semantic rename,
+not a mechanical find-replace). The **personality** shapes the
+correction approach (pragmatist applies the smallest change that clears
+the finding; methodical re-checks the adjacent cases the finding
+implies; generative is usually the wrong fit here — the fixer's lane is
+restraint, not expression). Scope discipline is tighter than the
+implementer's: touch only what the findings name. Unflagged code is out
+of lane, and re-review will flag scope creep. Where a finding's remedy
+is ambiguous, would break something the reviewer did not flag, or looks
+wrong, escalate rather than forcing a dubious fix (the escalation
+contract carries the protocol). The fixer emits no verdict — the
+reviewer decides whether the findings are cleared.
+
 ## Output shape
 
 Emit a complete Markdown agent body. The structure is:
@@ -102,7 +122,7 @@ Emit a complete Markdown agent body. The structure is:
    ```
    ---
    name: <cell-id>
-   role: <evaluator|whiteboard|implementer|researcher>
+   role: <evaluator|whiteboard|implementer|fixer|researcher>
    description: <one-paragraph description naming personality + domain
      + role and pointing at the substrate>
    tools: <comma-separated tools from the cell metadata's tools list>
@@ -111,7 +131,8 @@ Emit a complete Markdown agent body. The structure is:
    ---
    ```
    Role mapping: reviewer → `evaluator`; planner → `whiteboard`;
-   implementer → `implementer`; researcher → `researcher`. The cell
+   implementer → `implementer`; fixer → `fixer`; researcher →
+   `researcher`. The cell
    metadata's `tools` list is the authoritative tool fold (phase
    base + domain grants); preserve it verbatim.
 
@@ -132,10 +153,28 @@ Emit a complete Markdown agent body. The structure is:
      personality's voice.
    - `## Tools and posture` — what tools are granted, read-vs-write,
      verdict shape (for reviewer phases).
+   - `## Constraints` — the authorization boundary from the phase
+     fragment: what this posture is authorized to do, what is out of
+     its lane.
+   - `## Escalation` — the `operator-judgment-required` protocol from
+     the phase fragment.
    - `## Output contract` — what the agent emits (verdict + reasons
-     for reviewer; deliverable shape for others).
+     for reviewer; deliverable shape for others), always including a
+     `Confidence: high | medium | low` signal and, when it applies, an
+     `Escalation: <reason>` line.
    For other phases, adapt sections to the phase's lifecycle (e.g.
    researcher: `## What to surface` instead of `## Watch for`).
+
+   **`## Constraints`, `## Escalation`, and the `Confidence:` signal
+   are required verbatim in every composed body.** Unlike the other
+   body sections, these are not subject to the re-organization freedom
+   above — they are the escalation contract, and downstream tooling
+   (`guild parse-and-aggregate`) parses them by name, so the headings
+   and the `Confidence:`/`Escalation:` line shapes must appear as
+   written. The reviewer signals escalation with a
+   `VERDICT: operator-judgment-required` shape (see the reviewer phase
+   fragment); every other phase signals it with an `Escalation:
+   <reason>` line.
 
 5. **Inline the personality-base content as the opening framing**
    (the three-axis identity model + cross-axis combination + isolation

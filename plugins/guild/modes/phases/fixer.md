@@ -58,6 +58,24 @@ re-verify — tests, lint, build).
   again on the corrected artifact so re-review has evidence rather than
   vibes.
 
+## Constraints
+
+- **Authorized to** apply the minimal correction the reviewer's
+  findings call for and re-verify it — write and edit the flagged
+  sites, and run read-only checks.
+- **Out of lane** to touch unflagged code (scope creep re-review will
+  catch), to re-architect or gold-plate while you are in there, or to
+  re-judge your own fix (the reviewer re-reviews).
+
+## Escalation
+
+When a finding's remedy is ambiguous, when applying it would break
+something the reviewer did not flag, or when the finding itself looks
+wrong, do not force a dubious fix. Emit an `Escalation: <reason>`
+line; the operator decides whether the finding stands or the remedy
+needs rethinking. Forcing a questionable remedy only fails re-review a
+different way.
+
 ## Output contract
 
 - **The corrected artifact** — the changed files, with each flagged
@@ -70,6 +88,11 @@ re-verify — tests, lint, build).
 - **Corrections** — any finding you could not fix, or that you believe
   is wrong (the contract or rubric being inadequate against the
   artifact), stated explicitly with your reasoning.
+- **Confidence** — `high`, `medium`, or `low`: how sure you are the
+  findings are cleared without new breakage.
+- **Escalation** (when it applies) — an `Escalation: <reason>` line
+  per § Escalation, when a remedy is ambiguous or a finding looks
+  wrong.
 
 No verdict — the fixer does not re-judge its own work and does not
 self-approve. The corrected artifact goes back to the reviewer phase,

@@ -68,7 +68,7 @@ depend on the shape:
 
 ```
 {
-  "verdict": "approved" | "flagged" | "flagged-conflict",
+  "verdict": "approved" | "flagged" | "flagged-conflict" | "operator-judgment-required",
   "blocking_findings": [
     {
       "evaluator": "<agent name>",
@@ -89,20 +89,38 @@ depend on the shape:
       "findings": [ ...the conflicting finding objects... ]
     }
   ],
-  "recusals": [
-    { "evaluator": "<agent name>", "reason": "<non-applicability rationale>" }
+  "agent_signals": [
+    {
+      "agent": "<agent name>",
+      "confidence": "high" | "medium" | "low" | null,
+      "outcome": "gated" | "recused" | "operator-judgment",
+      "reason": "<recusal rationale or escalation reason, or null when gated>"
+    }
   ]
 }
 ```
 
 `conflicts` is only non-empty when `verdict` is `flagged-conflict`.
 
-`recusals` lists evaluators that declared their domain non-applicable to
-the artifact (verdict `recused`). A recusal is **not** a finding and does
-**not** gate the verdict — a panel of all-approved-plus-recused is still
-`approved`. It is surfaced so the caller can record non-applicability
-(e.g. emit an `evaluator-recused` event per entry) and compute the panel's
-non-applicability rate (`recusals / spawns`).
+`agent_signals` carries one entry **per spawned agent** — the generalized
+per-agent signal that subsumes the former `recusals` list. Every agent
+reports a `confidence` (the `Confidence: high|medium|low` enum, `null` when
+absent) and an `outcome`:
+
+- `gated` — a normal gating verdict (`approved`/`flagged`); its findings, if
+  any, are in the findings lists.
+- `recused` — the agent declared its domain non-applicable (verdict
+  `recused`). Not a finding, does **not** gate — a panel of
+  all-approved-plus-recused is still `approved`. `reason` carries the
+  non-applicability rationale.
+- `operator-judgment` — the agent escalated (a reviewer's
+  `VERDICT: operator-judgment-required`, or any agent's `Escalation:` line).
+  A human must decide; `reason` carries the escalation rationale.
+
+The per-agent `confidence` exists so a downstream consumer can compare
+confidence across the implement-verify-fix stages; that comparison and the
+loop-layer routing of `operator-judgment-required` to a human are deferred
+consumers — this skill surfaces the signal, it does not yet act on it.
 
 ## Process
 
@@ -124,7 +142,8 @@ non-applicability rate (`recusals / spawns`).
    entries from `guild-spawn`'s outputs and pipe it to
    `bin/guild parse-and-aggregate` via stdin. The verb returns the
    locked Result shape (`{verdict, blocking_findings,
-   advisory_findings, cli_runs, conflicts}`) on stdout. Bash invocation
+   advisory_findings, cli_runs, conflicts, agent_signals}`) on stdout.
+   Bash invocation
    uses a quoted heredoc so JSON content passes through verbatim:
 
    ```bash
@@ -142,10 +161,16 @@ non-applicability rate (`recusals / spawns`).
      `flagged` → extract the Reasons section bullets as findings, plus
      the optional Suggested remedies section (paired with reasons by
      index). `recused` → no findings; the evaluator declared its domain
-     non-applicable, so its `Reason(s):` rationale (same-line text or the
-     first bullet) becomes a `{evaluator, reason}` entry in `recusals`,
-     and it does not gate the verdict. Missing or unparseable VERDICT
-     line → one `parse-failure` blocking finding.
+     non-applicable, so its `Reason(s):` rationale becomes an
+     `agent_signals` entry with `outcome: "recused"`, and it does not gate
+     the verdict. `operator-judgment-required` (or **any** agent emitting
+     an `Escalation: <reason>` line, with or without the verdict token) →
+     no findings; an `agent_signals` entry with `outcome:
+     "operator-judgment"` carrying the escalation reason. An `Escalation:`
+     line dominates a contradictory verdict line. Missing/unparseable
+     VERDICT line and no escalation → one `parse-failure` blocking finding.
+     Every agent also contributes its `Confidence: high|medium|low` (or
+     `null`) to its `agent_signals` entry, regardless of outcome.
    - **v1 severity rule**: each reason is `blocking` by default. An
      explicit `BLOCKING:` or `ADVISORY:` prefix on the reason line
      overrides. (Today's evaluators emit unprefixed reasons; Phase 2
@@ -157,11 +182,15 @@ non-applicability rate (`recusals / spawns`).
      prefix becomes `code` and the rest becomes `evidence`.
    - CLI runs: v1 evaluators do not emit a `## CLI runs` section, so
      `cli_runs` stays empty. Forward-compat infrastructure for Phase 2.
-   - Verdict precedence: `conflicts` non-empty → `flagged-conflict`;
-     else `blocking_findings` non-empty → `flagged`; else `approved`.
+   - Verdict precedence: any `operator-judgment` outcome →
+     `operator-judgment-required` (the strongest non-approval signal — an
+     explicit punt to the operator means the panel cannot auto-gate, so it
+     outranks everything; blocking findings still surface in their list);
+     else `conflicts` non-empty → `flagged-conflict`; else
+     `blocking_findings` non-empty → `flagged`; else `approved`.
      Advisory-only is still `approved` — advisories surface but do not
-     gate. Recusals never gate either — a recused-plus-approved panel is
-     `approved`, with the recusals listed separately.
+     gate. Recused outcomes never gate either — a recused-plus-approved
+     panel is `approved`, with the recusal listed in `agent_signals`.
 4. **Emit panel events** (only when `slug` is present; skip this entire
    step otherwise). Record the panel's activity to the project's event
    log via `bin/loom events append`, one event per item. This is
@@ -187,18 +216,22 @@ non-applicability rate (`recusals / spawns`).
      --detail='{"slug":"<slug>","phase":<phase>,"unit":"<unit>","evaluator":"<finding.evaluator>","code":"<finding.code>","severity":"blocking|advisory"}'
    ```
 
-   For each entry in the aggregated `recusals`, emit one
+   For each `agent_signals` entry with `outcome === "recused"`, emit one
    `evaluator-recused`:
 
    ```bash
    loom events append <slug> --event=evaluator-recused \
-     --detail='{"slug":"<slug>","phase":<phase>,"unit":"<unit>","evaluator":"<recusal.evaluator>","reason":"<recusal.reason>"}'
+     --detail='{"slug":"<slug>","phase":<phase>,"unit":"<unit>","evaluator":"<signal.agent>","reason":"<signal.reason>"}'
    ```
 
    The per-evaluator lifecycle this records is `spawned → finding* |
-   recused`. `loom events append` dedupes on (name + detail), so a
-   re-run with identical context is idempotent. The detail shapes match
-   the `evaluator-*` event types in `commons/cli/lib/types.ts`.
+   recused`. `agent_signals` entries with `outcome === "operator-judgment"`
+   are surfaced in the returned verdict but get no event here — wiring the
+   escalation lifecycle to the operator is a deferred consumer (the verdict
+   `operator-judgment-required` is the signal the caller acts on). `loom
+   events append` dedupes on (name + detail), so a re-run with identical
+   context is idempotent. The detail shapes match the `evaluator-*` event
+   types in `commons/cli/lib/types.ts`.
 
 5. **Return** the script's output (parsed back into a structured
    value) to the caller. This skill performs no further work.

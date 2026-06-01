@@ -105,8 +105,18 @@ Required, in order:
 3. `## Mandate` — the WHAT: bullet list of what the agent must do.
 4. `## Tool posture` — granted tools + read-vs-write capability
    statement.
-5. `## Output contract` — what the agent emits; verdict shape (for
-   reviewer); deliverable shape (for others).
+5. `## Constraints` — the authorization boundary: what this posture is
+   authorized to do and what is out of its lane. A phase property
+   (read-only vs write, evaluate vs fix), so it lives in the phase
+   fragment.
+6. `## Escalation` — the `operator-judgment-required` protocol: when
+   the posture hits something outside its lane that it cannot resolve,
+   how it signals (an `Escalation: <reason>` line; for the reviewer, a
+   `VERDICT: operator-judgment-required` shape) rather than guessing.
+7. `## Output contract` — what the agent emits; verdict shape (for
+   reviewer); deliverable shape (for others). Every posture's output
+   carries a `Confidence: high|medium|low` signal so the aggregator can
+   compare confidence across the implement-verify-fix stages.
 
 Cross-axis composition guidance (formerly the per-phase
 `## Combining with domain + personality` section) is **not** a
