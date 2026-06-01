@@ -21,16 +21,31 @@ type Conflict = {
   findings: Finding[];
 };
 
-type Verdict = 'approved' | 'flagged' | 'flagged-conflict';
+type Verdict =
+  | 'approved'
+  | 'flagged'
+  | 'flagged-conflict'
+  | 'operator-judgment-required';
 
-// A recusal is an evaluator declaring its domain non-applicable to the
-// artifact (e.g. react against a pure-CLI unit). It is NOT a finding —
-// it does not gate the verdict — but it is substrate signal: the panel's
-// non-applicability rate is recusals / spawns. Surfaced as its own list so
-// the caller (guild-validate) can emit an `evaluator-recused` event per entry.
-type Recusal = {
-  evaluator: string;
-  reason: string;
+type Confidence = 'high' | 'medium' | 'low';
+
+// Every spawned agent produces exactly one signal, regardless of verdict.
+// `outcome` distinguishes a normal gating verdict (`gated`) from the two
+// ways an agent declines to gate: `recused` (domain non-applicable) and
+// `operator-judgment` (the agent escalated — a human must decide). This
+// generalizes the former `recusals` list: a recusal is now one outcome
+// among the per-agent signals, and `confidence` rides on every agent so a
+// downstream consumer can compare confidence across the
+// implement-verify-fix stages (that comparison is a deferred consumer; the
+// signal exists here so it can be built without re-touching this verb).
+type AgentOutcome = 'gated' | 'recused' | 'operator-judgment';
+
+type AgentSignal = {
+  agent: string;
+  confidence: Confidence | null;
+  outcome: AgentOutcome;
+  // Recusal rationale or escalation reason; null when the agent gated.
+  reason: string | null;
 };
 
 type Result = {
@@ -39,7 +54,7 @@ type Result = {
   advisory_findings: Finding[];
   cli_runs: CliRun[];
   conflicts: Conflict[];
-  recusals: Recusal[];
+  agent_signals: AgentSignal[];
 };
 
 class ValidationError extends Error {}
@@ -147,6 +162,25 @@ function findRecusalReason(output: string): string {
   return bullets[0] ?? '';
 }
 
+// The structured confidence signal: a three-value enum on its own line.
+// Case-insensitive on the level word; null when the agent emitted no line.
+function findConfidence(output: string): Confidence | null {
+  const m = output.match(
+    /^[\s>]*\*?\*?Confidence\*?\*?:\s*`?(high|medium|low)`?\b/im,
+  );
+  return m ? (m[1].toLowerCase() as Confidence) : null;
+}
+
+// The universal escalation signal. Same-line text after "Escalation:" —
+// [^\S\n]* is horizontal whitespace only, so a bare "Escalation:" header
+// with the reason on the next line returns null rather than swallowing it.
+function findEscalationReason(output: string): string | null {
+  const m = output.match(
+    /^[\s>]*\*?\*?Escalation\*?\*?:[^\S\n]*(\S.*)$/im,
+  );
+  return m ? m[1].trim() : null;
+}
+
 function parseEvaluatorOutput(
   _agent: string,
   output: string,
@@ -154,11 +188,34 @@ function parseEvaluatorOutput(
   findings: ParsedReason[];
   cliRuns: CliRun[];
   parseFailure: boolean;
-  recusal: string | null;
+  confidence: Confidence | null;
+  outcome: AgentOutcome;
+  reason: string | null;
 } {
+  const confidence = findConfidence(output);
+  const escalationReason = findEscalationReason(output);
   const verdictMatch = output.match(
-    /^[\s>]*VERDICT:\s*(approved|flagged|flagged-conflict|recused)\s*$/m,
+    /^[\s>]*VERDICT:\s*(approved|flagged|flagged-conflict|recused|operator-judgment-required)\s*$/m,
   );
+  const verdict = verdictMatch?.[1];
+
+  // Escalation dominates. An agent that escalates is punting to the operator
+  // regardless of any verdict line it also emitted. The reviewer's canonical
+  // shape pairs `VERDICT: operator-judgment-required` with an `Escalation:`
+  // line; write-phase agents (a deferred consumer) emit only the line. Either
+  // signal routes to the operator-judgment outcome — no findings, the
+  // escalation reason carries the rationale.
+  if (escalationReason !== null || verdict === 'operator-judgment-required') {
+    return {
+      findings: [],
+      cliRuns: [],
+      parseFailure: false,
+      confidence,
+      outcome: 'operator-judgment',
+      reason: escalationReason,
+    };
+  }
+
   if (!verdictMatch) {
     return {
       findings: [
@@ -166,21 +223,24 @@ function parseEvaluatorOutput(
           advisory: false,
           code: 'parse-failure',
           evidence:
-            'no VERDICT: line found in output (expected `VERDICT: approved`, `flagged`, or `recused`)',
+            'no VERDICT: line found in output (expected `VERDICT: approved`, `flagged`, `recused`, or `operator-judgment-required`)',
         },
       ],
       cliRuns: [],
       parseFailure: true,
-      recusal: null,
+      confidence,
+      outcome: 'gated',
+      reason: null,
     };
   }
-  const verdict = verdictMatch[1];
   if (verdict === 'recused') {
     return {
       findings: [],
       cliRuns: [],
       parseFailure: false,
-      recusal: findRecusalReason(output),
+      confidence,
+      outcome: 'recused',
+      reason: findRecusalReason(output) || null,
     };
   }
   if (verdict === 'approved') {
@@ -195,7 +255,9 @@ function parseEvaluatorOutput(
       findings: advisoryFindings,
       cliRuns: [],
       parseFailure: false,
-      recusal: null,
+      confidence,
+      outcome: 'gated',
+      reason: null,
     };
   }
 
@@ -212,19 +274,24 @@ function parseEvaluatorOutput(
       remedyBullets[i] ?? '';
   }
 
-  return { findings, cliRuns: [], parseFailure: false, recusal: null };
+  return {
+    findings,
+    cliRuns: [],
+    parseFailure: false,
+    confidence,
+    outcome: 'gated',
+    reason: null,
+  };
 }
 
 function aggregate(entries: AgentOutput[]): Result {
   const blocking: Finding[] = [];
   const advisory: Finding[] = [];
   const cliRuns: CliRun[] = [];
-  const recusals: Recusal[] = [];
+  const agentSignals: AgentSignal[] = [];
   for (const entry of entries) {
-    const { findings, cliRuns: runs, recusal } = parseEvaluatorOutput(
-      entry.agent,
-      entry.output,
-    );
+    const { findings, cliRuns: runs, confidence, outcome, reason } =
+      parseEvaluatorOutput(entry.agent, entry.output);
     for (const f of findings as (ParsedReason & { remedy?: string })[]) {
       const finding: Finding = {
         evaluator: entry.agent,
@@ -235,16 +302,24 @@ function aggregate(entries: AgentOutput[]): Result {
       if (f.advisory) advisory.push(finding);
       else blocking.push(finding);
     }
-    if (recusal !== null) {
-      recusals.push({ evaluator: entry.agent, reason: recusal });
-    }
+    // One signal per agent — including gated ones, so a downstream consumer
+    // can read every agent's confidence, not just the non-gating ones.
+    agentSignals.push({ agent: entry.agent, confidence, outcome, reason });
     cliRuns.push(...runs);
   }
   // v1: conflict detection is a documented no-op. See guild-validate
   // SKILL.md § "Conflict detection (v1: future-work)".
   const conflicts: Conflict[] = [];
+  // Precedence: an explicit escalation is the strongest non-approval signal —
+  // if any agent punts to the operator, the panel cannot auto-gate, so
+  // operator-judgment-required outranks every other verdict. Blocking
+  // findings still surface in the findings list regardless of the headline.
+  const hasOperatorJudgment = agentSignals.some(
+    (s) => s.outcome === 'operator-judgment',
+  );
   let verdict: Verdict;
-  if (conflicts.length > 0) verdict = 'flagged-conflict';
+  if (hasOperatorJudgment) verdict = 'operator-judgment-required';
+  else if (conflicts.length > 0) verdict = 'flagged-conflict';
   else if (blocking.length > 0) verdict = 'flagged';
   else verdict = 'approved';
   return {
@@ -253,7 +328,7 @@ function aggregate(entries: AgentOutput[]): Result {
     advisory_findings: advisory,
     cli_runs: cliRuns,
     conflicts,
-    recusals,
+    agent_signals: agentSignals,
   };
 }
 

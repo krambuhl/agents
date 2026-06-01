@@ -261,11 +261,15 @@ test('output shape locked: all six fields present even when result is approved',
   expect(result).toHaveProperty('advisory_findings');
   expect(result).toHaveProperty('cli_runs');
   expect(result).toHaveProperty('conflicts');
-  expect(result).toHaveProperty('recusals');
-  expect(result.recusals).toEqual([]);
+  expect(result).toHaveProperty('agent_signals');
+  // One signal per agent — even a plainly-gated one, so a consumer can read
+  // every agent's confidence. No Confidence line → null.
+  expect(result.agent_signals).toEqual([
+    { agent: 'x', confidence: null, outcome: 'gated', reason: null },
+  ]);
 });
 
-test('single recused evaluator → verdict approved, recusal surfaced, no findings', () => {
+test('single recused evaluator → verdict approved, recusal surfaced as an agent_signal, no findings', () => {
   const output = `VERDICT: recused
 
 Reason: no JSX artifacts in this unit — react rubric does not apply.
@@ -277,9 +281,10 @@ Reason: no JSX artifacts in this unit — react rubric does not apply.
   expect(result.verdict).toBe('approved');
   expect(result.blocking_findings).toEqual([]);
   expect(result.advisory_findings).toEqual([]);
-  expect(result.recusals).toHaveLength(1);
-  expect(result.recusals[0].evaluator).toBe('evaluator-react');
-  expect(result.recusals[0].reason).toMatch(/no JSX artifacts/);
+  expect(result.agent_signals).toHaveLength(1);
+  expect(result.agent_signals[0].agent).toBe('evaluator-react');
+  expect(result.agent_signals[0].outcome).toBe('recused');
+  expect(result.agent_signals[0].reason).toMatch(/no JSX artifacts/);
 });
 
 test('recused with a Reasons: bullet block extracts the first bullet', () => {
@@ -291,18 +296,20 @@ Reasons:
   const input = JSON.stringify([{ agent: 'evaluator-tokens', output }]);
   const res = parseAndAggregateVerb([], ctx(input));
   const result = JSON.parse((res.stdout as string));
-  expect(result.recusals[0].reason).toBe('domain non-applicable: no CSS modules in scope');
+  expect(result.agent_signals[0].outcome).toBe('recused');
+  expect(result.agent_signals[0].reason).toBe('domain non-applicable: no CSS modules in scope');
 });
 
-test('recused with no reason → empty reason string, still counted', () => {
+test('recused with no reason → null reason, still surfaced as a recused signal', () => {
   const input = JSON.stringify([{ agent: 'evaluator-a11y', output: 'VERDICT: recused' }]);
   const res = parseAndAggregateVerb([], ctx(input));
   const result = JSON.parse(res.stdout as string);
-  expect(result.recusals).toHaveLength(1);
-  expect(result.recusals[0].reason).toBe('');
+  expect(result.agent_signals).toHaveLength(1);
+  expect(result.agent_signals[0].outcome).toBe('recused');
+  expect(result.agent_signals[0].reason).toBeNull();
 });
 
-test('mixed panel: recused + flagged → recusal and blocking both surface, verdict flagged', () => {
+test('mixed panel: recused + flagged → recused signal and blocking both surface, verdict flagged', () => {
   const recused = `VERDICT: recused\n\nReason: not applicable here.`;
   const input = JSON.stringify([
     { agent: 'evaluator-react', output: recused },
@@ -312,8 +319,12 @@ test('mixed panel: recused + flagged → recusal and blocking both surface, verd
   const result = JSON.parse(res.stdout as string);
   expect(result.verdict).toBe('flagged');
   expect(result.blocking_findings).toHaveLength(1);
-  expect(result.recusals).toHaveLength(1);
-  expect(result.recusals[0].evaluator).toBe('evaluator-react');
+  // Both agents get a signal; the react one is recused.
+  expect(result.agent_signals).toHaveLength(2);
+  const react = result.agent_signals.find(
+    (s: { agent: string }) => s.agent === 'evaluator-react',
+  );
+  expect(react.outcome).toBe('recused');
 });
 
 test('recused does NOT gate: recused + approved → verdict approved', () => {
@@ -325,5 +336,120 @@ test('recused does NOT gate: recused + approved → verdict approved', () => {
   const res = parseAndAggregateVerb([], ctx(input));
   const result = JSON.parse(res.stdout as string);
   expect(result.verdict).toBe('approved');
-  expect(result.recusals).toHaveLength(1);
+  expect(result.agent_signals).toHaveLength(2);
+  expect(
+    result.agent_signals.filter(
+      (s: { outcome: string }) => s.outcome === 'recused',
+    ),
+  ).toHaveLength(1);
+});
+
+// --- Confidence signal (Unit 2) ---
+
+test('confidence enum parsed per agent (high/medium/low), case-insensitive', () => {
+  const mk = (level: string) =>
+    `VERDICT: approved\nConfidence: ${level}\n\nSummary: ok.`;
+  const input = JSON.stringify([
+    { agent: 'a', output: mk('high') },
+    { agent: 'b', output: mk('Medium') },
+    { agent: 'c', output: mk('LOW') },
+  ]);
+  const res = parseAndAggregateVerb([], ctx(input));
+  const result = JSON.parse(res.stdout as string);
+  expect(
+    result.agent_signals.map((s: { confidence: string | null }) => s.confidence),
+  ).toEqual(['high', 'medium', 'low']);
+});
+
+test('confidence absent → null', () => {
+  const input = JSON.stringify([{ agent: 'a', output: approvedOutput() }]);
+  const res = parseAndAggregateVerb([], ctx(input));
+  const result = JSON.parse(res.stdout as string);
+  expect(result.agent_signals[0].confidence).toBeNull();
+});
+
+test('confidence rides on a flagged agent too (outcome stays gated)', () => {
+  const output = `VERDICT: flagged\nConfidence: low\n\nReasons:\n- criterion-unmet: a thing`;
+  const input = JSON.stringify([{ agent: 'a', output }]);
+  const res = parseAndAggregateVerb([], ctx(input));
+  const result = JSON.parse(res.stdout as string);
+  expect(result.verdict).toBe('flagged');
+  expect(result.agent_signals[0].confidence).toBe('low');
+  expect(result.agent_signals[0].outcome).toBe('gated');
+});
+
+// --- operator-judgment-required (Unit 2) ---
+
+test('reviewer operator-judgment-required → operator-judgment outcome, reason from Escalation, no findings', () => {
+  const output = `VERDICT: operator-judgment-required
+Confidence: medium
+
+Escalation: two acceptance criteria conflict and the contract does not say which wins.`;
+  const input = JSON.stringify([{ agent: 'evaluator-contract-fit', output }]);
+  const res = parseAndAggregateVerb([], ctx(input));
+  const result = JSON.parse(res.stdout as string);
+  expect(result.verdict).toBe('operator-judgment-required');
+  expect(result.blocking_findings).toEqual([]);
+  expect(result.agent_signals[0].outcome).toBe('operator-judgment');
+  expect(result.agent_signals[0].confidence).toBe('medium');
+  expect(result.agent_signals[0].reason).toMatch(/two acceptance criteria conflict/);
+});
+
+test('a bare Escalation line escalates even without the verdict token (write-phase wire format)', () => {
+  const output = `Escalation: dependency this unit cannot satisfy without an operator decision.`;
+  const input = JSON.stringify([{ agent: 'implementer-x', output }]);
+  const res = parseAndAggregateVerb([], ctx(input));
+  const result = JSON.parse(res.stdout as string);
+  expect(result.verdict).toBe('operator-judgment-required');
+  expect(result.agent_signals[0].outcome).toBe('operator-judgment');
+  expect(result.agent_signals[0].reason).toMatch(/dependency this unit cannot satisfy/);
+  // No Confidence line on this write-phase shape → confidence stays null.
+  expect(result.agent_signals[0].confidence).toBeNull();
+});
+
+test('Escalation dominates a contradictory verdict line', () => {
+  const output = `VERDICT: approved\n\nEscalation: I am not actually sure — a human should decide.`;
+  const input = JSON.stringify([{ agent: 'a', output }]);
+  const res = parseAndAggregateVerb([], ctx(input));
+  const result = JSON.parse(res.stdout as string);
+  expect(result.verdict).toBe('operator-judgment-required');
+  expect(result.agent_signals[0].outcome).toBe('operator-judgment');
+  // The verdict line said approved but carried no Confidence line → null.
+  expect(result.agent_signals[0].confidence).toBeNull();
+});
+
+test('precedence: operator-judgment-required outranks flagged (blocking still surfaces)', () => {
+  const escalated = `VERDICT: operator-judgment-required\n\nEscalation: cannot decide.`;
+  const flagged = flaggedOutput(['criterion-unmet: a real blocking thing']);
+  const input = JSON.stringify([
+    { agent: 'evaluator-a', output: flagged },
+    { agent: 'evaluator-b', output: escalated },
+  ]);
+  const res = parseAndAggregateVerb([], ctx(input));
+  const result = JSON.parse(res.stdout as string);
+  expect(result.verdict).toBe('operator-judgment-required');
+  expect(result.blocking_findings).toHaveLength(1);
+});
+
+test('schema round-trips: every Result field present and JSON-stable for a mixed panel', () => {
+  const input = JSON.stringify([
+    { agent: 'evaluator-a', output: `VERDICT: approved\nConfidence: high\n\nSummary: ok.` },
+    { agent: 'evaluator-b', output: `VERDICT: recused\n\nReason: n/a` },
+    { agent: 'evaluator-c', output: `VERDICT: operator-judgment-required\n\nEscalation: human needed.` },
+  ]);
+  const res = parseAndAggregateVerb([], ctx(input));
+  expect(res.exitCode).toBe(0);
+  const result = JSON.parse(res.stdout as string);
+  // Round-trip: re-stringify and re-parse yields the same object.
+  expect(JSON.parse(JSON.stringify(result))).toEqual(result);
+  expect(Object.keys(result).sort()).toEqual([
+    'advisory_findings',
+    'agent_signals',
+    'blocking_findings',
+    'cli_runs',
+    'conflicts',
+    'verdict',
+  ]);
+  expect(result.agent_signals).toHaveLength(3);
+  expect(result.verdict).toBe('operator-judgment-required');
 });
