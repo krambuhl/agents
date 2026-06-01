@@ -52,7 +52,7 @@ Recommended execution loop: **`ev-loop-interactive` throughout** (human-paired; 
 
 **Dependency:** none. This is the gate everything else builds on.
 
-### Phase 2a — research-* into loom-research (lowest-risk wave)
+### Phase 2 — research-* into loom-research (lowest-risk wave)
 
 **Goal:** align the research phase to its own seam.
 
@@ -64,7 +64,7 @@ Recommended execution loop: **`ev-loop-interactive` throughout** (human-paired; 
 
 **Dependency:** Phase 1 (uses `--phase`).
 
-### Phase 2b — plan-* panel in loom-plan
+### Phase 3 — plan-* panel in loom-plan
 
 **Goal:** give the plan-authoring step real multi-perspective design input, composed via the new layer.
 
@@ -76,7 +76,7 @@ Recommended execution loop: **`ev-loop-interactive` throughout** (human-paired; 
 
 **Dependency:** Phase 1.
 
-### Phase 2c — implementer-* delegation seam (both ev-loops)
+### Phase 4 — implementer-* delegation seam (both ev-loops)
 
 **Goal:** the IMPLEMENT step can delegate the write to `implementer-<domain>`, as a per-unit option.
 
@@ -85,15 +85,15 @@ Recommended execution loop: **`ev-loop-interactive` throughout** (human-paired; 
 2. When the switch is on for a unit, the loop composes `implementer-<domain>` via `derive-panel --phase=implementer` and delegates the write through `/guild-spawn` (loom/ev skills route through guild coordination skills — they do not call the `Agent` tool directly; `ev-loop` `allowed-tools` does include `Agent`, so the seam choice is deliberate, not forced).
 3. The human still gates at the evaluator checkpoint regardless of switch state.
 
-**Files:** `plugins/ev/skills/ev-loop-interactive/SKILL.md`, `plugins/ev/skills/ev-loop-confidence/SKILL.md`. Remove the affected "Specialist gate-then-review" prose's "no control-flow change" claim (replaced by real wiring; full prose deletion lands in Phase 3).
+**Files:** `plugins/ev/skills/ev-loop-interactive/SKILL.md`, `plugins/ev/skills/ev-loop-confidence/SKILL.md`. Remove the affected "Specialist gate-then-review" prose's "no control-flow change" claim (replaced by real wiring; full prose deletion lands in Phase 6).
 
-**Verification:** skill-body tests for the switch defaults per loop; a unit-contract example with delegation on and one with it off; assert the evaluator checkpoint fires in both. Live-spawn deferred to Phase 3.
+**Verification:** skill-body tests for the switch defaults per loop; a unit-contract example with delegation on and one with it off; assert the evaluator checkpoint fires in both. Live-spawn deferred to Phase 6.
 
 **Dependency:** Phase 1.
 
-### Phase 2d — fixer-* delegation seam (both ev-loops)
+### Phase 5 — fixer-* delegation seam (both ev-loops)
 
-**Goal:** the FIX step can delegate flagged-finding remedies to `fixer-<domain>`, mirroring 2c.
+**Goal:** the FIX step can delegate flagged-finding remedies to `fixer-<domain>`, mirroring Phase 4.
 
 **Deliverables:** same per-unit switch shape applied to the "iterate on flagged findings" step (`ev-loop-interactive` step 4 "Iterate or commit"). When on, the loop hands a flagged-finding packet to `fixer-<domain>` (composed via `derive-panel --phase=fixer`) for the minimal remedy (`axes.toml` line 118: fixer `default_personality = "pragmatist"`).
 
@@ -101,14 +101,14 @@ Recommended execution loop: **`ev-loop-interactive` throughout** (human-paired; 
 
 **Verification:** skill-body tests for the fix-delegation switch + defaults; the inline-fix path still works when the switch is off.
 
-**Dependency:** Phase 2c (shares the switch mechanism).
+**Dependency:** Phase 4 (shares the switch mechanism).
 
-### Phase 3 — Cleanup + runtime gate (close the loop)
+### Phase 6 — Cleanup + runtime gate (close the loop)
 
 **Goal:** runtime-done, not just source-done.
 
 **Deliverables:**
-1. Delete the now-obsolete "Specialist gate-then-review" documentation prose in both ev-loops (the behavior is real as of 2c/2d).
+1. Delete the now-obsolete "Specialist gate-then-review" documentation prose in both ev-loops (the behavior is real as of Phase 4/5).
 2. Refresh the marketplace mirror past guild-hirefest: publish the relevant commits to the public `agents.git` and run the plugin update so the runtime registry resolves `plan-*`/`research-*`/full `implementer-*`/`fixer-*`.
 3. Live-spawn smoke per `plugins/guild/CLAUDE.md` § Live-spawn smoke — spawn one agent per newly-wired phase from the *live* registry and confirm it returns the expected contribution shape.
 
@@ -120,35 +120,39 @@ Recommended execution loop: **`ev-loop-interactive` throughout** (human-paired; 
 
 ## Dependencies
 
-- Phase 1 gates 2a/2b/2c. 2d depends on 2c (shared switch). Phase 3 depends on all.
-- **External:** Phase 3's registry refresh depends on guild-hirefest commits reaching the public `agents.git` and a plugin update. If that publish is blocked, Phase 3 stalls at "source-done" and live-spawn smoke becomes the tracked follow-up — the source phases (1–2d) still land independently.
+- Phase 1 gates Phases 2/3/4 (the bulk-migration wave). Phase 5 depends on Phase 4 (shared switch). Phase 6 depends on all.
+- **External:** Phase 6's registry refresh depends on guild-hirefest commits reaching the public `agents.git` and a plugin update. If that publish is blocked, Phase 6 stalls at "source-done" and live-spawn smoke becomes the tracked follow-up — the source phases (1–5) still land independently.
 - Repo convention: any edit under `plugins/commons/{cli/lib,docs}/` requires `node scripts/sync-shared.ts` + `npm run check` before commit (enforced by pre-commit hook + CI, ADR-0007).
 
 ## Verification
 
 - **Per phase:** vitest unit/body-shape tests as listed; `npm test` green; `npm run check` clean.
 - **Backward-compat lock (Phase 1):** `derive-panel --phase=reviewer` reproduces the exact pre-change evaluator output — the regression test that protects every current caller.
-- **Whole-effort acceptance (Phase 3):** live-spawn smoke green for all four newly-wired phases from the live registry.
+- **Whole-effort acceptance (Phase 6):** live-spawn smoke green for all four newly-wired phases from the live registry.
 - Per repo convention, prefer `node plugins/<plugin>/cli/<cli>.ts` over cached bin shims when exercising loom/guild CLIs (cached binaries lag source, ADR-0006).
 
 ## Risks
 
-- **Registry staleness blocks runtime proof (high likelihood, medium impact).** Mitigation: source phases verified against the working tree independently of the registry; Phase 3 isolates the refresh so a blocked publish doesn't strand phases 1–2d. "Source-done" is an explicit, shippable state.
+- **Registry staleness blocks runtime proof (high likelihood, medium impact).** Mitigation: source phases verified against the working tree independently of the registry; Phase 6 isolates the refresh so a blocked publish doesn't strand phases 1–5. "Source-done" is an explicit, shippable state.
 - **Full delegation changes ev-loop-interactive's character (medium/medium).** Mitigation: the per-unit switch defaults delegation OFF in interactive — pairing is preserved unless the operator opts in. Delegation is an option, never the default for the human-paired loop.
 - **Phase-aware derive-panel breaks existing evaluator callers (low/high).** Mitigation: `--phase` defaults to `reviewer` and the reviewer path is byte-for-byte locked by a regression test before any other phase is added.
-- **`axes.toml` phase lists drift from agent bodies (low/medium).** The table says a domain *can* participate at a phase, but the agent body must actually return that phase's contribution shape. Mitigation: live-spawn smoke (Phase 3) is the cross-check; if a body returns the wrong shape, that's a guild-body fix (deferred scope), not a wiring bug.
+- **`axes.toml` phase lists drift from agent bodies (low/medium).** The table says a domain *can* participate at a phase, but the agent body must actually return that phase's contribution shape. Mitigation: live-spawn smoke (Phase 6) is the cross-check; if a body returns the wrong shape, that's a guild-body fix (deferred scope), not a wiring bug.
 - **commons-sync drift if PANEL-COMPOSITION.md gains a phase dimension (low/low).** Mitigation: run `sync-shared.ts` + `npm run check`; the pre-commit hook blocks a drifted commit anyway.
 
 ## Open questions
 
 - Does `PANEL-COMPOSITION.md` need a phase dimension, or can the phase→domain mapping live entirely in `axes.toml` with `derive-panel` reading both? (Resolve in Phase 1 design — prefer `axes.toml` as the single SoT.)
-- Exact surface of the per-unit delegation switch — PLAN.md phase-level flag vs per-unit-contract field vs both. (Resolve at Phase 2c kickoff; both is the leading shape.)
-- Whether the publish/refresh (Phase 3) is a one-command op or a blocked dependency — confirm before Phase 3 kickoff.
+- Exact surface of the per-unit delegation switch — PLAN.md phase-level flag vs per-unit-contract field vs both. (Resolve at Phase 4 kickoff; both is the leading shape.)
+- Whether the publish/refresh (Phase 6) is a one-command op or a blocked dependency — confirm before Phase 6 kickoff.
 
 ## Decisions
 
 - **Participate-vs-recuse = phase-parameterized `derive-panel` + `axes.toml` as SoT + runtime self-recusal retained + `/guild-plan` emits `agent_signals`.** One composition layer for all five phases; the declarative phase×domain table is the source of truth; agents can still bow out at runtime on artifact specifics the table can't see.
 - **Full delegation, as an option.** Both ev-loops gain implementer/fixer delegation, gated by a per-unit switch — interactive default-off, confidence default-on. Delegation is a first-class capability the loops reach for, never a forced rewrite; "drive it myself" stays available on any unit.
 - **Scope held tight on adjacents:** `loom-plan` gains a `plan-*` panel; `loom-revise-plan` and `ev-run` are left as-is.
-- **Source-done and runtime-done are distinct gates.** Phases 1–2d land and verify against the working tree; Phase 3 owns the registry refresh + live-spawn smoke as the runtime acceptance gate.
+- **Source-done and runtime-done are distinct gates.** Phases 1–5 land and verify against the working tree; Phase 6 owns the registry refresh + live-spawn smoke as the runtime acceptance gate.
 - **Execution: `ev-loop-interactive` throughout.** High-craft substrate work; API shape and control-flow shaped in real time.
+
+## Revision log
+
+- 2026-06-01 — Renumber phases 2a-2d/3 to integers 2-6 so loom's integer phase parser tracks the full plan (letter-suffixed ids were invisible to parse-plan and stranded the bulk-migration wave)
