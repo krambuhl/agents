@@ -17,4 +17,7 @@ Corollary follow-up: `loom doctor` should grow a cache-vs-source skew check (e.g
 
 ## Consequences
 
-TODO: operator to fill before commit
+- The corollary follow-up landed: `2026-05-30-shared-insights` Phase 1 grew `loom doctor`'s cache-vs-source skew checks — `guild-cache-skew` (the resolvable binary's verb set vs source) and `guild-codegen-drift` (committed agent bodies vs source fragments) — both bootstrapped from source, never the cached binary. `loom doctor`'s `ok:true` is no longer silent on binary staleness.
+- The "use `node plugins/<plugin>/cli/<cli>.ts` for any source-dependent check" rule held throughout that remediation — every phase ran loom/guild ops via the source entrypoints, and the freshness preflight surfaced a real stale cached `guild` (missing `compile`/`recipe`) on its first live run.
+- The lag is now *detected* (advisory), not *fixed*: the operator still re-syncs the plugin cache and restarts when the skew warning fires. The gate is visibility at dispatch, not auto-remediation — an auto-recompile would be a write path, deliberately excluded.
+- Watch: a cached binary so stale its error contract predates the skew probe reports as `present-but-unqueryable` (a warning), not green — the "guard needs guarding" case Phase 1 closed.

@@ -25,4 +25,7 @@ Substrate-wide application: every recipe in `SUBSTRATE-COMPOSITIONS.md` that wra
 
 ## Consequences
 
-TODO: operator to fill before commit
+- The unit close path has two distinct boundaries — a manifest-write (substrate state) and a later git-commit (the working-tree bundle) — and the substrate vocabulary keeps them separate: recipes say "writes"/"appends" for the manifest mutation and reserve "commits" for the git checkpoint.
+- The manifest-write commits to whatever git branch is checked out, with no branch-awareness — a direct corollary of separating the two boundaries. `2026-05-30-shared-insights` Phase 6 codified the matching operator discipline (confirm `git branch --show-current` before the first substrate write) as a convention plus a loop preflight line, because a manifest-write on the wrong branch strands the work the later git-commit would have bundled.
+- The `--no-commit` flag on `loom adr` (and any verb a between-write-and-commit hook invokes) is load-bearing: it lets the artifact ride the unit's single git commit rather than racing a sibling commit. One revertable unit.
+- Watch: any new hook positioned between manifest-write and git-commit must keep the vocabulary distinction, or "committed" silently re-collapses the two boundaries.

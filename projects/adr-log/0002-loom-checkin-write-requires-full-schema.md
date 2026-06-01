@@ -23,4 +23,7 @@ Option (b) is load-bearing because conversation already provides the intermediat
 
 ## Consequences
 
-TODO: operator to fill before commit
+- A checkin is a single point-in-time snapshot of a whole unit (contract + execution + verdict + notes), not a record assembled across writes — no loop has to track which fields are committed vs pending. The unit's contract lives in the operator–agent conversation until close.
+- The skill-body rephrasing this decision called for was deferred at decision time; the negotiate step still said "Contract section only" until `2026-05-30-shared-insights` Phase 6 reconciled it. Until then, agents that read the prose literally hit the full-schema rejection repeatedly — the single most-recurring papercut of that remediation (~17 checkins).
+- A unit that genuinely needs intermediate persistence uses two numbered checkins (a contract checkin + a resolution checkin), since checkins are create-once and immutable — "fill it in later" is a new checkin, never an edit.
+- Watch: loosening `loom checkin write` to accept partial checkins would re-introduce the pending-fields bookkeeping this decision exists to avoid.
