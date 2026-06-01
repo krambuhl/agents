@@ -31,3 +31,8 @@ detail = {}
 at = "2026-06-01T20:17:52.793Z"
 event = "research-started"
 detail = { slug = "2026-06-01-orchestrator-guild-rpi-alignment", topic = "orchestrator-guild-rpi-alignment" }
+
+[[events]]
+at = "2026-06-01T20:17:52.874Z"
+event = "research-completed"
+detail = { slug = "2026-06-01-orchestrator-guild-rpi-alignment", research_path = "RESEARCH.md", notes_path = "RESEARCH-NOTES.md" }
