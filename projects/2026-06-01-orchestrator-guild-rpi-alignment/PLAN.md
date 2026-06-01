@@ -50,7 +50,7 @@ Recommended execution loop: **`ev-loop-interactive` throughout** (human-paired; 
 
 **Verification:** new vitest cases — `derive-panel --phase=reviewer` output equals the pre-change evaluator output for a fixed file set (regression lock); each non-reviewer phase emits the axes.toml-declared domain set; positional-arg still baselines (documented quirk preserved). `npm run check` clean if commons touched.
 
-**Dependency:** none. This is the gate everything else builds on.
+**Depends on**: nothing. This is the gate everything else builds on.
 
 ### Phase 2 — research-* into loom-research (lowest-risk wave)
 
@@ -62,7 +62,7 @@ Recommended execution loop: **`ev-loop-interactive` throughout** (human-paired; 
 
 **Verification:** skill-body test that the research step cites the `research` phase; bootstrapping-empty-glob path still skips cleanly. Transitively, the ev-loop inner-RPI accept path (which spawns `/loom-research`) now reaches `research-*`.
 
-**Dependency:** Phase 1 (uses `--phase`).
+**Depends on**: Phase 1 (uses `--phase`).
 
 ### Phase 3 — plan-* panel in loom-plan
 
@@ -74,7 +74,7 @@ Recommended execution loop: **`ev-loop-interactive` throughout** (human-paired; 
 
 **Verification:** skill-body test that the plan step composes a `plan` phase panel; the existing evaluator-pass step is untouched (assert both seams coexist). Convergence-budget note added so the panel doesn't blow the interview budget.
 
-**Dependency:** Phase 1.
+**Depends on**: Phase 1.
 
 ### Phase 4 — implementer-* delegation seam (both ev-loops)
 
@@ -89,7 +89,7 @@ Recommended execution loop: **`ev-loop-interactive` throughout** (human-paired; 
 
 **Verification:** skill-body tests for the switch defaults per loop; a unit-contract example with delegation on and one with it off; assert the evaluator checkpoint fires in both. Live-spawn deferred to Phase 6.
 
-**Dependency:** Phase 1.
+**Depends on**: Phase 1.
 
 ### Phase 5 — fixer-* delegation seam (both ev-loops)
 
@@ -101,7 +101,7 @@ Recommended execution loop: **`ev-loop-interactive` throughout** (human-paired; 
 
 **Verification:** skill-body tests for the fix-delegation switch + defaults; the inline-fix path still works when the switch is off.
 
-**Dependency:** Phase 4 (shares the switch mechanism).
+**Depends on**: Phase 4 (shares the switch mechanism).
 
 ### Phase 6 — Cleanup + runtime gate (close the loop)
 
@@ -116,7 +116,7 @@ Recommended execution loop: **`ev-loop-interactive` throughout** (human-paired; 
 
 **Verification:** live-spawn smoke green for `research-*`, `plan-*`, `implementer-*`, `fixer-*`. This is the acceptance gate for the whole effort.
 
-**Dependency:** all prior phases + the publish being unblocked.
+**Depends on**: Phases 1-5 (plus the external publish being unblocked).
 
 ## Dependencies
 
@@ -154,5 +154,8 @@ Recommended execution loop: **`ev-loop-interactive` throughout** (human-paired; 
 - **Execution: `ev-loop-interactive` throughout.** High-craft substrate work; API shape and control-flow shaped in real time.
 
 ## Revision log
+
+
+- 2026-06-01 — Convert phase dependency lines to loom's parseable '**Depends on**:' format so the dependency graph is read by parse-plan (was '**Dependency:**', which the parser ignored — every phase showed zero deps and ordering couldn't be enforced)
 
 - 2026-06-01 — Renumber phases 2a-2d/3 to integers 2-6 so loom's integer phase parser tracks the full plan (letter-suffixed ids were invisible to parse-plan and stranded the bulk-migration wave)

@@ -65,3 +65,8 @@ detail = { slug = "2026-06-01-orchestrator-guild-rpi-alignment", research_path =
 timestamp = "2026-06-01T22:19:26.629Z"
 target = "PLAN.md"
 seq = 1
+
+[[revisions]]
+timestamp = "2026-06-01T22:20:51.714Z"
+target = "PLAN.md"
+seq = 2
