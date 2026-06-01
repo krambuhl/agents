@@ -1,4 +1,3 @@
-checkins = []
 sessions = []
 
 [meta]
@@ -19,7 +18,8 @@ worker_bindings = {}
 [[phases]]
 number = 1
 name = "Phase-aware participate layer (setup / gate)"
-status = "not-started"
+status = "in-progress"
+branch = "ev-agent.orchestrator-guild-rpi-alignment.participate-layer"
 
 [[phases]]
 number = 2
@@ -60,6 +60,30 @@ detail = { slug = "2026-06-01-orchestrator-guild-rpi-alignment", topic = "orches
 at = "2026-06-01T20:17:52.874Z"
 event = "research-completed"
 detail = { slug = "2026-06-01-orchestrator-guild-rpi-alignment", research_path = "RESEARCH.md", notes_path = "RESEARCH-NOTES.md" }
+
+[[events]]
+at = "2026-06-01T23:01:20.728Z"
+event = "checkin-created"
+detail = { number = "01", branch = "ev-agent.orchestrator-guild-rpi-alignment.participate-layer" }
+
+[[events]]
+at = "2026-06-01T23:01:26.629Z"
+event = "phase-started"
+detail = { phase = 1, name = "Phase-aware participate layer (setup / gate)" }
+
+[[checkins]]
+schema_version = 1
+number = "01"
+created = "2026-06-01"
+phase = { number = 1, name = "Phase-aware participate layer (setup / gate)" }
+branch = "ev-agent.orchestrator-guild-rpi-alignment.participate-layer"
+unit = "1"
+contract = { goal = "Phase-parameterize derive-panel with --phase=<research|plan|implementer|reviewer|fixer> (default reviewer): reviewer stays byte-for-byte the existing file-driven evaluator-* output; the four non-reviewer phases are roster-driven from axes.toml domain x phase membership, mapped through the shared PHASE_PREFIX.", acceptance_criteria = ["--phase accepts the 5 phases, defaults to reviewer; unknown value yields a structured error and non-zero exit", "reviewer path is byte-for-byte unchanged, locked by a regression test (explicit --phase=reviewer equals the bare invocation for the same files)", "non-reviewer phases emit the axes.toml roster (research/plan 10, implementer/fixer 8), formatted <prefix>-<domain>, sorted by domain, file-independent", "reuse PHASE_PREFIX/nameFor/parseToml/defaultAxesPath; new reader is phase-roster.ts; no hardcoded roster const", "no commons/ edit (axes.toml is the SoT); sync-check green", "tests cover: reviewer regression lock, per-phase rosters, unknown-phase error, default-is-reviewer, positional-still-baselines"], rules_applied = ["Composition over configuration: reused PHASE_PREFIX, nameFor pattern, parseToml, and defaultAxesPath rather than adding parallel parsers or a roster literal", "Naming is architecture: phase-roster.ts mirrors the sibling phase-prefix.ts; resolvePhaseRoster mirrors resolveRecipe; PhaseRosterError mirrors RecipeReadError", "Semantic over literal: the reviewer->evaluator prefix skew is sourced from PHASE_PREFIX, never a baked-in string", "Simple over clever: resolvePhaseRoster is a pure function (axes table in, names out); filesystem read stays in the verb"], disqualifiers = ["any change to reviewer-phase output bytes", "editing any commons/ file (would trip sync-check; axes.toml is the SoT)", "a parallel hardcoded roster const (drift risk)", "making non-reviewer phases file-dependent"], inputs = ["plugins/guild/cli/verbs/guild/derive-panel.ts:302-331 (verb arg parsing)", "plugins/guild/cli/verbs/guild/recipe.ts:37-45,96-105 (nameFor, defaultAxesPath)", "plugins/guild/cli/verbs/guild/phase-prefix.ts (PHASE_PREFIX SoT)", "plugins/guild/modes/axes.toml:15-61 (domain phases membership)", "plugins/guild/cli/verbs/guild/derive-panel.test.ts (existing test patterns)", "projects/2026-06-01-orchestrator-guild-rpi-alignment/PLAN.md (Phase 1 deliverable 1)"] }
+execution = { actions = ["Added phase-roster.ts: resolvePhaseRoster(axes, phase) reads [axis.domain.*].phases, collects domains whose list includes the phase, sorts by domain, maps via an own nameFor wrapper around the shared PHASE_PREFIX; PhaseRosterError fails loud on unknown phase (never an empty roster)", "Exported defaultAxesPath from recipe.ts (one word) so derive-panel and the test reuse the same module-relative resolution", "Reworked derivePanelVerb: parse --phase (default reviewer) + PHASE_NAMES guard; non-reviewer phases read+parse axes.toml and emit resolvePhaseRoster; reviewer falls through to the unchanged file-driven path", "Added phase-roster.test.ts (8 tests: live-axes rosters for all 5 phases incl. reviewer skew, unknown-phase throw, synthetic membership+sort precision)", "Added 10 verb-level tests to derive-panel.test.ts (reviewer regression lock + roster phases + unknown-phase, exact toEqual/toBe assertions, start-anchored error regex)"], files_touched = ["plugins/guild/cli/verbs/guild/phase-roster.ts", "plugins/guild/cli/verbs/guild/phase-roster.test.ts", "plugins/guild/cli/verbs/guild/derive-panel.ts", "plugins/guild/cli/verbs/guild/recipe.ts", "plugins/guild/cli/verbs/guild/derive-panel.test.ts"], corrections = ["Start-anchored the unknown-phase error regex (^derive-panel-error...) up front, pre-empting the recurring evaluator-test-unit unanchored-regex flag"] }
+scope = ["plugins/guild/cli/verbs/guild/phase-roster.ts", "plugins/guild/cli/verbs/guild/phase-roster.test.ts", "plugins/guild/cli/verbs/guild/derive-panel.ts", "plugins/guild/cli/verbs/guild/recipe.ts", "plugins/guild/cli/verbs/guild/derive-panel.test.ts"]
+changes_since_previous = "First unit of Phase 1; first code unit of the project. Builds on the plan-renumber branch (PLAN phases renumbered 2a-2d/3 -> 2-6 + dependency-line format fixed so loom parse-plan tracks all six phases)."
+verdict = { result = "approved", reasons = ["Panel of evaluator-contract-fit + evaluator-test-unit + evaluator-naming all returned approved, no blocking or advisory findings", "npm test 1313 passed (69 files); npm run check ok (no commons drift); targeted derive-panel + phase-roster + recipe 70 passed", "Reviewer regression lock confirms byte-for-byte backward compatibility for existing --files= callers"] }
+notes_for_pr = ["derive-panel now has two derivation models: reviewer = file-driven via PANEL-COMPOSITION.md (unchanged); research/plan/implementer/fixer = roster-driven via axes.toml domain x phase membership. Runtime self-recusal remains the second gate downstream.", "Per operator decision, non-reviewer phases carry NO baseline seed (reviewer keeps evaluator-contract-fit). axes.toml stays the single SoT for phase->domain; PANEL-COMPOSITION.md was deliberately not given a phase dimension.", "Observation (non-blocking, from contract-fit): phase-roster.ts nameFor re-checks PHASE_PREFIX[phase] which resolvePhaseRoster already gates, so its throw is unreachable via the public entry; kept deliberately to match the per-consumer error-provenance convention in recipe.ts.", "This branch stacks on plan-renumber, which carries the PLAN.md phase renumber + dependency-format fix that PR #197 merged without (committed after that PR merged)."]
 
 [[revisions]]
 timestamp = "2026-06-01T22:19:26.629Z"

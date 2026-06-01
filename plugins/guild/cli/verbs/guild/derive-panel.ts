@@ -1,6 +1,9 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { parseToml, TomlParseError } from '../../lib/toml.ts';
 import type { DispatchResult, GuildCliContext } from './index.ts';
+import { defaultAxesPath } from './recipe.ts';
+import { PhaseRosterError, resolvePhaseRoster } from './phase-roster.ts';
 
 // derive-panel — read a list of file paths and emit the comma-separated
 // agent list a /guild-validate panel should spawn for them.
@@ -22,6 +25,11 @@ import type { DispatchResult, GuildCliContext } from './index.ts';
 
 const SPEC_PATH = 'plugins/commons/docs/PANEL-COMPOSITION.md';
 const BASELINE = 'evaluator-contract-fit';
+
+// The five RPI phases derive-panel can compose for. `reviewer` (the
+// default) is file-driven via PANEL-COMPOSITION.md and emits `evaluator-*`;
+// the other four are roster-driven from axes.toml (see phase-roster.ts).
+const PHASE_NAMES = ['research', 'plan', 'implementer', 'reviewer', 'fixer'];
 
 type Rule = {
   patterns: { regex: RegExp; raw: string }[];
@@ -303,6 +311,43 @@ export function derivePanelVerb(
   rest: string[],
   ctx: GuildCliContext,
 ): DispatchResult {
+  const phaseArg = rest.find((a) => a.startsWith('--phase='));
+  const phase = phaseArg ? phaseArg.slice('--phase='.length) : 'reviewer';
+  if (!PHASE_NAMES.includes(phase)) {
+    return {
+      stderr: `derive-panel-error: unknown phase '${phase}' (expected one of: ${PHASE_NAMES.join(', ')})`,
+      exitCode: 1,
+    };
+  }
+
+  // Roster-driven phases (research/plan/implementer/fixer): emit every
+  // agent axes.toml declares at the phase, file-independent — runtime
+  // self-recusal is the second gate. `--files=` is intentionally ignored
+  // here; the participate layer answers "who MAY participate," not "for
+  // which files." Reviewer falls through to the unchanged file-driven path.
+  if (phase !== 'reviewer') {
+    let axes;
+    try {
+      axes = parseToml(readFileSync(defaultAxesPath(), 'utf8'));
+    } catch (err) {
+      const reason =
+        err instanceof TomlParseError
+          ? `axes.toml unparseable: ${err.message}`
+          : `cannot read axes.toml: ${(err as Error).message}`;
+      return { stderr: `derive-panel-error: ${reason}`, exitCode: 1 };
+    }
+    try {
+      const roster = resolvePhaseRoster(axes, phase);
+      return { stdout: roster.join(','), exitCode: 0 };
+    } catch (err) {
+      if (err instanceof PhaseRosterError) {
+        return { stderr: `derive-panel-error: ${err.message}`, exitCode: 1 };
+      }
+      throw err;
+    }
+  }
+
+  // ----- reviewer phase: file-driven derivation (unchanged) -----
   let files: string[] = [];
   const filesArg = rest.find((a) => a.startsWith('--files='));
   if (filesArg) {
