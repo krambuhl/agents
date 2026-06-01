@@ -1,0 +1,33 @@
+checkins = []
+sessions = []
+revisions = []
+
+[meta]
+schema_version = 1
+title = "Future Workflow Adoption"
+slug = "2026-06-01-future-workflow-adoption"
+started = "2026-06-01"
+status = "active"
+strategy = "interactive"
+
+[config]
+base_branch = "main"
+reviewers = []
+labels = []
+verification = []
+worker_bindings = {}
+
+[[phases]]
+number = 1
+name = "Phase 1"
+status = "not-started"
+
+[[events]]
+at = "2026-06-01T02:01:35.232Z"
+event = "project-initialized"
+detail = {}
+
+[[events]]
+at = "2026-06-01T02:01:35.233Z"
+event = "research-started"
+detail = { slug = "2026-06-01-future-workflow-adoption", topic = "future-workflow-adoption" }
