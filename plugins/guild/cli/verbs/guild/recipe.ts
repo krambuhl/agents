@@ -93,7 +93,7 @@ export function resolveRecipe(axes: TomlTable, name: string): string[] {
 // from this verb (plugins/guild/cli/verbs/guild/recipe.ts ->
 // plugins/guild/modes). Resolve module-relative, not from cwd, so it
 // works from an installed copy too.
-function defaultAxesPath(): string {
+export function defaultAxesPath(): string {
   return resolve(
     dirname(fileURLToPath(import.meta.url)),
     '..',
