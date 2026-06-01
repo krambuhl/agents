@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "type": "session",
+  "created": "2026-06-01T00:09:00Z",
+  "phase": 8,
+  "tier": 1,
+  "findings": [
+    {
+      "category": "kept-well",
+      "description": "Premise-audit before P8 caught that the TODO Consequences were in FIVE ADRs, not the two the PLAN named — the exit criterion ('no ADR carries a TODO') drove filling all five.",
+      "evidence": "grep found 0002-0006; PLAN named 0002+0005."
+    },
+    {
+      "category": "kept-well",
+      "description": "The session's own work was the realized consequences of the ADRs being filled — P1 realized 0006's doctor-skew corollary, P5 realized 0004/0005, P6 realized 0002/0003 — so the Consequences are documented history, not speculation.",
+      "evidence": "each ADR Consequences cites the realizing phase."
+    },
+    {
+      "category": "process-change",
+      "description": "For operator-owned artifacts (ADR Consequences), drafting + a structured commit/hold question beats either silently committing or leaving blanks — the operator gets concrete text to react to while keeping the architectural call.",
+      "evidence": "AskUserQuestion → commit-drafts-revise-on-PR; the 0004 divergence is the one flagged for the revision pass."
+    },
+    {
+      "category": "follow-up",
+      "description": "ADR-0004 now self-records a decision-vs-shipped divergence (per-tier verbs decided, scoping flags shipped). Reconcile: either supersede 0004 toward the flag shape or build the verbs. Operator to decide on the PR.",
+      "evidence": "0004 Consequences 'superseded in practice'."
+    }
+  ]
+}
