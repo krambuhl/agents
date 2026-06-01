@@ -115,6 +115,11 @@ at = "2026-06-01T18:15:07.797Z"
 event = "phase-started"
 detail = { phase = 4, name = "Hire implementer/fixer (wave-sequenced)" }
 
+[[events]]
+at = "2026-06-01T18:25:27.795Z"
+event = "checkin-created"
+detail = { number = "01", branch = "ev-agent.guild-hirefest.hire-4b" }
+
 [[checkins]]
 schema_version = 1
 number = "01"
@@ -226,3 +231,17 @@ scope = ["plugins/guild/modes/axes.toml", "plugins/guild/agents/"]
 changes_since_previous = "First write-hire wave. Builds on the research staffing (Phase 3, merged #189) + the escalation contract (Phase 1). tokens now has the full implement-verify-fix posture set (implementer + reviewer + fixer)."
 verdict = { result = "approved", reasons = [] }
 notes_for_pr = ["Wave 4a of Phase 4 (write-hire is wave-sequenced; isolated PRs per wave). tokens gains implementer + fixer, completing its implement-verify-fix cycle (it already had evaluator-tokens + a lint/build verify grant, so no prerequisite per the reviewer-gap inventory). Lowest-risk domain (mechanical literal->token) first, to prove the pattern before the judgment-heavy waves.", "implementer-tokens builds from a unit contract (stop = meets spec); fixer-tokens applies the minimal correction to reviewer-flagged findings (stop = findings cleared). Both pragmatist, write-capable, no self-verdict; both inherit the escalation contract.", "DEFERRED (L-004): Live-spawn smoke for the 2 new agents runs next session (new agents register at next session start). Static verification stands in (body-shape test, compile --check, full suite).", "Phase 4 remains IN-PROGRESS: wave 4b (test-unit, test-integration, nextjs) and 4c (naming, a11y, react) are subsequent PRs. nextjs has no plan agent but does get write cells in 4b — it has a reviewer + verify grant, the prerequisite that matters.", "Verification: whole-repo 1269 tests green; guild compile --check zero drift (33 cells); sync clean."]
+
+[[checkins]]
+schema_version = 1
+number = "01"
+created = "2026-06-01T18:24:58Z"
+phase = { number = 4, name = "Hire implementer/fixer (wave-sequenced)" }
+branch = "ev-agent.guild-hirefest.hire-4b"
+unit = "Wave 4b — hire implementer + fixer for test-unit, test-integration, nextjs"
+contract = { goal = "Hire write-capable implementer + fixer for the contract-shaped runnable-verify domains (test-unit, test-integration, nextjs), grouped into one PR by verify-grant similarity. Each has a reviewer + runnable verify grant (no prerequisite). New cells inherit the escalation contract.", acceptance_criteria = ["the 3 domains gain implementer + fixer phases; write recipes extended to include them", "6 write agents fused (pragmatist), correct role, domain-specific verify grant (test/test:e2e/lint:nextjs), ## Constraints + ## Escalation + Confidence, no self-verdict", "recompiled; cache has 6 new cells (39 total); guild compile --check clean", "implementer builds-from-spec; fixer applies-minimal-correction; distinct, both no-verdict"], rules_applied = ["Grouped by verify-grant similarity (PLAN allows)", "Parallel-fusion offload (6 cells); exact per-domain tool folds passed", "Extend existing write recipes"], disqualifiers = ["hiring write cells for a domain lacking reviewer/verify grant (all 3 have both)", "Live-spawn smoke this session (L-004; deferred)", "doing wave 4c here"], inputs = ["plugins/guild/modes/axes.toml", "modes/phases/{implementer,fixer}.md", "modes/personalities/pragmatist.md", "modes/domains/{test-unit,test-integration,nextjs}.md", "the reviewer-gap inventory"] }
+execution = { actions = ["axes.toml: test-unit/test-integration/nextjs phases += implementer, fixer; both write recipes extended to 5 domains", "Verified resolve derives 6 write cells (39 total) with domain-specific verify tools", "Spawned 6 parallel fusion subagents (style refs: implementer-tokens/fixer-tokens); each wrote its body", "Verified roles, contract sections, per-domain tools, no curly/old-tokens; emitted; compile --check zero drift"], files_touched = ["plugins/guild/modes/axes.toml", "plugins/guild/agents/{implementer,fixer}-{test-unit,test-integration,nextjs}.md", "plugins/guild/agents/.cache.toml"], corrections = ["Live-spawn smoke deferred to next session per L-004."] }
+scope = ["plugins/guild/modes/axes.toml", "plugins/guild/agents/"]
+changes_since_previous = "Second write-hire wave (after tokens, #190). test-unit, test-integration, nextjs now have the full implement-verify-fix posture set. nextjs gains its FIRST write posture (it was reviewer-only)."
+verdict = { result = "approved", reasons = [] }
+notes_for_pr = ["Wave 4b: the contract-shaped runnable-verify domains (test-unit, test-integration, nextjs), grouped into one PR per the PLAN's verify-grant-similarity allowance. 6 write cells; each domain had a reviewer + verify grant already (no prerequisite). nextjs is notable — it was reviewer-only; this is its first write posture (reviewer + lint:nextjs grant satisfy the write-hire prerequisite).", "Each write cell carries the domain-specific verify grant (test-unit: npm test; test-integration: test:e2e; nextjs: lint:nextjs) so its reviewer can gate against a real runnable check. All pragmatist, no self-verdict, inherit the escalation contract.", "DEFERRED (L-004): Live-spawn smokes for the 6 new agents run next session. Static verification stands in (body-shape test, compile --check, 1281-test suite).", "Phase 4 remains IN-PROGRESS: wave 4c (naming, a11y, react — judgment-heavy, isolated PRs) remains, then Phase 5 cleanup.", "Verification: 1281 tests green; guild compile --check zero drift (39 cells); sync clean."]
