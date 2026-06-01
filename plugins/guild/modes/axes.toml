@@ -33,7 +33,7 @@ phases = ["research", "plan", "reviewer"]
 tool_grants = ["Bash(npm run lint:*)", "Bash(npm run build:*)", "Bash(git status:*)", "Bash(git diff:*)"]
 
 [axis.domain.nextjs]
-phases = ["reviewer"]
+phases = ["reviewer", "implementer", "fixer"]
 tool_grants = ["Bash(npm run lint:*)", "Bash(npm run lint:nextjs:*)", "Bash(npm run build:*)", "Bash(git status:*)", "Bash(git diff:*)"]
 
 [axis.domain.performance]
@@ -49,11 +49,11 @@ phases = ["research", "plan"]
 tool_grants = []
 
 [axis.domain.test-integration]
-phases = ["research", "plan", "reviewer"]
+phases = ["research", "plan", "reviewer", "implementer", "fixer"]
 tool_grants = ["Bash(npm run lint:*)", "Bash(npm run build:*)", "Bash(npm run test:e2e:*)", "Bash(git status:*)", "Bash(git diff:*)"]
 
 [axis.domain.test-unit]
-phases = ["research", "plan", "reviewer"]
+phases = ["research", "plan", "reviewer", "implementer", "fixer"]
 tool_grants = ["Bash(npm run lint:*)", "Bash(npm run build:*)", "Bash(npm test:*)", "Bash(git status:*)", "Bash(git diff:*)"]
 
 [axis.domain.tokens]
@@ -177,7 +177,7 @@ domains = ["a11y", "abstraction", "composition", "naming", "performance", "react
 name = "implementer-default"
 phase = "implementer"
 personality = "pragmatist"
-domains = ["css-architecture", "tokens"]
+domains = ["css-architecture", "tokens", "test-unit", "test-integration", "nextjs"]
 
 # fixer-default seeds the write-capable fixer phase on the
 # css-architecture proof domain, completing the implement-verify-fix
@@ -186,7 +186,7 @@ domains = ["css-architecture", "tokens"]
 name = "fixer-default"
 phase = "fixer"
 personality = "pragmatist"
-domains = ["css-architecture", "tokens"]
+domains = ["css-architecture", "tokens", "test-unit", "test-integration", "nextjs"]
 
 # ---------- singletons (1) ----------
 # A singleton is a (phase, personality) pair with NO domain — the
