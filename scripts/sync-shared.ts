@@ -71,7 +71,7 @@ const REPO_ROOT = resolve(SCRIPT_DIR, '..');
 
 /** All plugins the sync script handles. Order is sync-iteration order.
  *  `commons` listed first because it's the substrate-source for the
- *  forthcoming commons→consumer sync direction (PR2 lands the planner
+ *  forthcoming commons→consumer sync direction (PR2 lands the plan
  *  extension; PR3 starts moving content in). At PR1 it's a content-empty
  *  placeholder. */
 export const PLUGINS = [
@@ -231,7 +231,7 @@ export function planForPlugin(plugin: PluginName, repoRoot = REPO_ROOT): PluginP
   //
   // The substrate-source plugin (`commons`) is never a consumer of these
   // flows — it's the source. Skipping consumer logic for commons itself
-  // keeps the loop simple and prevents the planner from accidentally
+  // keeps the loop simple and prevents the plan from accidentally
   // proposing `plugins/commons/cli/lib/foo.ts → plugins/commons/cli/lib/foo.ts`.
   if (plugin !== 'commons') {
     // 6. Lib flow: plugins/commons/cli/lib/** → plugins/<consumer>/cli/lib/**
@@ -295,7 +295,7 @@ export function detectDrift(repoRoot = REPO_ROOT): DriftRecord[] {
   const records: DriftRecord[] = [];
   const plans = planAll(repoRoot);
 
-  // === Conflict-detection guard (per skeptic whiteboard finding) ===
+  // === Conflict-detection guard (per skeptic plan finding) ===
   //
   // Build a map of destination → list of (plugin, source, origin) claimants.
   // If any destination has more than one claimant, the dual-write window's

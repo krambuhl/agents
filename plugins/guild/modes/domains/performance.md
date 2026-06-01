@@ -9,8 +9,8 @@ asked before the code exists — server-vs-client placement, how much
 hydrates, where the render hot paths are, whether the data flow
 implies a waterfall.
 
-This is a **design-phase domain** — it operates at the researcher and
-planner phases, upstream of any unit contract. It has **no reviewer
+This is a **design-phase domain** — it operates at the research and
+plan phases, upstream of any unit contract. It has **no reviewer
 cell**: framework-correctness on shipped code (a `'use client'` that
 isn't needed, a raw `<img>`) is the `nextjs` domain's reviewer lane.
 This domain shapes the contract before code is written; the `nextjs`
@@ -42,8 +42,8 @@ reviewer catches afterward what the recommendation didn't prevent.
 
 ## Antipattern catalog
 
-No reviewer-cell catalog — this is a design-phase domain (researcher
-and planner only). Framework-correctness on shipped code (an
+No reviewer-cell catalog — this is a design-phase domain (research
+and plan only). Framework-correctness on shipped code (an
 unneeded `'use client'`, a raw `<img>`) is the `nextjs` domain's
 reviewer lane; the concerns above shape the contract before code is
 written. See § Cross-domain notes for the boundaries that downstream
@@ -85,7 +85,7 @@ recommendation lands as code.
 
 ## Cross-domain notes
 
-- Phase scoping: this domain is **planner/researcher-only**. Its
+- Phase scoping: this domain is **plan/research-only**. Its
   findings shape the contract; there is no performance reviewer (the
   `nextjs` reviewer covers framework-cost correctness on shipped code).
 - Boundary with **react**: `react` owns the API shape (composition,

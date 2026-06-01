@@ -83,7 +83,7 @@ prompts and tier overrides at spawn time.
    proceed.
 
 **Format-detection error path** (substrate-cli Phase 4 rollup
-whiteboard skeptic Finding 1): if `learnings/rollup.md` is present
+plan skeptic Finding 1): if `learnings/rollup.md` is present
 AND `learnings/rollup.json` is missing, this session predates the
 Phase 4 rollup cutover. Stop, log an intervention via
 `operator-checks.ts log-intervention` with category
@@ -108,7 +108,7 @@ was introduced in substrate-cli Phase 4; before that, classification
 lived as YAML frontmatter on `learning.md`. The migration script
 shipped with Phase 4 converts old-format folders to the new shape.
 
-**Format-detection error path** (substrate-cli Phase 4 whiteboard
+**Format-detection error path** (substrate-cli Phase 4 plan
 skeptic Finding 1): if `state.json` is missing in the note folder
 AND `learning.md` starts with a `---` YAML frontmatter block, this
 session predates the Phase 4 cutover and is running the old skill

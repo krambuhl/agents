@@ -96,24 +96,24 @@ directory is now just the inventory home.
 
 ## Phase-level process
 
-### Whiteboard
+### Plan
 
 Every phase runs a multi-engineer design pass **once before Step 0**
-(pre-flight). The whiteboard output becomes shared reference material
+(pre-flight). The plan output becomes shared reference material
 for every tier in the phase (cited in each tier contract's `Inputs:`
 line). This step is **always-on**: the loop invokes
-`/guild-whiteboard` at phase start regardless of explicit
-configuration; an optional `**Whiteboard**:` override from the parsed
+`/guild-plan` at phase start regardless of explicit
+configuration; an optional `**Plan**:` override from the parsed
 plan overrides defaults.
 
-**Default behavior** (no `**Whiteboard**:` override in the parsed plan):
-- `engineers` = all currently registered `whiteboard-*` agents,
-  resolved via glob of `.claude/agents/whiteboard-*.md`.
+**Default behavior** (no `**Plan**:` override in the parsed plan):
+- `engineers` = all currently registered `plan-*` agents,
+  resolved via glob of `.claude/agents/plan-*.md`.
 - `topic` = the phase name.
 - `rounds` = 1.
 
-**Override** — read the phase's `whiteboard` field from
-`loom parse-plan <slug>` (a phase-level `**Whiteboard**:` block wins
+**Override** — read the phase's `plan` field from
+`loom parse-plan <slug>` (a phase-level `**Plan**:` block wins
 over the plan-level one). `loom parse-plan` hands off the raw block
 string as the single source; do not re-grep PLAN.md. This loop parses
 the semicolon-delimited DSL:
@@ -130,33 +130,33 @@ inlining its members: the loop resolves it via `guild recipe <name>`
 (which emits `{name, members}`) and uses `members` as the engineer
 list. Prefer this for a known multi-domain panel —
 `recipe=design-systems` rather than spelling out
-`engineers=whiteboard-composition,whiteboard-abstraction,...`.
+`engineers=plan-composition,plan-abstraction,...`.
 `recipe=` and `engineers=` are mutually exclusive; if both appear, stop
 and surface a contract error. `guild recipe` fails loud on an unknown
 name (`recipe-not-found`, non-zero exit) — surface it and stop, never
 fall back to the glob or an empty panel (a mis-cited recipe must not
-silently degrade to a thin whiteboard).
+silently degrade to a thin plan).
 
-**Whiteboard artifact path**:
-`projects/<slug>/whiteboards/<phase-number>-<topic-slug>.md`. Create
+**Plan artifact path**:
+`projects/<slug>/plans/<phase-number>-<topic-slug>.md`. Create
 the parent directory if it doesn't exist.
 
 **Per-round invocation**: for each round 1..N, invoke
-`/guild-whiteboard` via the `Skill` tool with `engineers=<list>`,
-`brief=<topic + any phase context>`, `whiteboard=<path>`. The skill
+`/guild-plan` via the `Skill` tool with `engineers=<list>`,
+`brief=<topic + any phase context>`, `plan=<path>`. The skill
 auto-detects round number from existing file state, so re-running is
-idempotent (a re-invocation with the same whiteboard file detects
+idempotent (a re-invocation with the same plan file detects
 existing rounds and appends a NEW round). For round 2+, the skill
 constructs `per_agent_context` from prior round state so engineers
 can address contradictions.
 
 **Bootstrapping case (no engineers registered)**: if the
-`.claude/agents/whiteboard-*.md` glob returns zero matches AND no
+`.claude/agents/plan-*.md` glob returns zero matches AND no
 explicit `engineers=` override is given, log a one-line note ("no
-whiteboard engineers registered — skipping whiteboard step") and
+plan engineers registered — skipping plan step") and
 proceed directly to Step 0.
 
-**L-004 session-boundary**: if any of the resolved `whiteboard-*`
+**L-004 session-boundary**: if any of the resolved `plan-*`
 engineers were authored in the current session, drop them from the
 effective list manually and surface the override in the next tier's
 first checkin Notes for the PR. The runtime registry is loaded once
@@ -398,7 +398,7 @@ For each unit inside a tier:
    - **User comment during the unit** that proposed a change to
      plan structure (not just tactical refinement of this unit's
      contract).
-   - **Whiteboard contradiction** (round 2+ whiteboard surfaces a
+   - **Plan contradiction** (round 2+ plan surfaces a
      disagreement between engineers that current PLAN doesn't
      resolve).
    - **Phase boundary** (this unit is the last in its phase OR

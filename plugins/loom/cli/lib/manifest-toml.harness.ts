@@ -3,7 +3,7 @@
 //
 // Test-time only (the `.harness` segment groups it with `.test` / `.smoke`):
 // it is imported by manifest-toml-helpers.test.ts now and by U5's verb tests
-// later, never by runtime verbs. The whiteboard's §5 mandate — ONE shared
+// later, never by runtime verbs. The plan's §5 mandate — ONE shared
 // harness, not per-verb bespoke — because every migrated verb read-modify-
 // writes the SAME manifest.toml, so the scary consolidation bug is one verb
 // trampling another verb's section. The defense:

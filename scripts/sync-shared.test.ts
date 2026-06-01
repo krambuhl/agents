@@ -70,7 +70,7 @@ function buildOldDirectionTree(): void {
   write('skills/ev-run/SKILL.md', '---\nname: ev-run\n---\nfixture\n');
   // Agents — one per agent-namespace (still root-canonical until PR4)
   write('agents/griot-judge.md', '---\nname: griot-judge\n---\nfixture\n');
-  write('agents/whiteboard-skeptic.md', '---\nname: whiteboard-skeptic\n---\nfixture\n');
+  write('agents/plan-skeptic.md', '---\nname: plan-skeptic\n---\nfixture\n');
   write('agents/evaluator-contract-fit.md', '---\nname: evaluator-contract-fit\n---\nfixture\n');
   write('agents/generator-base.md', '---\nname: generator-base\n---\nfixture\n');
   // Excluded: test files + fixtures (should NOT be copied to consumers).
@@ -115,7 +115,7 @@ describe('V10 (a): planForPlugin returns expected source/dest pairs', () => {
     const sources = plan.files.map((f) => f.source).sort();
     // Post-PR4: root-canonical claims NOTHING. Each plugin's
     // skills/agents/verbs/entry are authoritative in its own tree
-    // (not sync-managed). The planner only emits commons-canonical
+    // (not sync-managed). The plan only emits commons-canonical
     // specs — lib for PLUGINS_WITH_CLI consumers, docs for
     // doc-consumers.
     expect(sources).toEqual(
@@ -343,11 +343,11 @@ describe('skills + agents: post-PR4 plugin-authoritative', () => {
   // dissolved that direction — each plugin's skills/agents are
   // authoritative in its own tree, not synced from root. So the old
   // tests are moot. The block stays as a regression check that the
-  // planner does NOT spuriously claim plugin-authoritative content.
+  // plan does NOT spuriously claim plugin-authoritative content.
 
   test('planForPlugin emits zero specs for plugins/<plugin>/skills/ (authoritative)', () => {
     buildBothDirectionsTree();
-    // No matter what's at root skills/, the planner doesn't claim skills.
+    // No matter what's at root skills/, the plan doesn't claim skills.
     for (const plugin of ['griot', 'guild', 'loom', 'ev'] as const) {
       const plan = planForPlugin(plugin, root);
       const skillSpecs = plan.files.filter((f) => f.destination.includes('/skills/'));
@@ -410,7 +410,7 @@ describe('V10 (c) closure: drift-message format coverage (already asserted above
 // PR2 — commons-canonical sync direction
 // ============================================================
 
-describe('PR2 (a): commons-source planner — empty-commons no-op invariant', () => {
+describe('PR2 (a): commons-source plan — empty-commons no-op invariant', () => {
   test('with no commons content, planForPlugin emits zero commons-canonical specs', () => {
     buildOldDirectionTree();
     for (const plugin of COMMONS_CONSUMERS.lib) {
@@ -442,7 +442,7 @@ describe('PR2 (a): commons-source planner — empty-commons no-op invariant', ()
   });
 });
 
-describe('PR2 (b): commons-source planner — populated commons fixture', () => {
+describe('PR2 (b): commons-source plan — populated commons fixture', () => {
   test('full lib-consumers (griot, guild) receive commons/cli/lib/* mirror', () => {
     buildBothDirectionsTree();
     // loom is a PARTIAL consumer (LIB_MIRROR_ALLOWLIST) and may mirror zero
@@ -526,7 +526,7 @@ describe('PR2 (c): conflict-detection guard — dual-write tripwire', () => {
   // claims cli/lib/ destinations. The guard still defends against any
   // FUTURE case where two directions overlap on a destination, but
   // exercising it requires either (a) a contrived synthetic input
-  // (planner-bypass test), or (b) a regression that re-introduces an
+  // (plan-bypass test), or (b) a regression that re-introduces an
   // overlapping claim. PR3 removes the FIRES test as moot and keeps
   // the disjoint test as a regression check against accidental
   // re-introduction of the cli/lib/-overlap claim.
@@ -558,7 +558,7 @@ describe('PR2 (c): conflict-detection guard — dual-write tripwire', () => {
 describe('PR2: commons is leaf-source-only — substrate invariant', () => {
   test('COMMONS_CONSUMERS excludes commons from both lib and docs lists', () => {
     // commons IS the source, never a consumer. If a future edit
-    // accidentally adds commons to either list, the planner would
+    // accidentally adds commons to either list, the plan would
     // attempt commons → commons sync (recursive smell).
     expect(COMMONS_CONSUMERS.lib).not.toContain('commons');
     expect(COMMONS_CONSUMERS.docs).not.toContain('commons');
@@ -731,7 +731,7 @@ describe('ADR-0005: detectDrift orphan reporting respects the marker', () => {
 //
 // loom forked ahead of commons (TOML manifest stack, PR-state-derived),
 // so it mirrors only the stable shared utilities and OWNS the rest of its
-// cli/lib as plugin-local. The planner excludes the non-allowlisted files
+// cli/lib as plugin-local. The plan excludes the non-allowlisted files
 // from loom's plan; phase-1's marker preserves loom's forked files (now
 // orphans) from the sweep. Fixture uses real allowlisted basenames
 // (errors.ts/gh.ts are in loom's allowlist; manifest.ts is not).

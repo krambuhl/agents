@@ -45,7 +45,7 @@
  *     phrase in the YAML frontmatter `description` appears
  *     somewhere in the body (case-insensitive substring). Heuristic;
  *     advisory; tier-one drift signal per the testing-strategy
- *     whiteboard contribution that motivated this project.
+ *     plan contribution that motivated this project.
  *
  * Invocation:
  *
@@ -191,7 +191,7 @@ export function extractCheckTargets(description: string): string[] {
  * substring) somewhere in the body. Each missing target is one
  * advisory finding.
  *
- * Heuristic by design — the testing-strategy whiteboard's tier-one
+ * Heuristic by design — the testing-strategy plan's tier-one
  * check is "rubric vs body coherence," and the cheapest reliable
  * signal is "is the language in the rubric reachable from the
  * body?" Exact match would over-flag; semantic match would
@@ -226,11 +226,11 @@ const rubricBodyCoherence: Convention = {
 };
 
 /**
- * Convention: bullet-pair coherence (whiteboard-*.md).
+ * Convention: bullet-pair coherence (plan-*.md).
  *
- * A whiteboard engineer that states what it leans toward should also
+ * A plan engineer that states what it leans toward should also
  * bound itself — say what it does NOT do — so its scope stays coherent
- * rather than unbounded. This flags a whiteboard agent whose lean-toward
+ * rather than unbounded. This flags a plan agent whose lean-toward
  * content carries no boundary signal anywhere in the file.
  *
  * Lenient by design (whole-file boundedness): the boundary may be inline
@@ -251,7 +251,7 @@ const BOUNDARY_SIGNALS: ReadonlyArray<RegExp> = [
 const bulletPairCoherence: Convention = {
   name: 'bullet-pair-coherence',
   appliesTo: (file) =>
-    /plugins\/[^/]+\/agents\/whiteboard-[^/]+\.md$/.test(file),
+    /plugins\/[^/]+\/agents\/plan-[^/]+\.md$/.test(file),
   check: (file, content) => {
     if (!LEAN_SECTION.test(content)) return [];
     if (BOUNDARY_SIGNALS.some((re) => re.test(content))) return [];
@@ -277,7 +277,7 @@ export const CONVENTIONS: ReadonlyArray<Convention> = [
 
 /**
  * Derive the engineer-domain roster from an agent-file listing: the
- * `<domain>` of each `plugins/.../agents/{whiteboard,evaluator}-<domain>.md`.
+ * `<domain>` of each `plugins/.../agents/{plan,evaluator}-<domain>.md`.
  * Deriving from the real listing (rather than a hand-maintained list)
  * means the roster cannot drift from the actual engineer set. Pure —
  * the caller (main) supplies the already-collected paths.
@@ -286,7 +286,7 @@ export function deriveAgentRoster(
   paths: ReadonlyArray<string>,
 ): Set<string> {
   const roster = new Set<string>();
-  const re = /plugins\/[^/]+\/agents\/(?:whiteboard|evaluator)-(.+)\.md$/;
+  const re = /plugins\/[^/]+\/agents\/(?:plan|evaluator)-(.+)\.md$/;
   for (const path of paths) {
     const match = path.match(re);
     if (match) roster.add(match[1]);
@@ -295,9 +295,9 @@ export function deriveAgentRoster(
 }
 
 /**
- * Convention factory: sibling-reference resolution (whiteboard-*.md).
+ * Convention factory: sibling-reference resolution (plan-*.md).
  *
- * Whiteboard agents cross-link siblings in their "Cross-domain notes"
+ * Plan agents cross-link siblings in their "Cross-domain notes"
  * via `**<name> overlap.**` bullets (e.g. "**performance overlap.**",
  * "**contract-fit overlap.**"). This flags a reference whose <name>
  * resolves to no roster agent — a dangling link, usually from a renamed
@@ -318,7 +318,7 @@ export function makeSiblingReferenceConvention(
   return {
     name: 'sibling-reference-resolution',
     appliesTo: (file) =>
-      /plugins\/[^/]+\/agents\/whiteboard-[^/]+\.md$/.test(file),
+      /plugins\/[^/]+\/agents\/plan-[^/]+\.md$/.test(file),
     check: (file, content) => {
       const findings: Finding[] = [];
       for (const match of content.matchAll(OVERLAP_REF)) {
@@ -329,7 +329,7 @@ export function makeSiblingReferenceConvention(
           file,
           convention: 'sibling-reference-resolution',
           severity: 'advisory',
-          message: `sibling reference "${name}" resolves to no roster agent (expected a whiteboard-<name> or evaluator-<name>)`,
+          message: `sibling reference "${name}" resolves to no roster agent (expected a plan-<name> or evaluator-<name>)`,
         });
       }
       return findings;

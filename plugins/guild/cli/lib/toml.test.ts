@@ -30,11 +30,11 @@ describe('parseToml — grammar', () => {
 
   it('parses [[array-of-tables]] into an array of tables', () => {
     const doc = parseToml(
-      '[[combinations]]\nphase = "reviewer"\n\n[[combinations]]\nphase = "planner"\n',
+      '[[combinations]]\nphase = "reviewer"\n\n[[combinations]]\nphase = "plan"\n',
     );
     expect(doc.combinations).toEqual([
       { phase: 'reviewer' },
-      { phase: 'planner' },
+      { phase: 'plan' },
     ]);
   });
 

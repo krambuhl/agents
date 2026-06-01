@@ -1,7 +1,7 @@
 # Agent conventions
 
 Cross-skill rituals and file shapes that every agent (skills,
-whiteboard engineers, evaluators, generators) in the marketplace
+plan engineers, evaluators, generators) in the marketplace
 substrate honors. These conventions are the contract between
 sub-agents and the skills that spawn them; between parent skills
 and the recovery flow when sub-agents fail; between auto-mode
@@ -106,7 +106,7 @@ the PR3→PR9 window for safety; PR9 deletes it.)
 
 ### `[portable]` marker
 
-Whiteboard engineers and evaluators surface findings that should be
+Plan engineers and evaluators surface findings that should be
 captured to the griot learnings system by suffixing the finding
 with `[portable]`:
 
@@ -258,7 +258,7 @@ does not.
   recommendation; make the trade-offs visible).
 
 This is the same class of decision auto-mode hands to an evaluator or
-whiteboard panel (see § Auto-mode below). Human-paired, it goes to the
+plan panel (see § Auto-mode below). Human-paired, it goes to the
 operator as a structured prompt so the choice is on the record and the
 operator isn't reconstructing the options out of a paragraph.
 
@@ -284,7 +284,7 @@ which drives the structured form one branch at a time.
 
 Many skills support an optional `--mode=auto` flag (or equivalent
 caller-supplied signal) that runs the skill without human input.
-Auto-mode uses panels (whiteboards for divergent / generative
+Auto-mode uses panels (plans for divergent / generative
 questions; evaluators for convergent / auditing questions) to
 drive resolution instead of asking the operator.
 
@@ -348,7 +348,7 @@ skill) can re-invoke with a fresh session, the skill detects
 
 ## Engineer / evaluator self-recusal
 
-Whiteboard engineers and evaluators are expected to **self-recuse
+Plan engineers and evaluators are expected to **self-recuse
 cleanly** when their lens does not apply to the current
 artifact / question.
 
@@ -382,7 +382,7 @@ legible to both human readers and orchestrating skills.
 
 Bad: "Someone else can speak to this better."
 
-Good: "Deferring to `whiteboard-substrate-engineer` on the schema
+Good: "Deferring to `plan-substrate-engineer` on the schema
 shape — that's their lens."
 
 ## Branch hygiene before substrate writes

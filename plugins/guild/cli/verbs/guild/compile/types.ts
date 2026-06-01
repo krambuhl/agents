@@ -86,14 +86,14 @@ export class AxesParseError extends Error {
 //   id — the file name codegen would emit (without `.md` suffix).
 //        For recipe-derived cells: <phase-prefix>-<domain>
 //        For singletons: singleton.name (already pre-shaped, e.g.
-//        "whiteboard-skeptic").
+//        "plan-skeptic").
 //
 //   phase-prefix mapping (PLAN's existing convention; reviewer +
-//   planner only today):
+//   plan only today):
 //     reviewer  → "evaluator"
-//     planner   → "whiteboard"
+//     plan   → "plan"
 //   Other phases throw a DeriveError on derivation today — PLAN
-//   doesn't yet name a prefix for implementer / researcher.
+//   doesn't yet name a prefix for implementer / research.
 
 export interface Cell {
   id: string;

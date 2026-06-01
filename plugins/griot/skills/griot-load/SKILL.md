@@ -46,7 +46,7 @@ The CLI handles all three load outcomes:
 
 A format-detection error fires if a mid-flight session encounters the
 legacy `learnings/rollup.md` without `learnings/rollup.json` — that's
-a Phase-4-rollup-cutover safety net per the substrate's whiteboard
+a Phase-4-rollup-cutover safety net per the substrate's plan
 findings. The remedy is to run
 `node .claude/scripts/migrate-rollup-md-to-json.ts` and restart the
 session.

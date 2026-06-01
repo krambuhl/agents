@@ -131,7 +131,7 @@ export function useVerb(rest: string[], ctx: GriotCliContext): DispatchResult {
   const rollupPath = resolve(projectRoot, ROLLUP_PATH);
   const legacyPath = resolve(projectRoot, LEGACY_ROLLUP_PATH);
 
-  // Format-detection error path (whiteboard skeptic Finding 1 / Phase 4
+  // Format-detection error path (plan skeptic Finding 1 / Phase 4
   // rollup): if the legacy rollup.md is present but rollup.json is
   // missing, the cutover hasn't happened yet — fail loudly rather than
   // silently mis-loading or returning no-rollup-yet.

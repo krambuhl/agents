@@ -2,7 +2,7 @@
 #
 # Mirrors this project's (substrate-consolidation) actual state shape —
 # NOT a synthetic minimal sample. It carries the cases the testing-strategy
-# whiteboard demanded: a fully-populated [[checkins]] contract whose `goal`
+# plan demanded: a fully-populated [[checkins]] contract whose `goal`
 # holds the torture characters (# / embedded quote / */ sequence / commas),
 # an [[events]] with EMPTY detail (project-initialized) and one with
 # POPULATED detail (pr-opened), a phase with a nested `pr` inline table, and

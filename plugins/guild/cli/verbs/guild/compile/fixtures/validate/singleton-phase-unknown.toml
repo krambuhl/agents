@@ -14,7 +14,7 @@ writes = false
 default_personality = "skeptic"
 
 [[singletons]]
-name = "whiteboard-skeptic"
+name = "plan-skeptic"
 phase = "nonexistent"
 personality = "skeptic"
 

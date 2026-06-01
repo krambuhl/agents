@@ -27,7 +27,7 @@ type Category =
 type Exception =
   | 'PLAN.md'
   | 'manifest.json'
-  | 'whiteboard'
+  | 'plan'
   | 'gitignore-amendment';
 
 interface VerbEntry {
@@ -114,18 +114,18 @@ const REGISTRY: readonly VerbEntry[] = [
     exception: 'manifest.json',
   },
   {
-    verb: 'guild whiteboard init',
+    verb: 'guild plan init',
     family: 'guild',
     category: 'single-writer-serialized',
-    target: 'projects/<slug>/whiteboards/{name}.md',
-    exception: 'whiteboard',
+    target: 'projects/<slug>/plans/{name}.md',
+    exception: 'plan',
   },
   {
-    verb: 'guild whiteboard append',
+    verb: 'guild plan append',
     family: 'guild',
     category: 'single-writer-serialized',
-    target: 'projects/<slug>/whiteboards/{name}.md',
-    exception: 'whiteboard',
+    target: 'projects/<slug>/plans/{name}.md',
+    exception: 'plan',
   },
   {
     verb: 'griot init',
@@ -146,7 +146,7 @@ const VALID_CATEGORIES: ReadonlySet<Category> = new Set([
 const DECLARED_EXCEPTIONS: ReadonlySet<Exception> = new Set([
   'PLAN.md',
   'manifest.json',
-  'whiteboard',
+  'plan',
   'gitignore-amendment',
 ]);
 

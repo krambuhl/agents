@@ -47,7 +47,7 @@ interview's questions tersely and the loop closes fast.
 
 - `<topic or short description>` — what the plan is about. Required.
 - `--mode=auto` (optional) — run without human input. Auto-mode uses
-  the evaluator panel and (when needed) the whiteboard panel to drive
+  the evaluator panel and (when needed) the plan panel to drive
   resolution instead of asking the operator. See § Human / auto
   duality.
 - `--research-flavor=<text>` (optional, auto-mode only) — when an
@@ -130,7 +130,7 @@ recommendation is justified against a citable claim from
 `RESEARCH.md` where applicable.
 
 In auto-mode, the "user" is the evaluator panel + (when needed) the
-whiteboard panel for divergent questions. A round with zero new
+plan panel for divergent questions. A round with zero new
 questions (silent panel) is convergence. See § Human / auto duality.
 
 For each open interview question, emit no event by default

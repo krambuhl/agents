@@ -189,7 +189,7 @@ grant.
   browser/network/real-fixture `*.spec.ts` tier. "This unit test is
   actually exercising integration behavior" flags at the file boundary
   (wrong tier), not per-assertion.
-- Phase split within this domain: at the **planner** phase the same
+- Phase split within this domain: at the **plan** phase the same
   knowledge advises which tier to choose and what to mock before tests
   exist; at the **reviewer** phase it catches what slipped through
   after. Same domain, different lifecycle position.

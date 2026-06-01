@@ -19,10 +19,10 @@
 // substrate-meaningful but pragmatic — these names are auditable in
 // later phases:
 //   - "reviewer-default"     ← the 8-domain skeptic + reviewer combo
-//   - "planner-performance"  ← methodical + planner + [performance, substrate]
-//   - "planner-react"        ← synthesizer + planner + [react, test-unit, test-integration]
-//   - "planner-a11y"         ← generative + planner + [a11y]
-//   - "design-systems"       ← (existing) generative + planner + [composition, abstraction, tokens, naming]
+//   - "plan-performance"  ← methodical + plan + [performance, substrate]
+//   - "plan-react"        ← synthesizer + plan + [react, test-unit, test-integration]
+//   - "plan-a11y"         ← generative + plan + [a11y]
+//   - "design-systems"       ← (existing) generative + plan + [composition, abstraction, tokens, naming]
 //
 // Run with: `node plugins/guild/scripts/convert-to-axes.ts`
 
@@ -63,23 +63,23 @@ const PERSONALITIES = [
   'synthesizer',
 ] as const;
 
-const PHASES = ['researcher', 'planner', 'reviewer', 'implementer'] as const;
+const PHASES = ['research', 'plan', 'reviewer', 'implementer'] as const;
 
 type Phase = (typeof PHASES)[number];
 
 const DEFAULT_PERSONALITY: Record<Phase, string> = {
   reviewer: 'skeptic',
-  planner: 'synthesizer',
-  researcher: 'methodical',
+  plan: 'synthesizer',
+  research: 'methodical',
   implementer: 'pragmatist',
 };
 
 const DEFAULT_PERSONALITY_RATIONALE: Record<Phase, string> = {
   reviewer:
     'matches existing panel.manifest.toml — every reviewer combination is skeptic-led',
-  planner:
+  plan:
     "reconcile competing constraints into one coherent plan maps to synthesizer's disposition",
-  researcher:
+  research:
     "leave nothing unexamined maps to methodical's exhaustive evidence-gathering disposition",
   implementer:
     "simplest thing that works and reads well maps to pragmatist's disposition",
@@ -227,10 +227,10 @@ function combinationToRecipeName(combo: TomlTable): string | undefined {
   const domains = getStringArray(combo, 'domains');
   if (!phase || !personality) return undefined;
   if (phase === 'reviewer' && personality === 'skeptic') return 'reviewer-default';
-  if (phase === 'planner' && personality === 'methodical') return 'planner-performance';
-  if (phase === 'planner' && personality === 'synthesizer') return 'planner-react';
-  if (phase === 'planner' && personality === 'generative' && domains.length === 1 && domains[0] === 'a11y')
-    return 'planner-a11y';
+  if (phase === 'plan' && personality === 'methodical') return 'plan-performance';
+  if (phase === 'plan' && personality === 'synthesizer') return 'plan-react';
+  if (phase === 'plan' && personality === 'generative' && domains.length === 1 && domains[0] === 'a11y')
+    return 'plan-a11y';
   return undefined;
 }
 
@@ -363,8 +363,8 @@ for (const recipe of getArray(panelManifest, 'recipes')) {
 sections.push(
   `# ---------- singletons (1) ----------\n` +
   `# A singleton is a (phase, personality) pair with NO domain — the\n` +
-  `# domain-agnostic agent. whiteboard-skeptic is the skeptic at\n` +
-  `# planner that pressure-tests whatever brief it receives, taking\n` +
+  `# domain-agnostic agent. plan-skeptic is the skeptic at\n` +
+  `# plan that pressure-tests whatever brief it receives, taking\n` +
   `# the brief's domain at dispatch rather than baking one in.\n`,
 );
 for (const sing of getArray(panelManifest, 'singletons')) {
@@ -387,7 +387,7 @@ sections.push(
   `# Hand-authored agents codegen never touches. contract-fit is the\n` +
   `# always-on baseline reviewer — a panel-composition role, not a\n` +
   `# personality x domain combination — the one principled exception\n` +
-  `# to the cross-product. evaluator-base and whiteboard-base are\n` +
+  `# to the cross-product. evaluator-base and plan-base are\n` +
   `# documentation roots inlined into every generated body by\n` +
   `# codegen; they are not separately retained at the axes-level.\n`,
 );

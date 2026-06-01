@@ -166,7 +166,7 @@ export function validate(data: AxesData): ValidationResult {
       flag(
         errors,
         'retained-collides-with-derived-cell',
-        `retained "${r.name}" collides with a derived domain cell (codegen would emit evaluator-${r.name} or whiteboard-${r.name})`,
+        `retained "${r.name}" collides with a derived domain cell (codegen would emit evaluator-${r.name} or plan-${r.name})`,
         location,
       );
     }

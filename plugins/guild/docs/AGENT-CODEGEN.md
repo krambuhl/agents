@@ -1,7 +1,7 @@
 <!-- sync-shared: plugin-local -->
 # Agent codegen + the LLM-fusion pipeline
 
-`/guild-compile` compiles guild's antagonist-panel and whiteboard agents
+`/guild-compile` compiles guild's antagonist-panel and plan agents
 from a 3-axis source model (declared in `axes.toml`) via in-session LLM
 fusion against a checked-in `fusion-prompt.md`. This doc is the
 reference for how that works.
@@ -25,7 +25,7 @@ compose time by the LLM:
   `personality-base.md`.
 - **domain** (WHAT) — `modes/domains/<d>.md` (the antipattern catalog /
   concerns / vocabulary for a lens).
-- **phase** (WHEN) — `modes/phases/<phase>.md` (researcher, planner,
+- **phase** (WHEN) — `modes/phases/<phase>.md` (research, plan,
   reviewer, implementer) — the lifecycle position + output contract.
 
 `axes.toml` declares the matrix in six sections:
@@ -43,7 +43,7 @@ compose time by the LLM:
   triple. Consumed at dispatch time via `guild recipe <name>`; not
   affecting the cell catalog or fusion.
 - `[[singletons]]` — `(phase, personality)` pairs with no domain
-  (the domain-agnostic `whiteboard-skeptic`). An explicit named
+  (the domain-agnostic `plan-skeptic`). An explicit named
   exception, never a silent empty domain.
 - `[[retained]]` — names hand-authored agents the codegen pipeline
   never touches (e.g. `evaluator-contract-fit`). Lives flat at
@@ -51,8 +51,8 @@ compose time by the LLM:
 
 The tool fold is computed at the `resolve` stage:
 `agent.tools = phase.base_tools ∪ domain.tool_grants` (at phases that
-declare verification — reviewer + implementer). Planner and
-researcher phases ignore `tool_grants` and use `phase.base_tools` only.
+declare verification — reviewer + implementer). Plan and
+research phases ignore `tool_grants` and use `phase.base_tools` only.
 
 ### Fragment heading sets
 
@@ -98,7 +98,7 @@ Any other `## ` heading in a domain fragment fails the schema.
 Required, in order:
 
 1. `## Lifecycle position` — when in the unit-of-work flow this phase
-   fires + which of the legacy agent classes (researcher / planner /
+   fires + which of the legacy agent classes (research / plan /
    reviewer / implementer = generator) it embodies.
 2. `## Stance` — the HOW posture for this phase (skeptical,
    write-bounded, design-phase-pressure, etc.).
@@ -143,7 +143,7 @@ Required, in order:
    Phase 1.0; supports LLM fusion in Phase 2.1 with stable style
    anchors.
 3. `## Phase modulation` — how the disposition expresses differently
-   across reviewer / researcher / planner / implementer phases.
+   across reviewer / research / plan / implementer phases.
 
 Any other `## ` heading in a personality fragment (other than
 `personality-base.md`) fails the schema.
@@ -170,7 +170,7 @@ The old `evaluator-base.md` and `whiteboard-base.md` files were
 deleted in Phase 2.2 U2. Their cross-cutting framing (read-only
 stance / packet handling / verdict format / section format /
 cross-perspective courtesy) is now carried by the phase fragments
-(`modes/phases/{reviewer,planner}.md` after Phase 1.0's rewrite)
+(`modes/phases/{reviewer,plan}.md` after Phase 1.0's rewrite)
 and inlined into every composed body by the fusion-prompt.
 
 ## The implement-verify-fix output contract
@@ -282,6 +282,12 @@ was flattened into `agents/`. The generator class was dropped entirely
 the rename / split / expansion mapping for callers that referenced
 baked names in older code.
 
+> Forward note (guild-hirefest Phase 2, 2026-06-01): the `whiteboard-*`
+> generated names in the right column below were themselves renamed to
+> `plan-*` when the whiteboard metaphor retired (phase token
+> `planner` → `plan`). This table preserves the pre-Phase-2 spellings as
+> the historical record they document; the live roster is `plan-*`.
+
 | Baked (deleted) | Generated replacement | Note |
 |-----------------|-----------------------|------|
 | `evaluator-a11y` | `evaluator-a11y` | exact |
@@ -331,14 +337,14 @@ deleting baked, both addressed in Phase 7 U1:
    grilled)**: dropped entirely (both `generator-css-codemod` and
    `generator-base`). The 3-axis (personality x domain x phase) model
    fits skeptical-by-default antipattern-catalog domains (evaluators)
-   and design-phase concerns (whiteboards); generator-shaped prose
+   and design-phase concerns (plan agents); generator-shaped prose
    (how-to-transform, with carve-outs / output-shape / stopping-
    conditions) doesn't fit the (Scope / Concerns / Antipattern catalog
    / Good patterns / Vocabulary / Cross-domain notes) template the 12
    existing domain fragments follow. Re-introducing generators is a
    future substrate question (a separate fragment template, perhaps,
    or a parallel hand-authored class) — not addressed here. The CSS
-   codemod capability itself lives in PR specs and whiteboards if it
+   codemod capability itself lives in PR specs and plan artifacts if it
    ever becomes load-bearing.
 
 ## Live-spawn smoke (post-install verification)
@@ -410,16 +416,16 @@ and uses our design tokens."
 Expected: a `VERDICT: flagged` response naming the missing `alt`,
 the click-only `div`, and the `#888` literal as reasons.
 
-### Step 2 — Dispatch one generated planner
+### Step 2 — Dispatch one generated plan agent
 
 In the same session, invoke `Agent` with
-`subagent_type: whiteboard-react` and the same artifact + a brief
+`subagent_type: plan-react` and the same artifact + a brief
 asking for an API-shape review. Expected: an architectural note
 calling out the prop shape, the missing semantic role, and a
 suggested composition.
 
-The planner's output is free-form prose, not VERDICT-shaped — it
-participates in `guild-whiteboard`, not `guild-validate`. Confirm it
+The plan agent's output is free-form prose, not VERDICT-shaped — it
+participates in `guild-plan`, not `guild-validate`. Confirm it
 produced *something* substantive about the sample artifact.
 
 ### Step 3 — Verify the verdict line is parseable
@@ -459,7 +465,7 @@ into the rollup.
 
 - Step 1's reviewer emits a `VERDICT: flagged` with reasons covering
   at least one of the three intentional defects.
-- Step 2's planner emits substantive prose about the artifact (no
+- Step 2's plan agent emits substantive prose about the artifact (no
   refusal, no apology, no "I don't see any issues").
 - Step 3's `parse-and-aggregate` returns a structured aggregate with
   `"verdict": "flagged"` and the matching findings.
@@ -472,7 +478,7 @@ into the rollup.
 - **Step 1 produces no `VERDICT:` line at all**: the generated
   evaluator's body skipped the verdict-format section. Diff against
   `evaluator-base.md` § Verdict format.
-- **Step 2's planner refuses or apologizes**: the personality fragment
+- **Step 2's plan agent refuses or apologizes**: the personality fragment
   may be mis-bundled. Diff against `personalities/<name>.md`.
 - **Step 3's parse-and-aggregate reports `parse-failure`**: check the
   verdict-line column-anchoring per

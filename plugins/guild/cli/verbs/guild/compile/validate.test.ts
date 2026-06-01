@@ -113,7 +113,7 @@ describe('validate: lints', () => {
     expect(findingCodes(result)).toContain('singleton-phase-unknown');
     if (!result.ok) {
       const f = result.errors.find((e: Finding) => e.code === 'singleton-phase-unknown')!;
-      expect(f.message).toContain('singleton "whiteboard-skeptic"');
+      expect(f.message).toContain('singleton "plan-skeptic"');
       expect(f.message).toContain('nonexistent');
     }
   });
@@ -134,8 +134,8 @@ describe('validate: lints', () => {
     expect(findingCodes(result)).toContain('singleton-cell-underivable');
     if (!result.ok) {
       const f = result.errors.find((e: Finding) => e.code === 'singleton-cell-underivable')!;
-      expect(f.message).toContain('singleton "whiteboard-skeptic"');
-      expect(f.message).toContain('planner');
+      expect(f.message).toContain('singleton "plan-skeptic"');
+      expect(f.message).toContain('plan');
     }
   });
 

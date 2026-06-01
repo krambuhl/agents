@@ -29,8 +29,8 @@ function read(file: string): string {
   return readFileSync(join(agentsDir, file), 'utf8');
 }
 
-// The composed `role:` frontmatter value (evaluator | whiteboard |
-// implementer | fixer | researcher).
+// The composed `role:` frontmatter value (evaluator | plan |
+// implementer | fixer | research).
 function roleOf(body: string): string | null {
   const m = body.match(/^role:\s*(\S+)/m);
   return m ? m[1] : null;

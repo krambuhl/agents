@@ -35,7 +35,7 @@ which append their respective events (`retro-written`, `archived`).
 - `<project-slug-or-path>` — resolved by loom's standard slug
   resolution.
 - `--mode=auto` (optional) — run without human input. Auto-mode
-  composes both panels: whiteboards drive reflective retro
+  composes both panels: plans drive reflective retro
   questions ("what did we learn"); evaluators drive plan-vs-actual
   audit ("what shipped vs what was planned"). See § Human / auto
   duality.
@@ -110,7 +110,7 @@ posture from `/loom-plan` § 4 (Grill-me interview).
 auto-mode signal): the user is replaced by **two panels running in
 parallel** for each dimension:
 
-- **Whiteboard panel** (composed via `/guild-whiteboard` with the
+- **Plan panel** (composed via `/guild-plan` with the
   full registered roster). Engineers reflect on the corpus through
   their domain lens and surface questions per dimension. Self-
   recuse off-topic. Drives the divergent / generative side of the
@@ -153,7 +153,7 @@ on half-ambiguous contracts) — retros are best-effort by design.
   classification-gap caveat as other Phase-7-wired captures.
 
 **Griot `[portable]` scan at retro close**: after the panels
-converge (or budget-exhaust), scan both whiteboard and evaluator
+converge (or budget-exhaust), scan both plan and evaluator
 panel outputs for `[portable]` markers (the convention is
 documented in `docs/AGENT-CONVENTIONS.md`). For each marker, write
 a session-note via § Capture finding to
@@ -166,7 +166,7 @@ substrate-wide learnings pool.
 Human-paired mode emits no auto-mode events — the
 `AskUserQuestion`-driven conversation is the audit trail. The
 `[portable]` scan still runs in human-paired mode (operators can
-flag whiteboard or evaluator findings as `[portable]` in their
+flag plan or evaluator findings as `[portable]` in their
 response to grill-me questions; the scan picks them up
 regardless of mode).
 

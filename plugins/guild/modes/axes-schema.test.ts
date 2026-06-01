@@ -340,10 +340,10 @@ describe('axes-schema: retained agents do not collide with derived cell ids', ()
   for (const r of retained) {
     const name = getString(r, 'name') ?? '<unnamed>';
 
-    it(`retained "${name}" is not a domain name (no evaluator-/whiteboard- prefix collision)`, () => {
+    it(`retained "${name}" is not a domain name (no evaluator-/plan- prefix collision)`, () => {
       expect(
         !CANONICAL_DOMAINS.includes(name),
-        `retained "${name}": collides with a derived domain cell — codegen would emit evaluator-${name} / whiteboard-${name}`,
+        `retained "${name}": collides with a derived domain cell — codegen would emit evaluator-${name} / plan-${name}`,
       ).toBe(true);
     });
 

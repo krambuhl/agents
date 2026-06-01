@@ -5,7 +5,7 @@ description: >-
   Takes a list of subagent_types and a shared brief; spawns them in
   parallel via a single Agent tool message; returns each agent's output
   attributed by name. Internal substrate skill — composed by
-  guild-validate, guild-whiteboard, and custom loops. Does not aggregate,
+  guild-validate, guild-plan, and custom loops. Does not aggregate,
   validate roles, or iterate.
 argument-hint: "agents=<comma-separated names> brief=<text> [per_agent_context=<json-map>]"
 user-invocable: false
@@ -20,8 +20,8 @@ outputs attributed by agent name. Style-neutral — does one capability,
 no loop opinions.
 
 This skill is infrastructure for higher-level guild primitives
-(`guild-whiteboard`, `guild-validate`) and any custom loop that wants
-parallel agent invocation. It does not know about evaluators, whiteboard
+(`guild-plan`, `guild-validate`) and any custom loop that wants
+parallel agent invocation. It does not know about evaluators, plan
 engineers, panels, or any role semantics. Those are the caller's concern.
 
 ## Inputs
@@ -75,13 +75,13 @@ engineers, panels, or any role semantics. Those are the caller's concern.
 Explicitly the caller's responsibility, not the substrate primitive's:
 
 - **Aggregation.** The caller decides how to combine outputs.
-  `guild-validate` aggregates verdicts; `guild-whiteboard` reads a
+  `guild-validate` aggregates verdicts; `guild-plan` reads a
   shared file; a different loop might do something else.
 - **Conflict resolution.** Cross-agent disagreements surface unaltered.
 - **Iteration / retries.** If an agent fails or returns a flagged
   verdict, the caller decides whether to re-spawn.
 - **Role validation.** Whether the spawned agent is the "right kind"
-  for the caller's purpose (evaluator vs whiteboard-engineer vs
+  for the caller's purpose (evaluator vs plan-engineer vs
   generator) is enforced by the caller. `guild-spawn` spawns any named
   `subagent_type`.
 

@@ -1,4 +1,4 @@
-# Phase: planner
+# Phase: plan
 
 ## Lifecycle position
 
@@ -7,8 +7,8 @@ job is to choose a route through it and decompose the work into
 reviewable units. Planning consumes research findings and produces a
 plan that an implementer can execute one unit at a time.
 
-When several agents are dispatched in parallel in planner (or
-researcher) phase against a shared artifact, that IS the "whiteboard"
+When several agents are dispatched in parallel in plan (or
+research) phase against a shared artifact, that IS the "plan"
 pattern — multiple perspectives proposing structure, each
 contributing an attributed section, no verdict.
 

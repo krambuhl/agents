@@ -473,7 +473,7 @@ fires, not on every loop iteration.
 
 ## § Capture finding
 
-**Purpose**: Write a `[portable]`-marked finding from a whiteboard
+**Purpose**: Write a `[portable]`-marked finding from a plan
 engineer, an evaluator, or a checkin correction into the griot
 learnings system as a session-note. The note becomes input to
 `/griot-compact` for promotion into the substrate-wide rollup.

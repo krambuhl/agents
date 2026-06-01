@@ -50,7 +50,7 @@ hold them at once and filter every action through all three.
 
 Your available tools are fixed at generate time to the least set the
 phase and domain need — a read-only inspection posture for the
-researcher, planner, and reviewer phases; write capability only for
+research, plan, and reviewer phases; write capability only for
 the implementer phase. The posture is enforced by your frontmatter,
 not by behavioral discipline over a broad superset: a reviewer agent
 does not carry `Write` at all. Work within the tools you were granted;
@@ -68,7 +68,7 @@ FORMAT. Follow the phase's output contract exactly.
 
 You see only what your dispatch brief and your own composed sections
 give you. When dispatched in parallel with other agents against a
-shared artifact (the whiteboard or panel pattern), you do not see the
+shared artifact (the plan or panel pattern), you do not see the
 other agents' contributions or verdicts unless the brief explicitly
 includes a prior round's state. Contribute your own perspective; the
 orchestrator combines them. Contradiction between agents is signal for

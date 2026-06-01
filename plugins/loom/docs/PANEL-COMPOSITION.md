@@ -25,7 +25,7 @@ Three audiences read this file:
   findings. The precedence list in § "Precedence" is the source of
   truth.
 - Humans authoring panels manually (custom one-off invocations,
-  whiteboard-style "let me get a second lens on this") who want to
+  plan-style "let me get a second lens on this") who want to
   know which evaluators to include for a given file set.
 
 ## File-type → evaluator mapping
@@ -372,12 +372,12 @@ evaluators" section that covers the per-evaluator nuance:
 - `.claude/agents/evaluator-test-integration.md` — boundary with
   a11y (axe-core scans defer to a11y; test shape stays here),
   test-unit (tier choice at file boundary), react (fixture
-  components), and whiteboard-testing-strategy (design vs review
+  components), and plan-testing-strategy (design vs review
   phase)
 - `.claude/agents/evaluator-test-unit.md` — boundary with
   test-integration (tier choice), naming (test-file naming
   carve-out), react (production code under test), and
-  whiteboard-testing-strategy (design vs review phase)
+  plan-testing-strategy (design vs review phase)
 - `.claude/agents/evaluator-tokens.md` — boundary with naming
   (literal-vs-token vs right-name) and a11y (contrast outcomes)
 - `.claude/agents/evaluator-naming.md` — boundary with tokens

@@ -32,7 +32,7 @@ const fusionPrompt = join(
   'fusion-prompt.md',
 );
 
-const PHASES = ['reviewer', 'implementer', 'fixer', 'planner', 'researcher'];
+const PHASES = ['reviewer', 'implementer', 'fixer', 'plan', 'research'];
 
 function read(file: string): string {
   return readFileSync(file, 'utf8');
