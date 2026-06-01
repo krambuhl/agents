@@ -1,6 +1,5 @@
 checkins = []
 sessions = []
-revisions = []
 
 [meta]
 schema_version = 1
@@ -19,7 +18,32 @@ worker_bindings = {}
 
 [[phases]]
 number = 1
-name = "Phase 1"
+name = "Phase-aware participate layer (setup / gate)"
+status = "not-started"
+
+[[phases]]
+number = 2
+name = "research-* into loom-research (lowest-risk wave)"
+status = "not-started"
+
+[[phases]]
+number = 3
+name = "plan-* panel in loom-plan"
+status = "not-started"
+
+[[phases]]
+number = 4
+name = "implementer-* delegation seam (both ev-loops)"
+status = "not-started"
+
+[[phases]]
+number = 5
+name = "fixer-* delegation seam (both ev-loops)"
+status = "not-started"
+
+[[phases]]
+number = 6
+name = "Cleanup + runtime gate (close the loop)"
 status = "not-started"
 
 [[events]]
@@ -36,3 +60,13 @@ detail = { slug = "2026-06-01-orchestrator-guild-rpi-alignment", topic = "orches
 at = "2026-06-01T20:17:52.874Z"
 event = "research-completed"
 detail = { slug = "2026-06-01-orchestrator-guild-rpi-alignment", research_path = "RESEARCH.md", notes_path = "RESEARCH-NOTES.md" }
+
+[[revisions]]
+timestamp = "2026-06-01T22:19:26.629Z"
+target = "PLAN.md"
+seq = 1
+
+[[revisions]]
+timestamp = "2026-06-01T22:20:51.714Z"
+target = "PLAN.md"
+seq = 2
