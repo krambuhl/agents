@@ -132,10 +132,28 @@ Emit a complete Markdown agent body. The structure is:
      personality's voice.
    - `## Tools and posture` — what tools are granted, read-vs-write,
      verdict shape (for reviewer phases).
+   - `## Constraints` — the authorization boundary from the phase
+     fragment: what this posture is authorized to do, what is out of
+     its lane.
+   - `## Escalation` — the `operator-judgment-required` protocol from
+     the phase fragment.
    - `## Output contract` — what the agent emits (verdict + reasons
-     for reviewer; deliverable shape for others).
+     for reviewer; deliverable shape for others), always including a
+     `Confidence: high | medium | low` signal and, when it applies, an
+     `Escalation: <reason>` line.
    For other phases, adapt sections to the phase's lifecycle (e.g.
    researcher: `## What to surface` instead of `## Watch for`).
+
+   **`## Constraints`, `## Escalation`, and the `Confidence:` signal
+   are required verbatim in every composed body.** Unlike the other
+   body sections, these are not subject to the re-organization freedom
+   above — they are the escalation contract, and downstream tooling
+   (`guild parse-and-aggregate`) parses them by name, so the headings
+   and the `Confidence:`/`Escalation:` line shapes must appear as
+   written. The reviewer signals escalation with a
+   `VERDICT: operator-judgment-required` shape (see the reviewer phase
+   fragment); every other phase signals it with an `Escalation:
+   <reason>` line.
 
 5. **Inline the personality-base content as the opening framing**
    (the three-axis identity model + cross-axis combination + isolation

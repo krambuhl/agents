@@ -45,6 +45,8 @@ const PHASE_REQUIRED = [
   '## Stance',
   '## Mandate',
   '## Tool posture',
+  '## Constraints',
+  '## Escalation',
   '## Output contract',
 ];
 

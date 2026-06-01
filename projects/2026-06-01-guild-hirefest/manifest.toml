@@ -1,4 +1,3 @@
-checkins = []
 sessions = []
 revisions = []
 
@@ -20,7 +19,8 @@ worker_bindings = {}
 [[phases]]
 number = 1
 name = "Escalation contract + codegen prerequisites (setup gate)"
-status = "not-started"
+status = "in-progress"
+branch = "ev-agent.guild-hirefest.setup"
 
 [[phases]]
 number = 2
@@ -46,3 +46,27 @@ status = "not-started"
 at = "2026-06-01T03:18:26.776Z"
 event = "project-initialized"
 detail = {}
+
+[[events]]
+at = "2026-06-01T14:19:48.397Z"
+event = "checkin-created"
+detail = { number = "01", branch = "ev-agent.guild-hirefest.setup" }
+
+[[events]]
+at = "2026-06-01T14:20:35.899Z"
+event = "phase-started"
+detail = { phase = 1, name = "Escalation contract + codegen prerequisites (setup gate)" }
+
+[[checkins]]
+schema_version = 1
+number = "01"
+created = "2026-06-01T14:19:48Z"
+phase = { number = 1, name = "Escalation contract + codegen prerequisites (setup gate)" }
+branch = "ev-agent.guild-hirefest.setup"
+unit = "Escalation contract + structured confidence signal in the phase fragments"
+contract = { goal = "Every guild agent body inherits a phase-appropriate ## Constraints + ## Escalation section and emits a structured Confidence: high|medium|low signal plus an optional Escalation: <reason> line, so the Unit-2 aggregator can machine-detect convergence failure across implementer->reviewer->fixer. Source edits land in the phase fragments + fusion-prompt output-shape; the already-distinct implementer/fixer output contracts gain the new field, and a body-shape test locks their distinctness (folded-in D4).", acceptance_criteria = ["Each of the 5 phase fragments gains ## Constraints (authorized-to / out-of-lane) and ## Escalation (operator-judgment-required protocol)", "Each fragment's ## Output contract gains Confidence: high|medium|low and the optional Escalation: <reason> line; reviewer gains the VERDICT: operator-judgment-required token", "fusion-prompt.md output-shape requires Constraints + Escalation + the confidence/escalation field verbatim in every composed body", "fragment-schema.test.ts PHASE_REQUIRED grows to 7 headings (canonical order preserved); AGENT-CODEGEN.md heading-set updated in lockstep", "Source-level body-shape test asserts every fragment carries the contract + confidence field, and implementer vs fixer output contracts stay distinct (spec-met vs findings-cleared)"], rules_applied = ["Erasable TS, stdlib only", "Match the fragments' soft-wrapped prose idiom", "Confidence enum is exactly high|medium|low (decided this session; not a numeric score)", "No recompile in this unit (deferred to Unit 5)"], disqualifiers = ["touching parse-and-aggregate.ts (Unit 2)", "running /guild-compile or regenerating agents/*.md (Unit 5)", "adding a new fragment type/axis, or a numeric confidence score"], inputs = ["plugins/guild/modes/phases/{reviewer,implementer,fixer,planner,researcher}.md", "plugins/guild/skills/guild-compile/fusion-prompt.md", "plugins/guild/modes/fragment-schema.test.ts", "plugins/guild/docs/AGENT-CODEGEN.md"] }
+execution = { actions = ["Added ## Constraints + ## Escalation (phase-worded) to all 5 phase fragments, placed canonically after ## Tool posture, before ## Output contract", "Added Confidence: high|medium|low + optional Escalation: <reason> to each fragment's Output contract; reviewer gained Confidence lines in Approved/Flagged blocks plus a new ### Operator judgment required shape (VERDICT: operator-judgment-required)", "Updated fusion-prompt.md output-shape to require Constraints/Escalation/Confidence verbatim (exempt from the heading re-organization freedom) so Unit 5's compiled-level test has stable anchors", "Grew fragment-schema.test.ts PHASE_REQUIRED 5->7 and AGENT-CODEGEN.md Fragment-heading-set list 5->7 in lockstep, plus a confidence-signal note in the implement-verify-fix section", "Authored escalation-contract.test.ts: source-level contract-presence + implementer/fixer distinctness + fusion-prompt-mandate assertions", "Hardened the test's confidence-enum assertions to word-boundary regex per the panel's advisory"], files_touched = ["plugins/guild/modes/phases/reviewer.md", "plugins/guild/modes/phases/implementer.md", "plugins/guild/modes/phases/fixer.md", "plugins/guild/modes/phases/planner.md", "plugins/guild/modes/phases/researcher.md", "plugins/guild/modes/fragment-schema.test.ts", "plugins/guild/modes/escalation-contract.test.ts", "plugins/guild/docs/AGENT-CODEGEN.md", "plugins/guild/skills/guild-compile/fusion-prompt.md"], corrections = ["Panel advisory (evaluator-test-unit, test-unit-loose-truthy): .toContain(level) enum checks could match incidental substrings (below/slow/allow). Addressed in-unit by switching to \\b<level>\\b word-boundary regex. Non-blocking; fixed before checkin."] }
+scope = ["plugins/guild/modes/phases/", "plugins/guild/modes/fragment-schema.test.ts", "plugins/guild/modes/escalation-contract.test.ts", "plugins/guild/docs/AGENT-CODEGEN.md", "plugins/guild/skills/guild-compile/fusion-prompt.md"]
+changes_since_previous = "First unit of Phase 1; establishes the escalation contract + confidence signal in the codegen source that the rest of the phase (parser, fixer block, recompile) builds on."
+verdict = { result = "approved", reasons = [] }
+notes_for_pr = ["D4 fold-in: the implementer and fixer output contracts ALREADY existed and were ALREADY distinct on disk (implementer.md / fixer.md), both already no-self-verdict. PLAN's D4 ('define the distinct contracts') was ~80% shipped; this unit added only the confidence/escalation field + a distinctness test rather than rebuilding. Decomposition fork resolved with the operator (D4 folded into D1, 6 units -> 5).", "Compiled-level body-shape assertion ('every compiled agent carries Constraints/Escalation') is deferred to Phase 1 Unit 5 (recompile) BY DESIGN: agents/*.md only regenerate at recompile, so a compiled-level test would be red until then. Unit 1's test is source-level (fragments + fusion-prompt). fusion-prompt now mandates the headings verbatim so the Unit-5 test has stable anchors.", "Design decisions this session: (1) confidence is a high|medium|low ENUM, not a numeric score (false-precision + parse-fragility); (2) Constraints/Escalation live IN the phase fragments (authorization is a phase property), not fusion-prompt-only or a new shared fragment type.", "Reviewer escalation shape: a new VERDICT: operator-judgment-required token (operator-approved this approach). Write phases (implementer/fixer/planner/researcher) signal escalation with the uniform Escalation: <reason> line. parse-and-aggregate (Unit 2) will consume both.", "No recompile triggered: the fusion-prompt + fragment edits change prompt_hash/source_hashes, so the whole roster will cache-miss at Unit 5's /guild-compile. Deliberately deferred."]

@@ -43,6 +43,23 @@ The one exception is the plan artifact itself: writing the plan
 document (PLAN.md or a subplan) is allowed when the dispatch brief
 names the plan target. That is the plan output, not a source mutation.
 
+## Constraints
+
+- **Authorized to** propose a decomposition and sequence, and to write
+  the plan artifact when the dispatch brief names it. Read-only
+  against source otherwise.
+- **Out of lane** to implement, or to collapse a genuine open decision
+  into a silent default — surface it instead.
+
+## Escalation
+
+When a load-bearing decision cannot be made from the evidence — two
+decompositions are equally defensible and the choice changes the whole
+shape, or a constraint the plan depends on is unresolved — name it as
+an open decision AND emit an `Escalation: <reason>` line. Direction-
+setting calls belong to the operator; a plan that guesses one hides
+the fork rather than resolving it.
+
 ## Output contract
 
 A plan with:
@@ -55,6 +72,11 @@ A plan with:
   decomposition wins.
 - **Open decisions** — anything that needs the operator's call before
   implementation starts.
+- **Confidence** — `high`, `medium`, or `low`: how sure you are this
+  decomposition is the right route.
+- **Escalation** (when it applies) — an `Escalation: <reason>` line
+  per § Escalation, for a direction-setting call the operator must
+  make.
 
 No verdict. No "approved/flagged." A plan is a proposal the operator
 accepts, redirects, or refines — not a gate.

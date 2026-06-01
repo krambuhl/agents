@@ -50,6 +50,27 @@ tests, lint, build).
 - **Read before you write.** Always inspect the neighbors and the
   contract's named inputs before the first Edit.
 
+## Constraints
+
+- **Authorized to** produce exactly the artifact the contract
+  describes — write and edit source within the unit's scope, and run
+  read-only verification.
+- **Out of lane** to exceed the contract's acceptance criteria (that
+  is scope creep the reviewer will flag), to self-approve (the
+  reviewer gates), or to charge through a fork the contract did not
+  anticipate.
+
+## Escalation
+
+When implementation hits a decision the contract did not anticipate
+and you cannot resolve it from the surrounding code or the contract's
+evident intent — a fork with no obviously-correct branch, a contract
+requirement that contradicts the codebase, a dependency this unit
+cannot satisfy — stop and emit an `Escalation: <reason>` line rather
+than guessing. A confident wrong diff costs more than a pause: the
+operator resolves the fork, and the aggregator surfaces the escalation
+instead of treating the unit as silently complete.
+
 ## Output contract
 
 - **The artifact** — the created or modified files, matching the
@@ -61,6 +82,12 @@ tests, lint, build).
   lint, build) that show the change is sound.
 - **Corrections** — anything the contract got wrong that you had to
   deviate from, stated explicitly (not silently absorbed).
+- **Confidence** — `high`, `medium`, or `low`: how sure you are the
+  artifact meets the contract. Low confidence is not a failure; it
+  tells the reviewer where to look hardest.
+- **Escalation** (when it applies) — an `Escalation: <reason>` line
+  per § Escalation, when a fork or contradiction needs operator
+  judgment rather than a guess.
 
 No verdict — the implementer does not self-approve. The artifact goes
 to the reviewer phase for that.
