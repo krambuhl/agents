@@ -120,6 +120,11 @@ at = "2026-06-01T18:25:27.795Z"
 event = "checkin-created"
 detail = { number = "01", branch = "ev-agent.guild-hirefest.hire-4b" }
 
+[[events]]
+at = "2026-06-01T18:32:10.307Z"
+event = "checkin-created"
+detail = { number = "01", branch = "ev-agent.guild-hirefest.hire-naming" }
+
 [[checkins]]
 schema_version = 1
 number = "01"
@@ -245,3 +250,17 @@ scope = ["plugins/guild/modes/axes.toml", "plugins/guild/agents/"]
 changes_since_previous = "Second write-hire wave (after tokens, #190). test-unit, test-integration, nextjs now have the full implement-verify-fix posture set. nextjs gains its FIRST write posture (it was reviewer-only)."
 verdict = { result = "approved", reasons = [] }
 notes_for_pr = ["Wave 4b: the contract-shaped runnable-verify domains (test-unit, test-integration, nextjs), grouped into one PR per the PLAN's verify-grant-similarity allowance. 6 write cells; each domain had a reviewer + verify grant already (no prerequisite). nextjs is notable — it was reviewer-only; this is its first write posture (reviewer + lint:nextjs grant satisfy the write-hire prerequisite).", "Each write cell carries the domain-specific verify grant (test-unit: npm test; test-integration: test:e2e; nextjs: lint:nextjs) so its reviewer can gate against a real runnable check. All pragmatist, no self-verdict, inherit the escalation contract.", "DEFERRED (L-004): Live-spawn smokes for the 6 new agents run next session. Static verification stands in (body-shape test, compile --check, 1281-test suite).", "Phase 4 remains IN-PROGRESS: wave 4c (naming, a11y, react — judgment-heavy, isolated PRs) remains, then Phase 5 cleanup.", "Verification: 1281 tests green; guild compile --check zero drift (39 cells); sync clean."]
+
+[[checkins]]
+schema_version = 1
+number = "01"
+created = "2026-06-01T18:32:10Z"
+phase = { number = 4, name = "Hire implementer/fixer (wave-sequenced)" }
+branch = "ev-agent.guild-hirefest.hire-naming"
+unit = "Wave 4c (naming) — hire implementer + fixer for the naming domain"
+contract = { goal = "Hire write-capable implementer + fixer for naming, the first of the judgment-heavy 4c domains (isolated PRs, extra review). The escalation contract is the load-bearing guardrail. naming has a reviewer + verify grant (no prerequisite).", acceptance_criteria = ["naming gains implementer + fixer phases; write recipes extended to include naming", "implementer-naming + fixer-naming fused (pragmatist), correct role, write tools, ## Constraints + ## Escalation + Confidence, no self-verdict", "recompiled; cache has the 2 new cells (41 total); guild compile --check clean", "the escalation section leans on operator judgment for contested naming / large-blast-radius renames"], rules_applied = ["Isolated PR per the PLAN (judgment-heavy 4c)", "Parallel-fusion offload", "Escalation contract as the guardrail for the most-likely-to-escalate domains"], disqualifiers = ["hiring without reviewer/verify grant (naming has both)", "Live-spawn smoke this session (L-004; deferred)", "doing a11y/react here (separate isolated PRs)"], inputs = ["plugins/guild/modes/axes.toml", "modes/phases/{implementer,fixer}.md", "modes/personalities/pragmatist.md", "modes/domains/naming.md", "the reviewer-gap inventory"] }
+execution = { actions = ["axes.toml: naming phases += implementer, fixer; write recipes extended", "Resolve derives implementer-naming + fixer-naming (41 cells)", "Spawned 2 parallel fusion subagents (judgment-heavy briefs emphasizing escalation-as-guardrail); each wrote its body", "Verified roles/contract/tools; emitted; compile --check zero drift"], files_touched = ["plugins/guild/modes/axes.toml", "plugins/guild/agents/implementer-naming.md", "plugins/guild/agents/fixer-naming.md", "plugins/guild/agents/.cache.toml"], corrections = ["Live-spawn smoke deferred per L-004."] }
+scope = ["plugins/guild/modes/axes.toml", "plugins/guild/agents/"]
+changes_since_previous = "First judgment-heavy hire (wave 4c). After tokens (#190) + test/nextjs (#191). naming now has the full implement-verify-fix posture set."
+verdict = { result = "approved", reasons = [] }
+notes_for_pr = ["Wave 4c, domain 1 of 3 (naming). Isolated PR per the PLAN — the judgment-heavy domains get individual review, sequenced last so the write-hire pattern is proven before the agents most likely to escalate. naming had a reviewer + lint/build grant, so no prerequisite.", "The escalation contract is the load-bearing guardrail here: implementer-naming/fixer-naming escalate (rather than guess) on contested naming choices and renames whose blast radius exceeds the contract. Confirmed by the panel spot-check.", "DEFERRED (L-004): Live-spawn smoke next session.", "Phase 4 still IN-PROGRESS: a11y and react (the remaining 4c domains) are separate isolated PRs, then Phase 5.", "Verification: 1285 tests green; compile --check zero drift (41 cells); sync clean."]

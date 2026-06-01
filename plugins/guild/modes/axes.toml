@@ -29,7 +29,7 @@ phases = ["reviewer", "implementer", "fixer"]
 tool_grants = []
 
 [axis.domain.naming]
-phases = ["research", "plan", "reviewer"]
+phases = ["research", "plan", "reviewer", "implementer", "fixer"]
 tool_grants = ["Bash(npm run lint:*)", "Bash(npm run build:*)", "Bash(git status:*)", "Bash(git diff:*)"]
 
 [axis.domain.nextjs]
@@ -177,7 +177,7 @@ domains = ["a11y", "abstraction", "composition", "naming", "performance", "react
 name = "implementer-default"
 phase = "implementer"
 personality = "pragmatist"
-domains = ["css-architecture", "tokens", "test-unit", "test-integration", "nextjs"]
+domains = ["css-architecture", "tokens", "test-unit", "test-integration", "nextjs", "naming"]
 
 # fixer-default seeds the write-capable fixer phase on the
 # css-architecture proof domain, completing the implement-verify-fix
@@ -186,7 +186,7 @@ domains = ["css-architecture", "tokens", "test-unit", "test-integration", "nextj
 name = "fixer-default"
 phase = "fixer"
 personality = "pragmatist"
-domains = ["css-architecture", "tokens", "test-unit", "test-integration", "nextjs"]
+domains = ["css-architecture", "tokens", "test-unit", "test-integration", "nextjs", "naming"]
 
 # ---------- singletons (1) ----------
 # A singleton is a (phase, personality) pair with NO domain — the
