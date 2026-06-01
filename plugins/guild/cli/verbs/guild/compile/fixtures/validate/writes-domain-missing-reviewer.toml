@@ -1,0 +1,26 @@
+schema_version = 1
+
+# foo hosts a write phase (implementer) but has no reviewer phase — nothing
+# gates its write cells' output. (It carries a grant, so only the
+# missing-reviewer lint should fire.)
+[axis.domain.foo]
+phases = ["implementer"]
+tool_grants = ["Bash(npm run lint:*)"]
+
+[axis.personality.pragmatist]
+phases = ["implementer"]
+disposition = "decide"
+
+[axis.phase.implementer]
+base_tools = ["Read", "Edit", "Write"]
+writes = true
+default_personality = "pragmatist"
+
+[[recipes]]
+name = "implementer-default"
+phase = "implementer"
+personality = "pragmatist"
+domains = ["foo"]
+
+[[retained]]
+name = "contract-fit"

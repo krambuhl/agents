@@ -428,6 +428,28 @@ The plan agent's output is free-form prose, not VERDICT-shaped — it
 participates in `guild-plan`, not `guild-validate`. Confirm it
 produced *something* substantive about the sample artifact.
 
+### Step 2b — Dispatch the research + write postures (expanded roster)
+
+The roster now spans the full RPI loop, so sample one of each remaining
+posture in the same session:
+
+- **research** — `subagent_type: research-react`, brief "inventory how
+  this artifact uses React patterns." Expected: methodical
+  evidence-gathering (what's there, cited; open questions; viable
+  directions) with **no single recommendation and no verdict** — distinct
+  from the plan agent's "propose a decomposition."
+- **implementer** — `subagent_type: implementer-tokens`, with a small
+  unit contract (e.g. "replace the literal `#888` with the matching
+  semantic token"). Expected: the change made, verification evidence, and
+  **no verdict** (the reviewer gates).
+- **fixer** — `subagent_type: fixer-tokens`, with a flagged finding (e.g.
+  the Step-1 reviewer's). Expected: the minimal correction mapped to the
+  finding, re-verification, **no verdict**.
+
+Every composed body should carry its `## Constraints` + `## Escalation`
+sections and emit a `Confidence:` signal; an agent that hits a fork
+outside its lane should emit `Escalation: <reason>` rather than guess.
+
 ### Step 3 — Verify the verdict line is parseable
 
 Save the reviewer's full output to a temp file and run:

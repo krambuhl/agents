@@ -43,7 +43,8 @@ branch = "ev-agent.guild-hirefest.hire-react"
 [[phases]]
 number = 5
 name = "Cleanup / coherence (close the loop)"
-status = "not-started"
+status = "completed"
+branch = "ev-agent.guild-hirefest.cleanup"
 
 [[events]]
 at = "2026-06-01T03:18:26.776Z"
@@ -139,6 +140,16 @@ detail = { number = "01", branch = "ev-agent.guild-hirefest.hire-react" }
 at = "2026-06-01T18:40:40.106Z"
 event = "phase-completed"
 detail = { phase = 4 }
+
+[[events]]
+at = "2026-06-01T18:53:00.206Z"
+event = "checkin-created"
+detail = { number = "01", branch = "ev-agent.guild-hirefest.cleanup" }
+
+[[events]]
+at = "2026-06-01T18:53:00.277Z"
+event = "phase-completed"
+detail = { phase = 5 }
 
 [[checkins]]
 schema_version = 1
@@ -307,3 +318,17 @@ scope = ["plugins/guild/modes/axes.toml", "plugins/guild/agents/"]
 changes_since_previous = "Final hire. Completes Phase 4 (all waves: 4a tokens, 4b test-unit/test-integration/nextjs, 4c naming/a11y/react). The write-capable roster is fully staffed."
 verdict = { result = "approved", reasons = [] }
 notes_for_pr = ["Wave 4c, domain 3 of 3 (react) — the FINAL hire, completing Phase 4. react had a reviewer + lint/build grant, so no prerequisite. Escalation contract as guardrail: implementer/fixer-react escalate on contested React-design forks (state location, server/client boundary, effect cadence) rather than guess (panel-confirmed).", "Phase 4 COMPLETE: every domain that should be write-capable now has implementer + fixer. The full RPI roster is staffed: research/plan (read-only) + implementer/reviewer/fixer (write cycle) across the appropriate domains. 45 cells, 46 agent files.", "DEFERRED (L-004): the Live-spawn smokes for ALL the new agents this project (research-* from Phase 3, all write hires from Phase 4) remain — they need a fresh session to register + spawn. STRONGLY recommend a dedicated smoke session before Phase 5 closes the loop.", "Next: Phase 5 (cleanup) — re-introduce the validate.ts writes coherence lint (gate write-phase cells against a reviewer + verify-grant invariant), fix stale generator-* references, close the css-architecture verify-grant gap (the inventory's exemplar).", "Verification: 1293 tests green; compile --check zero drift (45 cells); sync clean."]
+
+[[checkins]]
+schema_version = 1
+number = "01"
+created = "2026-06-01T18:53:00Z"
+phase = { number = 5, name = "Cleanup / coherence (close the loop)" }
+branch = "ev-agent.guild-hirefest.cleanup"
+unit = "Phase 5 — writes coherence lint + css-architecture grant + stale-ref cleanup + smoke refresh"
+contract = { goal = "Close the loop: re-introduce the validate.ts writes coherence lint, close the css-architecture verify-grant gap (the inventory's exemplar), fix stale generator-* agent-family references, and refresh the Live-spawn smoke checklist for the expanded roster.", acceptance_criteria = ["validate.ts writes coherence lint: a write-hosting domain must have a reviewer phase + non-empty tool_grants (codes writes-domain-missing-reviewer, writes-domain-missing-verify-grant) + 2 fixtures + 2 isolating test cases", "css-architecture verify-grant gap closed: axes.toml grant added; evaluator-css-architecture body (tools + tool-posture prose) updated; recompiled; compile --check clean; seed validates clean under the new lint", "stale generator-* agent-family refs fixed in plugin.json, marketplace.json, README.md (griot generator-antipattern classification untouched)", "Live-spawn smoke checklist refreshed for research/implementer/fixer postures"], rules_applied = ["Add the grant WITH the lint so the seed stays clean", "Preserve the AGENT-CODEGEN historical record + the griot generator-antipattern classification", "Match existing lint-code kebab convention + test-file pattern"], disqualifiers = ["touching the griot generator-antipattern classification (different concept)", "corrupting the AGENT-CODEGEN historical record"], inputs = ["plugins/guild/cli/verbs/guild/compile/validate.ts", "plugins/guild/modes/axes.toml", "the reviewer-gap inventory", "plugin.json / marketplace.json / README.md", "AGENT-CODEGEN.md smoke section"] }
+execution = { actions = ["Added the writes coherence lint to validate.ts (+ header) + 2 fixtures + 2 isolating test cases (each asserts the sibling lint does NOT fire)", "axes.toml: css-architecture tool_grants += lint/build/git; updated evaluator-css-architecture body (tools line + tool-posture prose, which had claimed strict-read-only/no-lint); re-emitted; compile --check zero drift", "Fixed generator-* agent-family descriptions in plugin.json, marketplace.json, README.md -> plan/research/evaluator/implementer/fixer", "Refreshed the Live-spawn smoke checklist (Step 2b: research/implementer/fixer dispatch + the Constraints/Escalation/Confidence expectation)"], files_touched = ["plugins/guild/cli/verbs/guild/compile/validate.ts", "validate.test.ts", "2 validate fixtures", "plugins/guild/modes/axes.toml", "plugins/guild/agents/evaluator-css-architecture.md", "plugins/guild/agents/.cache.toml", "plugin.json", "marketplace.json", "README.md", "plugins/guild/docs/AGENT-CODEGEN.md"], corrections = ["Declined panel advisory (evaluator-test-unit): the if(!result.ok) guard is dead after asserting result.ok false — KEPT for consistency with the 13 sibling lint tests in the file.", "Declined panel advisory (evaluator-naming): writes-domain-missing-verify-grant could be ...-tool-grant for field-literal symmetry — KEPT 'verify-grant' as the more semantic name (names the purpose), per the semantic-over-literal value.", "Noted latent gap (not fixed here): the codegen cache keys on fragment + prompt hashes, NOT axes.toml tool_grants, so a tool_grants edit does not invalidate the cache — the evaluator-css-architecture tools line had to be hand-synced + re-emitted. A future guild improvement could fold tool_grants into the cache signature."] }
+scope = ["plugins/guild/cli/verbs/guild/compile/", "plugins/guild/modes/axes.toml", "plugins/guild/agents/", "plugin.json", "marketplace.json", "README.md", "plugins/guild/docs/AGENT-CODEGEN.md"]
+changes_since_previous = "Final phase. Closes the loop after the full roster was hired (Phases 1-4). The writes coherence lint now enforces the invariant the reviewer-gap inventory described; css-architecture (its exemplar) is fixed."
+verdict = { result = "approved", reasons = [] }
+notes_for_pr = ["Close-the-loop PR. The writes coherence lint enforces, in CI, the invariant the Phase-1 reviewer-gap inventory described by hand: a write-capable domain must have a reviewer to gate it AND a runnable verify grant so that reviewer can verify (reviewer base_tools are read-only). css-architecture was the exemplar gap (write-capable, empty grant, blind reviewer) — now closed: the grant is added and evaluator-css-architecture actually carries the verify tools.", "Stale generator-* agent-family references removed from plugin.json/marketplace.json/README.md (the generator class was dropped in a prior guild phase). The griot `generator-antipattern` LEARNING CLASSIFICATION is a different concept and was correctly left untouched.", "Live-spawn smoke checklist refreshed: it now samples the research/implementer/fixer postures the project added, and asserts every body carries Constraints/Escalation/Confidence.", "Latent gap noted (deliberately not fixed here): the codegen cache signature does not include axes.toml tool_grants, so a grant edit does not invalidate the cache; the css-architecture reviewer's tools line was hand-synced + re-emitted. A future improvement could fold tool_grants into the cache hash.", "Phase 5 COMPLETE -> all 5 phases of guild-hirefest done. NEXT: a fresh-session Live-spawn smoke pass over the accumulated new agents (research + all write hires, deferred on L-004), THEN archive the project.", "Verification: 1295 tests green (incl. validate 15: seed clean under the new lint, both fixtures isolate); guild compile --check zero drift; sync clean; no stale generator-* agent refs."]
