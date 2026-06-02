@@ -35,6 +35,8 @@ Remove the orphaned commons JSON substrate (`cli/lib/adopt.ts` plus the `manifes
 
 **Depends on**: none
 
+**Goal**: Bring the convention docs and skill bodies into line with the consolidated `manifest.toml` reality, and add a regression guard that keeps them there — shipped as one PR.
+
 Single PR. One conceptual change: bring the prose into line with the consolidated TOML reality and lock it in.
 
 1. Edit the ~11 occurrences across the two convention docs and five skill bodies (contextual replacement per Scope/In).
@@ -42,7 +44,7 @@ Single PR. One conceptual change: bring the prose into line with the consolidate
 3. Add the regression guard test: scan the defined prose set, forbid `manifest.json` / `config.json` / `events.jsonl`, allowlist the sanctioned `LOOM-CONVENTIONS.md` history lines. The test passes on the cleaned tree (green on arrival).
 4. Prove the guard bites: assert it flags a planted retired-trio string (in-test fixture), so it is not a no-op.
 
-**Exit criteria**: targeted grep over the prose set returns zero retired-trio references; `npm test` green (including the new guard); `npm run check` green; the five edited skills read coherently in context.
+**Exit**: targeted grep over the prose set returns zero retired-trio references; `npm test` green (including the new guard); `npm run check` green; the five edited skills read coherently in context.
 
 ## Dependencies
 
@@ -77,3 +79,7 @@ None external. Phase 1 is self-contained. The deferred Tier-C follow-up may opti
 - Replacements are contextual per occurrence, not blind find-replace. (Default, accepted.)
 - The RESEARCH + PLAN birth-bundle co-locates on the `ev-agent.state-file-format-audit.research` branch; execution stacks on top via `gt`. (Default, accepted.)
 - A multi-perspective plan panel was not spawned: the change is a bounded doc/test fix with a fully-resolved decision tree, so a design panel would be theater. The evaluator pass remains the gate. (Default, accepted.)
+
+## Revision log
+
+- 2026-06-02 — Make Phase 1 machine-parseable: add **Goal** and rename **Exit criteria** to **Exit** so parse-plan populates exitCriteria; make the documented verification grep runnable

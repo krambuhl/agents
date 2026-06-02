@@ -1,6 +1,5 @@
 checkins = []
 sessions = []
-revisions = []
 
 [meta]
 schema_version = 1
@@ -19,7 +18,7 @@ worker_bindings = {}
 
 [[phases]]
 number = 1
-name = "Phase 1"
+name = "Prose de-drift and regression guard"
 status = "not-started"
 
 [[events]]
@@ -31,3 +30,13 @@ detail = {}
 at = "2026-06-02T21:14:22.825Z"
 event = "research-started"
 detail = { slug = "2026-06-02-state-file-format-audit", topic = "state file format audit" }
+
+[[events]]
+at = "2026-06-02T21:14:22.909Z"
+event = "research-completed"
+detail = { slug = "2026-06-02-state-file-format-audit", research_path = "RESEARCH.md", notes_path = "RESEARCH-NOTES.md" }
+
+[[revisions]]
+timestamp = "2026-06-02T21:50:52.633Z"
+target = "PLAN.md"
+seq = 1
