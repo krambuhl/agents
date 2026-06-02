@@ -233,13 +233,52 @@ Between tiers, write a tactical retro and re-run pre-flight.
 
 ### Step 4. Phase close
 
-When all tiers in this phase are complete:
+When all tiers in this phase are complete, the loop's job is to **open
+the PR and stop** — the release boundary. This mirrors the interactive
+loop's Step 3 and applies the same semantics
+(`docs/AGENT-CONVENTIONS.md` § Guild-offload posture, release-boundary
+semantics — the single source); confidence adopts them, it does not
+re-define them.
+
 - Verify every inventory item is checked off.
 - Run full verification.
 - Ensure the latest checkin exists.
-- Refresh the PR per § Compose PR so it reflects the final state.
-- Update the phase per § Phase update with `--status=completed`.
-- Return control to the router.
+- Open / refresh the PR per § Compose PR so it reflects the final state.
+- **Stop.** Leave the phase `--status=in-progress` — do **not** mark it
+  `completed` here. Return control to the router.
+
+**Completion is merge-gated, not phase-close-gated.** A phase becomes
+`completed` only when its PR has **merged**, and the *router* makes that
+transition: the next `/ev-run` derives live PR state via `loom pr
+discover`, sees `MERGED`, advances the phase, and dispatches the next
+phase off a freshly-pulled base. Marking `completed` here would tell the
+router the dependency is satisfied and dispatch the next phase against
+an unmerged parent. (The "Output to router" `Status: completed` below is
+the loop's *run* status — "ran cleanly to phase close" — not the
+manifest phase status, which stays `in-progress` until merge.)
+
+**Full-stack option (`--phases=all`).** As in the interactive loop:
+instead of a ready PR, open a **draft** PR per phase (`loom pr open
+--draft`) and auto-advance to the next phase, cutting its branch
+**stacked on the current phase branch** (`gt create`, not `main`) so the
+dependency is satisfied by the stack without a merge. Emit
+`auto-mode-converged` at each clean phase close. At stack end, stop and
+leave the drafts for the human (no auto-`ready`, no auto-merge). A
+closed **gate-and-ratchet** mid-stack **halts** the auto-advance at that
+phase's draft PR — the ratchet is the confidence loop's natural stop
+(see § Gate-and-ratchet).
+
+**Escape hatch.** When an armed run cannot finish — a closed gate from a
+budget exhaust or an unresolvable stall, a fork with no panel raiseable,
+or the per-phase fork-panel cap exceeded — the loop stops into a
+reviewable state per `docs/AGENT-CONVENTIONS.md` § Guild-offload posture
+(escape hatch) + § Budget-exhausted recovery (the single source for the
+artifact shapes — do not restate them): open a **draft** PR with
+work-so-far, write `UNRESOLVED.md` + `RECOVERY-STATUS.json` plus the
+closed-gate / undecided-fork reason into the PR body, emit
+`auto-mode-budget-exhausted`, and stop — never self-deciding the stall.
+Under `--phases=all` this halts the auto-advance at the stalled phase's
+draft PR.
 
 ## Tier-level process
 
