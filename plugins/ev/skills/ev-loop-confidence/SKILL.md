@@ -233,13 +233,52 @@ Between tiers, write a tactical retro and re-run pre-flight.
 
 ### Step 4. Phase close
 
-When all tiers in this phase are complete:
+When all tiers in this phase are complete, the loop's job is to **open
+the PR and stop** — the release boundary. This mirrors the interactive
+loop's Step 3 and applies the same semantics
+(`docs/AGENT-CONVENTIONS.md` § Guild-offload posture, release-boundary
+semantics — the single source); confidence adopts them, it does not
+re-define them.
+
 - Verify every inventory item is checked off.
 - Run full verification.
 - Ensure the latest checkin exists.
-- Refresh the PR per § Compose PR so it reflects the final state.
-- Update the phase per § Phase update with `--status=completed`.
-- Return control to the router.
+- Open / refresh the PR per § Compose PR so it reflects the final state.
+- **Stop.** Leave the phase `--status=in-progress` — do **not** mark it
+  `completed` here. Return control to the router.
+
+**Completion is merge-gated, not phase-close-gated.** A phase becomes
+`completed` only when its PR has **merged**, and the *router* makes that
+transition: the next `/ev-run` derives live PR state via `loom pr
+discover`, sees `MERGED`, advances the phase, and dispatches the next
+phase off a freshly-pulled base. Marking `completed` here would tell the
+router the dependency is satisfied and dispatch the next phase against
+an unmerged parent. (The "Output to router" `Status: completed` below is
+the loop's *run* status — "ran cleanly to phase close" — not the
+manifest phase status, which stays `in-progress` until merge.)
+
+**Full-stack option (`--phases=all`).** As in the interactive loop:
+instead of a ready PR, open a **draft** PR per phase (`loom pr open
+--draft`) and auto-advance to the next phase, cutting its branch
+**stacked on the current phase branch** (`gt create`, not `main`) so the
+dependency is satisfied by the stack without a merge. Emit
+`auto-mode-converged` at each clean phase close. At stack end, stop and
+leave the drafts for the human (no auto-`ready`, no auto-merge). A
+closed **gate-and-ratchet** mid-stack **halts** the auto-advance at that
+phase's draft PR — the ratchet is the confidence loop's natural stop
+(see § Gate-and-ratchet).
+
+**Escape hatch.** When an armed run cannot finish — a closed gate from a
+budget exhaust or an unresolvable stall, a fork with no panel raiseable,
+or the per-phase fork-panel cap exceeded — the loop stops into a
+reviewable state per `docs/AGENT-CONVENTIONS.md` § Guild-offload posture
+(escape hatch) + § Budget-exhausted recovery (the single source for the
+artifact shapes — do not restate them): open a **draft** PR with
+work-so-far, write `UNRESOLVED.md` + `RECOVERY-STATUS.json` plus the
+closed-gate / undecided-fork reason into the PR body, emit
+`auto-mode-budget-exhausted`, and stop — never self-deciding the stall.
+Under `--phases=all` this halts the auto-advance at the stalled phase's
+draft PR.
 
 ## Tier-level process
 
@@ -302,7 +341,34 @@ For each unit inside a tier:
    tell the story.) For a tier unit that resolves in one pass, a single
    complete checkin after the panel approves is equally valid — the
    create-once store doesn't require the two-checkin split.
+
+   **Under the armed posture** (`--mode=auto` —
+   `docs/AGENT-CONVENTIONS.md` § Guild-offload posture, gate-to-resolver
+   table): tier/unit-contract negotiation is a convergent gate, so the
+   human approve/redirect is replaced by `evaluator-contract-fit`
+   auditing the contract against the tier's inputs — `approved` is the
+   accept, `flagged` is a redirect (each flagged finding addressed, then
+   re-audit). No `AskUserQuestion`. Convergence and the two-budget
+   defaults follow the convention (§ Auto-mode and the two-budget
+   shape); on budget exhaust the unit fails to negotiate cleanly and the
+   loop takes the escape hatch (Step 4) rather than committing a
+   half-ambiguous tier contract.
 2. **Execute.** Do the transform on the batch. Keep to scope.
+
+   **Execution forks under the armed posture.** A **genuine fork** in
+   the confidence loop is most often a *tier-assignment / batch-sizing*
+   judgment the loop cannot settle from the tier contract (the
+   interactive loop's forks are more often mid-deliverable design
+   choices — § Both loops). When armed, the loop does not ask the human;
+   it routes the fork through `/guild-plan` (via the `Skill` tool — it
+   composes `/guild-spawn`; never a direct `Agent` call) and applies the
+   convention's convergence rule (`docs/AGENT-CONVENTIONS.md`
+   § Fork-to-panel convergence rule — the single source; do not restate
+   it). Two bounds, both routing to the escape hatch (Step 4) rather
+   than letting the loop self-decide: **empty-roster safety** (an empty
+   `plan-*` glob with no explicit engineers → escape hatch, MUST NOT
+   self-decide) and the **per-phase fork-panel cap = 5** (the 6th fork →
+   escape hatch). Record the fork and its resolution in the checkin.
 
    **Implementer delegation (per-unit switch, default ON).** This loop
    defaults to delegating the transform: compose the implementer
@@ -532,6 +598,20 @@ Before starting tier N+1, the gate closes if:
 A closed gate stops the loop and reports to the user. The user decides
 whether to resume, re-tier, or bail.
 
+**Under the armed posture** (`--mode=auto`), the gate-and-ratchet is the
+**natural autonomous stop** — the confidence loop's structural
+equivalent of the interactive loop's phase boundary
+(`docs/AGENT-CONVENTIONS.md` § Guild-offload posture, § Both loops). A
+closed gate is not an inline `AskUserQuestion`: the run surfaces it at
+the **release boundary** — it stops on the open PR (or, on a budget
+exhaust / unresolvable stall, the **escape hatch**: a draft PR +
+`UNRESOLVED.md` carrying the closed-gate reason), per Step 4. The loop
+does not auto-resume past a closed gate and does not self-decide a
+re-tier; a closed gate under autonomy is a stop-and-surface point even
+mid-stack, exactly as the ratchet is designed to be. The non-armed
+behavior above (report + the user decides inline) is unchanged when the
+posture is not armed.
+
 ## Message-driven redirects
 
 If the router passes a message like "address feedback on #14", this
@@ -561,6 +641,22 @@ loop:
   `learnings/session-notes/` at session close, and `/griot-compact`
   decides which get promoted further. The loop itself never writes
   to `learnings/`.
+- **No `AskUserQuestion` under the armed posture.** When
+  `--mode=auto` is armed (`docs/AGENT-CONVENTIONS.md` § Guild-offload
+  posture), the loop makes **no `AskUserQuestion` calls** mid-phase.
+  Tier-contract negotiation goes to `evaluator-contract-fit`; a genuine
+  fork goes to a `/guild-plan` panel or the escape hatch; a closed
+  gate-and-ratchet surfaces at the release boundary. The harness would
+  not silence a stray `AskUserQuestion` even in its own auto mode
+  (RESEARCH § A), so any mid-phase call would hang an unattended run —
+  this is an invariant, not a preference. The non-armed default keeps
+  every human touchpoint.
+- **Delegation default ON is preserved under the posture.** Implementer
+  / fixer delegation defaults **ON** in this loop (bulk transform →
+  delegate the write), and the armed posture does not change that — the
+  posture changes *who decides* (a panel vs the human), never *who
+  writes*. The interactive loop's OFF default is the deliberate
+  divergence (§ Both loops).
 - **No emojis.**
 
 ## Output to router
