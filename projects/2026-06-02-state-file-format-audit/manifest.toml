@@ -1,0 +1,33 @@
+checkins = []
+sessions = []
+revisions = []
+
+[meta]
+schema_version = 1
+title = "State File Format Audit"
+slug = "2026-06-02-state-file-format-audit"
+started = "2026-06-02"
+status = "active"
+strategy = "interactive"
+
+[config]
+base_branch = "main"
+reviewers = []
+labels = []
+verification = []
+worker_bindings = {}
+
+[[phases]]
+number = 1
+name = "Phase 1"
+status = "not-started"
+
+[[events]]
+at = "2026-06-02T21:14:22.824Z"
+event = "project-initialized"
+detail = {}
+
+[[events]]
+at = "2026-06-02T21:14:22.825Z"
+event = "research-started"
+detail = { slug = "2026-06-02-state-file-format-audit", topic = "state file format audit" }
