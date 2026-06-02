@@ -319,6 +319,48 @@ For each deliverable (picked per the ordering rule):
    pair with the user — ask when you hit a fork, report when you hit a
    dead end, don't charge ahead.
 
+   **Execution forks under the armed posture** (`--mode=auto` —
+   `docs/AGENT-CONVENTIONS.md` § Guild-offload posture). A **genuine
+   execution fork** is a substantive mid-unit decision the loop cannot
+   resolve from the contract — a real design choice, not a low-risk
+   framing gate (decomposition / ordering auto-confirm, Step 1 /
+   Ordering). When armed, the loop does **not** ask the human; it
+   resolves the fork through a panel:
+
+   - **Raise the panel.** Invoke `/guild-plan` (via the `Skill` tool —
+     it composes `/guild-spawn`; never a direct `Agent` call) with the
+     fork as the `brief` and the current `plan-*` roster as
+     `engineers`. This is the same call the phase-start Plan step
+     makes, raised mid-unit per fork.
+   - **Apply the convergence rule.** Follow
+     `docs/AGENT-CONVENTIONS.md` § Fork-to-panel convergence rule (the
+     single source — do not restate it here): `guild-plan` collects
+     attributed sections and `agent_signals` but does **not**
+     synthesize; the loop converges (silent panel / consensus → take
+     the converged answer; else another round at per-decision budget 3;
+     an `operator-judgment-required` signal breaks the offload to the
+     escape hatch). Record the fork, the panel round(s), and the
+     resolved decision in the checkin (`execution.corrections[]` or
+     `notes_for_pr`) so the autonomous decision is auditable.
+   - **Empty-roster safety.** If the `plan-*` glob returns zero and no
+     explicit `engineers` list is supplied, the fork **goes to the
+     escape hatch — it MUST NOT self-decide.** A panel that cannot be
+     raised is not licence to charge ahead; an un-panelled fork that
+     proceeds anyway is the exact failure mode the convergence rule
+     forbids. (Durable: spawn from the live roster, never from memory.)
+   - **Per-phase fork-panel cap = 5.** A single phase raises at most 5
+     fork-panels (this extends the two-budget convention — § Auto-mode
+     and the two-budget shape — with a per-phase fork dimension);
+     the 6th fork routes to the escape hatch rather than another panel.
+     A phase that forks more than 5 times is too ambiguous for
+     autonomy and wants a human — surfacing at the escape hatch is the
+     correct outcome, not a failure.
+
+   Release-boundary behavior (what the escape hatch / phase close
+   actually *does* — open a draft PR, write `UNRESOLVED.md`, etc.) is
+   **not** defined here; that is Phase 3. This branch only routes a
+   fork to a panel or to the hatch.
+
    **Implementer delegation (per-unit switch, default OFF).** This loop
    defaults to inline drive — you write the unit yourself so the
    keystroke-level pairing stays intact. Delegation is an *option*, not
