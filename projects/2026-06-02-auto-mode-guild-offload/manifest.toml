@@ -24,13 +24,14 @@ branch = "ev-agent.auto-mode-guild-offload.setup"
 [[phases]]
 number = 2
 name = "ev-loop-interactive: in-loop autonomy + fork-to-panel"
-status = "in-progress"
+status = "completed"
 branch = "ev-agent.auto-mode-guild-offload.in-loop-autonomy"
 
 [[phases]]
 number = 3
 name = "ev-loop-interactive: release boundary + escape hatch"
-status = "not-started"
+status = "in-progress"
+branch = "ev-agent.auto-mode-guild-offload.release-boundary"
 
 [[phases]]
 number = 4
@@ -147,6 +148,26 @@ at = "2026-06-02T16:07:17.042Z"
 event = "session-saved"
 detail = { filename = "2026-06-02-b.json" }
 
+[[events]]
+at = "2026-06-02T16:23:25.574Z"
+event = "phase-completed"
+detail = { phase = 2 }
+
+[[events]]
+at = "2026-06-02T16:23:25.646Z"
+event = "phase-started"
+detail = { phase = 3, name = "ev-loop-interactive: release boundary + escape hatch" }
+
+[[events]]
+at = "2026-06-02T16:33:10.068Z"
+event = "evaluator-spawned"
+detail = { slug = "2026-06-02-auto-mode-guild-offload", phase = 3, unit = "06", evaluator = "evaluator-contract-fit" }
+
+[[events]]
+at = "2026-06-02T16:33:46.355Z"
+event = "checkin-created"
+detail = { number = "06", branch = "ev-agent.auto-mode-guild-offload.release-boundary" }
+
 [[checkins]]
 schema_version = 1
 number = "01"
@@ -216,6 +237,20 @@ scope = ["plugins/ev/skills/ev-loop-interactive/SKILL.md (Step 2.2 armed-posture
 changes_since_previous = "Second and final unit of phase 2. Builds on P2-D1 (the soft-gate auto-confirm + the no-AskUserQuestion invariant): D1 handled the low-risk gates, D2 handles the one touchpoint that DOES route to a panel — the genuine mid-execution fork."
 verdict = { result = "approved", reasons = ["evaluator-contract-fit: AC1-4 present in the artifact, AC6 green, every disqualifier explicitly guarded in-prose (no direct Agent call, no self-decide, release boundary deferred to Phase 3, default path untouched); convergence rule cited not restated; no original-ask drift; confidence high."] }
 notes_for_pr = ["DRY-RUN (logic-trace, AC5). Traced a genuine execution fork under --mode=auto against the current substrate state: (1) the loop hits a fork in Step 2.2; (2) it resolves the plan-* roster via the glob -> ZERO engineers today (registry-mirror lag); (3) empty-roster safety fires -> the fork routes to the escape hatch, MUST NOT self-decide; (4) NO AskUserQuestion is raised at any point (the would-be question is escaped, not asked). This validates the no-AskUserQuestion invariant + the empty-roster escape-hatch path end-to-end as reasoned through the SKILL.md. The live fork->guild-plan routing (panel raised, convergence applied, cap enforced) CANNOT be observed today because the roster is empty; that proof defers to the Phase 6 runtime gate when plan-* agents ship (consistent with RESEARCH § C's L-004/live-spawn deferral). A real armed run on a toy project was NOT performed (it would only re-confirm the escape-hatch path the trace already covers, at much higher cost).", "Scope-shift single signal (phase-boundary): P2-D2 is the last unit of phase 2; the phase-boundary signal fired with no concurrent signal, so noted here, no inner-RPI.", "Implementer/fixer delegation: OFF (inline drive).", "Deferred to Phase 3 (release boundary): what the escape hatch / phase close actually DOES — open a draft PR (via the --draft flag from Phase 1 D2), write UNRESOLVED.md, the phase-at-a-time vs --phases=all behavior. This unit only ROUTES forks to a panel or the hatch.", "Convergence-rule citation: the fork branch cites § Fork-to-panel convergence rule as the single source and gives a one-line orientation gloss (collects/no-synthesis, budget 3, operator-judgment -> hatch) — a pointer-with-summary, not a restatement (evaluator confirmed compliant)."]
+
+[[checkins]]
+schema_version = 1
+number = "06"
+created = "2026-06-02"
+phase = { number = 3, name = "ev-loop-interactive: release boundary + escape hatch" }
+branch = "ev-agent.auto-mode-guild-offload.release-boundary"
+unit = "P3-D1 — Default release boundary + Step-3 fix"
+contract = { goal = "Rewrite ev-loop-interactive Step 3 (Phase close) to define the default release-boundary posture: open the PR via § Compose PR and STOP — human reviews/merges, one phase per invocation. Leave the phase in-progress (not completed); completion is merge-gated (the next /ev-run sees MERGED and advances). Resolves the Step-3-vs-router contradiction. --phases=all and the escape hatch deferred to D2/D3.", acceptance_criteria = ["Step 3 rewritten: default posture is open the PR + STOP, one phase per invocation, human reviews/merges.", "The premature --status=completed at phase close removed; phase stays in-progress; completion is merge-gated (router advances on observed MERGE).", "Step 3 cites AGENT-CONVENTIONS.md § Guild-offload posture (release-boundary) as the single source; does not restate it.", "Scoped: --phases=all and the escape hatch referenced as forthcoming but not defined here.", "A reconciliation with the router's § 3 park-on-open-PR logic.", "Output format / Step 7 references stay coherent.", "Skill-body invariant tests green; full npm test green; npm run check green."], rules_applied = ["Corrective + additive: fixes a latent contradiction; the human-paired flow's actual behavior is unchanged (loop already opened PRs, operator merged).", "Cites the convention; --phases=all + escape hatch deferred.", "SKILL.md is plugin-authoritative — no sync."], disqualifiers = ["Defining --phases=all auto-advance (D2).", "Defining the escape hatch (D3).", "Marking the phase completed at phase close (the thing being fixed).", "Changing unit-loop checkpoint behavior beyond coherence."], inputs = ["plugins/ev/skills/ev-loop-interactive/SKILL.md (Step 3 807-812; Step 7; Output format 814-830)", "plugins/commons/docs/AGENT-CONVENTIONS.md (§ Guild-offload posture release-boundary semantics)", "ev-run router § 3 (park-on-open-PR, merge-gated completion)", "projects/2026-06-02-auto-mode-guild-offload/PLAN.md (Phase 3 exit)"] }
+execution = { actions = ["Rewrote SKILL.md Step 3 (Phase close) from the terse 4-bullet block (ending in --status=completed) to a release-boundary section: open/refresh PR, STOP, leave in-progress; added a 'Completion is merge-gated, not phase-close-gated' paragraph (the router makes the completed transition on observed MERGE; marking completed here strands the next phase off an unmerged parent); cited the convention as single source; closing line that --phases=all + escape hatch are forthcoming extensions not yet wired.", "Verified npm test 1341 passing (skill-body invariants included) and npm run check ok. SKILL.md plugin-authoritative — no sync.", "Gated through evaluator-contract-fit: approved, high confidence, zero findings (confirmed the old --status=completed line is GONE — the hard-fail)."], files_touched = ["plugins/ev/skills/ev-loop-interactive/SKILL.md"], corrections = [] }
+scope = ["plugins/ev/skills/ev-loop-interactive/SKILL.md (Step 3 release-boundary rewrite)"]
+changes_since_previous = "First unit of phase 3. Phase 2 (#212) merged. This unit defines the default release boundary and resolves the Step-3-vs-router phase-completion contradiction surfaced and worked-around in phases 1-2."
+verdict = { result = "approved", reasons = ["evaluator-contract-fit: all 7 ACs met; the old --status=completed phase-close line is removed (hard-fail check passed) and replaced with in-progress + merge-gated; convention cited; --phases=all + escape hatch correctly absent; router § 3.3 reconciliation present; no drift; confidence high."] }
+notes_for_pr = ["Resolves the documented Step-3-vs-router contradiction (memory: phase-completion-merge-gated-vs-step3): the loop no longer marks --status=completed at phase close. This is the corrective half of phases 1-2's workaround (where I manually left phases in-progress until merge). The router's merge-gated advance is now the canonical completion path in the skill body too.", "Behavior unchanged for the human-paired flow in practice — the loop already opened PRs and the operator merged; this just removes the latent premature-completed write that would have stranded the next phase under autonomous re-dispatch.", "Deferred to D2: --phases=all full-stack draft-PR auto-advance + auto-mode-converged event. Deferred to D3: the escape hatch (draft PR + UNRESOLVED.md + auto-mode-budget-exhausted).", "Dry-run for the clean-close path is logic-traceable now (open ready PR, stop, in-progress) and is exactly what this session has been doing across phases 1-3; the D2/D3 dry-runs (--phases=all, forced exhaust) will be logic-traced in those units.", "Implementer/fixer delegation: OFF (inline drive)."]
 
 [[sessions]]
 schema_version = 1

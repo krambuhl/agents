@@ -806,10 +806,36 @@ Edge cases the verb handles, documented for reviewer awareness:
 
 ### Step 3. Phase close
 
+At phase close the loop's job is to **open the PR and stop** — the
+release boundary. This is the **default posture**: one phase per
+invocation, the human reviews and merges on GitHub.
+
 - All deliverables accounted for.
 - Full verification passes.
-- Refresh the PR per § Compose PR so it reflects the final state.
-- Update the phase per § Phase update with `--status=completed`.
+- Open / refresh the PR per § Compose PR so it reflects the final
+  state of the phase.
+- **Stop.** Leave the phase `--status=in-progress` — do **not** mark
+  it `completed` here. Per `docs/AGENT-CONVENTIONS.md` § Guild-offload
+  posture (release-boundary semantics — the single source), the default
+  is phase-at-a-time: open a ready PR, subscribe, and park; the human
+  reviews and merges.
+
+**Completion is merge-gated, not phase-close-gated.** A phase becomes
+`completed` only when its PR has **merged**, and the *router* makes
+that transition, not this loop: the next `/ev-run` derives live PR
+state via `loom pr discover`, sees `MERGED`, advances the phase to
+`completed`, and dispatches the next phase off a freshly-pulled base
+(`/ev-run` § 3). Marking `completed` here — before the merge — would
+tell the router the dependency is satisfied and dispatch the next phase
+against an **unmerged parent**, cutting its branch off a base that
+lacks this phase's commits. Leaving the phase `in-progress` with an
+open PR is exactly the state the router's park-on-open-PR logic (§ 3.3)
+waits on.
+
+The `--phases=all` full-stack option and the escape hatch are
+extensions of this default boundary; until they are wired, the loop
+always takes the default (open a ready PR, stop). They change *where*
+and *how* the loop stops, never the merge-gated completion rule above.
 
 ## Output format
 
