@@ -18,7 +18,22 @@ worker_bindings = {}
 
 [[phases]]
 number = 1
-name = "Prose de-drift and regression guard"
+name = "Manifest schema + write lib for the new sections"
+status = "not-started"
+
+[[phases]]
+number = 2
+name = "Flip the writers and add the harvest seam"
+status = "not-started"
+
+[[phases]]
+number = 3
+name = "Remove the dead file-write paths"
+status = "not-started"
+
+[[phases]]
+number = 4
+name = "Docs de-drift, conventions, and the regression guard"
 status = "not-started"
 
 [[events]]
@@ -40,3 +55,8 @@ detail = { slug = "2026-06-02-state-file-format-audit", research_path = "RESEARC
 timestamp = "2026-06-02T21:50:52.633Z"
 target = "PLAN.md"
 seq = 1
+
+[[revisions]]
+timestamp = "2026-06-02T22:21:47.554Z"
+target = "PLAN.md"
+seq = 2

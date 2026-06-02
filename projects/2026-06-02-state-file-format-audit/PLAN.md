@@ -1,85 +1,120 @@
-# PLAN — State file-format de-drift
+# PLAN — Consolidate project state into manifest.toml
 
 ## Context
 
 Research foundation: `projects/2026-06-02-state-file-format-audit/RESEARCH.md`.
 
-The dossier established that the system's state-persistence design is coherent and the JSON/JSONL → single-`manifest.toml` consolidation is complete in the runtime (19/19 project manifests are TOML; zero live legacy state files). The remaining problem is prose lag: convention docs and skill bodies still name the retired `manifest.json` / `config.json` / `events.jsonl` model (RESEARCH.md Finding 4).
+The dossier established (descriptively) that the consolidation from a five-file JSON/JSONL model to a single sectioned `manifest.toml` is complete for meta/config/phases/events/checkins/sessions/revisions, and that the residual issues are prose drift. This plan is the prescriptive follow-on: extend the consolidation to the **remaining project state files that still litter PR diffs** — retros, PR responses, and guild findings — pushing structured single-writer records into the manifest and demoting transient files to gitignored scratch. Prose stays in markdown.
 
-The planning sweep extended the dossier in one material way: the drift is not only prose. Commons still ships an orphaned JSON-substrate lib cluster (`cli/lib/adopt.ts` and its `manifest.ts`/`config.ts`/`events.ts` dependencies) that writes the old five-file model, is imported by no live verb, yet is mirrored into `griot` and `guild` by `scripts/sync-shared.ts`. Two tests (`parallel-work-invariant.test.ts`, `lib/adopt.test.ts`) still encode that model. This dead-code tail is a **different conceptual change** (code cleanup, medium risk) and is explicitly **deferred** to a follow-up plan — see Deferred follow-up.
+The deciding principle (this session's pairing): a project artifact earns its own file only if it is (a) prose a human reads or edits, (b) written concurrently and cannot be serialized, or (c) workspace-scoped rather than project-scoped. Everything else — single-writer structured records — belongs mechanically in the manifest.
 
-This plan covers prose accuracy plus a regression guard, shipped as a single PR.
+This supersedes the prior de-drift plan, which becomes the documentation slice of Phase 3.
 
 ## Scope
 
 ### In
 
-- Correct the retired-format vocabulary to the consolidated `manifest.toml` reality in the should-be-current prose surfaces:
-  - `plugins/commons/docs/AGENT-CONVENTIONS.md` — line 24 (the `LOOM-CONVENTIONS.md` shape parenthetical) and line 195 (the RECOVERY-STATUS.json "alongside `manifest.json`" line). Commons-canonical: requires a `scripts/sync-shared.ts` run so the synced doc copies follow.
-  - `projects/CONVENTIONS.md` — lines 70, 71, 73, 91 (names `manifest.json` as the live single-writer exception and as the `loom phase update` target). Runtime doc, edit in place (not commons-synced).
-  - Five skill bodies: `plugins/ev/skills/ev-loop-interactive/SKILL.md`, `plugins/ev/skills/ev-loop-confidence/SKILL.md`, `plugins/ev/skills/ev-run/SKILL.md`, `plugins/loom/skills/loom-plan/SKILL.md`, `plugins/loom/skills/loom-research/SKILL.md` — each names the dead trio in report templates / file lists.
-- Add a regression guard test under `plugins/commons/cli/` (matching the existing invariant-test pattern, e.g. `skill-bodies-call-bare-commands.test.ts`) that scans the should-be-current prose surfaces and fails on any retired-trio reference, with an allowlist constant for sanctioned exceptions.
-- Replacements are **contextual, not blind find-replace**: e.g. `loom-research`'s step-7 file list (`manifest.json, config.json, events.jsonl, checkins/, sessions/`) collapses to `manifest.toml`; `loom-plan`'s step-9 list likewise; the `AGENT-CONVENTIONS.md:195` RECOVERY line just swaps the extension. Each of the ~11 occurrences is read in its sentence before editing.
+Three new append-only manifest sections, plus the writer/harvest/cleanup work to fill them:
 
-### Out (this plan)
+- **`[[retros]]`** — `loom retro` currently writes `retros/<name>.json` file-per-record (an explicit `retro.ts:156` decision this plan reverses) and only routes a `retro-written` event into the manifest. Flip it to append the retro body into `[[retros]]`, mirroring `[[checkins]]`.
+- **`[[responses]]`** — `loom pr respond` currently writes `responses/<branch>/response-NN.json`. Flip it to append into `[[responses]]`, carrying the `branch` partition key as a field.
+- **`[[findings]]`** — guild evaluators write `.guild-findings.jsonl` concurrently (`O_APPEND`, multi-writer). They CANNOT write the single-writer manifest directly (optimistic-lock thrash). Instead: keep the jsonl as a transient write-buffer during the parallel panel, then **harvest** it into `[[findings]]` at the serial unit/phase close. The harvest seam lives in the loom/ev-loop layer; guild's writer stays plugin-agnostic.
 
-- The Tier-C dead-code reconciliation (see Deferred follow-up).
-- `plugins/commons/docs/LOOM-CONVENTIONS.md` lines 43-44 and 127-128 — these are legitimate historical "project state used to live in five files" context, not stale current-state claims. Left untouched and added to the guard's allowlist.
-- All `cli/fixtures/*` JSON/JSONL files — test scaffolding, not live state; not prose.
+Demote to gitignored scratch (never committed):
 
-### Deferred follow-up (Tier C — its own plan)
+- `.guild-findings.jsonl` — harvested then ignored.
+- `RECOVERY-STATUS.json` — a mid-failure resume file that cannot live inside the manifest it recovers; deleted on successful resume.
 
-Remove the orphaned commons JSON substrate (`cli/lib/adopt.ts` plus the `manifest.ts`/`config.ts`/`events.ts` it transitively pulls, where confirmed dead), reconcile or delete `lib/adopt.test.ts` and `parallel-work-invariant.test.ts`, and prune the sync mirror so the dead libs stop propagating to `griot`/`guild`. Gated on a per-lib dead-code proof (no live importer across source + synced copies) and ADR-0005 orphan-sweep handling (`--strict-orphan`). Recorded here so the finding is not lost; not executed by this plan.
+Stays markdown (committed), no change: `PLAN.md`, `INTERVIEW.md`, `RESEARCH.md`, `RESEARCH-NOTES.md`, `UNRESOLVED.md`, `plans/*.md`, ad-hoc working docs, and `adr-log/*.md` (workspace-scoped).
 
-## Phase 1 — Prose de-drift and regression guard
+### Out / deferred
+
+- **Migrating existing projects' loose files.** Forward-only: writers change; existing active projects keep their current `retros/`, `responses/`, and `.guild-findings.jsonl`, and the file-per-record READERS are retained to read that old data. Archived projects stay frozen. A one-time fold-in codemod is a possible future effort, not this plan.
+- **The orphaned commons JSON substrate** (`commons/cli/lib/adopt.ts` + dead `manifest.ts`/`config.ts`/`events.ts`, the two stale tests, sync-mirror pruning) — still a separate conceptual change (dead-code removal), still deferred to its own plan, gated on a per-lib dead-code proof + ADR-0005 orphan handling.
+
+## Phase 1 — Manifest schema + write lib for the new sections
 
 **Depends on**: none
 
-**Goal**: Bring the convention docs and skill bodies into line with the consolidated `manifest.toml` reality, and add a regression guard that keeps them there — shipped as one PR.
+**Goal**: Add `[[retros]]`, `[[responses]]`, `[[findings]]` to the manifest type, serializer, and append helpers — additively. Nothing flips yet; the old file-writers still work, so this PR is backward-compatible and the most carefully reviewed.
 
-Single PR. One conceptual change: bring the prose into line with the consolidated TOML reality and lock it in.
+1. `cli/lib/types.ts`: add the three section element types and the arrays on `ManifestToml`. Mind the two distinct "finding" concepts: the `[[retros]]` element is a whole `Retro {type, phase?, tier?, created, findings: RetroFinding[]}` (it *contains* the existing `RetroFinding`); the `[[findings]]` element is a harvested guild finding — name it `GuildFinding {evaluator, code, evidence, severity, branch?, unit?, signature, harvested_at}` (NOT `ManifestFinding`, to keep provenance clear against `RetroFinding`); `[[responses]]` element is `Response {comment_id, body, branch, created}`.
+2. `cli/lib/manifest-toml.ts`: extend parse + stringify for the three array-of-tables sections; missing sections default to `[]` so existing manifests keep parsing. Add `appendRetro`/`appendResponse`/`appendFinding` mirroring `appendCheckin`/`appendSession`.
+3. Round-trip tests: `parse(stringify(m))` deep-equals `m` with the new sections populated; a real pre-existing manifest (no new sections) still parses to empty arrays.
 
-1. Edit the ~11 occurrences across the two convention docs and five skill bodies (contextual replacement per Scope/In).
-2. Run `node scripts/sync-shared.ts` to propagate the `AGENT-CONVENTIONS.md` edit into consumer doc copies; confirm `npm run check` (the drift check) is green.
-3. Add the regression guard test: scan the defined prose set, forbid `manifest.json` / `config.json` / `events.jsonl`, allowlist the sanctioned `LOOM-CONVENTIONS.md` history lines. The test passes on the cleaned tree (green on arrival).
-4. Prove the guard bites: assert it flags a planted retired-trio string (in-test fixture), so it is not a no-op.
+**Exit**: new sections round-trip; the `manifest-real.toml` fixture (which lacks them) still parses with empty arrays; `npm test` green; no writer or verb behavior changed yet.
 
-**Exit**: targeted grep over the prose set returns zero retired-trio references; `npm test` green (including the new guard); `npm run check` green; the five edited skills read coherently in context.
+## Phase 2 — Flip the writers and add the harvest seam
+
+**Depends on**: 1
+
+**Goal**: Point `loom retro` and `loom pr respond` at the manifest sections, add findings harvest at close, and gitignore the two scratch files. New projects stop emitting loose state files.
+
+1. `verbs/loom/retro.ts` + `lib/retro.ts`: append the retro into `[[retros]]` via `appendRetro` instead of `writeRetro`-to-file; keep the `retro-written` event. Retain the file READER for forward-only old-data reads.
+2. `verbs/loom/pr.ts`: append responses into `[[responses]]` instead of `responses/<branch>/*.json`; retain the file reader.
+3. New `loom findings harvest --slug --branch --unit` verb: read `projects/<slug>/.guild-findings.jsonl`, fold rows into `[[findings]]` (dedupe on guild's `signature`), single-writer at close. Wire the call into the `ev-loop-interactive` and `ev-loop-confidence` unit/phase close choreography — NOT mid-panel. Guild's `findings append` writer is unchanged.
+4. `.gitignore`: add `projects/**/.guild-findings.jsonl` and `projects/**/RECOVERY-STATUS.json`.
+
+**Exit**: a fresh retro and a fresh PR response land in `manifest.toml`, not in `retros/`/`responses/`; harvest folds findings into `[[findings]]` at close and only at close; the two scratch files are gitignored; `npm test` green; a scaffold-and-close smoke creates no new `retros/`/`responses/` files.
+
+## Phase 3 — Remove the dead file-write paths
+
+**Depends on**: 2
+
+**Goal**: Behavioral cleanup only — delete the now-unused file-per-record WRITE paths once Phase 2 has proven the manifest path. No docs, no tests-of-vocabulary; this PR is the "old code removal" unit and is kept separate from the documentation work so its risk profile is isolated.
+
+1. Delete the dead file-WRITE paths (`lib/retro.ts` `writeRetro` file branch, `pr.ts` response-file write). Retain the file READERS for forward-only old-data reads — only the writers are removed.
+
+**Exit**: no file-per-record WRITE path remains in `retro`/`pr` verbs; the readers still resolve old projects' loose files; a scaffold-and-close smoke creates no loose state files; `npm test` green.
+
+## Phase 4 — Docs de-drift, conventions, and the regression guard
+
+**Depends on**: 3
+
+**Goal**: Documentation and test work — bring docs and skills into line with the consolidated reality (absorbing the prior de-drift plan), document the new sections and scratch convention, and lock the vocabulary with a guard. Separated from Phase 3 because it is documentation + a test, not a behavioral change.
+
+1. Documentation de-drift (the prior plan, extended): fix the stale `manifest.json`/`config.json`/`events.jsonl` references in `commons/docs/AGENT-CONVENTIONS.md`, `projects/CONVENTIONS.md`, and the five skill bodies (`ev-loop-interactive`, `ev-loop-confidence`, `ev-run`, `loom-plan`, `loom-research`); additionally update those skills' file-list/report templates to reflect retros/responses/findings-in-manifest and the scratch files.
+2. `commons/docs/LOOM-CONVENTIONS.md`: document the `[[retros]]`/`[[responses]]`/`[[findings]]` sections, the harvest seam, and the gitignored-scratch convention.
+3. Add the regression guard test under `commons/cli/` (forbid the retired trio in the should-be-current prose surfaces, with a history allowlist). Run `node scripts/sync-shared.ts`; confirm `npm run check` green.
+
+**Exit**: targeted grep over the prose set returns zero retired-trio references; the guard passes and is proven to bite a planted reference; `LOOM-CONVENTIONS.md` documents the new sections; `npm test` and `npm run check` green.
 
 ## Dependencies
 
-None external. Phase 1 is self-contained. The deferred Tier-C follow-up may optionally sequence after this PR lands but does not block it.
+Linear: Phase 1 (schema, additive) → Phase 2 (flip writers + harvest) → Phase 3 (remove dead write-paths) → Phase 4 (docs + conventions + guard). Phase 1 must land before any writer flips so the manifest can hold the data; Phase 3's removal waits on Phase 2 proving the manifest path; Phase 4 documents the end state after removal. The deferred existing-project migration and the commons dead-code follow-up depend on Phase 4 but are out of this plan.
 
 ## Verification
 
-- This runnable grep over the in-scope prose set returns zero matches:
-  `grep -rn 'manifest\.json\|config\.json\|events\.jsonl' plugins/commons/docs/AGENT-CONVENTIONS.md projects/CONVENTIONS.md plugins/ev/skills/ev-loop-interactive/SKILL.md plugins/ev/skills/ev-loop-confidence/SKILL.md plugins/ev/skills/ev-run/SKILL.md plugins/loom/skills/loom-plan/SKILL.md plugins/loom/skills/loom-research/SKILL.md`
-- The new guard test (a) passes on the cleaned tree and (b) fails against a planted reference — both asserted.
-- `npm run check` passes (commons-sync drift check; ADR-0007 enforces it via pre-commit hook + CI).
-- `npm test` passes.
-- Read-through of the five edited skill bodies confirms no replacement broke a sentence or a report template.
+- **Phase 1**: round-trip tests pass; a real legacy manifest fixture parses with empty new sections (no crash on absent sections).
+- **Phase 2**: integration smoke — scaffold a project, write a retro + a PR response + harvest findings, assert the data is in `manifest.toml` and no `retros/`/`responses/` files were created; assert harvest runs only at close; `git status` shows the scratch files untracked.
+- **Phase 3**: a scaffold-and-close smoke creates no loose `retros/`/`responses/` files; old projects' readers still resolve their loose files; `npm test` green.
+- **Phase 4**: `grep -rn 'manifest\.json\|config\.json\|events\.jsonl'` over the prose set returns zero; guard test passes on the clean tree and fails on a planted reference; `npm run check` (sync drift) green; `npm test` green.
+- Cross-cutting: existing project read-paths still work (forward-only readers retained); manifest diffs for an appended section are clean `+N lines`, not whole-file churn.
 
 ## Risks
 
-- **Severity: low.** Documentation- and test-only; no runtime behavior changes. Revert is a single-PR revert.
-- **Guard false-positive** if the allowlist misses a sanctioned historical mention → mitigated by scoping the scan to the defined prose set and an explicit allowlist; full `npm test` before commit.
-- **Sync gate** — editing the commons-canonical `AGENT-CONVENTIONS.md` without running `sync-shared` will be blocked by the pre-commit hook / `sync-check` CI (ADR-0007). Mitigation: step 2 runs the sync and verifies `npm run check`.
-- **Source vs cache** — skill edits land in the `plugins/` source tree; the installed plugin cache refreshes out-of-band (ADR-0006). Not blocking; flagged for the executor so they verify against source, not the cached copy.
+- **Schema back-compat** (medium): existing manifests lack the new sections. Mitigation — parser treats absent sections as `[]`; Phase 1 exit explicitly tests a legacy fixture.
+- **Cross-plugin coupling** (medium): findings harvest reads guild's file into loom's manifest. Mitigation — harvest lives in the loom/ev layer; guild's writer is untouched, so guild stays usable standalone.
+- **Concurrency regression** (high if mishandled): harvesting mid-panel would reintroduce the single-writer thrash the jsonl exists to avoid. Mitigation — harvest ONLY at serial unit/phase close; Phase 2 exit asserts this.
+- **Manifest growth** (low): the manifest absorbs more data. Accepted tradeoff (fewer files for a larger file); the append-stable serializer keeps git diffs clean. Named, not mitigated away.
+- **Forward-only mixed model** (low): old projects keep loose files. Mitigation — readers retained; documented in `LOOM-CONVENTIONS.md`.
+- Revert: each phase is a single-PR revert; Phase 1 is inert without Phase 2, so a Phase 2/3 revert leaves the schema harmlessly present.
 
 ## Open questions
 
-- Tier-C sequencing: spin the dead-code follow-up immediately after this lands, or batch it later. Whoever takes it should confirm the per-lib dead-code proof first.
-- Whether the guard should later widen to CLI verb-code report strings — out of scope until Tier C removes the dead code those strings would otherwise trip on.
+- Harvest packaging: a `loom findings harvest` CLI verb called by the ev-loop close step (deterministic IO + orchestration split, the established pattern) vs inlining the fold in the skill. Lean: the CLI verb.
+- Findings dedupe key on harvest — reuse guild's computed `signature` (assumed stable); confirm in Phase 2.
+- Whether `[[responses]]` should retain per-branch ordering semantics or is a flat branch-tagged list (lean: flat list with a `branch` field, ordering by `created`).
 
 ## Decisions
 
-- Scope = prose de-drift (A) + regression guard (B); dead-code reconciliation (C) deferred to a separate plan. (Interview Q1.)
-- Single PR for the fix + guard, rather than a two-PR stack. (Interview Q2.)
-- Guard scans only should-be-current prose surfaces (5 skills + `AGENT-CONVENTIONS.md` + `projects/CONVENTIONS.md`) with a history allowlist; it does not scan `cli/lib`, fixtures, or the stale tests. (Default, accepted.)
-- Replacements are contextual per occurrence, not blind find-replace. (Default, accepted.)
-- The RESEARCH + PLAN birth-bundle co-locates on the `ev-agent.state-file-format-audit.research` branch; execution stacks on top via `gt`. (Default, accepted.)
-- A multi-perspective plan panel was not spawned: the change is a bounded doc/test fix with a fully-resolved decision tree, so a design panel would be theater. The evaluator pass remains the gate. (Default, accepted.)
+- Roll `retros`, `responses`, and `findings` into the manifest; prose stays markdown; ADRs stay (workspace-scoped). (This session.)
+- Findings via **harvest-at-close** with a transient gitignored jsonl — not naive roll-in (breaks concurrent append) and not a committed jsonl. (Findings fork.)
+- **Forward-only** migration: writers change, existing loose files + their readers are retained, archived projects frozen. (Migration-scope fork.)
+- `RECOVERY-STATUS.json` demoted to gitignored scratch (cannot live in the manifest it recovers).
+- The harvest seam lives in the loom/ev layer, keeping guild plugin-agnostic.
+- The prior docs/skills de-drift folds into Phase 3; the commons orphaned-JSON-substrate cleanup remains a separate deferred follow-up.
 
 ## Revision log
 
-- 2026-06-02 — Make Phase 1 machine-parseable: add **Goal** and rename **Exit criteria** to **Exit** so parse-plan populates exitCriteria; make the documented verification grep runnable
+- 2026-06-02 — Reframe per pairing: the goal is consolidating project state files into manifest.toml, not just doc de-drift. Roll retros/responses/findings into new manifest sections (findings via harvest-at-close to preserve concurrent append); forward-only; prose stays md; recovery+findings-jsonl become gitignored scratch. De-drift becomes Phase 4. Split cleanup into behavioral removal (P3) vs docs/guard (P4); rename harvested type GuildFinding
