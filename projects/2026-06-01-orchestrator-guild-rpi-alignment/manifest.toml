@@ -30,13 +30,14 @@ branch = "ev-agent.orchestrator-guild-rpi-alignment.research-panel"
 [[phases]]
 number = 3
 name = "plan-* panel in loom-plan"
-status = "in-progress"
+status = "completed"
 branch = "ev-agent.orchestrator-guild-rpi-alignment.plan-panel"
 
 [[phases]]
 number = 4
 name = "implementer-* delegation seam (both ev-loops)"
-status = "not-started"
+status = "in-progress"
+branch = "ev-agent.orchestrator-guild-rpi-alignment.implementer-delegation"
 
 [[phases]]
 number = 5
@@ -108,6 +109,21 @@ at = "2026-06-02T00:59:24.580Z"
 event = "checkin-created"
 detail = { number = "01", branch = "ev-agent.orchestrator-guild-rpi-alignment.plan-panel" }
 
+[[events]]
+at = "2026-06-02T01:11:39.491Z"
+event = "phase-completed"
+detail = { phase = 3 }
+
+[[events]]
+at = "2026-06-02T01:11:39.565Z"
+event = "phase-started"
+detail = { phase = 4, name = "implementer-* delegation seam (both ev-loops)" }
+
+[[events]]
+at = "2026-06-02T01:29:03.485Z"
+event = "checkin-created"
+detail = { number = "01", branch = "ev-agent.orchestrator-guild-rpi-alignment.implementer-delegation" }
+
 [[checkins]]
 schema_version = 1
 number = "01"
@@ -163,6 +179,20 @@ scope = ["plugins/loom/skills/loom-plan/SKILL.md", "plugins/loom/cli/loom-plan-p
 changes_since_previous = "First (and only) unit of Phase 3. Branch cut from main after Phase 2 merged (#201); this commit also reconciles the manifest (Phase 2 -> completed, Phase 3 -> in-progress)."
 verdict = { result = "approved", reasons = ["Panel of evaluator-contract-fit + evaluator-test-unit both returned approved, no blocking findings", "npm test 1330 passed (was 1323; +7); V11 bare-command convention green (35 passed); npm run check ok", "Both seams confirmed coexisting: the --phase=plan design panel at synthesis (step 4.5) and the unchanged --files= evaluator gate (step 6)"] }
 notes_for_pr = ["loom-plan gains a plan-* design panel at synthesis (step 4.5) via guild derive-panel --phase=plan — multi-perspective design input that AUGMENTS the solo grill-me interview, which remains the source of truth. The step 6 evaluator gate is untouched; both seams coexist.", "Bootstrapping skip + single-composition-round convergence budget keep the panel safe while plan-* agents aren't registered yet and prevent it blowing the interview budget. Live-spawn proof of plan-* is the Phase 6 runtime gate.", "test lesson: SKILL.md prose is soft-wrapped, so multi-word assertions must use \\s+ (not literal spaces) — an initial literal-space match missed 'single composition\\nround'. Fixed by tolerating the wrap, not by loosening to a common substring.", "manifest reconciliation: this commit flips Phase 2 -> completed and Phase 3 -> in-progress.", "signal: phase-boundary: single-unit Phase 3, last unit (single signal; no revise offered). Phase 3 code-complete pending PR merge. Phase 4 (deps [1]) remains independently unblocked."]
+
+[[checkins]]
+schema_version = 1
+number = "01"
+created = "2026-06-01"
+phase = { number = 4, name = "implementer-* delegation seam (both ev-loops)" }
+branch = "ev-agent.orchestrator-guild-rpi-alignment.implementer-delegation"
+unit = "1"
+contract = { goal = "Add a per-unit implementer-delegation switch to both ev-loops (skill-body only): when ON, the Execute step composes implementer-<domain> via derive-panel --phase=implementer and delegates the write through /guild-spawn. ev-loop-interactive defaults OFF (pairing preserved; opt a unit in); ev-loop-confidence defaults ON (opt a unit out). The evaluator checkpoint fires regardless. Update both Specialist sections to retract the 'no control-flow change' claim for the write side (full prose deletion deferred to Phase 6).", acceptance_criteria = ["ev-loop-interactive Execute step: switch documented, default OFF; opt-in composes implementer-<domain> via Bash(guild derive-panel --phase=implementer) + /guild-spawn (NOT a direct Agent call)", "ev-loop-confidence Execute step: same switch, default ON; opt-out to inline transform", "Switch state recorded per unit in the checkin's existing notes_for_pr; no new schema field, no PLAN.md parse change", "The evaluator checkpoint fires in both loops regardless of switch state (delegation changes who writes, not whether it's gated)", "Both Specialist-evaluator gate-then-review sections retract the 'no control-flow change' claim for the write side and note full deletion lands in Phase 6", "Skill-body tests for per-loop defaults + the delegation mechanism + checkpoint-fires-regardless; bare-command (V11); npm test + check green"], rules_applied = ["Composition over configuration / high-and-low abstractions: delegation is an OPTION reached for per unit, not a forced rewrite — interactive keeps inline drive (the escape hatch) as default", "Incrementalism: skill-body-only switch (operator-approved surface) — no loom checkin-schema or PLAN.md-parse change, staying within the PLAN's stated Files", "Naming/consistency: the same switch shape + mechanism (derive-panel --phase=implementer -> /guild-spawn) across both loops, defaults differing per loop character", "Deliberate seams: route the delegated write through /guild-spawn, not the in-scope Agent tool — loom/ev loops compose guild coordination skills by design"], disqualifiers = ["forcing delegation as the only path (interactive must keep inline drive as default — it's an option)", "removing or bypassing the evaluator checkpoint when delegating", "a direct Agent call for the delegated write instead of /guild-spawn", "touching the loom checkin schema or PLAN.md parse (out of scope per the surface decision)", "bin/guild or node-path in the new skill-body invocations (breaks V11); editing commons/"], inputs = ["plugins/ev/skills/ev-loop-interactive/SKILL.md:203-300 (unit loop + Execute), 703-723 (Specialist section)", "plugins/ev/skills/ev-loop-confidence/SKILL.md:287-386 (unit loop + Execute), 469-486 (Specialist section)", "derive-panel --phase=implementer (shipped Phase 1)", "/guild-spawn (the delegation runner); plugins/guild/modes/axes.toml implementer domains"] }
+execution = { actions = ["ev-loop-interactive Execute step (2.2): added 'Implementer delegation (per-unit switch, default OFF)' — inline drive default preserves keystroke-level pairing; operator opts a unit in during Negotiate; on opt-in, compose implementer-<domain> via Bash(guild derive-panel --phase=implementer), select the unit's domain, delegate the write via /guild-spawn (not a direct Agent call); record switch state in notes_for_pr; step 3 (Evaluate) fires regardless; registry-lag inline fallback", "ev-loop-confidence Execute step (2): added the symmetric paragraph, default ON (operator opts a tier/unit out), same mechanism", "Rewrote both 'Specialist-evaluator gate-then-review (Phase 4)' sections: the evaluator/review side needs no control-flow change, but the write side is now real wiring as of this plan's Phase 4 (the Execute-step delegation switch); the remaining prose is slated for deletion in Phase 6", "Added plugins/ev/skills/ev-loop-delegation.test.ts (6 skill-body assertions across both bodies; \\s+/.? tolerate soft-wrap)"], files_touched = ["plugins/ev/skills/ev-loop-interactive/SKILL.md", "plugins/ev/skills/ev-loop-confidence/SKILL.md", "plugins/ev/skills/ev-loop-delegation.test.ts"], corrections = [] }
+scope = ["plugins/ev/skills/ev-loop-interactive/SKILL.md", "plugins/ev/skills/ev-loop-confidence/SKILL.md", "plugins/ev/skills/ev-loop-delegation.test.ts"]
+changes_since_previous = "First (and only) unit of Phase 4 — the implementer delegation seam across both ev-loops. Branch cut from main after Phase 3 merged (#202); this commit also reconciles the manifest (Phase 3 -> completed, Phase 4 -> in-progress). Phase 5 (fixer delegation) depends on this unit's switch mechanism."
+verdict = { result = "approved", reasons = ["Panel of evaluator-contract-fit + evaluator-test-unit both returned approved, no blocking findings", "npm test 1336 passed (was 1330; +6 delegation-switch cases); V11 bare-command convention green; npm run check ok", "Both loops carry the same switch + mechanism with defaults differing per loop (interactive OFF, confidence ON); the evaluator checkpoint is asserted to fire regardless of switch state"] }
+notes_for_pr = ["Both ev-loops gain a per-unit implementer-delegation switch: ON composes implementer-<domain> via guild derive-panel --phase=implementer and delegates the write through /guild-spawn (not a direct Agent call, though Agent is in allowed-tools — the guild-coordination seam is deliberate). interactive defaults OFF (keystroke-level pairing intact, opt a unit in); confidence defaults ON (opt a tier/unit out).", "Delegation changes WHO writes, never WHETHER the unit is gated: the evaluator checkpoint fires regardless of switch state.", "Switch surface is skill-body-only per operator decision: per-loop default + per-unit operator opt-in recorded in the checkin's existing notes_for_pr. No loom checkin-schema field, no PLAN.md-parse change.", "Both 'Specialist gate-then-review' sections retract the 'no control-flow change' claim for the write side (it's real wiring now); the remaining prose is slated for deletion in Phase 6.", "While no implementer-* agents are registered (registry-mirror lag), opting in falls back to inline drive with a note. The live-spawn proof of implementer-* is the Phase 6 runtime gate.", "signal: phase-boundary: single-unit Phase 4, last unit (single signal; no revise offered). Phase 4 code-complete pending PR merge; unblocks Phase 5 (fixer delegation, shares this switch shape)."]
 
 [[revisions]]
 timestamp = "2026-06-01T22:19:26.629Z"

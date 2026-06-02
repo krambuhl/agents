@@ -303,6 +303,21 @@ For each unit inside a tier:
    complete checkin after the panel approves is equally valid — the
    create-once store doesn't require the two-checkin split.
 2. **Execute.** Do the transform on the batch. Keep to scope.
+
+   **Implementer delegation (per-unit switch, default ON).** This loop
+   defaults to delegating the transform: compose the implementer
+   candidate set via `Bash("guild derive-panel --phase=implementer")`,
+   select the `implementer-<domain>` matching the tier's domain, and
+   delegate the write through `/guild-spawn` with the tier contract as
+   the brief. Route through `/guild-spawn`, **not** a direct `Agent`
+   call — `Agent` is in `allowed-tools`, but the seam through guild
+   coordination is deliberate. The operator can opt a tier/unit **out**
+   back to inline transform when a batch wants a human hand. Record the
+   switch state in the checkin's `notes_for_pr`. Delegation changes
+   *who* writes, never *whether* it's gated — step 3 (Evaluate) fires
+   regardless. While no `implementer-*` agents are registered (the
+   registry-mirror lag), fall back to inline transform with a one-line
+   note; the live-spawn proof is the Phase 6 runtime gate.
 3. **Evaluate.** Invoke `/guild-validate` via the `Skill` tool to run
    the antagonist panel against this unit. Compose the panel by
    auto-derivation from the unit's file list (see § Panel
@@ -473,7 +488,13 @@ a write-capable posture (e.g. `evaluator-css-architecture` paired
 with `implementer-css-architecture` / `fixer-css-architecture`), the
 specialist runs as part of the
 parallel panel with **elevated precedence** per PANEL-COMPOSITION.
-No control-flow change is needed.
+The specialist *evaluator* (review) side needs no control-flow change.
+The *write* side is now real wiring as of this plan's Phase 4: the
+Execute step's implementer-delegation switch (§ Step 2, "Implementer
+delegation", default ON for this loop) composes `implementer-<domain>`
+via `derive-panel --phase=implementer` and delegates the transform
+through `/guild-spawn`. This section's remaining prose is superseded by
+that wiring and is slated for deletion in Phase 6.
 
 **Fail-fast on specialist rejection**: when the aggregated tier
 verdict shows a specialist's finding in `blocking_findings`, treat
