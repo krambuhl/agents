@@ -87,6 +87,26 @@ at = "2026-06-02T15:25:56.864Z"
 event = "checkin-created"
 detail = { number = "02", branch = "ev-agent.auto-mode-guild-offload.setup" }
 
+[[events]]
+at = "2026-06-02T15:30:02.159Z"
+event = "evaluator-spawned"
+detail = { slug = "2026-06-02-auto-mode-guild-offload", phase = 1, unit = "03", evaluator = "evaluator-contract-fit" }
+
+[[events]]
+at = "2026-06-02T15:30:02.229Z"
+event = "evaluator-spawned"
+detail = { slug = "2026-06-02-auto-mode-guild-offload", phase = 1, unit = "03", evaluator = "evaluator-test-unit" }
+
+[[events]]
+at = "2026-06-02T15:30:02.298Z"
+event = "evaluator-spawned"
+detail = { slug = "2026-06-02-auto-mode-guild-offload", phase = 1, unit = "03", evaluator = "evaluator-naming" }
+
+[[events]]
+at = "2026-06-02T15:30:42.985Z"
+event = "checkin-created"
+detail = { number = "03", branch = "ev-agent.auto-mode-guild-offload.setup" }
+
 [[checkins]]
 schema_version = 1
 number = "01"
@@ -114,3 +134,17 @@ scope = ["plugins/loom/cli/verbs/loom/pr.ts", "plugins/loom/cli/verbs/loom/pr.te
 changes_since_previous = "Second unit of phase 1; builds on D1's convention (the --draft flag the release-boundary / escape-hatch semantics forward-reference)."
 verdict = { result = "approved", reasons = ["Panel (contract-fit + test-unit + naming) all approved, high confidence, zero findings. AC1-5 met; default open path byte-identical; no disqualifiers fired."] }
 notes_for_pr = ["derive-panel finding (substrate signal): the `--files=-` STDIN form under-returns to baseline evaluator-contract-fit only and does NOT apply the per-file mappings; the explicit `--files=<comma-list>` form correctly returned evaluator-contract-fit,evaluator-test-unit,evaluator-naming for pr.ts + pr.test.ts (per PANEL-COMPOSITION.md lines 51-52). Used the spec-correct 3-evaluator panel. D1's panel was unaffected (docs -> contract-fit only regardless). Worth a derive-panel stdin-reading fix in a follow-up.", "Smoke shape: operator chose composition smoke (no GitHub) over a real outward draft PR — the unit tests already prove the gh arg composition and gh's own --draft behavior is well-established; the loom wrapper is the only new surface. Deviates from the PLAN's literal 'opens a draft PR' wording by design.", "Naming advisory (not blocking): bare boolean `draft` (vs isDraft predicate) was held advisory by evaluator-naming because it matches the file's own boolean convention (pretty/quiet) and gh's own flag; prefixing would break sibling cohesion.", "Implementer/fixer delegation: OFF (inline drive) — interactive-loop default.", "Draft->ready transition (gh pr ready / a loom pr ready verb) intentionally NOT added here — D1's convention names it as future work for the full-stack path, out of scope for this setup/gate unit."]
+
+[[checkins]]
+schema_version = 1
+number = "03"
+created = "2026-06-02"
+phase = { number = 1, name = "Convention + substrate seams (setup / gate)" }
+branch = "ev-agent.auto-mode-guild-offload.setup"
+unit = "D3 — harness-mode probe seam (inert)"
+contract = { goal = "Add an inert harness-mode probe util at plugins/commons/cli/lib/harness-mode.ts, exported, returning 'unknown' today, with a single documented wire-in point where a future harness permission-mode signal would attach. The deferred armed-trigger seam the Guild-offload posture (D1) forward-references; ships inert, gates nothing. Sync; resolve D1's dangling reference; keep check + tests green.", acceptance_criteria = ["harness-mode.ts created, exporting a probe function + a HarnessMode type covering future states ('auto'|'default'|'unknown') so a future wire-in changes only the function body, not callers.", "Function returns 'unknown' today with a single clearly-commented wire-in point; no behavior depends on it (absent-by-default).", "harness-mode.test.ts (commons-local; test files not synced) asserts the inert 'unknown' return.", "D1's dangling '§ The harness-mode probe seam' reference (AGENT-CONVENTIONS.md:381) re-pointed at the real util path.", "sync-shared run; util mirrored to full lib-consumers (griot, guild); doc fix to all doc trees; npm run check green. loom (partial allowlist) + ev (docs-only) do NOT receive the lib file by design.", "Full npm test green."], rules_applied = ["Commons-canonical then sync (ADR-0007).", "Inert / absent-by-default: the probe gates nothing today (matches D1's armed-trigger seam).", "Semantic naming: probe named by what it means."], disqualifiers = ["Wiring the probe into any loop or CLI verb (future Open Question, not this phase).", "Branching any behavior on the return.", "Adding it to loom's lib allowlist (keep the partial-consumer surface minimal).", "Reading an actual harness signal (confirmed absent — the inert seam IS the deliverable)."], inputs = ["plugins/commons/cli/lib/pr-marker.ts (a simple commons lib-module pattern)", "scripts/sync-shared.ts (COMMONS_CONSUMERS.lib + LIB_MIRROR_ALLOWLIST)", "projects/2026-06-02-auto-mode-guild-offload/RESEARCH.md A (the absent permission-mode finding)", "plugins/commons/docs/AGENT-CONVENTIONS.md:381 (the reference to resolve)"] }
+execution = { actions = ["Created plugins/commons/cli/lib/harness-mode.ts: exports `HarnessMode = 'auto' | 'default' | 'unknown'` and `probeHarnessMode(): HarnessMode` returning 'unknown', with a header explaining why it's inert (issue #6227, no env var, no statusline field) and a single marked wire-in point in the function body.", "Created plugins/commons/cli/lib/harness-mode.test.ts asserting the inert 'unknown' return via exact equality.", "Resolved D1's dangling reference at AGENT-CONVENTIONS.md:381 from '§ The harness-mode probe seam' to the real util path (`probeHarnessMode` seam in plugins/commons/cli/lib/harness-mode.ts).", "Ran node scripts/sync-shared.ts: util mirrored to commons + griot + guild only (loom partial-consumer + ev docs-only correctly excluded); test file commons-only (not synced); doc fix in all 5 trees.", "Verified npm run check ok, npx vitest run harness-mode.test.ts (1 passed), npm test (1341 passed, +1 file).", "Gated through the spec-correct panel evaluator-contract-fit + evaluator-test-unit + evaluator-naming (all approved, high confidence, zero findings)."], files_touched = ["plugins/commons/cli/lib/harness-mode.ts", "plugins/commons/cli/lib/harness-mode.test.ts", "plugins/griot/cli/lib/harness-mode.ts", "plugins/guild/cli/lib/harness-mode.ts", "plugins/commons/docs/AGENT-CONVENTIONS.md", "plugins/ev/docs/AGENT-CONVENTIONS.md", "plugins/griot/docs/AGENT-CONVENTIONS.md", "plugins/guild/docs/AGENT-CONVENTIONS.md", "plugins/loom/docs/AGENT-CONVENTIONS.md"], corrections = [] }
+scope = ["plugins/commons/cli/lib/harness-mode.ts (+ griot/guild mirrors)", "plugins/commons/cli/lib/harness-mode.test.ts", "plugins/commons/docs/AGENT-CONVENTIONS.md (+ 4 mirrors) — D1 reference resolution"]
+changes_since_previous = "Third and final unit of phase 1; satisfies D1's harness-mode forward-reference and resolves the dangling doc pointer."
+verdict = { result = "approved", reasons = ["Panel (contract-fit + test-unit + naming) all approved, high confidence, zero findings. AC1-6 met; inert seam ships gating nothing; no disqualifiers fired."] }
+notes_for_pr = ["Scope-shift single signal (phase-boundary): D3 is the last unit of phase 1, so the phase-boundary signal fired, but with no concurrent signal (no evaluator/user/plan-contradiction shift), so no inner-RPI offered per the two-signal-concurrence rule. Loop continues to phase close.", "Sync targeting confirmed: a NEW commons/cli/lib file mirrors only to the full lib-consumers (griot, guild) per COMMONS_CONSUMERS.lib; loom is a partial consumer (LIB_MIRROR_ALLOWLIST of 5 basenames) and ev is docs-only, so neither receives harness-mode.ts. Intentional — the probe is inert infrastructure; a future real consumer (e.g. a loom verb) would add it to loom's allowlist then.", "Implementer/fixer delegation: OFF (inline drive) — interactive-loop default.", "derive-panel stdin under-return (carried from D2): used the explicit --files=<comma> form to get the spec-correct contract-fit + test-unit + naming panel; the --files=- stdin form returns baseline contract-fit only. Follow-up fix worth filing."]

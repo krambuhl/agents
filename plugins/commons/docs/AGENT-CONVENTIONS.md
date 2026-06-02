@@ -378,7 +378,8 @@ permission mode is **deferred, not wired**. The harness does not
 expose its permission mode to a running skill (confirmed absent),
 so a loop cannot read it. A probe seam ships inert — a util that
 returns `unknown` today — as the single documented place a future
-harness signal would wire in (see § The harness-mode probe seam).
+harness signal would wire in (the `probeHarnessMode` seam in
+`plugins/commons/cli/lib/harness-mode.ts`).
 Until such a signal exists the probe gates nothing: an `unknown`
 return never arms, disarms, or alters the posture. Do not branch
 behavior on it.
