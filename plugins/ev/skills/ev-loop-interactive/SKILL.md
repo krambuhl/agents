@@ -401,6 +401,23 @@ For each deliverable (picked per the ordering rule):
 4. **Iterate or commit.**
    - Flagged: address the specific reasons, re-invoke `/guild-validate`.
      Up to 2 retries (3 panel runs total).
+
+     **Fixer delegation (per-unit switch, default OFF).** This loop
+     defaults to fixing flagged findings inline — you address the
+     reasons yourself, keeping the pairing intact. Delegation is an
+     *option*: the operator can opt a unit **in**, at which point you
+     compose `fixer-<domain>` via
+     `Bash("guild derive-panel --phase=fixer")`, hand the flagged-finding
+     packet (the panel's `blocking_findings` + remedies) to it through
+     `/guild-spawn` for the **minimal** remedy (`fixer`'s
+     `default_personality` is `pragmatist` — load-bearing fix, not a
+     rewrite), then re-invoke `/guild-validate`. Route through
+     `/guild-spawn`, **not** a direct `Agent` call. The re-evaluation
+     gates regardless of switch state — delegation changes *who* fixes,
+     never *whether* the fix is re-gated. Record the switch state in the
+     checkin's `notes_for_pr`. While no `fixer-*` agents are registered
+     (the registry-mirror lag), opting in falls back to inline fix with a
+     one-line note; the live-spawn proof is the Phase 6 runtime gate.
    - Approved: continue to step 4.5 (findings append + threshold)
      and step 5 (scope-shift detection), then finalize the checkin.
 4.5. **Append findings + detect recurring threshold.** On approved

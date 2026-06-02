@@ -57,3 +57,35 @@ describe('ev-loop implementer-delegation switch (Phase 4)', () => {
     }
   });
 });
+
+describe('ev-loop fixer-delegation switch (Phase 5)', () => {
+  test('both loops document the per-unit fixer-delegation switch', () => {
+    expect(INTERACTIVE).toMatch(/Fixer delegation \(per-unit switch/);
+    expect(CONFIDENCE).toMatch(/Fixer delegation \(per-unit switch/);
+  });
+
+  test('interactive defaults the fix switch OFF, confidence defaults it ON', () => {
+    expect(INTERACTIVE).toMatch(/Fixer delegation \(per-unit switch, default OFF/);
+    expect(CONFIDENCE).toMatch(/Fixer delegation \(per-unit switch, default ON/);
+  });
+
+  test('both compose fixer-<domain> via derive-panel --phase=fixer', () => {
+    expect(INTERACTIVE).toMatch(/guild derive-panel --phase=fixer/);
+    expect(CONFIDENCE).toMatch(/guild derive-panel --phase=fixer/);
+  });
+
+  test('the delegated remedy is the minimal pragmatist fix, re-gated by the panel', () => {
+    for (const body of [INTERACTIVE, CONFIDENCE]) {
+      expect(body).toMatch(/default_personality.{0,8}pragmatist/i);
+      expect(body).toMatch(/re-invoke[\s\S]{0,20}guild-validate/i);
+    }
+  });
+
+  test('the inline-fix path is still the documented fallback when off/unregistered', () => {
+    // "back to inline fix" anchors to the opt-out / registry-lag fallback
+    // clauses rather than matching the phrase anywhere in the body.
+    for (const body of [INTERACTIVE, CONFIDENCE]) {
+      expect(body).toMatch(/back to inline fix/i);
+    }
+  });
+});
