@@ -346,6 +346,153 @@ documented failure mode, not a crash: the operator (or a parent
 skill) can re-invoke with a fresh session, the skill detects
 `RECOVERY-STATUS.json`, and resumes.
 
+## Guild-offload posture
+
+The **guild-offload posture** is a session-level stance an ev
+execution loop can run under while `--mode=auto` is armed: the
+loop runs a phase's units autonomously, routing every in-loop
+question it would normally ask the human to a guild panel (or
+resolving it from a documented default), and surfaces to the
+human at exactly one place — the PR. "Only release for a PR"
+becomes the loop's invariant.
+
+This **extends** § Auto-mode and the two-budget shape; it does
+not restate the budget numbers. The two-budget convergence
+(per-decision rounds × per-session decisions) and the
+budget-exhausted recovery defined above are the machinery the
+posture leans on. The posture adds *which* in-loop touchpoints
+route where, and *where* the single human release point sits.
+
+Nothing in this section wires a loop to the posture. It defines
+the shared convention; the loop bodies adopt it in their own
+SKILL.md.
+
+### Armed-trigger seam
+
+The posture is armed by the loop's **`--mode=auto` flag** (or an
+upstream caller-supplied auto-mode signal). That flag is the
+primary — and today the only — trigger.
+
+Coupling the posture to the *harness's* own auto-accept /
+permission mode is **deferred, not wired**. The harness does not
+expose its permission mode to a running skill (confirmed absent),
+so a loop cannot read it. A probe seam ships inert — a util that
+returns `unknown` today — as the single documented place a future
+harness signal would wire in (see § The harness-mode probe seam).
+Until such a signal exists the probe gates nothing: an `unknown`
+return never arms, disarms, or alters the posture. Do not branch
+behavior on it.
+
+### Gate-to-resolver routing table
+
+Under the armed posture, each in-loop touchpoint that would
+otherwise ask the human routes to a resolver. The resolver class
+follows the two-budget split: **divergent / generative** questions
+go to a `guild-plan` panel; **convergent / auditing** questions go
+to an evaluator (`evaluator-contract-fit` is the baseline); a few
+resolve from a documented **autonomous default**.
+
+| In-loop touchpoint | Resolver | Class | Status |
+|---|---|---|---|
+| Unit-contract negotiation | `evaluator-contract-fit` audits the draft contract | convergent | covered |
+| ADR-emit accept / decline | `evaluator-contract-fit` reads the marked entry against ADR-0001 | convergent | covered |
+| Deliverable decomposition confirm | `guild-plan` panel on the decomposition | divergent | new |
+| Free-mode ordering pick | `guild-plan` panel on the next-unit choice | divergent | new |
+| Mid-unit execution fork | `guild-plan` round on the fork (see § Fork-to-panel convergence) | divergent | new |
+| ADR title quality | synthesized from the marked entry, no panel | autonomous | partial |
+| Scope-shift offer | default flips decline → accept on two-signal concurrence | autonomous | covered |
+| Implementer / fixer delegation | keep the loop's default (OFF interactive, ON confidence) | autonomous | unchanged |
+| Release / PR boundary | the release-boundary semantics below | autonomous | new |
+
+"Covered" rows are the auto-mode branches the loops implement
+today; "new" rows are the gap this posture closes. Auto-mode
+changes *who decides* (a panel vs the human), never *who writes* —
+the delegation defaults are untouched.
+
+### Fork-to-panel convergence rule
+
+A **mid-unit execution fork** — the loop hitting a decision it
+would normally pause and ask the human about — routes to a
+`guild-plan` round with the fork as the brief. Turning the
+panel's output into a decision is the **caller's** job:
+
+- `guild-plan` *collects* attributed engineer sections; it does
+  **not** iterate and does **not** synthesize a decision (its
+  `contradictions` field is empty by design). The loop reads back
+  the sections and each engineer's `agent_signals` (confidence,
+  outcome).
+- Apply the convergence rule: a **silent panel** (no new question /
+  consensus) → take the converged answer. Otherwise run another
+  round (per-decision budget = 3), feeding round N the prior
+  round's sections so engineers can resolve their own
+  contradictions. On budget exhaust → the escape hatch.
+- An `operator-judgment-required` outcome in any engineer's signal
+  is the panel's own "this needs the human." It **breaks the
+  offload** and surfaces at the PR boundary rather than
+  force-resolving.
+- **No panel raiseable → escape hatch, never self-decide.** If the
+  `plan-*` engineer glob is empty (registry-mirror lag) and no
+  explicit engineer list is supplied, a fork must fall to the
+  escape hatch (stop + `UNRESOLVED.md`), not to "decide it myself."
+  A posture that silently charges ahead on an un-panelled fork is
+  the failure mode this rule exists to forbid.
+
+### Release-boundary semantics
+
+The posture surfaces to the human at the PR. Two release shapes:
+
+- **Default — phase-at-a-time.** At phase close the loop opens a
+  **normal** (ready) PR, subscribes to its activity, and stops; the
+  router parks the run and a review / CI result / merge re-wakes
+  it. One phase, one PR, one human gate.
+- **Full-stack — `--phases=all`** (or equivalent depth knob). The
+  loop opens a **draft** PR per phase (via `loom pr open --draft`),
+  auto-advances to the next phase without stopping, and at stack
+  completion marks the drafts ready (`gh pr ready <n>`). The human
+  reviews the whole stack at once.
+
+PR draft / ready state is **derived from `gh`** on demand (via
+`loom pr discover`), never cached in the manifest — the same
+derive-don't-store rule the rest of the PR surface follows. The
+full-stack path must `git push` each phase branch before its draft
+open (`pr open` fails loud on an unpushed branch).
+
+### Escape hatch
+
+The escape hatch is where an armed run **stops and hands back to
+the human** without finishing the phase. It reuses the
+budget-exhausted recovery above unchanged — `UNRESOLVED.md` +
+`RECOVERY-STATUS.json` + the `auto-mode-budget-exhausted` event —
+adding a single step: open a **draft** PR carrying the
+work-so-far, so the partial state is reviewable on GitHub rather
+than stranded on a branch. The no-panel-available fallback from
+§ Fork-to-panel convergence routes here too.
+
+A human re-enters by reviewing (or merging, or closing) that PR,
+or by re-invoking the loop without `--mode=auto` to drop back to
+paired mode.
+
+### Both loops
+
+The convention is shared; `/ev-loop-interactive` and
+`/ev-loop-confidence` both cite it. Where the confidence loop
+diverges:
+
+- **Units are tiers, not deliverables.** Confidence runs a phase
+  as ordered tiers (mechanical → bespoke) under a **tier
+  contract**; a fork there is more often a tier-assignment /
+  batch-sizing judgment than a mid-deliverable design fork.
+- **Gate-and-ratchet is a natural autonomous stop.** Confidence
+  closes the gate to tier N+1 if any tier-N unit is still flagged
+  or verification is red. Under the full-stack posture that ratchet
+  gate is a stop-and-surface point even mid-stack — the autonomous
+  run respects it the way the default posture respects a phase
+  boundary.
+- **Delegation defaults invert.** Implementer / fixer delegation
+  defaults **ON** in confidence (bulk transform → delegate the
+  write) and **OFF** in interactive (keystroke pairing). The
+  posture preserves each loop's default.
+
 ## Engineer / evaluator self-recusal
 
 Plan engineers and evaluators are expected to **self-recuse
