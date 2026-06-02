@@ -235,6 +235,50 @@ test('prOpen: no --base → gh pr create omits it (gh defaults to the repo defau
   expect(ghCalls[0]).not.toContain('--base');
 });
 
+test('prOpen: --draft is forwarded to gh pr create (release-boundary / escape-hatch draft PR)', () => {
+  setupProjectWithCheckins(['01']);
+  const bodyFile = join(projectsRoot, 'body.md');
+  writeFileSync(bodyFile, '## Summary\nBody', 'utf8');
+
+  const ghCalls: string[][] = [];
+  const ghRunner = (args: string[]) => {
+    ghCalls.push(args);
+    return 'https://github.com/owner/repo/pull/80\n';
+  };
+
+  const result = prOpen(
+    [
+      'test-loom',
+      '--title=Draft PR',
+      `--body-file=${bodyFile}`,
+      '--branch=loom-cli/draft',
+      '--draft',
+    ],
+    { projectsRoot, ghRunner },
+  );
+  expect(result.exitCode).toBe(0);
+  // --draft is a bare boolean flag passed straight through to gh.
+  expect(ghCalls[0]).toContain('--draft');
+});
+
+test('prOpen: no --draft → gh pr create omits it (default open stays a ready PR)', () => {
+  setupProjectWithCheckins(['01']);
+  const bodyFile = join(projectsRoot, 'body.md');
+  writeFileSync(bodyFile, '## Summary\nBody', 'utf8');
+
+  const ghCalls: string[][] = [];
+  const ghRunner = (args: string[]) => {
+    ghCalls.push(args);
+    return 'https://github.com/owner/repo/pull/81\n';
+  };
+
+  prOpen(
+    ['test-loom', '--title=Ready PR', `--body-file=${bodyFile}`, '--branch=loom-cli/ready'],
+    { projectsRoot, ghRunner },
+  );
+  expect(ghCalls[0]).not.toContain('--draft');
+});
+
 test('prOpen: gh failure surfaces as gh-failed', () => {
   setupProjectWithCheckins(['01']);
   const bodyFile = join(projectsRoot, 'body.md');

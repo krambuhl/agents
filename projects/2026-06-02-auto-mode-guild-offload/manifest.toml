@@ -67,6 +67,26 @@ at = "2026-06-02T15:15:22.358Z"
 event = "phase-started"
 detail = { phase = 1, name = "Convention + substrate seams (setup / gate)" }
 
+[[events]]
+at = "2026-06-02T15:25:26.020Z"
+event = "evaluator-spawned"
+detail = { slug = "2026-06-02-auto-mode-guild-offload", phase = 1, unit = "02", evaluator = "evaluator-contract-fit" }
+
+[[events]]
+at = "2026-06-02T15:25:26.089Z"
+event = "evaluator-spawned"
+detail = { slug = "2026-06-02-auto-mode-guild-offload", phase = 1, unit = "02", evaluator = "evaluator-test-unit" }
+
+[[events]]
+at = "2026-06-02T15:25:26.156Z"
+event = "evaluator-spawned"
+detail = { slug = "2026-06-02-auto-mode-guild-offload", phase = 1, unit = "02", evaluator = "evaluator-naming" }
+
+[[events]]
+at = "2026-06-02T15:25:56.864Z"
+event = "checkin-created"
+detail = { number = "02", branch = "ev-agent.auto-mode-guild-offload.setup" }
+
 [[checkins]]
 schema_version = 1
 number = "01"
@@ -80,3 +100,17 @@ scope = ["plugins/commons/docs/AGENT-CONVENTIONS.md (+ 4 synced mirrors)"]
 changes_since_previous = "First unit of phase 1."
 verdict = { result = "approved", reasons = ["evaluator-contract-fit: all 8 acceptance criteria met, no disqualifiers fired, artifact matches PLAN Phase 1 exit ask; confidence high."] }
 notes_for_pr = ["Manifest reconciliation: this project's manifest carried a single placeholder `Phase 1` while the committed PLAN.md parses to 4 phases. Backfilled the 4 phases (rename phase 1 + add 2-4 as not-started) at router dispatch time so the loop tracks the real plan; the one-line manifest sync rides this phase branch. Recurring loom-plan drift class (placeholder manifest never backfilled when PLAN.md was fixed post-scaffold).", "Plan step bootstrapping-skip: the `.claude/agents/plan-*.md` glob returns zero (the guild plan-* agents exist as namespaced subagent types but the skill's glob-resolution doesn't see them — known registry-mirror gap), so the always-on guild-plan design pass was skipped with a note per the bootstrapping case. D1 drafted inline per operator choice.", "Implementer/fixer delegation: OFF (inline drive) — interactive-loop default; no guild-spawn implementer used.", "Evaluator soft note (not a flag): the AC3 status column uses a richer vocabulary (covered/new/partial/unchanged) than the contract paraphrase's covered-vs-new; superset, treated as met.", "Forward references intentionally left dangling for D2/D3: `§ The harness-mode probe seam` (D3) and `loom pr open --draft` (D2) are named as future call sites, not added in this unit."]
+
+[[checkins]]
+schema_version = 1
+number = "02"
+created = "2026-06-02"
+phase = { number = 1, name = "Convention + substrate seams (setup / gate)" }
+branch = "ev-agent.auto-mode-guild-offload.setup"
+unit = "D2 — loom pr open --draft flag"
+contract = { goal = "Add a --draft boolean to loom pr open's OPEN_OPTIONS, forwarding --draft to gh pr create when set; default (no flag) behavior unchanged. Unblocks the release-boundary full-stack option and the escape hatch (both need draft PRs) that D1's Guild-offload posture forward-references.", acceptance_criteria = ["OPEN_OPTIONS in plugins/loom/cli/verbs/loom/pr.ts gains draft: { type: 'boolean' }.", "prOpen pushes --draft onto gh pr create args when values.draft===true; unset/false -> no --draft (default byte-identical), placed after the --base handling.", "pr.test.ts adds two tests mirroring the --base pair: --draft set -> forwarded; absent -> omitted.", "Full npm test green; existing prOpen tests unaffected.", "Composition smoke: built loom CLI end-to-end with a fake gh confirms --draft in the composed gh call; recorded here, not committed."], rules_applied = ["pr.ts is plugin-authoritative (loom verb) — edit in place, no sync.", "Backward-compatible default-off (setup/gate discipline).", "Mirror the existing --base forwarding pattern (shape + naming consistency)."], disqualifiers = ["Changing existing OPEN_OPTIONS behavior (title/body-file/branch/base).", "Adding a loom pr ready verb or draft->ready transition (D1 names it future, not this phase).", "Wiring the flag into any loop (Phases 2-4).", "Caching draft state in the manifest (derive-from-gh rule)."], inputs = ["plugins/loom/cli/verbs/loom/pr.ts (OPEN_OPTIONS ~138; ghArgs composition ~168-181)", "plugins/loom/cli/verbs/loom/pr.test.ts (the --base test pair ~192-236 as template)", "projects/2026-06-02-auto-mode-guild-offload/RESEARCH.md D (draft-PR gap + gh --draft mechanism)"] }
+execution = { actions = ["Added draft: { type: 'boolean' as const } to OPEN_OPTIONS in pr.ts.", "Added `if (values.draft === true) { ghArgs.push('--draft'); }` after the --base block, with an explanatory comment; strict === true so unset/false push nothing.", "Added two tests to pr.test.ts mirroring the --base pair: positive (--draft forwarded) and negative (absent -> omitted); assertions are array-membership on the gh argv (string[]), not loose substring.", "Ran the composition smoke: fake gh on PATH, real loom CLI, against the real project (existence-check only, no manifest write) — WITH --draft composed `gh pr create ... --head throwaway-smoke --draft`; WITHOUT composed it with no --draft. Zero GitHub contact; smoke artifacts removed.", "Verified npx vitest run pr.test.ts (39 passed, +2) and npm test (1340 passed, +2).", "Gated through the spec-correct panel evaluator-contract-fit + evaluator-test-unit + evaluator-naming (all approved, high confidence, zero findings)."], files_touched = ["plugins/loom/cli/verbs/loom/pr.ts", "plugins/loom/cli/verbs/loom/pr.test.ts"], corrections = [] }
+scope = ["plugins/loom/cli/verbs/loom/pr.ts", "plugins/loom/cli/verbs/loom/pr.test.ts"]
+changes_since_previous = "Second unit of phase 1; builds on D1's convention (the --draft flag the release-boundary / escape-hatch semantics forward-reference)."
+verdict = { result = "approved", reasons = ["Panel (contract-fit + test-unit + naming) all approved, high confidence, zero findings. AC1-5 met; default open path byte-identical; no disqualifiers fired."] }
+notes_for_pr = ["derive-panel finding (substrate signal): the `--files=-` STDIN form under-returns to baseline evaluator-contract-fit only and does NOT apply the per-file mappings; the explicit `--files=<comma-list>` form correctly returned evaluator-contract-fit,evaluator-test-unit,evaluator-naming for pr.ts + pr.test.ts (per PANEL-COMPOSITION.md lines 51-52). Used the spec-correct 3-evaluator panel. D1's panel was unaffected (docs -> contract-fit only regardless). Worth a derive-panel stdin-reading fix in a follow-up.", "Smoke shape: operator chose composition smoke (no GitHub) over a real outward draft PR — the unit tests already prove the gh arg composition and gh's own --draft behavior is well-established; the loom wrapper is the only new surface. Deviates from the PLAN's literal 'opens a draft PR' wording by design.", "Naming advisory (not blocking): bare boolean `draft` (vs isDraft predicate) was held advisory by evaluator-naming because it matches the file's own boolean convention (pretty/quiet) and gh's own flag; prefixing would break sibling cohesion.", "Implementer/fixer delegation: OFF (inline drive) — interactive-loop default.", "Draft->ready transition (gh pr ready / a loom pr ready verb) intentionally NOT added here — D1's convention names it as future work for the full-stack path, out of scope for this setup/gate unit."]
