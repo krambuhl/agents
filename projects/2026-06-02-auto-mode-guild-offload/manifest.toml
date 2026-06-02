@@ -30,13 +30,14 @@ branch = "ev-agent.auto-mode-guild-offload.in-loop-autonomy"
 [[phases]]
 number = 3
 name = "ev-loop-interactive: release boundary + escape hatch"
-status = "in-progress"
+status = "completed"
 branch = "ev-agent.auto-mode-guild-offload.release-boundary"
 
 [[phases]]
 number = 4
 name = "ev-loop-confidence: adopt the posture"
-status = "not-started"
+status = "in-progress"
+branch = "ev-agent.auto-mode-guild-offload.confidence-adopt"
 
 [[events]]
 at = "2026-06-02T07:54:30.144Z"
@@ -193,6 +194,26 @@ at = "2026-06-02T16:44:12.593Z"
 event = "session-saved"
 detail = { filename = "2026-06-02-c.json" }
 
+[[events]]
+at = "2026-06-02T17:56:19.107Z"
+event = "phase-completed"
+detail = { phase = 3 }
+
+[[events]]
+at = "2026-06-02T17:56:19.181Z"
+event = "phase-started"
+detail = { phase = 4, name = "ev-loop-confidence: adopt the posture" }
+
+[[events]]
+at = "2026-06-02T18:00:51.354Z"
+event = "evaluator-spawned"
+detail = { slug = "2026-06-02-auto-mode-guild-offload", phase = 4, unit = "09", evaluator = "evaluator-contract-fit" }
+
+[[events]]
+at = "2026-06-02T18:01:34.993Z"
+event = "checkin-created"
+detail = { number = "09", branch = "ev-agent.auto-mode-guild-offload.confidence-adopt" }
+
 [[checkins]]
 schema_version = 1
 number = "01"
@@ -304,6 +325,20 @@ scope = ["plugins/ev/skills/ev-loop-interactive/SKILL.md (### Escape hatch secti
 changes_since_previous = "Third and final unit of phase 3. Resolves the forward-ref D2 left ('escape hatch ... defined in its own section below'). Completes the release-boundary trilogy: D1 default open-PR-stop, D2 --phases=all full-stack, D3 the escape hatch for stalls."
 verdict = { result = "approved", reasons = ["evaluator-contract-fit: all 7 ACs met; the D2 forward-ref now resolves; 3 triggers + 5 on-trigger actions present; cites § Budget-exhausted recovery without restating; STOPS (no self-decide/auto-merge/completed-mark); --phases=all mid-stack halt; armed-posture scoping stated. Cited headings independently verified to resolve. Confidence high."] }
 notes_for_pr = ["DRY-RUN (logic-trace, forced budget-exhaust): traced an armed run hitting a trigger (e.g. a fork with an empty plan-* roster, or the per-phase fork-panel cap=5 exceeded) -> the loop opens a draft PR with work-so-far (loom pr open --draft), writes UNRESOLVED.md + RECOVERY-STATUS.json (the convention's recovery triad), writes the undecided forks into the PR body, emits auto-mode-budget-exhausted, and STOPS (no self-decide). A real forced-exhaust run was NOT performed (it would require an armed multi-fork run + a real draft PR); the trace + the verified citations cover the procedure.", "Resolved the evaluator's soft spot directly: confirmed all cited convention headings (§ Guild-offload posture, § Budget-exhausted recovery, § Auto-mode and the two-budget shape, § Escape hatch) resolve verbatim in AGENT-CONVENTIONS.md — no dangling § citations.", "Scope-shift single signal (phase-boundary): P3-D3 is the last unit of phase 3; phase-boundary signal fired with no concurrent signal -> noted, no inner-RPI.", "Phase 3 now complete: the release boundary (default open-PR-stop with merge-gated completion, --phases=all full-stack draft auto-advance, and the escape hatch) is fully defined for ev-loop-interactive. Phase 4 wires the same convention into ev-loop-confidence.", "Implementer/fixer delegation: OFF (inline drive)."]
+
+[[checkins]]
+schema_version = 1
+number = "09"
+created = "2026-06-02"
+phase = { number = 4, name = "ev-loop-confidence: adopt the posture" }
+branch = "ev-agent.auto-mode-guild-offload.confidence-adopt"
+unit = "P4-D1 — ev-loop-confidence: in-loop autonomy at tier granularity"
+contract = { goal = "Wire ev-loop-confidence's in-loop autonomy to the guild-offload posture at TIER granularity under --mode=auto: tier-contract negotiation auto-resolves via evaluator-contract-fit; a genuine fork (typically a tier-assignment/batch-sizing judgment) routes to a /guild-plan panel with the convergence rule + empty-roster escape hatch + per-phase fork-panel cap=5; the gate-and-ratchet between tiers is the natural autonomous stop. Add the no-AskUserQuestion invariant. Delegation-default-ON preserved. Phase close / release boundary is D2.", acceptance_criteria = ["Unit-loop Negotiate gains an armed-posture branch: under --mode=auto the tier/unit contract is audited by evaluator-contract-fit (approved=accept, flagged=redirect), no AskUserQuestion. Cites the convention.", "Unit-loop Execute gains an armed-posture fork branch: a genuine fork (typically tier-assignment/batch-sizing) routes to /guild-plan (Skill, composes /guild-spawn; not a direct Agent call); cites § Fork-to-panel convergence (not restated); empty-roster -> escape hatch (never self-decide); cap=5; records the fork.", "Gate-and-ratchet under the armed posture: a closed gate is the natural autonomous stop — surfaces at the PR / escape hatch, not an inline user ask. Non-armed behavior preserved.", "No-AskUserQuestion-under-armed-posture invariant added to Rules (cites RESEARCH § A).", "Delegation-default-ON preserved under the posture (changes who decides, not who writes).", "Cites the convention's § Both loops + the gate-to-resolver table.", "evaluator-contract-fit approved; skill-body invariants + full suite green."], rules_applied = ["Additive — non-armed (human-paired) default path unchanged.", "Fork routes through /guild-plan (composes /guild-spawn); no direct Agent call.", "Cites the convention (gate-to-resolver, fork-to-panel convergence, § Both loops), does not restate.", "Step 4 phase close / release boundary explicitly out of scope (D2)."], disqualifiers = ["Touching Step 4 phase close / release boundary (D2).", "Changing non-armed default behavior.", "Flipping delegation default to OFF.", "Self-deciding a fork with no panel; a direct Agent call for the panel."], inputs = ["plugins/ev/skills/ev-loop-confidence/SKILL.md (Tier contract 260, Unit loop 287, Gate-and-ratchet 525, Rules 545)", "plugins/commons/docs/AGENT-CONVENTIONS.md (§ Guild-offload gate-to-resolver, fork-to-panel convergence, § Both loops)", "projects/2026-06-02-auto-mode-guild-offload/PLAN.md (Phase 4 exit)", "projects/2026-06-02-auto-mode-guild-offload/RESEARCH.md E (confidence divergence)"] }
+execution = { actions = ["Added an armed-posture branch to Unit loop step 1 (Negotiate): under --mode=auto the tier/unit contract is audited by evaluator-contract-fit (approved=accept, flagged=redirect), no AskUserQuestion; two-budget per the convention; budget exhaust -> escape hatch.", "Added an 'Execution forks under the armed posture' paragraph to step 2 (Execute): a genuine fork (typically tier-assignment/batch-sizing, contrasted with interactive via § Both loops) -> /guild-plan (Skill, composes /guild-spawn, never a direct Agent call); cites § Fork-to-panel convergence; empty-roster -> escape hatch MUST NOT self-decide; cap=5; records the fork.", "Added an armed-posture paragraph to Gate-and-ratchet: a closed gate is the natural autonomous stop — surfaces at the release boundary / escape hatch (draft PR + UNRESOLVED.md), not an inline ask; no auto-resume/self-re-tier; non-armed behavior preserved.", "Added two Rules bullets: 'No AskUserQuestion under the armed posture' (cites RESEARCH § A) and 'Delegation default ON is preserved under the posture' (cites § Both loops).", "Verified npm test 1341 passing and npm run check ok. SKILL.md plugin-authoritative — no sync.", "Gated through evaluator-contract-fit: approved, high confidence, zero findings."], files_touched = ["plugins/ev/skills/ev-loop-confidence/SKILL.md"], corrections = [] }
+scope = ["plugins/ev/skills/ev-loop-confidence/SKILL.md (Negotiate + Execute armed branches; Gate-and-ratchet autonomous stop; Rules invariants)"]
+changes_since_previous = "First unit of phase 4 (the last phase). Phase 3 (#213) merged. This wires confidence's in-loop autonomy to the posture at tier granularity — the confidence analogue of phase 2's interactive work, but thinner-to-greenfield (confidence had no auto-mode branches to extend), so it ADDS more than it extends."
+verdict = { result = "approved", reasons = ["evaluator-contract-fit: all 7 ACs met; the Execute paragraph explicitly negates all 3 of its disqualifiers (no direct Agent call, no self-decide, no Step-4 overreach); release-boundary referenced-as-destination not defined; § Both loops + gate-to-resolver cited; delegation ON preserved; no-AskUserQuestion invariant added; no drift; confidence high."] }
+notes_for_pr = ["DRY-RUN (logic-trace): traced a confidence tier under --mode=auto — (1) the tier contract is audited by evaluator-contract-fit (no AskUserQuestion); (2) a tier-assignment/batch-sizing fork resolves the plan-* roster -> ZERO today -> empty-roster escape hatch (never self-decide); (3) a closed gate-and-ratchet surfaces at the release boundary rather than asking inline. NO AskUserQuestion at any point. The fork->guild-plan + ratchet-without-stop live proof defers to the Phase 6 runtime gate (empty roster). Consistent with phase 2's interactive dry-run.", "Confidence was thinner than interactive (no pre-existing auto-mode branches in Negotiate/Execute), so this ADDED the armed-posture branches rather than extending them — matching the plan's 'adds more than extends' framing (RESEARCH § E).", "Delegation default stays ON (confidence's existing default; the deliberate inverse of interactive's OFF) — the posture changes who decides, not who writes.", "Deferred to D2: Step 4 phase close — the release boundary (open PR + stop, merge-gated) + --phases=all + the escape hatch at tier/phase close, consistent with Phase 3. This unit only references the escape hatch / release boundary as fork+gate destinations.", "Implementer/fixer delegation for THIS unit: OFF (inline drive — I'm authoring a skill body, not running a bulk transform)."]
 
 [[sessions]]
 schema_version = 1

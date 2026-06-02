@@ -302,7 +302,34 @@ For each unit inside a tier:
    tell the story.) For a tier unit that resolves in one pass, a single
    complete checkin after the panel approves is equally valid — the
    create-once store doesn't require the two-checkin split.
+
+   **Under the armed posture** (`--mode=auto` —
+   `docs/AGENT-CONVENTIONS.md` § Guild-offload posture, gate-to-resolver
+   table): tier/unit-contract negotiation is a convergent gate, so the
+   human approve/redirect is replaced by `evaluator-contract-fit`
+   auditing the contract against the tier's inputs — `approved` is the
+   accept, `flagged` is a redirect (each flagged finding addressed, then
+   re-audit). No `AskUserQuestion`. Convergence and the two-budget
+   defaults follow the convention (§ Auto-mode and the two-budget
+   shape); on budget exhaust the unit fails to negotiate cleanly and the
+   loop takes the escape hatch (Step 4) rather than committing a
+   half-ambiguous tier contract.
 2. **Execute.** Do the transform on the batch. Keep to scope.
+
+   **Execution forks under the armed posture.** A **genuine fork** in
+   the confidence loop is most often a *tier-assignment / batch-sizing*
+   judgment the loop cannot settle from the tier contract (the
+   interactive loop's forks are more often mid-deliverable design
+   choices — § Both loops). When armed, the loop does not ask the human;
+   it routes the fork through `/guild-plan` (via the `Skill` tool — it
+   composes `/guild-spawn`; never a direct `Agent` call) and applies the
+   convention's convergence rule (`docs/AGENT-CONVENTIONS.md`
+   § Fork-to-panel convergence rule — the single source; do not restate
+   it). Two bounds, both routing to the escape hatch (Step 4) rather
+   than letting the loop self-decide: **empty-roster safety** (an empty
+   `plan-*` glob with no explicit engineers → escape hatch, MUST NOT
+   self-decide) and the **per-phase fork-panel cap = 5** (the 6th fork →
+   escape hatch). Record the fork and its resolution in the checkin.
 
    **Implementer delegation (per-unit switch, default ON).** This loop
    defaults to delegating the transform: compose the implementer
@@ -532,6 +559,20 @@ Before starting tier N+1, the gate closes if:
 A closed gate stops the loop and reports to the user. The user decides
 whether to resume, re-tier, or bail.
 
+**Under the armed posture** (`--mode=auto`), the gate-and-ratchet is the
+**natural autonomous stop** — the confidence loop's structural
+equivalent of the interactive loop's phase boundary
+(`docs/AGENT-CONVENTIONS.md` § Guild-offload posture, § Both loops). A
+closed gate is not an inline `AskUserQuestion`: the run surfaces it at
+the **release boundary** — it stops on the open PR (or, on a budget
+exhaust / unresolvable stall, the **escape hatch**: a draft PR +
+`UNRESOLVED.md` carrying the closed-gate reason), per Step 4. The loop
+does not auto-resume past a closed gate and does not self-decide a
+re-tier; a closed gate under autonomy is a stop-and-surface point even
+mid-stack, exactly as the ratchet is designed to be. The non-armed
+behavior above (report + the user decides inline) is unchanged when the
+posture is not armed.
+
 ## Message-driven redirects
 
 If the router passes a message like "address feedback on #14", this
@@ -561,6 +602,22 @@ loop:
   `learnings/session-notes/` at session close, and `/griot-compact`
   decides which get promoted further. The loop itself never writes
   to `learnings/`.
+- **No `AskUserQuestion` under the armed posture.** When
+  `--mode=auto` is armed (`docs/AGENT-CONVENTIONS.md` § Guild-offload
+  posture), the loop makes **no `AskUserQuestion` calls** mid-phase.
+  Tier-contract negotiation goes to `evaluator-contract-fit`; a genuine
+  fork goes to a `/guild-plan` panel or the escape hatch; a closed
+  gate-and-ratchet surfaces at the release boundary. The harness would
+  not silence a stray `AskUserQuestion` even in its own auto mode
+  (RESEARCH § A), so any mid-phase call would hang an unattended run —
+  this is an invariant, not a preference. The non-armed default keeps
+  every human touchpoint.
+- **Delegation default ON is preserved under the posture.** Implementer
+  / fixer delegation defaults **ON** in this loop (bulk transform →
+  delegate the write), and the armed posture does not change that — the
+  posture changes *who decides* (a panel vs the human), never *who
+  writes*. The interactive loop's OFF default is the deliberate
+  divergence (§ Both loops).
 - **No emojis.**
 
 ## Output to router
