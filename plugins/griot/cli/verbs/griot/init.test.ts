@@ -15,10 +15,6 @@ afterEach(() => {
   cleanup();
 });
 
-function gitignorePath(): string {
-  return join(root, '.gitignore');
-}
-
 function learnings(...parts: string[]): string {
   return join(root, 'learnings', ...parts);
 }
@@ -35,31 +31,31 @@ describe('griot init: fresh project root', () => {
     expect(statSync(learnings('nightly')).isDirectory()).toBe(true);
   });
 
-  test('creates .gitignore containing learnings/', () => {
+  test('does NOT create or touch .gitignore', () => {
+    // The substrate works because learnings are committed; init must not
+    // gitignore the tree it just scaffolded.
     initVerb([], { cwd: root });
 
-    expect(existsSync(gitignorePath())).toBe(true);
-    expect(readFileSync(gitignorePath(), 'utf8')).toBe('learnings/\n');
+    expect(existsSync(join(root, '.gitignore'))).toBe(false);
   });
 
-  test('stdout summarizes both actions', () => {
+  test('stdout summarizes the tree creation', () => {
     const result = initVerb([], { cwd: root });
 
     expect(result.stdout).toMatch(/learnings\/ created/);
     expect(result.stdout).toMatch(/subdirs created/);
-    expect(result.stdout).toMatch(/\.gitignore created/);
+    expect(result.stdout).not.toMatch(/gitignore/);
   });
 });
 
 describe('griot init: idempotency', () => {
-  test('second run is a no-op (file contents unchanged)', () => {
+  test('second run is a no-op (does not disturb the tree)', () => {
     initVerb([], { cwd: root });
-    const firstContent = readFileSync(gitignorePath(), 'utf8');
-
     const second = initVerb([], { cwd: root });
 
     expect(second.exitCode).toBe(0);
-    expect(readFileSync(gitignorePath(), 'utf8')).toBe(firstContent);
+    expect(existsSync(learnings('session-notes'))).toBe(true);
+    expect(existsSync(learnings('nightly'))).toBe(true);
   });
 
   test('second run reports no changes when state already matches', () => {
@@ -69,57 +65,18 @@ describe('griot init: idempotency', () => {
     // No "learnings/ created" or "subdirs created" because both already exist.
     expect(second.stdout).not.toMatch(/learnings\/ created/);
     expect(second.stdout).not.toMatch(/subdirs created/);
-    expect(second.stdout).toMatch(/no changes \(unchanged\)/);
+    expect(second.stdout).toMatch(/no changes \(learnings tree already present\)/);
   });
 });
 
-describe('griot init: existing .gitignore', () => {
-  test('appends learnings/ when file exists without the line', () => {
-    writeFileSync(gitignorePath(), 'node_modules/\ndist/\n', 'utf8');
+describe('griot init: pre-existing .gitignore is left alone', () => {
+  test('does not append to an existing .gitignore', () => {
+    const original = 'node_modules/\ndist/\n';
+    writeFileSync(join(root, '.gitignore'), original, 'utf8');
 
     initVerb([], { cwd: root });
 
-    const content = readFileSync(gitignorePath(), 'utf8');
-    expect(content).toBe('node_modules/\ndist/\nlearnings/\n');
-  });
-
-  test('inserts a separator newline when file does not end with one', () => {
-    writeFileSync(gitignorePath(), 'node_modules/', 'utf8');
-
-    initVerb([], { cwd: root });
-
-    const content = readFileSync(gitignorePath(), 'utf8');
-    expect(content).toBe('node_modules/\nlearnings/\n');
-  });
-
-  test('leaves file unchanged when learnings/ is already present', () => {
-    const original = 'node_modules/\nlearnings/\ndist/\n';
-    writeFileSync(gitignorePath(), original, 'utf8');
-
-    const result = initVerb([], { cwd: root });
-
-    expect(readFileSync(gitignorePath(), 'utf8')).toBe(original);
-    expect(result.stdout).toMatch(/\.gitignore unchanged/);
-  });
-
-  test('ignores deeper paths like learnings/foo as not-present', () => {
-    // `learnings/foo` matches `learnings/foo` as a path, not the
-    // directory-level ignore the verb is responsible for. The verb
-    // should still append the directory-level line.
-    writeFileSync(gitignorePath(), 'learnings/foo\n', 'utf8');
-
-    initVerb([], { cwd: root });
-
-    expect(readFileSync(gitignorePath(), 'utf8')).toBe('learnings/foo\nlearnings/\n');
-  });
-
-  test('tolerates trailing whitespace on the matching line', () => {
-    writeFileSync(gitignorePath(), 'learnings/   \n', 'utf8');
-
-    initVerb([], { cwd: root });
-
-    // Trimmed match treats `learnings/   ` as present; no append.
-    expect(readFileSync(gitignorePath(), 'utf8')).toBe('learnings/   \n');
+    expect(readFileSync(join(root, '.gitignore'), 'utf8')).toBe(original);
   });
 });
 
@@ -148,9 +105,6 @@ describe('griot init: nested-cwd project-root resolution', () => {
     // learnings/ lands at the project root, NOT under the nested cwd
     expect(existsSync(join(gitRoot, 'learnings', 'session-notes'))).toBe(true);
     expect(existsSync(join(nested, 'learnings'))).toBe(false);
-    // .gitignore lands at the project root too
-    expect(existsSync(join(gitRoot, '.gitignore'))).toBe(true);
-    expect(existsSync(join(nested, '.gitignore'))).toBe(false);
   });
 });
 
