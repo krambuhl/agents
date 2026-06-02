@@ -130,7 +130,7 @@ recommendation is justified against a citable claim from
 `RESEARCH.md` where applicable.
 
 In auto-mode, the "user" is the evaluator panel + (when needed) the
-plan panel for divergent questions. A round with zero new
+plan panel (composed per step 4.5) for divergent questions. A round with zero new
 questions (silent panel) is convergence. See § Human / auto duality.
 
 For each open interview question, emit no event by default
@@ -138,6 +138,44 @@ For each open interview question, emit no event by default
 pass at step 6 is where panel events fire). The skill is responsible
 for tracking the **decision count** for budget purposes; one resolved
 interview question or one accepted recommendation = one decision.
+
+### 4.5. Plan panel — multi-perspective design input (augments the interview)
+
+Before synthesizing, compose a **plan panel** that widens and
+pressure-tests the strawman with multiple design perspectives. This
+**augments — it does not replace** — the solo grill-me interview: the
+panel's contributions feed the step 5 synthesis as design input, and the
+human (or, in auto-mode, the interview loop) still owns every decision.
+The interview tree remains the source of truth for what the plan commits
+to.
+
+- Resolve the **plan roster** via
+  `Bash("guild derive-panel --phase=plan")` — the phase-aware participate
+  layer reads `axes.toml`'s plan-phase domains and emits the `plan-*`
+  candidate set. While the registry mirror lags (no `plan-*` agents
+  registered yet), fall back to `Glob(".claude/agents/plan-*.md")`.
+  derive-panel answers who *may* participate; engineers self-recuse
+  off-topic at runtime as the second gate.
+- **Bootstrapping skip:** if no `plan-*` agents are registered (the
+  `Glob(".claude/agents/plan-*.md")` fallback is empty and derive-panel's
+  roster cannot be spawned), skip the plan panel with a one-line note
+  ("no plan engineers registered — synthesizing from the interview
+  alone") and proceed to step 5. Do not invoke `/guild-plan` with an
+  empty roster.
+- Compose a plan artifact path:
+  `projects/<slug>/plans/strawman-panel.md`.
+- Invoke `/guild-plan` via the `Skill` tool with
+  `engineers=<resolved roster>`, `brief=<the strawman + the resolved
+  interview tree so far>`, `plan=<path>`. No event is emitted here — like
+  the interview, the design panel is conversational at this granularity;
+  the evaluator pass at step 6 is where panel events fire.
+- **Convergence budget:** the plan panel runs a **single composition
+  round** feeding synthesis — it is not an interview loop. It shares the
+  interview's two-budget (per-decision rounds × per-session decisions): a
+  panel round counts as one decision-round, so the panel cannot blow the
+  interview budget. Engineer-raised follow-up questions, if any, fold
+  back into the step 4 interview one at a time rather than spawning
+  further panel rounds here.
 
 ### 5. Propose the slug + synthesize PLAN.md + INTERVIEW.md
 
