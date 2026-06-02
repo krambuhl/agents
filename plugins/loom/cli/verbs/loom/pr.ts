@@ -141,6 +141,7 @@ const OPEN_OPTIONS = {
   'body-file': { type: 'string' as const },
   branch: { type: 'string' as const },
   base: { type: 'string' as const },
+  draft: { type: 'boolean' as const },
 };
 
 export function prOpen(rest: string[], ctx: CliContext): DispatchResult {
@@ -174,6 +175,12 @@ export function prOpen(rest: string[], ctx: CliContext): DispatchResult {
   // preserving the unstacked single-PR behavior.
   if (values.base !== undefined) {
     ghArgs.push('--base', values.base);
+  }
+  // Forward --draft so the loop's release-boundary / escape-hatch paths can
+  // open a draft PR (gh's own `--draft` mechanism). Omitted → no flag, so the
+  // default open stays a ready PR exactly as before.
+  if (values.draft === true) {
+    ghArgs.push('--draft');
   }
   let stdout: string;
   try {
