@@ -5,7 +5,7 @@ schema_version = 1
 title = "Orchestrator Guild Rpi Alignment"
 slug = "2026-06-01-orchestrator-guild-rpi-alignment"
 started = "2026-06-01"
-status = "active"
+status = "archived"
 strategy = "interactive"
 
 [config]
@@ -48,7 +48,7 @@ branch = "ev-agent.orchestrator-guild-rpi-alignment.fixer-delegation"
 [[phases]]
 number = 6
 name = "Cleanup + runtime gate (close the loop)"
-status = "in-progress"
+status = "completed"
 branch = "ev-agent.orchestrator-guild-rpi-alignment.cleanup"
 
 [[events]]
@@ -155,6 +155,21 @@ detail = { phase = 6, name = "Cleanup + runtime gate (close the loop)" }
 at = "2026-06-02T02:10:40.434Z"
 event = "checkin-created"
 detail = { number = "01", branch = "ev-agent.orchestrator-guild-rpi-alignment.cleanup" }
+
+[[events]]
+at = "2026-06-02T05:23:12.069Z"
+event = "phase-completed"
+detail = { phase = 6 }
+
+[[events]]
+at = "2026-06-02T05:33:11.706Z"
+event = "retro-written"
+detail = { type = "project" }
+
+[[events]]
+at = "2026-06-02T05:33:20.466Z"
+event = "archived"
+detail = { destination = "/Users/krambuhl/Sites/agents-nebula/projects/archive/2026-06-01-orchestrator-guild-rpi-alignment" }
 
 [[checkins]]
 schema_version = 1
