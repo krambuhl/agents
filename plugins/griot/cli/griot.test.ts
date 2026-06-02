@@ -12,6 +12,7 @@ import {
   parseInvocation,
 } from './griot.ts';
 import type { GriotCliContext } from './griot.ts';
+import { GRIOT_VERBS } from './verbs/griot/index.ts';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const GRIOT_ENTRY = join(__dirname, 'griot.ts');
@@ -60,6 +61,17 @@ test('parseInvocation: leading flag → unknown', () => {
     kind: 'unknown',
     verb: '--unknown-flag',
   });
+});
+
+// Registry parity: VERBS (the user-facing surface that gatekeeps
+// dispatch) and GRIOT_VERBS (the handler map) must list the exact same
+// verbs. A verb in GRIOT_VERBS but missing from VERBS is unreachable —
+// parseInvocation rejects it as unknown before dispatch consults the
+// handler. A verb in VERBS but missing from GRIOT_VERBS hits the
+// not-implemented branch. Either drift is a bug; this is the guard that
+// init + doctor going unreachable should have tripped.
+test('registry parity: VERBS keys === GRIOT_VERBS keys', () => {
+  expect(Object.keys(VERBS).sort()).toEqual(Object.keys(GRIOT_VERBS).sort());
 });
 
 test('formatHelp: includes CLI name and every registered verb', () => {

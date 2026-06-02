@@ -21,6 +21,9 @@ export const VERBS: Record<string, string> = {
   use: 'Render learnings/rollup.json as LLM prose with citation contract for session injection (--as=llm, the default)',
   capture:
     'Capture a correction (from a checkin) or an evaluator finding into a session-note folder',
+  init: 'Scaffold the project-root learnings/ tree (session-notes/, nightly/); learnings are committed, not gitignored',
+  doctor:
+    'Informational health check; warns on a stray nested-cwd learnings/ alongside the project root',
   'operator-checks':
     'Helper checks (verify-rubric | log-intervention) for griot scripts; reads JSON from stdin',
   'mediate-panel':
