@@ -36,13 +36,14 @@ branch = "ev-agent.orchestrator-guild-rpi-alignment.plan-panel"
 [[phases]]
 number = 4
 name = "implementer-* delegation seam (both ev-loops)"
-status = "in-progress"
+status = "completed"
 branch = "ev-agent.orchestrator-guild-rpi-alignment.implementer-delegation"
 
 [[phases]]
 number = 5
 name = "fixer-* delegation seam (both ev-loops)"
-status = "not-started"
+status = "in-progress"
+branch = "ev-agent.orchestrator-guild-rpi-alignment.fixer-delegation"
 
 [[phases]]
 number = 6
@@ -124,6 +125,21 @@ at = "2026-06-02T01:29:03.485Z"
 event = "checkin-created"
 detail = { number = "01", branch = "ev-agent.orchestrator-guild-rpi-alignment.implementer-delegation" }
 
+[[events]]
+at = "2026-06-02T01:48:11.240Z"
+event = "phase-completed"
+detail = { phase = 4 }
+
+[[events]]
+at = "2026-06-02T01:48:11.315Z"
+event = "phase-started"
+detail = { phase = 5, name = "fixer-* delegation seam (both ev-loops)" }
+
+[[events]]
+at = "2026-06-02T01:57:33.280Z"
+event = "checkin-created"
+detail = { number = "01", branch = "ev-agent.orchestrator-guild-rpi-alignment.fixer-delegation" }
+
 [[checkins]]
 schema_version = 1
 number = "01"
@@ -193,6 +209,20 @@ scope = ["plugins/ev/skills/ev-loop-interactive/SKILL.md", "plugins/ev/skills/ev
 changes_since_previous = "First (and only) unit of Phase 4 — the implementer delegation seam across both ev-loops. Branch cut from main after Phase 3 merged (#202); this commit also reconciles the manifest (Phase 3 -> completed, Phase 4 -> in-progress). Phase 5 (fixer delegation) depends on this unit's switch mechanism."
 verdict = { result = "approved", reasons = ["Panel of evaluator-contract-fit + evaluator-test-unit both returned approved, no blocking findings", "npm test 1336 passed (was 1330; +6 delegation-switch cases); V11 bare-command convention green; npm run check ok", "Both loops carry the same switch + mechanism with defaults differing per loop (interactive OFF, confidence ON); the evaluator checkpoint is asserted to fire regardless of switch state"] }
 notes_for_pr = ["Both ev-loops gain a per-unit implementer-delegation switch: ON composes implementer-<domain> via guild derive-panel --phase=implementer and delegates the write through /guild-spawn (not a direct Agent call, though Agent is in allowed-tools — the guild-coordination seam is deliberate). interactive defaults OFF (keystroke-level pairing intact, opt a unit in); confidence defaults ON (opt a tier/unit out).", "Delegation changes WHO writes, never WHETHER the unit is gated: the evaluator checkpoint fires regardless of switch state.", "Switch surface is skill-body-only per operator decision: per-loop default + per-unit operator opt-in recorded in the checkin's existing notes_for_pr. No loom checkin-schema field, no PLAN.md-parse change.", "Both 'Specialist gate-then-review' sections retract the 'no control-flow change' claim for the write side (it's real wiring now); the remaining prose is slated for deletion in Phase 6.", "While no implementer-* agents are registered (registry-mirror lag), opting in falls back to inline drive with a note. The live-spawn proof of implementer-* is the Phase 6 runtime gate.", "signal: phase-boundary: single-unit Phase 4, last unit (single signal; no revise offered). Phase 4 code-complete pending PR merge; unblocks Phase 5 (fixer delegation, shares this switch shape)."]
+
+[[checkins]]
+schema_version = 1
+number = "01"
+created = "2026-06-01"
+phase = { number = 5, name = "fixer-* delegation seam (both ev-loops)" }
+branch = "ev-agent.orchestrator-guild-rpi-alignment.fixer-delegation"
+unit = "1"
+contract = { goal = "Mirror the Phase 4 implementer-delegation switch onto the FIX/iterate step of both ev-loops: when ON, hand the flagged-finding packet to fixer-<domain> (composed via derive-panel --phase=fixer) for the minimal pragmatist remedy, then re-invoke /guild-validate. ev-loop-interactive defaults OFF (inline fix; opt in); ev-loop-confidence defaults ON (opt out). The re-evaluation gate fires regardless.", acceptance_criteria = ["ev-loop-interactive step 4 Flagged branch: fix-delegation switch documented, default OFF; on opt-in compose fixer-<domain> via Bash(guild derive-panel --phase=fixer), hand the flagged-finding packet via /guild-spawn for the minimal remedy, then re-invoke /guild-validate (NOT a direct Agent call)", "ev-loop-confidence step 4 If-flagged branch: same switch, default ON; opt-out to inline fix", "The re-evaluation (re-invoke /guild-validate, up to 2 retries) fires regardless of switch state", "The delegated remedy is the minimal load-bearing fix (fixer default_personality = pragmatist), not a rewrite", "Switch state recorded in notes_for_pr; no new schema field (consistent with Phase 4)", "Bootstrapping: no fixer-* agents registered -> inline-fix fallback with a note", "Skill-body tests for the switch + per-loop defaults; inline-fix path still documented when off; bare-command (V11); npm test + check green"], rules_applied = ["Naming/consistency: Phase 5 mirrors Phase 4's switch shape exactly (same surface, mechanism, per-loop defaults) applied to the FIX step — one delegation concept, two write phases", "High-and-low abstractions: fix-delegation is an OPTION; interactive keeps inline fix (the escape hatch) as default", "Semantic over literal: the delegated remedy is the minimal load-bearing fix (fixer = pragmatist), honoring the axes.toml posture", "Incrementalism: skill-body-only, no loom schema / PLAN.md-parse change; reuses the Phase 1 derive-panel --phase=fixer surface"], disqualifiers = ["forcing fix-delegation (interactive must keep inline fix as default)", "skipping the re-evaluation when delegating the fix", "a direct Agent call for the delegated remedy instead of /guild-spawn", "touching the loom checkin schema or PLAN.md parse; bin/guild or node-path in the new invocations; editing commons/"], inputs = ["plugins/ev/skills/ev-loop-interactive/SKILL.md:401-405 (Iterate or commit)", "plugins/ev/skills/ev-loop-confidence/SKILL.md:395-403 (Iterate or commit)", "derive-panel --phase=fixer (shipped Phase 1)", "plugins/guild/modes/axes.toml:118 (fixer default_personality = pragmatist)", "the Phase 4 implementer-delegation switch (the shape mirrored)"] }
+execution = { actions = ["ev-loop-interactive step 4 Flagged branch: added 'Fixer delegation (per-unit switch, default OFF)' — inline fix default; operator opts a unit in; on opt-in compose fixer-<domain> via Bash(guild derive-panel --phase=fixer), hand the flagged-finding packet (blocking_findings + remedies) via /guild-spawn for the minimal pragmatist remedy, re-invoke /guild-validate; not a direct Agent call; re-gates regardless; record in notes_for_pr; registry-lag inline fallback", "ev-loop-confidence step 4 If-flagged branch: added the symmetric paragraph, default ON (operator opts a tier/unit out), same mechanism", "Extended plugins/ev/skills/ev-loop-delegation.test.ts with a 'fixer-delegation switch (Phase 5)' describe (5 cases) alongside the existing implementer (Phase 4) describe", "Tightened the inline-fix-fallback assertion from /inline fix/i to /back to inline fix/i (anchoring to the opt-out / registry-lag clauses) per the evaluator's advisory and the test-assertions-run-loose lesson"], files_touched = ["plugins/ev/skills/ev-loop-interactive/SKILL.md", "plugins/ev/skills/ev-loop-confidence/SKILL.md", "plugins/ev/skills/ev-loop-delegation.test.ts"], corrections = ["Pre-emptively tightened the /inline fix/i presence-anywhere assertion to /back to inline fix/i after evaluator-test-unit flagged it as advisory (loose) — anchored rather than left presence-anywhere"] }
+scope = ["plugins/ev/skills/ev-loop-interactive/SKILL.md", "plugins/ev/skills/ev-loop-confidence/SKILL.md", "plugins/ev/skills/ev-loop-delegation.test.ts"]
+changes_since_previous = "First (and only) unit of Phase 5 — the fixer delegation seam, mirroring Phase 4's switch onto the FIX step. Branch cut from main after Phase 4 merged (#203); this commit also reconciles the manifest (Phase 4 -> completed, Phase 5 -> in-progress). With Phase 5 landed, all source phases (1-5) are done; Phase 6 (cleanup + runtime gate) is the close-out."
+verdict = { result = "approved", reasons = ["Panel of evaluator-contract-fit + evaluator-test-unit both returned approved, no blocking findings (one test-unit advisory on a loose assertion, addressed pre-merge by anchoring it)", "npm test 1341 passed (was 1336; +5 fixer cases); delegation suite 11 passed (6 implementer + 5 fixer); V11 35 passed; npm run check ok", "Phase 5 mirrors Phase 4's switch exactly on the FIX step; the re-evaluation gate is asserted to fire regardless of switch state"] }
+notes_for_pr = ["Both ev-loops gain a per-unit fixer-delegation switch on the FIX/iterate step, mirroring the Phase 4 implementer switch: ON composes fixer-<domain> via guild derive-panel --phase=fixer and hands the flagged-finding packet through /guild-spawn for the minimal pragmatist remedy (not a direct Agent call), then re-invokes /guild-validate. interactive defaults OFF (inline fix; opt in); confidence defaults ON (opt out).", "Delegation changes WHO fixes, never WHETHER the fix is re-gated: the re-evaluation (re-invoke /guild-validate, up to 2 retries) fires regardless of switch state.", "The remedy is the minimal load-bearing fix (fixer default_personality = pragmatist, axes.toml), not a rewrite. Skill-body-only switch (per-loop default + operator opt-in in notes_for_pr); no schema/parse change.", "While no fixer-* agents are registered (registry-mirror lag), the switch falls back to inline fix with a note. The live-spawn proof of fixer-* is the Phase 6 runtime gate.", "test note: pre-emptively anchored the inline-fix-fallback assertion (/inline fix/i -> /back to inline fix/i) per evaluator-test-unit's advisory + the recurring loose-assertion lesson.", "signal: phase-boundary: single-unit Phase 5, last unit (single signal; no revise offered). With Phase 5 code-complete (pending PR merge), all source phases 1-5 are done; Phase 6 closes the loop (prose deletion + the external marketplace-mirror refresh + live-spawn smoke)."]
 
 [[revisions]]
 timestamp = "2026-06-01T22:19:26.629Z"

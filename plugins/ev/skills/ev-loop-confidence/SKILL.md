@@ -398,6 +398,20 @@ For each unit inside a tier:
      the panel's view; the resolution checkin documents what changed).
      Re-invoke `/guild-validate`. Maximum 2 re-iterations per unit —
      on the third flag, stop and escalate to the user.
+
+     **Fixer delegation (per-unit switch, default ON).** This loop
+     defaults to delegating the remedy: compose `fixer-<domain>` via
+     `Bash("guild derive-panel --phase=fixer")`, hand the flagged-finding
+     packet to it through `/guild-spawn` for the **minimal** remedy
+     (`fixer`'s `default_personality` is `pragmatist`), then re-invoke
+     `/guild-validate`. Route through `/guild-spawn`, **not** a direct
+     `Agent` call. The operator can opt a tier/unit **out** back to
+     inline fix. The re-evaluation gates regardless — delegation changes
+     *who* fixes, not *whether* it's re-gated. Record the switch state in
+     the resolution checkin's `notes_for_pr`. While no `fixer-*` agents
+     are registered (the registry-mirror lag), fall back to inline fix
+     with a one-line note; the live-spawn proof is the Phase 6 runtime
+     gate.
    - If approved: write a finalization checkin with Execution / Verdict
      `approved` / Notes-for-PR populated. Check off the inventory
      items.
