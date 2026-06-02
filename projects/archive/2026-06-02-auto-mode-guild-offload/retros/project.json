@@ -1,0 +1,82 @@
+{
+  "schema_version": 1,
+  "type": "project",
+  "created": "2026-06-02T18:20:00Z",
+  "findings": [
+    {
+      "category": "kept-well",
+      "description": "Convention-as-single-source decomposition: Phase 1 defined the posture as a doc convention and Phases 2-4 cited it (cite-don't-restate), keeping the loop bodies thin. Cross-deliverable forward-references resolved cleanly.",
+      "evidence": "PR #211 (convention); harness-mode forward-ref resolved in P3-D3 checkin 08; escape-hatch forward-ref resolved across P3-D2/D3."
+    },
+    {
+      "category": "kept-well",
+      "description": "The merge-gated park rhythm (open PR -> stop -> human merges -> resume) produced a clean reviewable PR per phase; gt sync --force reconciled each post-merge rebase.",
+      "evidence": "PRs #210-#214; one #210 restructure aside, no stack tangles."
+    },
+    {
+      "category": "kept-well",
+      "description": "All evaluator panels approved first-pass at high confidence with zero flagged-iterate cycles -- the unit contracts were sharp enough the panel never had to send work back.",
+      "evidence": "14 evaluator-spawned events across 10 checkins; all VERDICT: approved."
+    },
+    {
+      "category": "kept-well",
+      "description": "Dogfooding: the project ran through /ev-run -> /ev-loop-interactive, building the open-PR-and-stop release boundary while using it; Phase 3 closed itself by the exact rule it shipped.",
+      "evidence": "Phase 3 (#213) close used the P3-D1 open-PR-and-stop semantics."
+    },
+    {
+      "category": "improvement",
+      "description": "The phase-completion contradiction (--status=completed at phase close vs the router's merge-gated model) surfaced in Phase 1 but was only fixed in Phase 3 -- and ev-loop-confidence's Step 4 carried the identical bug, found only on arrival. A Phase-0 audit of both loops' phase-close steps would have caught it upfront.",
+      "evidence": "Worked around manually through phases 1-2; fixed in checkin 06 (P3-D1, interactive) and checkin 10 (P4-D2, confidence)."
+    },
+    {
+      "category": "improvement",
+      "description": "Empty plan-* roster meant every load-bearing mechanism (fork->guild-plan, --phases=all auto-advance, escape hatch) is logic-traced only, never executed live -- the project ships its core behaviors unproven at runtime.",
+      "evidence": "PLAN Risk R4 realized; dry-run-as-logic-trace notes in checkins 05, 07, 08, 09, 10."
+    },
+    {
+      "category": "improvement",
+      "description": "Branch-protected main plus loom scaffolding committed to unpushed local main forced a mid-flight restructure -- the scaffolding had to be carved into its own stacked PR. Surfaced at first PR-open, not at project start.",
+      "evidence": "PR #210 (scaffolding) carved from local-main commits; revised from a push-main plan when branch protection rejected it."
+    },
+    {
+      "category": "improvement",
+      "description": "derive-panel's --files=- stdin form under-returns to baseline contract-fit, silently dropping the per-file panel mappings; nearly shipped a thin panel on a code+test unit until caught against PANEL-COMPOSITION.md.",
+      "evidence": "Checkin 05 (P2-D2) notes; explicit --files=<comma> gave the correct contract-fit+test-unit+naming panel."
+    },
+    {
+      "category": "process-change",
+      "description": "\"Completion is merge-gated, never phase-close-gated\" should be a documented substrate invariant -- both ev loops independently carried a --status=completed-at-close bug; stating the rule once prevents a third consumer reintroducing it.",
+      "evidence": "Fixed in checkins 06 and 10; memory note agents-nebula-phase-completion-merge-gated-vs-step3."
+    },
+    {
+      "category": "process-change",
+      "description": "Convention-as-single-source + cite-don't-restate is a reusable decomposition for any 'wire a posture/contract into N consumers' project: Phase 1 defines the convention, later phases cite it. Worth codifying as a named decomposition pattern.",
+      "evidence": "This project's 4-phase shape; both ev loops cite AGENT-CONVENTIONS.md § Guild-offload posture and § Both loops."
+    },
+    {
+      "category": "process-change",
+      "description": "derive-panel should fail loud rather than silently baseline -- both the positional-arg form and the --files=- stdin form under-return to contract-fit-only, which reads as 'the panel is thin' instead of 'you called it wrong'.",
+      "evidence": "Memory note agents-nebula-derive-panel-under-returns-coverage (updated this project)."
+    },
+    {
+      "category": "follow-up",
+      "description": "Phase 6 runtime gate: the live behavioral proofs for BOTH loops -- fork->guild-plan routing, --phases=all multi-phase draft auto-advance, forced-exhaust escape hatch -- remain unrun, blocked on the empty plan-* roster and the cost/outward-ness of real autonomous runs.",
+      "evidence": "All logic-traced in checkins 05-10; PLAN Risk R4."
+    },
+    {
+      "category": "follow-up",
+      "description": "Fix derive-panel's --files=- stdin reading so it applies the per-file mappings (or errors), so future loops can pipe git diff --name-only safely.",
+      "evidence": "Worked around with explicit --files=<comma> this project."
+    },
+    {
+      "category": "follow-up",
+      "description": "loom-plan manifest scaffold drift: the project's manifest shipped a single placeholder Phase 1 while PLAN.md parsed to 4 phases, forcing a router-time backfill at dispatch. The scaffolder should backfill phases from the parsed plan.",
+      "evidence": "Reconciled at /ev-run dispatch (phase update + manual rename); memory note agents-nebula-loom-plan-scaffolds-unparseable-phase-shapes."
+    },
+    {
+      "category": "follow-up",
+      "description": "The harness-mode probe ships inert (returns 'unknown'); flipping it to a live trigger is an Open Question, blocked on the confirmed-absent harness permission-mode signal (issue #6227).",
+      "evidence": "Phase 1 D3 (checkin 03); RESEARCH.md A; memory note agents-nebula-harness-permission-mode-not-exposed."
+    }
+  ]
+}

@@ -5,7 +5,7 @@ schema_version = 1
 title = "Auto Mode Guild Offload"
 slug = "2026-06-02-auto-mode-guild-offload"
 started = "2026-06-02"
-status = "active"
+status = "archived"
 strategy = "interactive"
 
 [config]
@@ -36,7 +36,7 @@ branch = "ev-agent.auto-mode-guild-offload.release-boundary"
 [[phases]]
 number = 4
 name = "ev-loop-confidence: adopt the posture"
-status = "in-progress"
+status = "completed"
 branch = "ev-agent.auto-mode-guild-offload.confidence-adopt"
 
 [[events]]
@@ -228,6 +228,21 @@ detail = { number = "10", branch = "ev-agent.auto-mode-guild-offload.confidence-
 at = "2026-06-02T18:06:24.572Z"
 event = "session-saved"
 detail = { filename = "2026-06-02-d.json" }
+
+[[events]]
+at = "2026-06-02T18:16:52.963Z"
+event = "phase-completed"
+detail = { phase = 4 }
+
+[[events]]
+at = "2026-06-02T18:46:25.355Z"
+event = "retro-written"
+detail = { type = "project" }
+
+[[events]]
+at = "2026-06-02T18:46:31.746Z"
+event = "archived"
+detail = { destination = "/Users/krambuhl/Sites/agents-nebula/projects/archive/2026-06-02-auto-mode-guild-offload" }
 
 [[checkins]]
 schema_version = 1
