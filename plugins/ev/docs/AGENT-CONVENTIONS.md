@@ -397,8 +397,8 @@ resolve from a documented **autonomous default**.
 |---|---|---|---|
 | Unit-contract negotiation | `evaluator-contract-fit` audits the draft contract | convergent | covered |
 | ADR-emit accept / decline | `evaluator-contract-fit` reads the marked entry against ADR-0001 | convergent | covered |
-| Deliverable decomposition confirm | `guild-plan` panel on the decomposition | divergent | new |
-| Free-mode ordering pick | `guild-plan` panel on the next-unit choice | divergent | new |
+| Deliverable decomposition confirm | auto-confirm in the loop (no panel) | autonomous | new |
+| Free-mode ordering pick | auto-pick, sequential default (no panel) | autonomous | new |
 | Mid-unit execution fork | `guild-plan` round on the fork (see § Fork-to-panel convergence) | divergent | new |
 | ADR title quality | synthesized from the marked entry, no panel | autonomous | partial |
 | Scope-shift offer | default flips decline → accept on two-signal concurrence | autonomous | covered |
@@ -409,6 +409,18 @@ resolve from a documented **autonomous default**.
 today; "new" rows are the gap this posture closes. Auto-mode
 changes *who decides* (a panel vs the human), never *who writes* —
 the delegation defaults are untouched.
+
+Note the split between the two divergent-looking decomposition /
+ordering gates and a genuine execution fork: decomposition and
+ordering resolve **autonomously in the loop** (auto-confirm /
+auto-pick), NOT via a `guild-plan` panel. They are low-risk,
+reversible framing decisions, and routing them to a panel would make
+an armed run unstartable whenever the `plan-*` roster is empty (the
+fork-to-panel rule below escape-hatches a panel that can't be
+raised — correct for a real fork, fatal for a first-gate
+formality). A genuine mid-unit execution fork — where the loop hits
+a substantive decision it cannot resolve from the contract — is the
+only touchpoint that routes to a panel.
 
 ### Fork-to-panel convergence rule
 

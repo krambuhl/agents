@@ -96,6 +96,17 @@ deliverables at runtime (see Step 1). The loop owns ordering:
 When the decomposition is ambiguous between the two, default to
 **free** and ask.
 
+**Under the armed posture** (`docs/AGENT-CONVENTIONS.md`
+§ Guild-offload posture, armed by `--mode=auto`): ordering is a
+low-risk gate that **auto-picks** rather than asking. The loop runs
+deliverables in **sequential order** (the deterministic default) with
+no `AskUserQuestion` — free-mode's "ask the user to pick" is replaced
+by "take the next un-started deliverable in decomposition order." This
+is an autonomous-default resolution, not a panel: ordering does not
+route to `guild-plan` (see the routing table in the convention). The
+human-paired behavior above is unchanged when the posture is not
+armed.
+
 ## Phase-level process
 
 ### Plan
@@ -199,6 +210,19 @@ the single source for the phase's structure.
 Show the decomposed list to the user with status markers (done,
 in-progress, not started) pulled from existing checkins on this branch,
 and confirm the decomposition before Step 2.
+
+**Under the armed posture** (`docs/AGENT-CONVENTIONS.md`
+§ Guild-offload posture, armed by `--mode=auto`): decomposition is a
+low-risk gate that **auto-confirms**. The loop decomposes as above and
+proceeds directly to Step 2 with **no `AskUserQuestion`** — it still
+records the decomposed list (in the dispatch report and the first
+unit's checkin `changes_since_previous`) so the decomposition is
+auditable, but it does not pause for human confirmation. This is an
+autonomous-default resolution, not a `guild-plan` panel (see the
+routing table in the convention): a low-risk gate must not escape-hatch
+on an empty `plan-*` roster the way a genuine execution fork does
+(Step 2.2). The human-paired confirmation above is unchanged when the
+posture is not armed.
 
 ### Step 2. Unit loop
 
@@ -676,13 +700,16 @@ For each deliverable (picked per the ordering rule):
      captured manually via the `/loom-adr` skill rather than
      swept up by a future unit's hook.
 
-     **Auto-mode**: in `--mode=auto`, the per-match
+     **Auto-mode** (the armed posture — `docs/AGENT-CONVENTIONS.md`
+     § Guild-offload posture): in `--mode=auto`, the per-match
      `AskUserQuestion` is replaced by `evaluator-contract-fit`
      reading the marked entry against ADR-0001's conventions —
      `approved` is treated as accept, `flagged` as decline. The
-     title prompt has no auto-mode equivalent — auto-mode
-     synthesizes a title from the first ~7 words of the marked
-     entry and proceeds. Events fire identically.
+     title prompt has no auto-mode equivalent — under the armed
+     posture the title is **generated**, not prompted: auto-mode
+     synthesizes it from the first ~7 words of the marked entry and
+     proceeds. No `AskUserQuestion` fires on either the accept/decline
+     or the title. Events fire identically.
 
 6. **Phase update.** After a checkin lands, the checkin-created event
    auto-fires from § Checkin write. Then update phase state per
@@ -782,6 +809,20 @@ For "address feedback on #N":
 - **Evaluator always runs.** Same as the confidence loop — never
   self-approve. Evaluator budget is 3 runs per unit (initial + 2
   retries); on the third flag escalate to the user.
+- **No `AskUserQuestion` under the armed posture.** When the
+  guild-offload posture is armed (`--mode=auto` — see
+  `docs/AGENT-CONVENTIONS.md` § Guild-offload posture), the loop makes
+  **no `AskUserQuestion` calls** mid-phase. Every touchpoint that would
+  ask the human is either resolved autonomously (decomposition
+  auto-confirms, ordering auto-picks sequential, ADR title is
+  generated, contract negotiation and ADR accept/decline go to
+  `evaluator-contract-fit`) or routed to a `guild-plan` panel (a
+  genuine execution fork — Step 2.2) or escaped to the hatch (no panel
+  raiseable, or a budget/cap exceeded). This is an invariant, not a
+  preference: the harness would not silence an `AskUserQuestion` even
+  in its own auto mode (RESEARCH § A), so a stray call would hang an
+  unattended run. The human-paired (non-armed) default keeps every
+  touchpoint above.
 - **Scope discipline.** One deliverable at a time in a given checkin.
 - **Record corrections in the checkin.** If the user redirects a unit
   mid-flight, overrides a decision, or the evaluator flags something
