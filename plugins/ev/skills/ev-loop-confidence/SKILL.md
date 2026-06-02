@@ -495,30 +495,6 @@ auto-derivation:
   evaluator authored during this session, drop it from `agents=`
   manually and note the override in the checkin's Notes section.
 
-### Specialist-evaluator gate-then-review (Phase 4)
-
-When a tier's panel includes a **specialist evaluator** paired with
-a write-capable posture (e.g. `evaluator-css-architecture` paired
-with `implementer-css-architecture` / `fixer-css-architecture`), the
-specialist runs as part of the
-parallel panel with **elevated precedence** per PANEL-COMPOSITION.
-The specialist *evaluator* (review) side needs no control-flow change.
-The *write* side is now real wiring as of this plan's Phase 4: the
-Execute step's implementer-delegation switch (§ Step 2, "Implementer
-delegation", default ON for this loop) composes `implementer-<domain>`
-via `derive-panel --phase=implementer` and delegates the transform
-through `/guild-spawn`. This section's remaining prose is superseded by
-that wiring and is slated for deletion in Phase 6.
-
-**Fail-fast on specialist rejection**: when the aggregated tier
-verdict shows a specialist's finding in `blocking_findings`, treat
-that as a strong fail-fast signal — surface the specialist's
-remedy more prominently in the tier retro and consider whether the
-tier's overall approach needs reshaping. The loop's verdict-
-handling already does the right thing structurally (any blocking
-finding → flagged); this section documents the *why* for tier
-retros and future per-specialist tier budgets.
-
 ### Should-checkpoint policy
 
 Checkpoint (refresh the PR per § Compose PR) when any of the following

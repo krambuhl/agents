@@ -3,14 +3,19 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, test } from 'vitest';
 
-// Phase 4 of orchestrator-guild-rpi-alignment: both ev-loops gain a per-unit
-// implementer-delegation switch. When on, the Execute step composes
-// implementer-<domain> via `derive-panel --phase=implementer` and delegates
-// the write through /guild-spawn (not a direct Agent call). The defaults
-// differ by loop — interactive OFF (keystroke-level pairing preserved),
-// confidence ON — and the evaluator checkpoint gates regardless of switch
-// state. These assertions lock that wiring against both SKILL.md bodies.
-// \s+ / .? tolerate the SKILL.md soft line-wrapping mid-phrase.
+// orchestrator-guild-rpi-alignment delegation seam, across both ev-loops:
+//   - Phase 4: the Execute step gains a per-unit implementer-delegation
+//     switch (compose implementer-<domain> via `derive-panel
+//     --phase=implementer`, delegate the write through /guild-spawn, not a
+//     direct Agent call). Defaults differ by loop — interactive OFF
+//     (keystroke-level pairing preserved), confidence ON.
+//   - Phase 5: the FIX step gains the mirror fixer-delegation switch
+//     (`derive-panel --phase=fixer`, minimal pragmatist remedy, re-gated).
+//   - Phase 6: the obsolete "Specialist gate-then-review" section is
+//     deleted; the cleanup-lock below asserts it stays gone.
+// In every case the evaluator checkpoint gates regardless of switch state.
+// These assertions lock that wiring against both SKILL.md bodies; \s+ / .?
+// tolerate the SKILL.md soft line-wrapping mid-phrase.
 
 const SKILLS_DIR = dirname(fileURLToPath(import.meta.url));
 const INTERACTIVE = readFileSync(
@@ -51,9 +56,13 @@ describe('ev-loop implementer-delegation switch (Phase 4)', () => {
     }
   });
 
-  test('both Specialist sections retract "no control-flow change" for the write side', () => {
+  test('the obsolete "Specialist gate-then-review" section is deleted (Phase 6 cleanup)', () => {
+    // The write-side wiring is real in the Execute step (Phases 4-5), so the
+    // Phase-4 placeholder section — and its "no control-flow change" claim —
+    // was removed in Phase 6. Lock that it stays gone.
     for (const body of [INTERACTIVE, CONFIDENCE]) {
-      expect(body).toMatch(/real wiring as of this plan.s\s+Phase 4/i);
+      expect(body).not.toMatch(/Specialist-evaluator gate-then-review/);
+      expect(body).not.toMatch(/no control-flow change/i);
     }
   });
 });
