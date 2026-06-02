@@ -1,0 +1,57 @@
+{
+  "schema_version": 1,
+  "type": "project",
+  "created": "2026-06-02T05:33:11Z",
+  "findings": [
+    {
+      "category": "kept-well",
+      "description": "Phase 1 landed small because the composition machinery already existed (PHASE_PREFIX, nameFor, parseToml, defaultAxesPath) — reuse over reinvention kept every phase to a skill-body or small-CLI change.",
+      "evidence": "#200; phase-roster.ts reuses recipe.ts and phase-prefix.ts"
+    },
+    {
+      "category": "kept-well",
+      "description": "Contract-before-execution plus a per-phase antagonist panel held across all 6 phases with zero blocking findings — every unit passed first try, with only a few advisories addressed pre-merge.",
+      "evidence": "checkins 01-02 across all six branches; 1341 tests green at close"
+    },
+    {
+      "category": "kept-well",
+      "description": "After the Phase 1 stacked-merge burn, landing each subsequent phase as its own PR off main made the 6-phase effort clean and revertable with no further stranding.",
+      "evidence": "#201-#205 each based directly on main"
+    },
+    {
+      "category": "improvement",
+      "description": "The plan was not tooling-trackable as authored: letter-suffixed phases (2a-2d), the wrong dependency-line label, and a placeholder manifest meant the router had to renumber and reformat before any phase could dispatch.",
+      "evidence": "#198 plan-renumber; parse-plan initially saw only phases 1 and 3"
+    },
+    {
+      "category": "improvement",
+      "description": "The Phase 1 stacked PR merged into the wrong base (the parent branch, not main) and stranded the code off main, requiring a rescue branch and a fresh PR.",
+      "evidence": "#199 merged into plan-renumber; recovered via rebase and #200"
+    },
+    {
+      "category": "improvement",
+      "description": "Test-assertion hygiene against soft-wrapped SKILL.md prose recurred all project: literal-space regexes miss wrapped phrases and presence-anywhere matches drift. All 4 session corrections were assertion-anchoring fixes.",
+      "evidence": "4 corrections: soft-wrap regex fix, inline-fix anchor, derive-panel-error start-anchor, header staleness"
+    },
+    {
+      "category": "process-change",
+      "description": "loom-plan or parse-plan should reject or warn on unparseable phase shapes — letter-suffixed ids and the wrong dependency-line label — at authoring time; the drift was silent until the router caught it after the plan had already merged.",
+      "evidence": "#198; #197 merged the untrackable plan"
+    },
+    {
+      "category": "process-change",
+      "description": "Skill-body content tests are now a recurring shape (loom-research-roster, loom-plan-panel, ev-loop-delegation this project) — whitespace-tolerant regex for soft-wrapped phrases and anchoring to distinctive strings should be the default convention.",
+      "evidence": "3 skill-body test files added; captured in the agents-nebula test-assertions memory"
+    },
+    {
+      "category": "follow-up",
+      "description": "Live-spawn smoke — the whole-effort runtime acceptance gate for research/plan/implementer/fixer agents — is deferred, blocked on an external marketplace-mirror refresh past guild-hirefest (live registry pinned at 73249bd). Source-complete, runtime-pending.",
+      "evidence": "LIVE-SPAWN-SMOKE.md; #205"
+    },
+    {
+      "category": "follow-up",
+      "description": "Merged-but-orphaned local branches (.plan, plan-renumber, and the six phase branches) want a gt sync cleanup.",
+      "evidence": "gt log shows merged branches needing prune"
+    }
+  ]
+}
