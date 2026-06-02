@@ -69,13 +69,44 @@ empty — downstream callers depend on the shape:
   "sections": [
     { "engineer": "<name>", "section": "<verbatim engineer body>" }
   ],
-  "contradictions": []
+  "contradictions": [],
+  "agent_signals": [
+    {
+      "agent": "<name>",
+      "confidence": "high" | "medium" | "low" | null,
+      "outcome": "gated" | "recused" | "operator-judgment",
+      "reason": "<recusal rationale or escalation reason, or null when gated>"
+    }
+  ]
 }
 ```
 
 `contradictions` is empty in v1. Cross-engineer contradiction detection
 is a future-work case — see § "Contradiction detection (v1: future-
 work)" below.
+
+`agent_signals` carries one entry **per spawned engineer** — the same
+participate-vs-recuse signal `/guild-validate` emits for evaluators,
+computed by the same shared `computeAgentSignal` (the `guild plan append`
+verb maps every engineer section through it). It makes recusal observable
+at the plan phase:
+
+- `gated` — the engineer contributed normally. This is the default,
+  including for an engineer whose section carries no marker (today's
+  plan-engineer bodies write prose without recusal/escalation lines, so
+  every signal reads `gated` until those bodies emit markers — a deferred
+  follow-up). `reason` is null.
+- `recused` — the engineer declared its domain non-applicable to the
+  brief (a section emitting `VERDICT: recused`). Not a contribution; the
+  `reason` carries the rationale from the section's `Reason(s):` marker.
+- `operator-judgment` — the engineer escalated (an `Escalation:` line or
+  `VERDICT: operator-judgment-required`). `reason` carries the escalation
+  rationale.
+
+A per-engineer `confidence` (`Confidence: high|medium|low`, `null` when
+absent) rides on every signal. As with `/guild-validate`, recusal does
+not gate the round — a recused engineer simply contributes no section;
+the signal records why.
 
 ## Process
 

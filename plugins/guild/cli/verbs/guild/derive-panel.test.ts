@@ -353,6 +353,83 @@ describe('derivePanelVerb', () => {
   });
 });
 
+// ---- Phase-parameterized composition (--phase) ----
+
+describe('derivePanelVerb --phase=reviewer (backward-compat regression lock)', () => {
+  test('--phase=reviewer is byte-for-byte identical to the bare invocation', () => {
+    const explicit = run(['--phase=reviewer', '--files=Foo.tsx,Foo.module.css']);
+    const bare = run(['--files=Foo.tsx,Foo.module.css']);
+    expect(explicit.stdout).toBe(bare.stdout);
+    expect(explicit.exitCode).toBe(bare.exitCode);
+  });
+
+  test('no --phase defaults to reviewer → evaluator-* file-driven output', () => {
+    const res = run(['--files=components/Foo.tsx']);
+    expect(res.exitCode).toBe(0);
+    expect(res.stdout).toBe(
+      'evaluator-contract-fit,evaluator-a11y,evaluator-nextjs,evaluator-react,evaluator-naming',
+    );
+  });
+
+  test('--phase=reviewer with empty files → baseline only (unchanged)', () => {
+    const res = run(['--phase=reviewer', '--files=']);
+    expect(res.exitCode).toBe(0);
+    expect(res.stdout).toBe('evaluator-contract-fit');
+  });
+
+  test('positional arg still baselines under default reviewer (documented quirk preserved)', () => {
+    const res = run(['Foo.tsx']);
+    expect(res.exitCode).toBe(0);
+    expect(res.stdout).toBe('evaluator-contract-fit');
+  });
+});
+
+describe('derivePanelVerb --phase (roster-driven phases from axes.toml)', () => {
+  test('--phase=research emits the 10 research-* domains, sorted', () => {
+    const res = run(['--phase=research']);
+    expect(res.exitCode).toBe(0);
+    expect(res.stdout).toBe(
+      'research-a11y,research-abstraction,research-composition,research-naming,research-performance,research-react,research-substrate,research-test-integration,research-test-unit,research-tokens',
+    );
+  });
+
+  test('--phase=plan emits the 10 plan-* domains', () => {
+    const res = run(['--phase=plan']);
+    expect(res.exitCode).toBe(0);
+    expect(res.stdout).toBe(
+      'plan-a11y,plan-abstraction,plan-composition,plan-naming,plan-performance,plan-react,plan-substrate,plan-test-integration,plan-test-unit,plan-tokens',
+    );
+  });
+
+  test('--phase=implementer emits the 8 implementer-* domains', () => {
+    const res = run(['--phase=implementer']);
+    expect(res.exitCode).toBe(0);
+    expect(res.stdout).toBe(
+      'implementer-a11y,implementer-css-architecture,implementer-naming,implementer-nextjs,implementer-react,implementer-test-integration,implementer-test-unit,implementer-tokens',
+    );
+  });
+
+  test('--phase=fixer emits the 8 fixer-* domains', () => {
+    const res = run(['--phase=fixer']);
+    expect(res.exitCode).toBe(0);
+    expect(res.stdout).toBe(
+      'fixer-a11y,fixer-css-architecture,fixer-naming,fixer-nextjs,fixer-react,fixer-test-integration,fixer-test-unit,fixer-tokens',
+    );
+  });
+
+  test('roster phases ignore --files= (file-independent participation)', () => {
+    const withFiles = run(['--phase=research', '--files=components/Foo.tsx']);
+    const without = run(['--phase=research']);
+    expect(withFiles.stdout).toBe(without.stdout);
+  });
+
+  test('unknown phase → structured error, non-zero exit', () => {
+    const res = run(['--phase=bogus']);
+    expect(res.exitCode).toBe(1);
+    expect(res.stderr).toMatch(/^derive-panel-error: unknown phase 'bogus'/);
+  });
+});
+
 // ---- Defensive fallback ----
 
 describe('loadSpec fallback', () => {
