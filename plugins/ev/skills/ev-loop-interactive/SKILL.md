@@ -9,7 +9,7 @@ description: >-
   a phase is exploratory, creative, or otherwise not a bulk transform.
 argument-hint: "<project-slug-or-path> <phase-number>"
 user-invocable: true
-allowed-tools: Read, Write, Edit, Bash, Agent, Skill, mcp__github__subscribe_pr_activity
+allowed-tools: Read, Write, Edit, Bash, Agent, Skill, mcp__github__subscribe_pr_activity, Bash(loom *), Bash(guild *), Bash(griot *)
 ---
 
 # /ev-loop-interactive

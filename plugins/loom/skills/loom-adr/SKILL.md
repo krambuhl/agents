@@ -13,7 +13,7 @@ description: >-
 argument-hint: "<title> [--body-file=<path>] [--status=<status>]"
 user-invocable: true
 disable-model-invocation: false
-allowed-tools: Read, Bash, Write, AskUserQuestion
+allowed-tools: Read, Bash, Write, AskUserQuestion, Bash(loom *)
 ---
 
 # /loom-adr

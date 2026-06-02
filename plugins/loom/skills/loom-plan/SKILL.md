@@ -14,7 +14,7 @@ description: >-
 argument-hint: "<topic or short description> [--mode=auto]"
 user-invocable: true
 disable-model-invocation: true
-allowed-tools: Read, Write, Bash, Skill, Agent, AskUserQuestion
+allowed-tools: Read, Write, Bash, Skill, Agent, AskUserQuestion, Bash(loom *), Bash(guild *), Bash(griot *)
 ---
 
 # /loom-plan

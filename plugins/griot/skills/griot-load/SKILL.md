@@ -9,7 +9,7 @@ description: >-
   loader. Opt-in: not auto-invoked.
 user-invocable: true
 disable-model-invocation: true
-allowed-tools: Bash
+allowed-tools: Bash, Bash(griot *)
 ---
 
 # Griot Load

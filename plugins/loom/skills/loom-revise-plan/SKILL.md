@@ -12,7 +12,7 @@ description: >-
 argument-hint: "<slug> [--flavor=mechanical|research] [--mode=auto]"
 user-invocable: true
 disable-model-invocation: true
-allowed-tools: Read, Write, Bash, Skill, Agent, AskUserQuestion
+allowed-tools: Read, Write, Bash, Skill, Agent, AskUserQuestion, Bash(loom *), Bash(griot *)
 ---
 
 # /loom-revise-plan

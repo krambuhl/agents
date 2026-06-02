@@ -8,7 +8,7 @@ description: >-
   composing the archive PR is a separate concern.
 argument-hint: "<project-slug-or-path> [--mode=auto]"
 user-invocable: true
-allowed-tools: Read, Write, Bash, Skill, AskUserQuestion
+allowed-tools: Read, Write, Bash, Skill, AskUserQuestion, Bash(loom *), Bash(guild *), Bash(griot *)
 ---
 
 # /loom-archive

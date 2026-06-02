@@ -13,7 +13,7 @@ description: >-
   auto-resolve contradictions.
 argument-hint: "engineers=<comma-separated names> brief=<text> plan=<path> [round=<N>]"
 user-invocable: false
-allowed-tools: Skill, Bash
+allowed-tools: Skill, Bash, Bash(guild *)
 ---
 
 # /guild-plan

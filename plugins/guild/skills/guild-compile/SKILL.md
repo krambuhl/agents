@@ -10,7 +10,7 @@ description: >-
   edits.
 argument-hint: "[--axes-toml=<path>] [--output-dir=<path>] [--dry-run]"
 user-invocable: true
-allowed-tools: Read, Write, Bash
+allowed-tools: Read, Write, Bash, Bash(guild *)
 ---
 
 # /guild-compile

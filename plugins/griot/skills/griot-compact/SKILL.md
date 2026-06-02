@@ -17,7 +17,7 @@ description: >-
   `bin/griot operator-checks log-intervention`.
 user-invocable: true
 disable-model-invocation: true
-allowed-tools: Read, Write, Bash, Agent
+allowed-tools: Read, Write, Bash, Agent, Bash(griot *)
 ---
 
 # Learnings Compact
