@@ -18,13 +18,14 @@ worker_bindings = {}
 [[phases]]
 number = 1
 name = "Convention + substrate seams (setup / gate)"
-status = "in-progress"
+status = "completed"
 branch = "ev-agent.auto-mode-guild-offload.setup"
 
 [[phases]]
 number = 2
 name = "ev-loop-interactive: in-loop autonomy + fork-to-panel"
-status = "not-started"
+status = "in-progress"
+branch = "ev-agent.auto-mode-guild-offload.in-loop-autonomy"
 
 [[phases]]
 number = 3
@@ -111,6 +112,41 @@ at = "2026-06-02T15:43:30.545Z"
 event = "session-saved"
 detail = { filename = "2026-06-02-a.json" }
 
+[[events]]
+at = "2026-06-02T15:47:43.128Z"
+event = "phase-completed"
+detail = { phase = 1 }
+
+[[events]]
+at = "2026-06-02T15:47:43.201Z"
+event = "phase-started"
+detail = { phase = 2, name = "ev-loop-interactive: in-loop autonomy + fork-to-panel" }
+
+[[events]]
+at = "2026-06-02T16:00:28.482Z"
+event = "evaluator-spawned"
+detail = { slug = "2026-06-02-auto-mode-guild-offload", phase = 2, unit = "04", evaluator = "evaluator-contract-fit" }
+
+[[events]]
+at = "2026-06-02T16:01:05.915Z"
+event = "checkin-created"
+detail = { number = "04", branch = "ev-agent.auto-mode-guild-offload.in-loop-autonomy" }
+
+[[events]]
+at = "2026-06-02T16:04:19.634Z"
+event = "evaluator-spawned"
+detail = { slug = "2026-06-02-auto-mode-guild-offload", phase = 2, unit = "05", evaluator = "evaluator-contract-fit" }
+
+[[events]]
+at = "2026-06-02T16:05:00.832Z"
+event = "checkin-created"
+detail = { number = "05", branch = "ev-agent.auto-mode-guild-offload.in-loop-autonomy" }
+
+[[events]]
+at = "2026-06-02T16:07:17.042Z"
+event = "session-saved"
+detail = { filename = "2026-06-02-b.json" }
+
 [[checkins]]
 schema_version = 1
 number = "01"
@@ -153,6 +189,34 @@ changes_since_previous = "Third and final unit of phase 1; satisfies D1's harnes
 verdict = { result = "approved", reasons = ["Panel (contract-fit + test-unit + naming) all approved, high confidence, zero findings. AC1-6 met; inert seam ships gating nothing; no disqualifiers fired."] }
 notes_for_pr = ["Scope-shift single signal (phase-boundary): D3 is the last unit of phase 1, so the phase-boundary signal fired, but with no concurrent signal (no evaluator/user/plan-contradiction shift), so no inner-RPI offered per the two-signal-concurrence rule. Loop continues to phase close.", "Sync targeting confirmed: a NEW commons/cli/lib file mirrors only to the full lib-consumers (griot, guild) per COMMONS_CONSUMERS.lib; loom is a partial consumer (LIB_MIRROR_ALLOWLIST of 5 basenames) and ev is docs-only, so neither receives harness-mode.ts. Intentional — the probe is inert infrastructure; a future real consumer (e.g. a loom verb) would add it to loom's allowlist then.", "Implementer/fixer delegation: OFF (inline drive) — interactive-loop default.", "derive-panel stdin under-return (carried from D2): used the explicit --files=<comma> form to get the spec-correct contract-fit + test-unit + naming panel; the --files=- stdin form returns baseline contract-fit only. Follow-up fix worth filing."]
 
+[[checkins]]
+schema_version = 1
+number = "04"
+created = "2026-06-02"
+phase = { number = 2, name = "ev-loop-interactive: in-loop autonomy + fork-to-panel" }
+branch = "ev-agent.auto-mode-guild-offload.in-loop-autonomy"
+unit = "P2-D1 — Armed-posture soft-gate autonomy"
+contract = { goal = "Under the armed posture (--mode=auto), wire ev-loop-interactive's low-risk in-loop gates to resolve with no AskUserQuestion: decomposition auto-confirms, free-mode ordering auto-picks (sequential default), ADR titles generated not prompted. Establish the no-AskUserQuestion-under-armed-posture invariant. Align the Phase-1 convention routing table. Execution-fork->panel is D2; release boundary untouched (Phase 3).", acceptance_criteria = ["SKILL.md Step 1 gains an armed-posture branch: under --mode=auto the loop decomposes and auto-confirms (no human gate, no AskUserQuestion), still logging the decomposition.", "SKILL.md Ordering (free mode) gains an armed-posture branch: under --mode=auto the loop auto-picks, sequential default, no human pick.", "SKILL.md Step 5.5c (ADR title): explicitly states the title is generated under the armed posture, no AskUserQuestion.", "A clear no-AskUserQuestion-under-armed-posture invariant in the Rules section.", "AGENT-CONVENTIONS.md routing table: decomposition + ordering rows changed from guild-plan panel/divergent to autonomous auto-confirm, with a rationale (low-risk gates; empty-roster usability).", "Skill-body invariant tests green; full npm test green; npm run check green."], rules_applied = ["Armed-posture additions are additive — human-paired (non-armed) default path unchanged.", "Commons-canonical doc then sync; SKILL.md is plugin-authoritative (no sync).", "Execution-fork mechanism and release boundary explicitly out of scope (D2 / Phase 3)."], disqualifiers = ["Touching the release boundary / PR-stop (Phase 3).", "Adding the execution-fork->panel mechanism (D2).", "Changing any gate's human-paired (non-armed) default behavior.", "Editing a synced doc copy directly."], inputs = ["plugins/ev/skills/ev-loop-interactive/SKILL.md (Step 1, Ordering, Step 5.5c, Rules)", "plugins/commons/docs/AGENT-CONVENTIONS.md (the Guild-offload routing table to align)", "projects/2026-06-02-auto-mode-guild-offload/PLAN.md (Phase 2 exit)", "projects/2026-06-02-auto-mode-guild-offload/RESEARCH.md A (harness won't silence AskUserQuestion)"] }
+execution = { actions = ["Added an armed-posture auto-confirm branch to SKILL.md Step 1 (decompose + proceed, no AskUserQuestion, still records the decomposition; explicitly not a guild-plan panel).", "Added an armed-posture auto-pick branch to SKILL.md Ordering (sequential default, no human pick, does not route to guild-plan).", "Made the armed-posture ADR-title generation explicit in Step 5.5c (no AskUserQuestion on accept/decline or title).", "Added the no-AskUserQuestion-under-armed-posture invariant to the Rules section (cites RESEARCH A: harness would not silence it).", "Aligned the AGENT-CONVENTIONS.md routing table (decomposition + ordering rows -> autonomous) + added a rationale paragraph (the decomposition/ordering-autonomous vs fork-panel split; empty-roster unstartability); synced to all doc trees.", "Verified npm run check ok and npm test 1341 passing (skill-body invariant tests included).", "Gated through evaluator-contract-fit (substrate-authoring -> contract-fit panel per AC8): approved, high confidence, zero findings."], files_touched = ["plugins/ev/skills/ev-loop-interactive/SKILL.md", "plugins/commons/docs/AGENT-CONVENTIONS.md", "plugins/ev/docs/AGENT-CONVENTIONS.md", "plugins/griot/docs/AGENT-CONVENTIONS.md", "plugins/guild/docs/AGENT-CONVENTIONS.md", "plugins/loom/docs/AGENT-CONVENTIONS.md"], corrections = [] }
+scope = ["plugins/ev/skills/ev-loop-interactive/SKILL.md (armed-posture soft-gate branches + invariant)", "plugins/commons/docs/AGENT-CONVENTIONS.md (+ 4 mirrors) — routing-table alignment"]
+changes_since_previous = "First unit of phase 2. Phase 1 (the convention + the --draft + harness-mode seams) merged to main as PRs #210/#211. This unit wires the soft gates of the armed posture into ev-loop-interactive."
+verdict = { result = "approved", reasons = ["evaluator-contract-fit: all 6 ACs met, no disqualifiers fired (release boundary untouched, no fork-panel mechanism, non-armed defaults preserved, canonical doc edited not mirror), no original-ask drift; confidence high."] }
+notes_for_pr = ["Scope-shift (single signal: operator design decision): the Phase-1 convention routing table marked decomposition + free-mode ordering as divergent->guild-plan-panel. This unit changes them to autonomous auto-confirm. Rationale: they are low-risk reversible framing gates, and the convention's no-panel->escape-hatch rule would make an armed run unstartable whenever the plan-* roster is empty (which it currently is). Panels are now reserved for genuine mid-execution forks (D2). Single-signal scope-shift (no concurrent evaluator/plan-contradiction signal), so noted here, no inner-RPI triggered. The table tweak rides this phase-2 deliverable since the convention is canonical commons doc.", "Plan step auto-skipped again: empty .claude/agents/plan-*.md glob (bootstrapping case).", "Implementer/fixer delegation: OFF (inline drive).", "Deferred to D2: execution-fork->guild-plan panel mechanism, convergence-rule application, empty-roster escape hatch, per-phase fork-panel cap, the no-AskUserQuestion dry-run validation. Deferred to Phase 3: the release boundary / PR-stop behavior."]
+
+[[checkins]]
+schema_version = 1
+number = "05"
+created = "2026-06-02"
+phase = { number = 2, name = "ev-loop-interactive: in-loop autonomy + fork-to-panel" }
+branch = "ev-agent.auto-mode-guild-offload.in-loop-autonomy"
+unit = "P2-D2 — Execution-fork -> guild-plan panel"
+contract = { goal = "Give ev-loop-interactive's mid-unit execution fork (Step 2.2) an armed-posture resolution: spawn a guild-plan round on the fork, apply the convergence rule, record the decision, proceed — with empty-roster escape-hatch safety and a per-phase fork-panel cap. Release boundary untouched (Phase 3).", acceptance_criteria = ["SKILL.md Step 2.2 gains an armed-posture fork branch: under --mode=auto a genuine mid-unit fork spawns a guild-plan round (via /guild-plan composing /guild-spawn; not a direct Agent call) with the fork as brief, instead of asking the human.", "Loop applies the convergence rule by CITING the convention's § Fork-to-panel convergence rule (not restating): collects/no-synthesis; silent/consensus -> take; else round (budget 3); operator-judgment-required -> escape hatch. Fork + resolution recorded in the checkin.", "Empty-roster safety: empty plan-* glob + no explicit engineers -> escape hatch, MUST NOT self-decide.", "Per-phase fork-panel cap = 5 (extends the two-budget convention); 6th fork -> escape hatch.", "Dry-run documented in notes_for_pr (logic-trace; live fork->guild-plan deferred to Phase 6 runtime gate, empty roster today).", "Skill-body invariant tests green; full npm test green; npm run check green.", "evaluator-contract-fit panel approved."], rules_applied = ["Additive — non-armed (human-paired) default path unchanged.", "Fork routes through /guild-plan (composes /guild-spawn) per the substrate seam; no direct Agent call.", "Cites the convention's convergence rule, does not restate it.", "Release boundary explicitly out of scope (Phase 3)."], disqualifiers = ["Touching the release boundary / PR-stop (Phase 3): the branch only ROUTES a fork, it does not define what the hatch does.", "Making the loop self-decide a fork when no panel is raiseable.", "A direct Agent call for the panel.", "Changing non-armed default behavior."], inputs = ["plugins/ev/skills/ev-loop-interactive/SKILL.md (Step 2.2 Execute, ~line 318)", "plugins/commons/docs/AGENT-CONVENTIONS.md (§ Fork-to-panel convergence rule)", "projects/2026-06-02-auto-mode-guild-offload/PLAN.md (Phase 2 exit)", "projects/2026-06-02-auto-mode-guild-offload/RESEARCH.md C (fork->panel path, convergence, registry-lag fallback)"] }
+execution = { actions = ["Inserted the 'Execution forks under the armed posture' subsection into SKILL.md Step 2.2: defines a genuine execution fork (vs the soft gates that auto-confirm); under --mode=auto raises /guild-plan with the fork as brief; applies the convergence rule by citing the convention (not restating); empty-roster -> escape hatch, MUST NOT self-decide; per-phase fork-panel cap = 5 (6th -> hatch); records fork+resolution in the checkin; closes with an explicit note that what-the-hatch-does is Phase 3.", "Verified full npm test 1341 passing (skill-body invariant tests included) and npm run check ok. SKILL.md is plugin-authoritative — no sync.", "Gated through evaluator-contract-fit: approved, high confidence, zero findings."], files_touched = ["plugins/ev/skills/ev-loop-interactive/SKILL.md"], corrections = [] }
+scope = ["plugins/ev/skills/ev-loop-interactive/SKILL.md (Step 2.2 armed-posture fork branch)"]
+changes_since_previous = "Second and final unit of phase 2. Builds on P2-D1 (the soft-gate auto-confirm + the no-AskUserQuestion invariant): D1 handled the low-risk gates, D2 handles the one touchpoint that DOES route to a panel — the genuine mid-execution fork."
+verdict = { result = "approved", reasons = ["evaluator-contract-fit: AC1-4 present in the artifact, AC6 green, every disqualifier explicitly guarded in-prose (no direct Agent call, no self-decide, release boundary deferred to Phase 3, default path untouched); convergence rule cited not restated; no original-ask drift; confidence high."] }
+notes_for_pr = ["DRY-RUN (logic-trace, AC5). Traced a genuine execution fork under --mode=auto against the current substrate state: (1) the loop hits a fork in Step 2.2; (2) it resolves the plan-* roster via the glob -> ZERO engineers today (registry-mirror lag); (3) empty-roster safety fires -> the fork routes to the escape hatch, MUST NOT self-decide; (4) NO AskUserQuestion is raised at any point (the would-be question is escaped, not asked). This validates the no-AskUserQuestion invariant + the empty-roster escape-hatch path end-to-end as reasoned through the SKILL.md. The live fork->guild-plan routing (panel raised, convergence applied, cap enforced) CANNOT be observed today because the roster is empty; that proof defers to the Phase 6 runtime gate when plan-* agents ship (consistent with RESEARCH § C's L-004/live-spawn deferral). A real armed run on a toy project was NOT performed (it would only re-confirm the escape-hatch path the trace already covers, at much higher cost).", "Scope-shift single signal (phase-boundary): P2-D2 is the last unit of phase 2; the phase-boundary signal fired with no concurrent signal, so noted here, no inner-RPI.", "Implementer/fixer delegation: OFF (inline drive).", "Deferred to Phase 3 (release boundary): what the escape hatch / phase close actually DOES — open a draft PR (via the --draft flag from Phase 1 D2), write UNRESOLVED.md, the phase-at-a-time vs --phases=all behavior. This unit only ROUTES forks to a panel or the hatch.", "Convergence-rule citation: the fork branch cites § Fork-to-panel convergence rule as the single source and gives a one-line orientation gloss (collects/no-synthesis, budget 3, operator-judgment -> hatch) — a pointer-with-summary, not a restatement (evaluator confirmed compliant)."]
+
 [[sessions]]
 schema_version = 1
 date = "2026-06-02"
@@ -163,3 +227,14 @@ pr_activity = ["Opened PR #210 (ev-agent.auto-mode-guild-offload.plan, base main
 what_happened = ["Ran Phase 1 (Convention + substrate seams, setup/gate) as a human-paired ev-loop-interactive session, all 3 deliverables landed and gated.", "D1 (checkin 01): added the `## Guild-offload posture` section to AGENT-CONVENTIONS.md (armed-trigger seam, gate-to-resolver routing table, fork-to-panel convergence rule, release-boundary semantics, escape hatch, both-loops coverage); synced to all consumer doc trees. Panel: contract-fit, approved.", "D2 (checkin 02): added `loom pr open --draft` (pr.ts OPEN_OPTIONS + gh forwarding), two mirrored tests, composition smoke (fake gh, no GitHub). Panel: contract-fit + test-unit + naming, all approved.", "D3 (checkin 03): added the inert harness-mode probe seam (commons/cli/lib/harness-mode.ts, probeHarnessMode returns 'unknown'), test, synced to griot+guild; resolved D1's dangling doc reference. Panel: contract-fit + test-unit + naming, all approved.", "Restructured the unpushed local-main scaffolding into its own PR (#210) since main is branch-protected; phase-1 stacked on top (#211) via gt."]
 open_threads = ["MERGE ORDER (stacked): merge #210 (scaffolding) FIRST, then #211 (phase-1). #211's base is the ...plan branch — merging #211 before #210 would strand it in the parent branch, not main (see memory: stacked-PR merge order strands child). After #210 merges, gt restack / retarget #211 to main before merging it.", "Phase 1 status stays in-progress until #211 merges; the next /ev-run sees MERGED via loom pr discover and advances. Phases 2-4 are blocked on the phase-1 merge (Phase 2 deps Phase 1; 3 deps 1+2; 4 deps 1+3).", "SUBSTRATE FINDING — phase-status contradiction: ev-loop-interactive Step 3 says set --status=completed at phase close, but the router treats completed as PR-merged and parks on an open PR only when in-progress. Marking completed pre-merge would dispatch Phase 2 against an unmerged parent. Left in-progress this run; reconcile the Step 3 wording vs the router's merge-gated model.", "SUBSTRATE FINDING — derive-panel `--files=-` stdin form under-returns to baseline contract-fit only; the explicit `--files=<comma>` form correctly applies per-file mappings (PANEL-COMPOSITION.md 51-52). Worked around by using the comma form; worth a derive-panel stdin-reading fix.", "SUBSTRATE FINDING — manifest scaffold drift: this project's manifest shipped a single placeholder `Phase 1` while PLAN.md parsed to 4 phases; backfilled at router dispatch. Recurring loom-plan drift (placeholder never backfilled when PLAN.md fixed post-scaffold)."]
 notes = ["Plan step auto-skipped: the .claude/agents/plan-*.md glob returns zero (guild plan-* agents are namespaced subagent types the glob doesn't see); D1 drafted inline per operator choice.", "Implementer/fixer delegation OFF (inline drive) throughout — interactive-loop default.", "D2 smoke shape: operator chose composition smoke (no outward GitHub PR) over a real draft-PR open.", "Reviewer note for #211: phase status nuance + the two substrate findings above are documented in the PR body's 'Notes for review' section."]
+
+[[sessions]]
+schema_version = 1
+date = "2026-06-02"
+letter = "b"
+phases_touched = [1, 2]
+checkins_written = ["04", "05"]
+pr_activity = ["Phase 1 PRs #210 (scaffolding) + #211 (setup/gate) MERGED to main.", "Opened PR #212 (ev-agent.auto-mode-guild-offload.in-loop-autonomy, base main) — Phase 2, ready, mergeable.", "PR subscription unavailable (local gh-only) — next /ev-run derives state via loom pr discover."]
+what_happened = ["Phase 1 merged (#210 then #211, stacked, in that order). Reconciled via gt sync; main at the #211 merge.", "Ran Phase 2 (ev-loop-interactive: in-loop autonomy + fork-to-panel) as human-paired, 2 deliverables, both gated approved.", "P2-D1 (checkin 04): armed-posture soft-gate autonomy — decomposition auto-confirms, ordering auto-picks (sequential), ADR title generated; no-AskUserQuestion-under-armed-posture invariant; aligned the Phase-1 convention table (decomposition/ordering: panel -> autonomous).", "P2-D2 (checkin 05): execution-fork -> /guild-plan panel with the convergence rule cited; empty-roster escape-hatch safety; per-phase fork-panel cap = 5. Release boundary untouched (Phase 3)."]
+open_threads = ["NEXT: merge #212, then run /ev-run for Phase 3 (ev-loop-interactive: release boundary + escape hatch). Phase 3 deps [1,2]; Phase 4 deps [1,3]. #212 is a standalone PR off main (phase 1 already merged), so no stacked-merge-order concern this time.", "Phase 2 manifest status stays in-progress until #212 merges; next /ev-run sees MERGED via loom pr discover and advances (same merge-gated completion as phase 1).", "DEFERRED (Phase 6 runtime gate): the live fork->guild-plan routing proof — cannot be observed while the plan-* roster is empty; P2-D2's dry-run validated only the no-AskUserQuestion + empty-roster-escape-hatch paths via logic-trace.", "SUBSTRATE FINDINGS still open (from session a, unaddressed): (1) ev-loop Step 3 says --status=completed at phase close but the router treats completed as PR-merged + parks on open-PR-when-in-progress — left phases in-progress until merge, reconcile the wording. (2) derive-panel --files=- stdin form under-returns to baseline; use explicit --files=<comma>. (3) loom-plan manifest scaffold drift (placeholder phase never backfilled)."]
+notes = ["Plan step auto-skipped both phase-2 units (empty .claude/agents/plan-*.md glob).", "Implementer/fixer delegation OFF (inline drive) throughout.", "PR mechanism: gt submit --publish (ready PRs), curated body via gh pr edit. Phase 1 was a 2-PR stack (#210<-#211); phase 2 is a single PR off main.", "Phase 3 will define what the escape hatch / phase close DOES (draft PR via the Phase-1 --draft flag, UNRESOLVED.md, phase-at-a-time vs --phases=all) — the behavior P2-D2 only routes toward."]

@@ -96,6 +96,17 @@ deliverables at runtime (see Step 1). The loop owns ordering:
 When the decomposition is ambiguous between the two, default to
 **free** and ask.
 
+**Under the armed posture** (`docs/AGENT-CONVENTIONS.md`
+§ Guild-offload posture, armed by `--mode=auto`): ordering is a
+low-risk gate that **auto-picks** rather than asking. The loop runs
+deliverables in **sequential order** (the deterministic default) with
+no `AskUserQuestion` — free-mode's "ask the user to pick" is replaced
+by "take the next un-started deliverable in decomposition order." This
+is an autonomous-default resolution, not a panel: ordering does not
+route to `guild-plan` (see the routing table in the convention). The
+human-paired behavior above is unchanged when the posture is not
+armed.
+
 ## Phase-level process
 
 ### Plan
@@ -200,6 +211,19 @@ Show the decomposed list to the user with status markers (done,
 in-progress, not started) pulled from existing checkins on this branch,
 and confirm the decomposition before Step 2.
 
+**Under the armed posture** (`docs/AGENT-CONVENTIONS.md`
+§ Guild-offload posture, armed by `--mode=auto`): decomposition is a
+low-risk gate that **auto-confirms**. The loop decomposes as above and
+proceeds directly to Step 2 with **no `AskUserQuestion`** — it still
+records the decomposed list (in the dispatch report and the first
+unit's checkin `changes_since_previous`) so the decomposition is
+auditable, but it does not pause for human confirmation. This is an
+autonomous-default resolution, not a `guild-plan` panel (see the
+routing table in the convention): a low-risk gate must not escape-hatch
+on an empty `plan-*` roster the way a genuine execution fork does
+(Step 2.2). The human-paired confirmation above is unchanged when the
+posture is not armed.
+
 ### Step 2. Unit loop
 
 For each deliverable (picked per the ordering rule):
@@ -294,6 +318,48 @@ For each deliverable (picked per the ordering rule):
 2. **Execute.** Do the work. For creative or exploratory deliverables,
    pair with the user — ask when you hit a fork, report when you hit a
    dead end, don't charge ahead.
+
+   **Execution forks under the armed posture** (`--mode=auto` —
+   `docs/AGENT-CONVENTIONS.md` § Guild-offload posture). A **genuine
+   execution fork** is a substantive mid-unit decision the loop cannot
+   resolve from the contract — a real design choice, not a low-risk
+   framing gate (decomposition / ordering auto-confirm, Step 1 /
+   Ordering). When armed, the loop does **not** ask the human; it
+   resolves the fork through a panel:
+
+   - **Raise the panel.** Invoke `/guild-plan` (via the `Skill` tool —
+     it composes `/guild-spawn`; never a direct `Agent` call) with the
+     fork as the `brief` and the current `plan-*` roster as
+     `engineers`. This is the same call the phase-start Plan step
+     makes, raised mid-unit per fork.
+   - **Apply the convergence rule.** Follow
+     `docs/AGENT-CONVENTIONS.md` § Fork-to-panel convergence rule (the
+     single source — do not restate it here): `guild-plan` collects
+     attributed sections and `agent_signals` but does **not**
+     synthesize; the loop converges (silent panel / consensus → take
+     the converged answer; else another round at per-decision budget 3;
+     an `operator-judgment-required` signal breaks the offload to the
+     escape hatch). Record the fork, the panel round(s), and the
+     resolved decision in the checkin (`execution.corrections[]` or
+     `notes_for_pr`) so the autonomous decision is auditable.
+   - **Empty-roster safety.** If the `plan-*` glob returns zero and no
+     explicit `engineers` list is supplied, the fork **goes to the
+     escape hatch — it MUST NOT self-decide.** A panel that cannot be
+     raised is not licence to charge ahead; an un-panelled fork that
+     proceeds anyway is the exact failure mode the convergence rule
+     forbids. (Durable: spawn from the live roster, never from memory.)
+   - **Per-phase fork-panel cap = 5.** A single phase raises at most 5
+     fork-panels (this extends the two-budget convention — § Auto-mode
+     and the two-budget shape — with a per-phase fork dimension);
+     the 6th fork routes to the escape hatch rather than another panel.
+     A phase that forks more than 5 times is too ambiguous for
+     autonomy and wants a human — surfacing at the escape hatch is the
+     correct outcome, not a failure.
+
+   Release-boundary behavior (what the escape hatch / phase close
+   actually *does* — open a draft PR, write `UNRESOLVED.md`, etc.) is
+   **not** defined here; that is Phase 3. This branch only routes a
+   fork to a panel or to the hatch.
 
    **Implementer delegation (per-unit switch, default OFF).** This loop
    defaults to inline drive — you write the unit yourself so the
@@ -676,13 +742,16 @@ For each deliverable (picked per the ordering rule):
      captured manually via the `/loom-adr` skill rather than
      swept up by a future unit's hook.
 
-     **Auto-mode**: in `--mode=auto`, the per-match
+     **Auto-mode** (the armed posture — `docs/AGENT-CONVENTIONS.md`
+     § Guild-offload posture): in `--mode=auto`, the per-match
      `AskUserQuestion` is replaced by `evaluator-contract-fit`
      reading the marked entry against ADR-0001's conventions —
      `approved` is treated as accept, `flagged` as decline. The
-     title prompt has no auto-mode equivalent — auto-mode
-     synthesizes a title from the first ~7 words of the marked
-     entry and proceeds. Events fire identically.
+     title prompt has no auto-mode equivalent — under the armed
+     posture the title is **generated**, not prompted: auto-mode
+     synthesizes it from the first ~7 words of the marked entry and
+     proceeds. No `AskUserQuestion` fires on either the accept/decline
+     or the title. Events fire identically.
 
 6. **Phase update.** After a checkin lands, the checkin-created event
    auto-fires from § Checkin write. Then update phase state per
@@ -782,6 +851,20 @@ For "address feedback on #N":
 - **Evaluator always runs.** Same as the confidence loop — never
   self-approve. Evaluator budget is 3 runs per unit (initial + 2
   retries); on the third flag escalate to the user.
+- **No `AskUserQuestion` under the armed posture.** When the
+  guild-offload posture is armed (`--mode=auto` — see
+  `docs/AGENT-CONVENTIONS.md` § Guild-offload posture), the loop makes
+  **no `AskUserQuestion` calls** mid-phase. Every touchpoint that would
+  ask the human is either resolved autonomously (decomposition
+  auto-confirms, ordering auto-picks sequential, ADR title is
+  generated, contract negotiation and ADR accept/decline go to
+  `evaluator-contract-fit`) or routed to a `guild-plan` panel (a
+  genuine execution fork — Step 2.2) or escaped to the hatch (no panel
+  raiseable, or a budget/cap exceeded). This is an invariant, not a
+  preference: the harness would not silence an `AskUserQuestion` even
+  in its own auto mode (RESEARCH § A), so a stray call would hang an
+  unattended run. The human-paired (non-armed) default keeps every
+  touchpoint above.
 - **Scope discipline.** One deliverable at a time in a given checkin.
 - **Record corrections in the checkin.** If the user redirects a unit
   mid-flight, overrides a decision, or the evaluator flags something
