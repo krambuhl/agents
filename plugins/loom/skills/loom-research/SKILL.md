@@ -13,7 +13,7 @@ description: >-
 argument-hint: "<topic or short description> [--mode=auto] [--mode=amend]"
 user-invocable: true
 disable-model-invocation: true
-allowed-tools: Read, Write, Bash, Skill, AskUserQuestion
+allowed-tools: Read, Write, Bash, Skill, AskUserQuestion, Bash(loom *), Bash(guild *), Bash(griot *)
 ---
 
 # /loom-research

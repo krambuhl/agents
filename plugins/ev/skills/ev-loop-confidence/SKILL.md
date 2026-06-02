@@ -10,7 +10,7 @@ description: >-
   operation across many files.
 argument-hint: "<project-slug-or-path> <phase-number>"
 user-invocable: true
-allowed-tools: Read, Write, Edit, Bash, Agent, Skill, mcp__github__get_file_contents, mcp__github__subscribe_pr_activity
+allowed-tools: Read, Write, Edit, Bash, Agent, Skill, mcp__github__get_file_contents, mcp__github__subscribe_pr_activity, Bash(loom *), Bash(guild *), Bash(griot *)
 ---
 
 # /ev-loop-confidence

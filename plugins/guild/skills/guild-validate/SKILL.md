@@ -10,6 +10,7 @@ description: >-
   antagonist panel coordination. Does not iterate, does not auto-
   resolve conflicts.
 argument-hint: "agents=<comma-separated names> packet=<text> [precedence=<comma-separated names>]"
+allowed-tools: Skill, Bash, Bash(guild *)
 user-invocable: false
 allowed-tools: Skill
 ---

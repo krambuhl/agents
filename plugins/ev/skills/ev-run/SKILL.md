@@ -10,7 +10,7 @@ description: >-
 argument-hint: "<project-slug-or-path> [<free-form message>] [--mode=auto]"
 user-invocable: true
 disable-model-invocation: true
-allowed-tools: Read, Skill, Bash, AskUserQuestion
+allowed-tools: Read, Skill, Bash, AskUserQuestion, Bash(loom *), Bash(guild *), Bash(griot *)
 ---
 
 # /ev-run
