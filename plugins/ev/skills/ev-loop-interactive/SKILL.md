@@ -80,6 +80,14 @@ verb shapes and event vocabulary, see `docs/LOOM-CONVENTIONS.md`.
   next non-`completed` phase from the manifest and confirm with the user
   before proceeding. If the named phase is already `completed`, stop
   and ask whether to re-run or pick a different phase.
+- `--phases=all` (optional depth knob) — run the **full stack** rather
+  than a single phase. With this flag the loop does not stop at phase
+  close: it opens a **draft** PR per phase and auto-advances to the next
+  phase, building the whole remaining stack in one invocation (see
+  Step 3, the full-stack branch). Absent (the default), the loop runs
+  exactly the named `<phase-number>` and stops at its PR. A numeric
+  variant (`--phases=N`, build N phases) is a natural future extension;
+  only `all` is wired today.
 
 ## Ordering
 
@@ -832,10 +840,43 @@ lacks this phase's commits. Leaving the phase `in-progress` with an
 open PR is exactly the state the router's park-on-open-PR logic (§ 3.3)
 waits on.
 
-The `--phases=all` full-stack option and the escape hatch are
-extensions of this default boundary; until they are wired, the loop
-always takes the default (open a ready PR, stop). They change *where*
-and *how* the loop stops, never the merge-gated completion rule above.
+**Full-stack option (`--phases=all`).** When this flag is set, phase
+close does **not** stop. Instead of a ready PR, the loop opens a
+**draft** PR for the phase and auto-advances to the next phase in
+dependency order, building the whole stack in one invocation:
+
+- **Open the draft.** Compose the phase PR per § Compose PR but open it
+  with `loom pr open --draft` (Phase 1's flag). The draft signals
+  work-in-progress, not ready to merge — the whole stack is reviewed at
+  once at the end.
+- **Cut the next branch STACKED on this one.** The next phase's branch
+  is cut off the *current phase branch* (via `gt create`), NOT off
+  `main`. This is the crux: the current phase's commits are in the next
+  branch's base even though the current phase's draft PR has not merged,
+  so the dependency is satisfied by the stack rather than by a merge.
+  Cutting off `main` instead would strand the next phase on a base
+  missing this phase's work — the exact failure the merge-gated rule
+  guards against; the stack is how full-stack mode satisfies the
+  dependency without merging.
+- **Advance statuses + continue.** Leave the current phase
+  `in-progress` (its draft PR is open, not merged — completion stays
+  merge-gated per the rule above), set the next phase `in-progress` on
+  its new branch, and continue the unit loop (Step 1 onward) for the
+  next phase. Repeat until every phase has a draft PR.
+- **Emit `auto-mode-converged`** at each clean phase close (all of the
+  phase's units landed and its draft PR opened) with detail `{surface:
+  'ev-loop-interactive', slug, phase}`.
+- **At stack end, stop — leave the drafts.** When the last phase's
+  draft PR is open, the loop stops. It does **not** auto-`ready` or
+  auto-merge any draft: marking the stack ready (`gh pr ready <n>`) and
+  merging it is the human's (or a follow-up's) job. The human reviews
+  the whole stack at once.
+
+If a phase mid-stack hits the **escape hatch** (a stall or budget
+exhaust), the auto-advance **halts** at that phase's draft PR rather
+than continuing — the stack is left partial for the human. The escape
+hatch's own behavior (the draft PR it opens, `UNRESOLVED.md`, the
+budget-exhausted event) is defined in its own section below.
 
 ## Output format
 

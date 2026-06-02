@@ -168,6 +168,16 @@ at = "2026-06-02T16:33:46.355Z"
 event = "checkin-created"
 detail = { number = "06", branch = "ev-agent.auto-mode-guild-offload.release-boundary" }
 
+[[events]]
+at = "2026-06-02T16:38:02.100Z"
+event = "evaluator-spawned"
+detail = { slug = "2026-06-02-auto-mode-guild-offload", phase = 3, unit = "07", evaluator = "evaluator-contract-fit" }
+
+[[events]]
+at = "2026-06-02T16:38:39.889Z"
+event = "checkin-created"
+detail = { number = "07", branch = "ev-agent.auto-mode-guild-offload.release-boundary" }
+
 [[checkins]]
 schema_version = 1
 number = "01"
@@ -251,6 +261,20 @@ scope = ["plugins/ev/skills/ev-loop-interactive/SKILL.md (Step 3 release-boundar
 changes_since_previous = "First unit of phase 3. Phase 2 (#212) merged. This unit defines the default release boundary and resolves the Step-3-vs-router phase-completion contradiction surfaced and worked-around in phases 1-2."
 verdict = { result = "approved", reasons = ["evaluator-contract-fit: all 7 ACs met; the old --status=completed phase-close line is removed (hard-fail check passed) and replaced with in-progress + merge-gated; convention cited; --phases=all + escape hatch correctly absent; router § 3.3 reconciliation present; no drift; confidence high."] }
 notes_for_pr = ["Resolves the documented Step-3-vs-router contradiction (memory: phase-completion-merge-gated-vs-step3): the loop no longer marks --status=completed at phase close. This is the corrective half of phases 1-2's workaround (where I manually left phases in-progress until merge). The router's merge-gated advance is now the canonical completion path in the skill body too.", "Behavior unchanged for the human-paired flow in practice — the loop already opened PRs and the operator merged; this just removes the latent premature-completed write that would have stranded the next phase under autonomous re-dispatch.", "Deferred to D2: --phases=all full-stack draft-PR auto-advance + auto-mode-converged event. Deferred to D3: the escape hatch (draft PR + UNRESOLVED.md + auto-mode-budget-exhausted).", "Dry-run for the clean-close path is logic-traceable now (open ready PR, stop, in-progress) and is exactly what this session has been doing across phases 1-3; the D2/D3 dry-runs (--phases=all, forced exhaust) will be logic-traced in those units.", "Implementer/fixer delegation: OFF (inline drive)."]
+
+[[checkins]]
+schema_version = 1
+number = "07"
+created = "2026-06-02"
+phase = { number = 3, name = "ev-loop-interactive: release boundary + escape hatch" }
+branch = "ev-agent.auto-mode-guild-offload.release-boundary"
+unit = "P3-D2 — --phases=all full-stack auto-advance"
+contract = { goal = "Add the --phases=all full-stack option to ev-loop-interactive: at phase close, instead of the default ready-PR-and-stop, open a draft PR per phase (Phase-1 --draft) and auto-advance to the next phase — cutting the next branch stacked on the current phase branch, continuing the unit loop — building the whole stack with no human stop. Emit auto-mode-converged at each clean phase close. Default unchanged.", acceptance_criteria = ["Arguments documents --phases=all.", "Step 3 gains a --phases=all branch: open draft PR (loom pr open --draft); auto-advance by cutting the next branch STACKED on the current phase branch (not main); advance statuses; continue the unit loop; repeat in dependency order until all phases drafted.", "At stack end the loop leaves the drafts for the human; draft->ready not auto-done mid-stack.", "auto-mode-converged emitted at each clean phase close under the auto-advance path.", "Respects merge-gated completion: work advances stacked/unmerged; no phase marked completed mid-stack.", "A mid-stack escape hatch halts auto-advance (referenced, not defined here — D3).", "evaluator-contract-fit approved; tests + check green."], rules_applied = ["Extends D1's default boundary; the default ready-PR-stop path is untouched.", "Uses Phase-1 --draft; stacks via the gt model.", "References the escape hatch (D3), does not define it."], disqualifiers = ["Changing the default (ready-PR-stop) path.", "Defining the escape hatch (D3) — reference only.", "Auto-marking phases completed or auto-merging mid-stack.", "Auto-ready-ing the drafts."], inputs = ["plugins/ev/skills/ev-loop-interactive/SKILL.md (Step 3 D1 rewrite; Arguments)", "plugins/commons/docs/AGENT-CONVENTIONS.md (§ Guild-offload release-boundary, full-stack)", "projects/2026-06-02-auto-mode-guild-offload/PLAN.md (Phase 3 exit)", "Phase 1 loom pr open --draft"] }
+execution = { actions = ["Added a --phases=all flag to the Arguments section (numeric --phases=N noted as future; only all wired).", "Replaced D1's forward-reference paragraph in Step 3 with a 'Full-stack option (--phases=all)' subsection: open the draft (loom pr open --draft); cut the next branch STACKED on the current phase branch via gt create (NOT main) with the crux rationale (dependency satisfied by the stack, not a merge — dodges the stranded-child failure); advance statuses + continue the unit loop, leaving the current phase in-progress (completion stays merge-gated); emit auto-mode-converged {surface, slug, phase} at clean phase close; at stack end stop and leave the drafts (no auto-ready/auto-merge); a mid-stack escape hatch halts the auto-advance.", "Verified npm test 1341 passing and npm run check ok. SKILL.md plugin-authoritative — no sync.", "Gated through evaluator-contract-fit: approved, high confidence."], files_touched = ["plugins/ev/skills/ev-loop-interactive/SKILL.md"], corrections = [] }
+scope = ["plugins/ev/skills/ev-loop-interactive/SKILL.md (Arguments --phases=all + Step 3 full-stack branch)"]
+changes_since_previous = "Second unit of phase 3. Builds on D1's default boundary: D1 = open ready PR + stop; D2 = the --phases=all extension that opens draft PRs and auto-advances the stack instead."
+verdict = { result = "approved", reasons = ["evaluator-contract-fit: all 7 ACs met; default path untouched; escape hatch referenced not defined; the stacked-on-current-not-main crux is stated with rationale; no auto-ready/auto-merge; merge-gated completion preserved; no drift; confidence high."] }
+notes_for_pr = ["DRY-RUN (logic-trace, --phases=all): traced the full-stack path against current state — at phase close the loop opens a DRAFT PR (loom pr open --draft, the Phase-1 flag, verified live in phase 1's smoke), cuts the next phase's branch STACKED on the current branch via gt create (the dependency is in the stacked base unmerged, so no stranded-child), advances statuses (current stays in-progress, next -> in-progress), continues the unit loop, and emits auto-mode-converged per phase; at stack end it stops and leaves the drafts. A real --phases=all run was NOT performed: it would open multiple real draft PRs and autonomously run several phases (heavy + outward); the trace + phase-1's verified --draft smoke cover the mechanics.", "FOLLOW-UP for D3 (evaluator advisory, non-gating): the new full-stack subsection closes with 'a mid-stack escape hatch ... defined in its own section below' — a forward-reference to the escape-hatch section that D3 must land, or the pointer dangles permanently. D3 resolves this.", "Flag-name decision: --phases=all (not a numeric --phases=N); numeric depth documented as a future extension. Operator-approved.", "Draft->ready handling: the loop never auto-readies or auto-merges mid-stack; the human reviews the whole stack and runs gh pr ready / merges. Operator-approved.", "Implementer/fixer delegation: OFF (inline drive)."]
 
 [[sessions]]
 schema_version = 1
