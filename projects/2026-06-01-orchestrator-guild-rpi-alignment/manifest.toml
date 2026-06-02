@@ -18,13 +18,14 @@ worker_bindings = {}
 [[phases]]
 number = 1
 name = "Phase-aware participate layer (setup / gate)"
-status = "in-progress"
+status = "completed"
 branch = "ev-agent.orchestrator-guild-rpi-alignment.participate-layer"
 
 [[phases]]
 number = 2
 name = "research-* into loom-research (lowest-risk wave)"
-status = "not-started"
+status = "in-progress"
+branch = "ev-agent.orchestrator-guild-rpi-alignment.research-panel"
 
 [[phases]]
 number = 3
@@ -76,6 +77,21 @@ at = "2026-06-01T23:32:48.453Z"
 event = "checkin-created"
 detail = { number = "02", branch = "ev-agent.orchestrator-guild-rpi-alignment.participate-layer" }
 
+[[events]]
+at = "2026-06-02T00:28:25.973Z"
+event = "phase-completed"
+detail = { phase = 1 }
+
+[[events]]
+at = "2026-06-02T00:28:26.045Z"
+event = "phase-started"
+detail = { phase = 2, name = "research-* into loom-research (lowest-risk wave)" }
+
+[[events]]
+at = "2026-06-02T00:43:19.851Z"
+event = "checkin-created"
+detail = { number = "01", branch = "ev-agent.orchestrator-guild-rpi-alignment.research-panel" }
+
 [[checkins]]
 schema_version = 1
 number = "01"
@@ -103,6 +119,20 @@ scope = ["plugins/guild/cli/verbs/guild/parse-and-aggregate.ts", "plugins/guild/
 changes_since_previous = "Second and final unit of Phase 1. Completes the participate-vs-recuse layer: Unit 1 added the participate half (derive-panel --phase rosters); this adds the recuse-observability half (agent_signals at the plan phase, computed by the same shared function /guild-validate uses)."
 verdict = { result = "approved", reasons = ["Panel of evaluator-contract-fit + evaluator-test-unit + evaluator-naming all returned approved, no blocking findings", "npm test 1318 passed (was 1313; +5 plan agent_signals cases); parse-and-aggregate.test.ts 32 green UNCHANGED (the refactor's behavior lock); npm run check ok", "Symmetric verb-computed design confirmed: one shared computeAgentSignal, no duplicate parser, no parse-and-aggregate byte change"] }
 notes_for_pr = ["guild-plan now emits agent_signals (one per engineer) via the SAME computeAgentSignal /guild-validate uses — recusal/escalation is observed identically at plan and review. Today every engineer reads gated because plan-engineer bodies emit no recusal/escalation markers yet; teaching the bodies to emit them is a deferred follow-up, at which point recused/operator-judgment outcomes light up with no further wiring.", "parse-and-aggregate refactor (extract computeAgentSignal + classifyFindings from the former parseEvaluatorOutput) is behavior-preserving — its 32 existing tests passed unchanged and are the lock.", "advisory (from evaluator-test-unit, non-blocking): the signalsFor test helper embeds expect(exitCode).toBe(0), so a future failure-path case would surface at the helper line rather than the calling it(). Fine for the current all-success cases; assert exit at the call site if a failure-path case is added.", "signal: phase-boundary: Unit 2 is the last unit of Phase 1 (single signal; no revise offered). Phase 1 is code-complete pending PR merge.", "This branch (participate-layer) stacks on plan-renumber; Phase 1 = one stacked PR per the plan."]
+
+[[checkins]]
+schema_version = 1
+number = "01"
+created = "2026-06-01"
+phase = { number = 2, name = "research-* into loom-research (lowest-risk wave)" }
+branch = "ev-agent.orchestrator-guild-rpi-alignment.research-panel"
+unit = "1"
+contract = { goal = "Align loom-research's panel roster to the research phase: every roster-spawn point composes research-* (via guild derive-panel --phase=research, research-* glob fallback) instead of plan-*, reserving plan-* for the plan phase, keeping /guild-plan as the panel-runner.", acceptance_criteria = ["Step 4 shift panel resolves the research roster via Bash(guild derive-panel --phase=research) with Glob(.claude/agents/research-*.md) as the documented bootstrapping fallback; self-recusal note preserved", "Step 2 frame (auto-mode) + Inputs auto-mode note + auto-duality line: registered plan roster -> registered research roster", "Intro/description language: plan panel per shift -> research panel per shift; /guild-plan stays the runner", "Bootstrapping skip: when no research-* agents are registered, skip the shift's panel cleanly instead of invoking /guild-plan with an empty roster", "New skill-body test asserting the research step cites --phase=research + research-* fallback + the removed plan-* glob + the skip", "Bare-command convention held (V11 green); npm test + npm run check green"], rules_applied = ["Naming is architecture: reserve plan-* for the plan phase; loom-research (the research RPI phase) composes research-*", "First consumer of Phase 1: reuses the shipped derive-panel --phase=research surface rather than a bespoke roster mechanism", "Incrementalism: keeps /guild-plan as the panel-runner; only the roster source changes", "Don't knock the lights out: bootstrapping skip preserves clean behavior while the registry mirror lags (no research-* agents registered yet)"], disqualifiers = ["leaving any roster-spawn point resolving plan-*", "changing /guild-plan's role as the panel-runner", "bin/guild or node-path in the skill body (breaks the V11 bare-command convention)", "editing any commons/ file"], inputs = ["plugins/loom/skills/loom-research/SKILL.md:5,7,22-23,49-51,85-94,110,173-198,334 (roster-spawn points)", "plugins/loom/skills/loom-plan/SKILL.md:163 (bare-guild derive-panel invocation pattern)", "plugins/commons/cli/skill-bodies-call-bare-commands.test.ts (V11 convention)", "derive-panel --phase=research (shipped Phase 1, on main)"] }
+execution = { actions = ["Rewrote step 4 (Plan composition per shift) to resolve the research roster via Bash(guild derive-panel --phase=research) + Glob(.claude/agents/research-*.md) bootstrapping fallback; preserved the self-recusal-is-the-second-gate note; added 'Reserve plan-* for the plan phase'", "Added a Bootstrapping-skip bullet: skip the shift's panel with a logged note when no research-* agents are registered, never call /guild-plan with an empty roster", "Shifted the remaining roster references plan->research: description (spawns a research panel per shift), intro (spawning a research panel per shift), Inputs auto-mode (registered research roster), step 2 frame (spawning the registered research roster), auto-duality line, and the auto-mode user line", "Kept /guild-plan as the panel-runner everywhere it appears (it runs the rounds; only the roster changed)", "Added plugins/loom/cli/loom-research-roster.test.ts (5 skill-body assertions)"], files_touched = ["plugins/loom/skills/loom-research/SKILL.md", "plugins/loom/cli/loom-research-roster.test.ts"], corrections = [] }
+scope = ["plugins/loom/skills/loom-research/SKILL.md", "plugins/loom/cli/loom-research-roster.test.ts"]
+changes_since_previous = "First (and only) unit of Phase 2 — the lowest-risk wave and the first consumer of Phase 1's derive-panel --phase. Branch cut from main after Phase 1 merged (#198 + #200); this commit also reconciles the manifest (Phase 1 -> completed, Phase 2 -> in-progress) which #200 merged still showing in-progress."
+verdict = { result = "approved", reasons = ["Panel of evaluator-contract-fit + evaluator-test-unit both returned approved, no blocking findings", "npm test 1323 passed (was 1318; +5 skill-body cases); V11 bare-command convention green (35 passed); npm run check ok", "The shift panel now composes research-* via the Phase 1 --phase surface; plan-* reserved for the plan phase"] }
+notes_for_pr = ["loom-research now spawns the research roster (research-*) at every panel point via guild derive-panel --phase=research — the first consumer of the Phase 1 participate layer. plan-* is reserved for the plan phase; /guild-plan stays the panel-runner.", "Bootstrapping skip added: while the registry mirror lags (no research-* agents registered), the shift panel skips cleanly rather than erroring on an empty roster — mirrors the ev-loop whiteboard bootstrapping skip. The live-spawn proof of research-* is the Phase 6 runtime gate.", "advisory (from evaluator-test-unit, non-blocking): the skip-skill test uses /skip this shift.s panel/i with . as the apostrophe wildcard — slightly loose but matches a unique prose string; tighten if it ever needs to.", "manifest reconciliation: this commit flips Phase 1 -> completed and Phase 2 -> in-progress. Phase 1's #200 merged with the manifest still at in-progress (pre-merge status); reconciled here on the Phase 2 branch.", "signal: phase-boundary: single-unit Phase 2, last unit (single signal; no revise offered). Phase 2 code-complete pending PR merge."]
 
 [[revisions]]
 timestamp = "2026-06-01T22:19:26.629Z"
