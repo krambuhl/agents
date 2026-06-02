@@ -8,7 +8,7 @@ The dossier established (descriptively) that the consolidation from a five-file 
 
 The deciding principle (this session's pairing): a project artifact earns its own file only if it is (a) prose a human reads or edits, (b) written concurrently and cannot be serialized, or (c) workspace-scoped rather than project-scoped. Everything else — single-writer structured records — belongs mechanically in the manifest.
 
-This supersedes the prior de-drift plan, which becomes the documentation slice of Phase 3.
+This supersedes the prior de-drift plan, which becomes the documentation slice of Phase 4.
 
 ## Scope
 
@@ -46,7 +46,7 @@ Stays markdown (committed), no change: `PLAN.md`, `INTERVIEW.md`, `RESEARCH.md`,
 
 ## Phase 2 — Flip the writers and add the harvest seam
 
-**Depends on**: 1
+**Depends on**: Phase 1
 
 **Goal**: Point `loom retro` and `loom pr respond` at the manifest sections, add findings harvest at close, and gitignore the two scratch files. New projects stop emitting loose state files.
 
@@ -59,7 +59,7 @@ Stays markdown (committed), no change: `PLAN.md`, `INTERVIEW.md`, `RESEARCH.md`,
 
 ## Phase 3 — Remove the dead file-write paths
 
-**Depends on**: 2
+**Depends on**: Phase 2
 
 **Goal**: Behavioral cleanup only — delete the now-unused file-per-record WRITE paths once Phase 2 has proven the manifest path. No docs, no tests-of-vocabulary; this PR is the "old code removal" unit and is kept separate from the documentation work so its risk profile is isolated.
 
@@ -69,7 +69,7 @@ Stays markdown (committed), no change: `PLAN.md`, `INTERVIEW.md`, `RESEARCH.md`,
 
 ## Phase 4 — Docs de-drift, conventions, and the regression guard
 
-**Depends on**: 3
+**Depends on**: Phase 3
 
 **Goal**: Documentation and test work — bring docs and skills into line with the consolidated reality (absorbing the prior de-drift plan), document the new sections and scratch convention, and lock the vocabulary with a guard. Separated from Phase 3 because it is documentation + a test, not a behavioral change.
 
@@ -117,4 +117,4 @@ Linear: Phase 1 (schema, additive) → Phase 2 (flip writers + harvest) → Phas
 
 ## Revision log
 
-- 2026-06-02 — Reframe per pairing: the goal is consolidating project state files into manifest.toml, not just doc de-drift. Roll retros/responses/findings into new manifest sections (findings via harvest-at-close to preserve concurrent append); forward-only; prose stays md; recovery+findings-jsonl become gitignored scratch. De-drift becomes Phase 4. Split cleanup into behavioral removal (P3) vs docs/guard (P4); rename harvested type GuildFinding
+- 2026-06-02 — Fix dependsOn to the parser's required 'Phase N' form (bare integers parse to []); fix stale Phase 3->4 ref in Context
