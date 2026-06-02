@@ -1,4 +1,3 @@
-sessions = []
 revisions = []
 
 [meta]
@@ -107,6 +106,11 @@ at = "2026-06-02T15:30:42.985Z"
 event = "checkin-created"
 detail = { number = "03", branch = "ev-agent.auto-mode-guild-offload.setup" }
 
+[[events]]
+at = "2026-06-02T15:43:30.545Z"
+event = "session-saved"
+detail = { filename = "2026-06-02-a.json" }
+
 [[checkins]]
 schema_version = 1
 number = "01"
@@ -148,3 +152,14 @@ scope = ["plugins/commons/cli/lib/harness-mode.ts (+ griot/guild mirrors)", "plu
 changes_since_previous = "Third and final unit of phase 1; satisfies D1's harness-mode forward-reference and resolves the dangling doc pointer."
 verdict = { result = "approved", reasons = ["Panel (contract-fit + test-unit + naming) all approved, high confidence, zero findings. AC1-6 met; inert seam ships gating nothing; no disqualifiers fired."] }
 notes_for_pr = ["Scope-shift single signal (phase-boundary): D3 is the last unit of phase 1, so the phase-boundary signal fired, but with no concurrent signal (no evaluator/user/plan-contradiction shift), so no inner-RPI offered per the two-signal-concurrence rule. Loop continues to phase close.", "Sync targeting confirmed: a NEW commons/cli/lib file mirrors only to the full lib-consumers (griot, guild) per COMMONS_CONSUMERS.lib; loom is a partial consumer (LIB_MIRROR_ALLOWLIST of 5 basenames) and ev is docs-only, so neither receives harness-mode.ts. Intentional — the probe is inert infrastructure; a future real consumer (e.g. a loom verb) would add it to loom's allowlist then.", "Implementer/fixer delegation: OFF (inline drive) — interactive-loop default.", "derive-panel stdin under-return (carried from D2): used the explicit --files=<comma> form to get the spec-correct contract-fit + test-unit + naming panel; the --files=- stdin form returns baseline contract-fit only. Follow-up fix worth filing."]
+
+[[sessions]]
+schema_version = 1
+date = "2026-06-02"
+letter = "a"
+phases_touched = [1]
+checkins_written = ["01", "02", "03"]
+pr_activity = ["Opened PR #210 (ev-agent.auto-mode-guild-offload.plan, base main) — project scaffolding: plan + research + manifest.", "Opened PR #211 (ev-agent.auto-mode-guild-offload.setup, base ...plan) — Phase 1 implementation, the 3 deliverables.", "Both ready (non-draft). PR subscription unavailable (local gh-only session) — next /ev-run derives state via loom pr discover."]
+what_happened = ["Ran Phase 1 (Convention + substrate seams, setup/gate) as a human-paired ev-loop-interactive session, all 3 deliverables landed and gated.", "D1 (checkin 01): added the `## Guild-offload posture` section to AGENT-CONVENTIONS.md (armed-trigger seam, gate-to-resolver routing table, fork-to-panel convergence rule, release-boundary semantics, escape hatch, both-loops coverage); synced to all consumer doc trees. Panel: contract-fit, approved.", "D2 (checkin 02): added `loom pr open --draft` (pr.ts OPEN_OPTIONS + gh forwarding), two mirrored tests, composition smoke (fake gh, no GitHub). Panel: contract-fit + test-unit + naming, all approved.", "D3 (checkin 03): added the inert harness-mode probe seam (commons/cli/lib/harness-mode.ts, probeHarnessMode returns 'unknown'), test, synced to griot+guild; resolved D1's dangling doc reference. Panel: contract-fit + test-unit + naming, all approved.", "Restructured the unpushed local-main scaffolding into its own PR (#210) since main is branch-protected; phase-1 stacked on top (#211) via gt."]
+open_threads = ["MERGE ORDER (stacked): merge #210 (scaffolding) FIRST, then #211 (phase-1). #211's base is the ...plan branch — merging #211 before #210 would strand it in the parent branch, not main (see memory: stacked-PR merge order strands child). After #210 merges, gt restack / retarget #211 to main before merging it.", "Phase 1 status stays in-progress until #211 merges; the next /ev-run sees MERGED via loom pr discover and advances. Phases 2-4 are blocked on the phase-1 merge (Phase 2 deps Phase 1; 3 deps 1+2; 4 deps 1+3).", "SUBSTRATE FINDING — phase-status contradiction: ev-loop-interactive Step 3 says set --status=completed at phase close, but the router treats completed as PR-merged and parks on an open PR only when in-progress. Marking completed pre-merge would dispatch Phase 2 against an unmerged parent. Left in-progress this run; reconcile the Step 3 wording vs the router's merge-gated model.", "SUBSTRATE FINDING — derive-panel `--files=-` stdin form under-returns to baseline contract-fit only; the explicit `--files=<comma>` form correctly applies per-file mappings (PANEL-COMPOSITION.md 51-52). Worked around by using the comma form; worth a derive-panel stdin-reading fix.", "SUBSTRATE FINDING — manifest scaffold drift: this project's manifest shipped a single placeholder `Phase 1` while PLAN.md parsed to 4 phases; backfilled at router dispatch. Recurring loom-plan drift (placeholder never backfilled when PLAN.md fixed post-scaffold)."]
+notes = ["Plan step auto-skipped: the .claude/agents/plan-*.md glob returns zero (guild plan-* agents are namespaced subagent types the glob doesn't see); D1 drafted inline per operator choice.", "Implementer/fixer delegation OFF (inline drive) throughout — interactive-loop default.", "D2 smoke shape: operator chose composition smoke (no outward GitHub PR) over a real draft-PR open.", "Reviewer note for #211: phase status nuance + the two substrate findings above are documented in the PR body's 'Notes for review' section."]
