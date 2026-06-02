@@ -80,6 +80,14 @@ verb shapes and event vocabulary, see `docs/LOOM-CONVENTIONS.md`.
   next non-`completed` phase from the manifest and confirm with the user
   before proceeding. If the named phase is already `completed`, stop
   and ask whether to re-run or pick a different phase.
+- `--phases=all` (optional depth knob) — run the **full stack** rather
+  than a single phase. With this flag the loop does not stop at phase
+  close: it opens a **draft** PR per phase and auto-advances to the next
+  phase, building the whole remaining stack in one invocation (see
+  Step 3, the full-stack branch). Absent (the default), the loop runs
+  exactly the named `<phase-number>` and stops at its PR. A numeric
+  variant (`--phases=N`, build N phases) is a natural future extension;
+  only `all` is wired today.
 
 ## Ordering
 
@@ -806,10 +814,121 @@ Edge cases the verb handles, documented for reviewer awareness:
 
 ### Step 3. Phase close
 
+At phase close the loop's job is to **open the PR and stop** — the
+release boundary. This is the **default posture**: one phase per
+invocation, the human reviews and merges on GitHub.
+
 - All deliverables accounted for.
 - Full verification passes.
-- Refresh the PR per § Compose PR so it reflects the final state.
-- Update the phase per § Phase update with `--status=completed`.
+- Open / refresh the PR per § Compose PR so it reflects the final
+  state of the phase.
+- **Stop.** Leave the phase `--status=in-progress` — do **not** mark
+  it `completed` here. Per `docs/AGENT-CONVENTIONS.md` § Guild-offload
+  posture (release-boundary semantics — the single source), the default
+  is phase-at-a-time: open a ready PR, subscribe, and park; the human
+  reviews and merges.
+
+**Completion is merge-gated, not phase-close-gated.** A phase becomes
+`completed` only when its PR has **merged**, and the *router* makes
+that transition, not this loop: the next `/ev-run` derives live PR
+state via `loom pr discover`, sees `MERGED`, advances the phase to
+`completed`, and dispatches the next phase off a freshly-pulled base
+(`/ev-run` § 3). Marking `completed` here — before the merge — would
+tell the router the dependency is satisfied and dispatch the next phase
+against an **unmerged parent**, cutting its branch off a base that
+lacks this phase's commits. Leaving the phase `in-progress` with an
+open PR is exactly the state the router's park-on-open-PR logic (§ 3.3)
+waits on.
+
+**Full-stack option (`--phases=all`).** When this flag is set, phase
+close does **not** stop. Instead of a ready PR, the loop opens a
+**draft** PR for the phase and auto-advances to the next phase in
+dependency order, building the whole stack in one invocation:
+
+- **Open the draft.** Compose the phase PR per § Compose PR but open it
+  with `loom pr open --draft` (Phase 1's flag). The draft signals
+  work-in-progress, not ready to merge — the whole stack is reviewed at
+  once at the end.
+- **Cut the next branch STACKED on this one.** The next phase's branch
+  is cut off the *current phase branch* (via `gt create`), NOT off
+  `main`. This is the crux: the current phase's commits are in the next
+  branch's base even though the current phase's draft PR has not merged,
+  so the dependency is satisfied by the stack rather than by a merge.
+  Cutting off `main` instead would strand the next phase on a base
+  missing this phase's work — the exact failure the merge-gated rule
+  guards against; the stack is how full-stack mode satisfies the
+  dependency without merging.
+- **Advance statuses + continue.** Leave the current phase
+  `in-progress` (its draft PR is open, not merged — completion stays
+  merge-gated per the rule above), set the next phase `in-progress` on
+  its new branch, and continue the unit loop (Step 1 onward) for the
+  next phase. Repeat until every phase has a draft PR.
+- **Emit `auto-mode-converged`** at each clean phase close (all of the
+  phase's units landed and its draft PR opened) with detail `{surface:
+  'ev-loop-interactive', slug, phase}`.
+- **At stack end, stop — leave the drafts.** When the last phase's
+  draft PR is open, the loop stops. It does **not** auto-`ready` or
+  auto-merge any draft: marking the stack ready (`gh pr ready <n>`) and
+  merging it is the human's (or a follow-up's) job. The human reviews
+  the whole stack at once.
+
+If a phase mid-stack hits the **escape hatch** (a stall or budget
+exhaust), the auto-advance **halts** at that phase's draft PR rather
+than continuing — the stack is left partial for the human. The escape
+hatch's own behavior (the draft PR it opens, `UNRESOLVED.md`, the
+budget-exhausted event) is defined in its own section below.
+
+### Escape hatch
+
+The escape hatch is how an **armed** run (`--mode=auto`) stops cleanly
+when it cannot finish a phase — turning a stall into a *reviewable*
+state instead of either hanging or charging ahead. It is an
+armed-posture concept: under the human-paired default the human is the
+escape valve (they answer, redirect, or stop), so there is nothing to
+escape to. See `docs/AGENT-CONVENTIONS.md` § Guild-offload posture
+(escape hatch) — the single source for the semantics; this section is
+the loop's procedure for it.
+
+**Triggers** (any one fires the hatch; consistent with Step 2.2 and the
+convention):
+
+- A genuine execution fork with **no panel raiseable** — the `plan-*`
+  roster is empty and no explicit engineers were supplied (Step 2.2,
+  empty-roster safety). The loop must not self-decide, so it escapes.
+- The **per-phase fork-panel cap** (5) is exceeded — the 6th fork in a
+  phase (Step 2.2).
+- **Two-budget exhaustion** — per-decision rounds × per-session
+  decisions hit without convergence (§ Auto-mode and the two-budget
+  shape).
+
+**On trigger, the loop:**
+
+1. **Opens a draft PR with the work-so-far** — `loom pr open --draft`
+   (Phase 1's flag). Whatever units completed before the stall are
+   committed and pushed; the draft makes the partial work reviewable on
+   GitHub rather than stranded on a branch.
+2. **Writes the recovery triad** per § Budget-exhausted recovery (the
+   single source — do not restate the shapes): `UNRESOLVED.md` (the
+   human-readable sidecar listing the undecided forks / questions) and
+   `RECOVERY-STATUS.json` (the machine-readable resume file a later
+   `/ev-run` detects and resumes from). The only addition over the
+   convention's existing recovery is the draft-PR step above.
+3. **Writes the undecided forks into the PR body** — so a reviewer sees
+   what stalled the run without opening `UNRESOLVED.md`, and can
+   resolve it inline (review comment, or merge-and-redirect).
+4. **Emits `auto-mode-budget-exhausted`** with the detail documented in
+   § Auto-mode and the two-budget shape (`{surface:
+   'ev-loop-interactive', slug, ...}`). The exhaust path reuses this
+   existing event — it is not a new vocabulary.
+5. **Stops.** The loop does not continue, does not self-decide the
+   unresolved fork, and does not mark the phase `completed`. Under
+   `--phases=all` the stop **halts the auto-advance** at this phase's
+   draft PR (the stack is left partial); otherwise it is an ordinary
+   single-phase stop on a draft instead of a ready PR.
+
+A human re-enters by reviewing the draft PR (resolving the forks in the
+body), or by re-running `/ev-run` — which detects `RECOVERY-STATUS.json`
+and resumes — or by dropping `--mode=auto` to finish the phase paired.
 
 ## Output format
 
