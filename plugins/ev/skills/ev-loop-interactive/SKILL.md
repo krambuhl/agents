@@ -294,6 +294,24 @@ For each deliverable (picked per the ordering rule):
 2. **Execute.** Do the work. For creative or exploratory deliverables,
    pair with the user — ask when you hit a fork, report when you hit a
    dead end, don't charge ahead.
+
+   **Implementer delegation (per-unit switch, default OFF).** This loop
+   defaults to inline drive — you write the unit yourself so the
+   keystroke-level pairing stays intact. Delegation is an *option*, not
+   a forced path: during § Negotiate the operator can opt a unit **in**.
+   When on for a unit, compose the implementer candidate set via
+   `Bash("guild derive-panel --phase=implementer")`, select the
+   `implementer-<domain>` matching the unit's primary domain, and
+   delegate the write through `/guild-spawn` with the unit contract as
+   the brief. Route through `/guild-spawn`, **not** a direct `Agent`
+   call — `Agent` is in `allowed-tools`, but loom/ev loops compose guild
+   coordination skills by design; the seam is deliberate. Record the
+   switch state (and which `implementer-<domain>` ran) in the checkin's
+   `notes_for_pr`. Delegation changes *who* writes, never *whether* the
+   unit is gated — step 3 (Evaluate) fires regardless of switch state.
+   While no `implementer-*` agents are registered (the registry-mirror
+   lag), opting in falls back to inline drive with a one-line note; the
+   live-spawn proof is the Phase 6 runtime gate.
 3. **Evaluate.** Invoke `/guild-validate` via the `Skill` tool to run
    the antagonist panel against this unit. Compose the panel by
    auto-derivation from the unit's file list (see § Panel
@@ -707,9 +725,15 @@ a write-capable posture (e.g. `evaluator-css-architecture` paired
 with `implementer-css-architecture` / `fixer-css-architecture`), the
 specialist runs as part of the
 parallel panel — its verdict participates with **elevated
-precedence** per `docs/PANEL-COMPOSITION.md`. **No
-control-flow change** to the loop is needed: the existing
-parallel-spawn + precedence-resolution mechanism carries it.
+precedence** per `docs/PANEL-COMPOSITION.md`. The specialist
+*evaluator* (review) side needs no control-flow change — the existing
+parallel-spawn + precedence-resolution mechanism carries it. The
+*write* side, however, is now real wiring as of this plan's Phase 4:
+the Execute step's implementer-delegation switch (§ Step 2, "Implementer
+delegation") composes `implementer-<domain>` via
+`derive-panel --phase=implementer` and delegates the write through
+`/guild-spawn`. This section's remaining prose is superseded by that
+wiring and is slated for deletion in Phase 6.
 
 The substrate signal worth honoring is **fail-fast on specialist
 rejection**: when the aggregated panel verdict shows a specialist's
