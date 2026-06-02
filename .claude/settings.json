@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(loom *)",
+      "Bash(node plugins/loom/cli/loom.ts *)",
+      "Bash(guild *)",
+      "Bash(node plugins/guild/cli/guild.ts *)",
+      "Bash(griot *)",
+      "Bash(node plugins/griot/cli/griot.ts *)",
+      "Bash(git fetch *)"
+    ]
+  }
+}
