@@ -878,6 +878,58 @@ than continuing — the stack is left partial for the human. The escape
 hatch's own behavior (the draft PR it opens, `UNRESOLVED.md`, the
 budget-exhausted event) is defined in its own section below.
 
+### Escape hatch
+
+The escape hatch is how an **armed** run (`--mode=auto`) stops cleanly
+when it cannot finish a phase — turning a stall into a *reviewable*
+state instead of either hanging or charging ahead. It is an
+armed-posture concept: under the human-paired default the human is the
+escape valve (they answer, redirect, or stop), so there is nothing to
+escape to. See `docs/AGENT-CONVENTIONS.md` § Guild-offload posture
+(escape hatch) — the single source for the semantics; this section is
+the loop's procedure for it.
+
+**Triggers** (any one fires the hatch; consistent with Step 2.2 and the
+convention):
+
+- A genuine execution fork with **no panel raiseable** — the `plan-*`
+  roster is empty and no explicit engineers were supplied (Step 2.2,
+  empty-roster safety). The loop must not self-decide, so it escapes.
+- The **per-phase fork-panel cap** (5) is exceeded — the 6th fork in a
+  phase (Step 2.2).
+- **Two-budget exhaustion** — per-decision rounds × per-session
+  decisions hit without convergence (§ Auto-mode and the two-budget
+  shape).
+
+**On trigger, the loop:**
+
+1. **Opens a draft PR with the work-so-far** — `loom pr open --draft`
+   (Phase 1's flag). Whatever units completed before the stall are
+   committed and pushed; the draft makes the partial work reviewable on
+   GitHub rather than stranded on a branch.
+2. **Writes the recovery triad** per § Budget-exhausted recovery (the
+   single source — do not restate the shapes): `UNRESOLVED.md` (the
+   human-readable sidecar listing the undecided forks / questions) and
+   `RECOVERY-STATUS.json` (the machine-readable resume file a later
+   `/ev-run` detects and resumes from). The only addition over the
+   convention's existing recovery is the draft-PR step above.
+3. **Writes the undecided forks into the PR body** — so a reviewer sees
+   what stalled the run without opening `UNRESOLVED.md`, and can
+   resolve it inline (review comment, or merge-and-redirect).
+4. **Emits `auto-mode-budget-exhausted`** with the detail documented in
+   § Auto-mode and the two-budget shape (`{surface:
+   'ev-loop-interactive', slug, ...}`). The exhaust path reuses this
+   existing event — it is not a new vocabulary.
+5. **Stops.** The loop does not continue, does not self-decide the
+   unresolved fork, and does not mark the phase `completed`. Under
+   `--phases=all` the stop **halts the auto-advance** at this phase's
+   draft PR (the stack is left partial); otherwise it is an ordinary
+   single-phase stop on a draft instead of a ready PR.
+
+A human re-enters by reviewing the draft PR (resolving the forks in the
+body), or by re-running `/ev-run` — which detects `RECOVERY-STATUS.json`
+and resumes — or by dropping `--mode=auto` to finish the phase paired.
+
 ## Output format
 
 After each checkpoint and at phase close, report:
