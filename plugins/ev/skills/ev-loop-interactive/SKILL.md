@@ -735,34 +735,6 @@ Edge cases the verb handles, documented for reviewer awareness:
   know which evaluators are session-cached vs newly-authored; that
   metadata is the caller's responsibility.
 
-### Specialist-evaluator gate-then-review (Phase 4)
-
-When a unit's panel includes a **specialist evaluator** paired with
-a write-capable posture (e.g. `evaluator-css-architecture` paired
-with `implementer-css-architecture` / `fixer-css-architecture`), the
-specialist runs as part of the
-parallel panel — its verdict participates with **elevated
-precedence** per `docs/PANEL-COMPOSITION.md`. The specialist
-*evaluator* (review) side needs no control-flow change — the existing
-parallel-spawn + precedence-resolution mechanism carries it. The
-*write* side, however, is now real wiring as of this plan's Phase 4:
-the Execute step's implementer-delegation switch (§ Step 2, "Implementer
-delegation") composes `implementer-<domain>` via
-`derive-panel --phase=implementer` and delegates the write through
-`/guild-spawn`. This section's remaining prose is superseded by that
-wiring and is slated for deletion in Phase 6.
-
-The substrate signal worth honoring is **fail-fast on specialist
-rejection**: when the aggregated panel verdict shows a specialist's
-finding in `blocking_findings`, treat that as a stronger
-re-iterate-or-flag signal than a generic evaluator's blocking
-finding. Concretely: if a unit's specialist evaluator flagged but
-other evaluators approved, do not treat the overall verdict as
-`approved` — the specialist's blocking finding stands. The loop's
-verdict-handling already does this (any blocking finding → flagged);
-this section just documents the *why* in case future loops want
-specialist-specific retry budgets or escalation thresholds.
-
 ### Step 3. Phase close
 
 - All deliverables accounted for.

@@ -42,13 +42,14 @@ branch = "ev-agent.orchestrator-guild-rpi-alignment.implementer-delegation"
 [[phases]]
 number = 5
 name = "fixer-* delegation seam (both ev-loops)"
-status = "in-progress"
+status = "completed"
 branch = "ev-agent.orchestrator-guild-rpi-alignment.fixer-delegation"
 
 [[phases]]
 number = 6
 name = "Cleanup + runtime gate (close the loop)"
-status = "not-started"
+status = "in-progress"
+branch = "ev-agent.orchestrator-guild-rpi-alignment.cleanup"
 
 [[events]]
 at = "2026-06-01T20:17:52.792Z"
@@ -140,6 +141,21 @@ at = "2026-06-02T01:57:33.280Z"
 event = "checkin-created"
 detail = { number = "01", branch = "ev-agent.orchestrator-guild-rpi-alignment.fixer-delegation" }
 
+[[events]]
+at = "2026-06-02T02:02:18.762Z"
+event = "phase-completed"
+detail = { phase = 5 }
+
+[[events]]
+at = "2026-06-02T02:02:18.836Z"
+event = "phase-started"
+detail = { phase = 6, name = "Cleanup + runtime gate (close the loop)" }
+
+[[events]]
+at = "2026-06-02T02:10:40.434Z"
+event = "checkin-created"
+detail = { number = "01", branch = "ev-agent.orchestrator-guild-rpi-alignment.cleanup" }
+
 [[checkins]]
 schema_version = 1
 number = "01"
@@ -223,6 +239,20 @@ scope = ["plugins/ev/skills/ev-loop-interactive/SKILL.md", "plugins/ev/skills/ev
 changes_since_previous = "First (and only) unit of Phase 5 — the fixer delegation seam, mirroring Phase 4's switch onto the FIX step. Branch cut from main after Phase 4 merged (#203); this commit also reconciles the manifest (Phase 4 -> completed, Phase 5 -> in-progress). With Phase 5 landed, all source phases (1-5) are done; Phase 6 (cleanup + runtime gate) is the close-out."
 verdict = { result = "approved", reasons = ["Panel of evaluator-contract-fit + evaluator-test-unit both returned approved, no blocking findings (one test-unit advisory on a loose assertion, addressed pre-merge by anchoring it)", "npm test 1341 passed (was 1336; +5 fixer cases); delegation suite 11 passed (6 implementer + 5 fixer); V11 35 passed; npm run check ok", "Phase 5 mirrors Phase 4's switch exactly on the FIX step; the re-evaluation gate is asserted to fire regardless of switch state"] }
 notes_for_pr = ["Both ev-loops gain a per-unit fixer-delegation switch on the FIX/iterate step, mirroring the Phase 4 implementer switch: ON composes fixer-<domain> via guild derive-panel --phase=fixer and hands the flagged-finding packet through /guild-spawn for the minimal pragmatist remedy (not a direct Agent call), then re-invokes /guild-validate. interactive defaults OFF (inline fix; opt in); confidence defaults ON (opt out).", "Delegation changes WHO fixes, never WHETHER the fix is re-gated: the re-evaluation (re-invoke /guild-validate, up to 2 retries) fires regardless of switch state.", "The remedy is the minimal load-bearing fix (fixer default_personality = pragmatist, axes.toml), not a rewrite. Skill-body-only switch (per-loop default + operator opt-in in notes_for_pr); no schema/parse change.", "While no fixer-* agents are registered (registry-mirror lag), the switch falls back to inline fix with a note. The live-spawn proof of fixer-* is the Phase 6 runtime gate.", "test note: pre-emptively anchored the inline-fix-fallback assertion (/inline fix/i -> /back to inline fix/i) per evaluator-test-unit's advisory + the recurring loose-assertion lesson.", "signal: phase-boundary: single-unit Phase 5, last unit (single signal; no revise offered). With Phase 5 code-complete (pending PR merge), all source phases 1-5 are done; Phase 6 closes the loop (prose deletion + the external marketplace-mirror refresh + live-spawn smoke)."]
+
+[[checkins]]
+schema_version = 1
+number = "01"
+created = "2026-06-01"
+phase = { number = 6, name = "Cleanup + runtime gate (close the loop)" }
+branch = "ev-agent.orchestrator-guild-rpi-alignment.cleanup"
+unit = "1"
+contract = { goal = "Close the loop (Phase 6, source-done). Delete the now-obsolete 'Specialist-evaluator gate-then-review (Phase 4)' prose in both ev-loops (the write-side is real wiring as of Phases 4-5), update the test that asserted the deleted prose into a deletion regression-lock, and record the live-spawn runtime gate as a tracked acceptance follow-up (externally blocked on the marketplace-mirror refresh).", acceptance_criteria = ["Delete the entire '### Specialist-evaluator gate-then-review (Phase 4)' section from ev-loop-interactive", "Delete the same section from ev-loop-confidence", "ev-loop-delegation.test.ts: replace the test asserting the deleted prose with a regression-lock asserting the section is gone; the implementer (Phase 4) + fixer (Phase 5) delegation-switch tests stay green", "Record the live-spawn runtime gate as a deferred follow-up note in the project (registry pinned at 73249bd; live-spawn fails until the external mirror refresh)", "npm test + npm run check green"], rules_applied = ["Three-phase pattern close-out: Phase 6 is the 'remove the backward-compat layer' cleanup — delete the placeholder prose now that the real wiring (Phases 4-5) shipped", "Tech debt as a tool: source-done is an explicit, shippable state — land the deletable part, track the externally-blocked live-spawn gate rather than faking it", "Maintainability: turn the deletion into a regression-lock so the obsolete section can't creep back", "Transparency: LIVE-SPAWN-SMOKE.md states plainly what's proven (source) vs pending (runtime) and why"], disqualifiers = ["deleting any delegation WIRING (only the obsolete Specialist prose goes — the Execute-step + FIX-step switches remain)", "claiming the live-spawn smoke passed (it can't — the registry is pinned pre-guild-hirefest)", "editing any commons/ file"], inputs = ["plugins/ev/skills/ev-loop-interactive/SKILL.md:738-764 (Specialist section)", "plugins/ev/skills/ev-loop-confidence/SKILL.md:498-520 (Specialist section)", "plugins/ev/skills/ev-loop-delegation.test.ts (the retract test to convert)", "PLAN.md Phase 6 deliverables; plugins/guild/CLAUDE.md § Live-spawn smoke"] }
+execution = { actions = ["Deleted the '### Specialist-evaluator gate-then-review (Phase 4)' section from ev-loop-interactive (Step 3 Phase close now follows Panel auto-derivation directly) — the write-side is real wiring in the Execute step, and the fail-fast prose self-described as already-done-by-verdict-handling", "Deleted the same section from ev-loop-confidence (Should-checkpoint policy now follows directly)", "Converted the 'both Specialist sections retract no-control-flow-change' test into a deletion regression-lock: not.toMatch the section heading + 'no control-flow change' in both bodies; the 10 delegation-switch assertions (implementer + fixer) survive untouched (11 passed)", "Wrote projects/2026-06-01-orchestrator-guild-rpi-alignment/LIVE-SPAWN-SMOKE.md: the deferred runtime-gate note (what the gate is, why it's blocked at registry 73249bd, the checklist to run when the mirror refreshes, source-complete/runtime-pending status)", "Refreshed the test file's header comment to describe Phases 4-6 (was Phase-4-only) per the evaluator's staleness note"], files_touched = ["plugins/ev/skills/ev-loop-interactive/SKILL.md", "plugins/ev/skills/ev-loop-confidence/SKILL.md", "plugins/ev/skills/ev-loop-delegation.test.ts", "projects/2026-06-01-orchestrator-guild-rpi-alignment/LIVE-SPAWN-SMOKE.md"], corrections = ["Updated the test file's header comment to cover Phases 4-6 after evaluator-test-unit flagged it as Phase-4-only stale"] }
+scope = ["plugins/ev/skills/ev-loop-interactive/SKILL.md", "plugins/ev/skills/ev-loop-confidence/SKILL.md", "plugins/ev/skills/ev-loop-delegation.test.ts", "projects/2026-06-01-orchestrator-guild-rpi-alignment/LIVE-SPAWN-SMOKE.md"]
+changes_since_previous = "Final phase. Branch cut from main after Phase 5 merged (#204); this commit reconciles the manifest (Phase 5 -> completed, Phase 6 -> in-progress) and closes the source side. All six phases are now source-done; the live-spawn runtime gate is the tracked external follow-up."
+verdict = { result = "approved", reasons = ["Panel of evaluator-contract-fit + evaluator-test-unit both returned approved, no blocking findings (one test-unit staleness note on the file header, addressed pre-merge)", "Both Specialist sections deleted (grep 0 in both ev-loops); the delegation wiring (Execute + FIX switches) survives, confirmed by the still-green 10 switch assertions", "npm test 1341 passed; V11 bare-command green; npm run check ok; live-spawn gate honestly recorded as deferred (not claimed passed)"] }
+notes_for_pr = ["Closes the effort source-side: deletes the obsolete 'Specialist gate-then-review' placeholder prose from both ev-loops (the write-side delegation is real wiring as of Phases 4-5). The deletion is regression-locked in ev-loop-delegation.test.ts.", "The whole-effort runtime acceptance gate (live-spawn smoke for research-*/plan-*/implementer-*/fixer-*) is DEFERRED, not done: the live registry is pinned at 73249bd (pre-guild-hirefest), so those agents aren't spawnable until an external marketplace-mirror refresh + plugin update. Recorded in LIVE-SPAWN-SMOKE.md with the checklist to run when the mirror refreshes. Per the plan, source-done is an explicit, shippable state.", "All six source phases are now landed and unit-verified. The effort is source-complete, runtime-pending.", "Follow-up (not this PR): once the mirror refreshes, run the LIVE-SPAWN-SMOKE.md checklist and record the result; then the project can archive with the acceptance gate green.", "signal: phase-boundary: single-unit Phase 6, the last phase of the plan (single signal; no revise offered). Phase 6 code-complete pending PR merge."]
 
 [[revisions]]
 timestamp = "2026-06-01T22:19:26.629Z"
