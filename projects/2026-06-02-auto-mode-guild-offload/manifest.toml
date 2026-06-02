@@ -1,0 +1,33 @@
+checkins = []
+sessions = []
+revisions = []
+
+[meta]
+schema_version = 1
+title = "Auto Mode Guild Offload"
+slug = "2026-06-02-auto-mode-guild-offload"
+started = "2026-06-02"
+status = "active"
+strategy = "interactive"
+
+[config]
+base_branch = "main"
+reviewers = []
+labels = []
+verification = []
+worker_bindings = {}
+
+[[phases]]
+number = 1
+name = "Phase 1"
+status = "not-started"
+
+[[events]]
+at = "2026-06-02T07:54:30.144Z"
+event = "project-initialized"
+detail = {}
+
+[[events]]
+at = "2026-06-02T07:54:30.145Z"
+event = "research-started"
+detail = { slug = "2026-06-02-auto-mode-guild-offload" }
