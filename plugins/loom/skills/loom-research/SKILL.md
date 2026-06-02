@@ -2,7 +2,7 @@
 name: loom-research
 description: >-
   Birth a fact-anchored RESEARCH.md via relentless grill-me interview,
-  with domain-shift detection that spawns a plan panel per shift
+  with domain-shift detection that spawns a research panel per shift
   and an evaluator-contract-fit fact-check pass before commit. Composes
   /guild-plan for panel rounds and /guild-validate for the
   fact-check gate; dispatches the deterministic file IO through
@@ -20,7 +20,7 @@ allowed-tools: Read, Write, Bash, Skill, AskUserQuestion
 
 Birth a research dossier by interviewing the user (or the auto-panel)
 relentlessly, detecting domain shifts in real time, spawning a
-plan per shift, fact-checking the synthesized text against an
+research panel per shift, fact-checking the synthesized text against an
 evidence-anchored rubric, and committing two artifacts via the loom
 CLI: `RESEARCH.md` (synthesized, evidence-anchored) and
 `RESEARCH-NOTES.md` (raw interview + per-engineer plan
@@ -47,7 +47,7 @@ sentences are flagged at the fact-check gate, not at commit time.
   ill-defined when the skill starts; the grill-me first half is about
   pressing that into concrete questions.
 - `--mode=auto` (optional) — run without human input. Auto-mode uses
-  the registered plan roster as the panel and the substrate
+  the registered research roster as the panel and the substrate
   two-budget as the convergence cap. See § Human / auto duality.
 - `--mode=amend` (optional) — research INTO an existing dossier rather
   than scaffolding a fresh one. The grill-me + research loop runs as
@@ -89,7 +89,7 @@ they're researching. Otherwise summarize back what you heard in one
 sentence and ask the user to confirm or refine before pressing into
 the interview.
 
-In auto-mode, frame the topic by spawning the registered plan
+In auto-mode, frame the topic by spawning the registered research
 roster against the topic-as-given (using `/guild-plan`) and
 treating the first round of engineer questions as the frame.
 
@@ -107,7 +107,7 @@ each question:
   document, a person responsible. Mark claims without a source as
   candidates for the fact-check pass.
 
-In auto-mode, the "user" is the plan panel spawned at frame
+In auto-mode, the "user" is the research panel spawned at frame
 time. Each round, the panel raises 0-N new questions; the skill
 resolves them one at a time against the panel itself. A round with
 zero new questions is the **silent-panel** signal — convergence.
@@ -174,13 +174,22 @@ topic in a one-sentence summary, append an entry to
 
 For each detected shift:
 
-- Resolve the **full registered plan roster** via
-  `Glob(".claude/agents/plan-*.md")`. Engineers self-recuse
-  off-topic — there's no domain-shape filtering at this layer; the
-  skill spawns the whole roster and trusts each engineer to declare
-  inapplicability when it doesn't apply (consistent with the
-  evaluator non-applicability pattern documented in
-  `agents/evaluator-base.md`).
+- Resolve the **research roster** via
+  `Bash("guild derive-panel --phase=research")` — the phase-aware
+  participate layer reads `axes.toml`'s research-phase domains and
+  emits the `research-*` candidate set. While the registry mirror
+  lags (no `research-*` agents registered yet), fall back to
+  `Glob(".claude/agents/research-*.md")`. derive-panel answers who
+  *may* participate; engineers self-recuse off-topic at runtime as
+  the second gate — there's no domain-shape filtering at this layer
+  (consistent with the evaluator non-applicability pattern in
+  `agents/evaluator-base.md`). Reserve `plan-*` for the plan phase.
+- **Bootstrapping skip:** if no `research-*` agents are registered
+  (the `Glob(".claude/agents/research-*.md")` fallback is empty and
+  derive-panel's roster cannot be spawned), skip this shift's panel
+  with a one-line note ("no research engineers registered — skipping
+  research panel for shift N") and proceed to the next shift / the
+  fact-check pass. Do not invoke `/guild-plan` with an empty roster.
 - Compose a plan artifact path:
   `projects/<slug>/plans/research-shift-NN-<topic-slug>.md`
   where `NN` is the zero-padded shift number and `<topic-slug>` is
@@ -322,7 +331,7 @@ this skill runs in two modes:
   question and every shift. The interview pace is conversational.
   The skill surfaces flagged claims at the fact-check gate one at a
   time and waits for grounding before re-running the check.
-- **Auto** (`--mode=auto`): the registered plan roster
+- **Auto** (`--mode=auto`): the registered research roster
   substitutes for the user. Convergence is reached when a round
   produces no new questions (**silent panel**) OR when the
   two-budget caps out.
