@@ -131,6 +131,11 @@ at = "2026-06-03T20:51:59.446Z"
 event = "checkin-created"
 detail = { number = "08", branch = "ev-agent.state-file-format-audit.docs" }
 
+[[events]]
+at = "2026-06-03T20:52:27.901Z"
+event = "checkin-created"
+detail = { number = "09", branch = "ev-agent.state-file-format-audit.docs" }
+
 [[checkins]]
 schema_version = 1
 number = "01"
@@ -242,6 +247,20 @@ scope = ["AGENT-CONVENTIONS + 5 skills + projects/CONVENTIONS de-drift; LOOM-CON
 changes_since_previous = "Phase 4 begins (last phase). Closes the original audit Finding 4 (doc drift) + documents what Phases 1-3 built."
 verdict = { result = "approved", reasons = ["Panel approved: contract-fit (contextual replacements correct, new-section docs accurate to Phases 1-3, history preserved, deferral clean) + test-unit (the coupled registry fix in-scope); the regression guard independently proves zero stale refs remain", "npm test 1356 passing; npm run check ok; grep over the should-be-current surfaces returns zero retired-trio refs"] }
 notes_for_pr = ["Closes the original audit Finding 4: the convention docs + 5 skill bodies no longer reference the retired manifest.json/config.json/events.jsonl five-file model. Replacements are contextual (config.json -> the manifest's [config]; events.jsonl trail -> [[events]]; report file-lists -> manifest.toml).", "LOOM-CONVENTIONS.md now documents the [[retros]]/[[replies]]/[[findings]] sections (with the findings harvest-at-close seam), reframes retros/<filename>.json as the legacy read-only format, and states the gitignored-scratch convention.", "Genuinely-historical mentions ('project state lived in five separate files', 'consolidation folded ...') are intentionally kept.", "parallel-work-invariant.test.ts got a MINIMAL manifest.json->manifest.toml registry fix (it cross-checks CONVENTIONS). Its other stale targets (events.jsonl/checkins/sessions/retros/responses, all now manifest sections) are a DEFERRED Tier-C re-model, called out so a reviewer knows it's intentional."]
+
+[[checkins]]
+schema_version = 1
+number = "09"
+created = "2026-06-03T20:52:27Z"
+phase = { number = 4, name = "Docs de-drift, conventions, and the regression guard" }
+branch = "ev-agent.state-file-format-audit.docs"
+unit = "P4-D2 — regression guard"
+contract = { goal = "Add a regression guard test that keeps the retired manifest.json/config.json/events.jsonl vocabulary from drifting back into the should-be-current prose surfaces.", acceptance_criteria = ["New test under plugins/commons/cli/ scanning every skill body + AGENT-CONVENTIONS.md + projects/CONVENTIONS.md, asserting zero retired-trio references", "A 'bites' test proving the matcher isn't a no-op (retired names trip it; manifest.toml/[[events]]/.guild-findings.jsonl do not)", "LOOM-CONVENTIONS.md deliberately excluded (canonical history); the test file itself not in the scanned set", "npm test green"], rules_applied = ["Mirror the existing invariant-test enumeration (skill-bodies-call-bare-commands)", "Exact assertion (offenders toEqual []) with file:line offenders", "Coverage-erosion floor on the scanned-file count"], disqualifiers = ["Don't scan LOOM-CONVENTIONS (legit history) or the test file's own constants", "Don't add an allowlist heuristic (exclusion is cleaner)"], inputs = ["plugins/commons/cli/skill-bodies-call-bare-commands.test.ts (enumeration pattern)", "the de-drifted prose surfaces"] }
+execution = { actions = ["Wrote plugins/commons/cli/retired-format-vocabulary.test.ts: scans all skill bodies + AGENT-CONVENTIONS + projects/CONVENTIONS, forbids manifest.json/config.json/events.jsonl (word-boundary regex), emits file:line offenders; a second test proves it bites + that consolidated vocabulary and the live .guild-findings.jsonl don't trip it", "Applied evaluator-test-unit advisory: added a coverage-erosion floor (expect files.length > 10) so a future skill move/rename can't silently shrink the scan to green", "Annotated forEach params to clear the implicit-any editor diagnostic"], files_touched = ["plugins/commons/cli/retired-format-vocabulary.test.ts"], corrections = ["Applied evaluator-test-unit advisory: added the scanned-file-count floor (coverage-erosion guard)."] }
+scope = ["The regression guard test", "Out: the de-drift itself (D1); the fuller parallel-work registry re-model (Tier C)"]
+changes_since_previous = "Final Phase-4 unit. Locks the de-drift so the retired vocabulary can't return."
+verdict = { result = "approved", reasons = ["Panel approved (evaluator-test-unit): genuinely falsifies (dedicated bites test with word-boundary near-misses), exact toEqual([]) assertion, sound scan set + exclusions; the coverage-erosion floor advisory was applied", "guard suite 2/2; npm test 1356 passing"] }
+notes_for_pr = ["Adds retired-format-vocabulary.test.ts: a regression guard that scans every skill body + AGENT-CONVENTIONS + projects/CONVENTIONS and fails if manifest.json/config.json/events.jsonl reappear. A second test proves it bites (and that manifest.toml/[[events]]/.guild-findings.jsonl correctly do NOT trip it). A scanned-file floor guards against coverage erosion.", "LOOM-CONVENTIONS.md is excluded by design (the canonical doc that narrates the consolidation history on purpose).", "This is the close-the-loop of the whole state-file-format-audit plan: the consolidation is now documented AND locked against drift."]
 
 [[revisions]]
 timestamp = "2026-06-02T21:50:52.633Z"
