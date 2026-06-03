@@ -534,6 +534,24 @@ For each deliverable (picked per the ordering rule):
         `Notes for the PR` may explicitly call out a generator
         antipattern; that's the channel for D2 to wire through.
 
+     e. **Harvest the panel's findings into the manifest.** After the
+        per-finding loop completes — the parallel panel is done, so this
+        is the serial, single-writer moment — fold the unit's findings
+        from the `.guild-findings.jsonl` scratch stream into the
+        manifest's `[[findings]]` section:
+
+        ```
+        loom findings harvest <slug> --branch=<branch>
+        ```
+
+        Run this ONLY here at unit close, never mid-panel: the jsonl is
+        the concurrent write buffer the evaluators append to in parallel
+        (`O_APPEND`, many writers), and the manifest is single-writer, so
+        the fold has to wait until the panel is finished. The harvest is
+        idempotent (dedupe-on-`signature`), so a re-run folds only new
+        rows. `.guild-findings.jsonl` is gitignored scratch; `[[findings]]`
+        is the committed record, and it rides with this unit's commit.
+
      Skip step 4.5 entirely for substrate-only units whose panel had
      no domain findings (every finding was a `parse-failure` from
      `evaluator-contract-fit` against the contract itself, not against
