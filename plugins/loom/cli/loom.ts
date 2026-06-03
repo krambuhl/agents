@@ -18,6 +18,7 @@ import {
 } from './verbs/loom/plan.ts';
 import { RESEARCH_VERBS } from './verbs/loom/research.ts';
 import { ADR_VERBS } from './verbs/loom/adr.ts';
+import { FINDINGS_VERBS } from './verbs/loom/findings.ts';
 import type { CliContext, DispatchResult } from './verbs/loom/project.ts';
 
 export type { CliContext, DispatchResult };
@@ -39,6 +40,7 @@ export const NAMESPACES: Record<string, string> = {
   research: 'Create a new research dossier (writes RESEARCH.md + RESEARCH-NOTES.md)',
   'parse-plan': 'Parse a project PLAN.md into a typed tree + diagnostics (JSON)',
   adr: 'Append a workspace-level Architectural Decision Record',
+  findings: 'Harvest guild evaluator findings into the manifest [[findings]] section',
 };
 
 // Namespaces with wired-up verb handlers as of this unit. Recognized
@@ -58,6 +60,7 @@ const VERBS_BY_NAMESPACE: Record<string, Record<string, VerbHandler>> = {
   research: RESEARCH_VERBS,
   'parse-plan': PARSE_PLAN_VERBS,
   adr: ADR_VERBS,
+  findings: FINDINGS_VERBS,
 };
 
 // Verbless namespaces are single-handler namespaces (per

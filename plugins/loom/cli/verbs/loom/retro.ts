@@ -2,9 +2,10 @@ import { parseArgs } from 'node:util';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { resolveProject } from '../../lib/project.ts';
-import { readRetro, listRetros, writeRetro } from '../../lib/retro.ts';
+import { readRetro, listRetros, retroFilename } from '../../lib/retro.ts';
 import {
   appendEvent,
+  appendRetro,
   manifestPath,
   readManifestFile,
   writeManifest,
@@ -49,8 +50,28 @@ export function retroList(rest: string[], ctx: CliContext): DispatchResult {
   }
   try {
     const path = resolveProject(slug, ctx.projectsRoot);
-    const list = listRetros(path, { type: asRetroType(values.type) });
-    return { stdout: emit(list, values.pretty === true), exitCode: 0 };
+    const typeFilter = asRetroType(values.type);
+    const { manifest } = readManifestFile(manifestPath(path));
+    // Manifest-first union: new retros from [[retros]] (source 'manifest'),
+    // then pre-flip file retros (source 'file'). No key overlap under
+    // forward-only. Manifest entries carry no path (they live in the manifest).
+    const manifestList = manifest.retros
+      .filter((r) => typeFilter === undefined || r.type === typeFilter)
+      .map((r) => ({
+        filename: retroFilename(r),
+        type: r.type,
+        source: 'manifest' as const,
+      }));
+    const fileList = listRetros(path, { type: typeFilter }).map((s) => ({
+      filename: s.filename,
+      type: s.type,
+      path: s.path,
+      source: 'file' as const,
+    }));
+    return {
+      stdout: emit([...manifestList, ...fileList], values.pretty === true),
+      exitCode: 0,
+    };
   } catch (err) {
     return errToResult(err);
   }
@@ -92,6 +113,19 @@ export function retroRead(rest: string[], ctx: CliContext): DispatchResult {
   }
   try {
     const path = resolveProject(slug, ctx.projectsRoot);
+    // Manifest-first: new retros live in [[retros]]. Fall back to the file
+    // store for pre-flip (forward-only) projects.
+    const { manifest } = readManifestFile(manifestPath(path));
+    const found = manifest.retros.find((r) =>
+      type === 'project'
+        ? r.type === 'project'
+        : r.type === 'session' &&
+          String(r.phase) === values.phase &&
+          String(r.tier) === values.tier,
+    );
+    if (found) {
+      return { stdout: emit(found, values.pretty === true), exitCode: 0 };
+    }
     const retro = readRetro(join(path, 'retros', filename));
     return { stdout: emit(retro, values.pretty === true), exitCode: 0 };
   } catch (err) {
@@ -153,23 +187,53 @@ export function retroWrite(rest: string[], ctx: CliContext): DispatchResult {
   }
   try {
     const path = resolveProject(slug, ctx.projectsRoot);
-    // Retros stay file-per-record (out of the manifest's six sections);
-    // only the retro-written event is rerouted into [[events]].
-    const written = writeRetro(path, parsed);
+    const mp = manifestPath(path);
+    const { manifest, token } = readManifestFile(mp);
+    // Create-once guard, moved out of writeRetro's filesystem check into the
+    // verb: appendRetro is a plain append (Phase-1 decision), so the verb owns
+    // immutability. A session retro is unique by (phase, tier); a project
+    // retro is a singleton.
+    const duplicate = manifest.retros.some((r) =>
+      parsed.type === 'project'
+        ? r.type === 'project'
+        : r.type === 'session' &&
+          r.phase === parsed.phase &&
+          r.tier === parsed.tier,
+    );
+    if (duplicate) {
+      const label =
+        parsed.type === 'project'
+          ? 'project'
+          : `phase-${parsed.phase}-tier-${parsed.tier}`;
+      return errToResult(
+        new LoomError(
+          'retro-already-exists',
+          `retro ${label} already exists (retros are immutable)`,
+        ),
+      );
+    }
     const detail: { type: RetroType; phase?: number; tier?: number } = { type: parsed.type };
     if (parsed.type === 'session') {
       detail.phase = parsed.phase;
       detail.tier = parsed.tier;
     }
-    const mp = manifestPath(path);
-    const { manifest, token } = readManifestFile(mp);
-    const next = appendEvent(manifest, {
+    // One read-modify-write: append the retro into [[retros]] and the
+    // retro-written breadcrumb into [[events]], then write the manifest once.
+    const next = appendEvent(appendRetro(manifest, parsed), {
       at: new Date().toISOString(),
       event: 'retro-written',
       detail,
     });
     writeManifest(mp, next, { expect: token });
-    return { stdout: emit(written, values.pretty === true), exitCode: 0 };
+    const result: { section: 'retros'; type: RetroType; phase?: number; tier?: number } = {
+      section: 'retros',
+      type: parsed.type,
+    };
+    if (parsed.type === 'session') {
+      result.phase = parsed.phase;
+      result.tier = parsed.tier;
+    }
+    return { stdout: emit(result, values.pretty === true), exitCode: 0 };
   } catch (err) {
     return errToResult(err);
   }

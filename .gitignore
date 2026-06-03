@@ -4,3 +4,9 @@ node_modules
 
 # OS noise
 .DS_Store
+
+# Loom/guild scratch — folded into manifest.toml at unit close (loom
+# findings harvest) and never committed. RECOVERY-STATUS.json is a
+# mid-failure resume file that cannot live in the manifest it recovers.
+projects/**/.guild-findings.jsonl
+projects/**/RECOVERY-STATUS.json

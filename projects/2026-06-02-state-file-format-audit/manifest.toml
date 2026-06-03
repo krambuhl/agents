@@ -1,7 +1,6 @@
 sessions = []
 retros = []
 replies = []
-findings = []
 
 [meta]
 schema_version = 1
@@ -21,13 +20,14 @@ worker_bindings = {}
 [[phases]]
 number = 1
 name = "Manifest schema + write lib for the new sections"
-status = "in-progress"
+status = "completed"
 branch = "ev-agent.state-file-format-audit.schema"
 
 [[phases]]
 number = 2
 name = "Flip the writers and add the harvest seam"
-status = "not-started"
+status = "in-progress"
+branch = "ev-agent.state-file-format-audit.flip-writers"
 
 [[phases]]
 number = 3
@@ -69,6 +69,36 @@ at = "2026-06-03T02:58:57.087Z"
 event = "checkin-created"
 detail = { number = "02", branch = "ev-agent.state-file-format-audit.schema" }
 
+[[events]]
+at = "2026-06-03T14:28:21.992Z"
+event = "phase-completed"
+detail = { phase = 1 }
+
+[[events]]
+at = "2026-06-03T14:28:22.064Z"
+event = "phase-started"
+detail = { phase = 2, name = "Flip the writers and add the harvest seam" }
+
+[[events]]
+at = "2026-06-03T17:56:01.996Z"
+event = "checkin-created"
+detail = { number = "03", branch = "ev-agent.state-file-format-audit.flip-writers" }
+
+[[events]]
+at = "2026-06-03T18:50:50.527Z"
+event = "checkin-created"
+detail = { number = "04", branch = "ev-agent.state-file-format-audit.flip-writers" }
+
+[[events]]
+at = "2026-06-03T19:12:49.187Z"
+event = "checkin-created"
+detail = { number = "05", branch = "ev-agent.state-file-format-audit.flip-writers" }
+
+[[events]]
+at = "2026-06-03T19:19:08.715Z"
+event = "checkin-created"
+detail = { number = "06", branch = "ev-agent.state-file-format-audit.flip-writers" }
+
 [[checkins]]
 schema_version = 1
 number = "01"
@@ -97,6 +127,62 @@ changes_since_previous = "Adds the mutation API (three append helpers) on top of
 verdict = { result = "approved", reasons = ["Panel approved 3/3: contract-fit (ACs met, plain-append decision honored, SECTIONS extension in-scope), test-unit (marquee write-cycle non-vacuous, assertions falsifying), naming (family fit; the one advisory was applied as appendReply)", "npm test 1350 passed; npm run check ok"] }
 notes_for_pr = ["Adds appendRetro / appendReply / appendFinding (plain immutable appends, mirroring appendCheckin/appendSession) so Phase 2 writers + the findings-harvest have a mutation API. No verb wired yet.", "Plain-append by design: no dedup guard in the lib helpers. Retro immutability is enforced by the Phase-2 retro verb; finding dedup-on-signature by the Phase-2 harvest step. Two tests lock the no-dedup behavior in.", "Harness SECTIONS extended to retros/replies/findings so the other-sections-untouched consolidation-bug defense actually covers the new sections.", "signal: phase-boundary: D2 is the last unit in Phase 1 (single signal; no scope-shift revise offered).", "Phase 1 deliverables both complete + 1350 tests green; leaving phase status in-progress until the PR merges (completion is merge-gated, not set at phase close)."]
 
+[[checkins]]
+schema_version = 1
+number = "03"
+created = "2026-06-03T17:56:01Z"
+phase = { number = 2, name = "Flip the writers and add the harvest seam" }
+branch = "ev-agent.state-file-format-audit.flip-writers"
+unit = "P2-D1 — flip the retro writer"
+contract = { goal = "Flip `loom retro write` to append the retro into the manifest's [[retros]] section via appendRetro instead of writing a retros/<name>.json file, with the create-once guard moved into the verb; make retro read/list manifest-first with file fallback. No file written for new retros.", acceptance_criteria = ["retroWrite reads the manifest, rejects a duplicate loudly (retro-already-exists; session keyed on (phase,tier), project singleton), then appendRetro + the retro-written event in one writeManifest; no retros/ file created", "retroRead/retroList are manifest-first with file fallback; retroList unions manifest+file entries with a source:'manifest'|'file' tag", "lib/retro.ts NOT modified (writeRetro stays dead-but-present until Phase 3; readRetro/listRetros/retroFilename retained as readers)", "npm test green"], rules_applied = ["Forward-only: retain file readers, do not migrate existing retro files", "Immutability policy lives in the verb (appendRetro is a plain append by Phase-1 design); single read-modify-write (appendRetro + appendEvent in one writeManifest)", "Anchored test assertions (toEqual on result shape, exact lengths, existsSync===false, error-code equality)"], disqualifiers = ["No lib/retro.ts change (commons-mirrored; write-path removal is Phase 3)", "No other verb touched", "No migrating existing retro files (forward-only)", "Do not drop the retro-written event"], inputs = ["plugins/loom/cli/verbs/loom/retro.ts (current writer/readers)", "plugins/loom/cli/lib/retro.ts (readRetro/listRetros/retroFilename signatures, read-only)", "plugins/loom/cli/lib/manifest-toml.ts (appendRetro/appendEvent/readManifestFile/writeManifest)", "plugins/loom/cli/verbs/loom/retro.test.ts"] }
+execution = { actions = ["Flipped retroWrite: read manifest, verb-owned create-once guard (session (phase,tier) / project singleton), appendRetro + retro-written event in one writeManifest, no file", "Made retroRead manifest-first (find in [[retros]]) with file fallback (readRetro); retroList unions manifest entries (source 'manifest') + file entries (source 'file')", "Updated the import to drop writeRetro and add appendRetro + retroFilename; lib/retro.ts untouched", "Updated the write test for the flip (result shape, retro in manifest.retros, no file, event preserved); added duplicate-rejection + manifest-first read/list tests; applied the test-unit advisory (assert legacy entries are source 'file')"], files_touched = ["plugins/loom/cli/verbs/loom/retro.ts", "plugins/loom/cli/verbs/loom/retro.test.ts"], corrections = ["Reader scope was a user fork: chose manifest-first + file fallback for retro read/list (vs flip-writer-only) so the verb round-trips (read back what you write) — user-approved.", "Applied evaluator-test-unit advisory: test #3 now positively asserts the 2 legacy list entries carry source:'file', pinning tagging completeness (not just that exactly one is 'manifest')."] }
+scope = ["verbs/loom/retro.ts (write flip + manifest-first read/list) + its tests", "Out: lib/retro.ts write-path removal (Phase 3), other verbs (D2/D3), existing-retro-file migration (forward-only)"]
+changes_since_previous = "First Phase-2 unit. Also carries the Phase 1->completed / Phase 2->in-progress manifest reconcile (rides with this feature commit per the no-state-only-commit rule)."
+verdict = { result = "approved", reasons = ["Panel approved 3/3: contract-fit (ACs met, disqualifiers held, forward-only guard edge honored), test-unit (manifest-first genuinely proven via a no-fixture-file key; falsifying assertions; advisory applied), naming (source/section discriminators clear; one watch-the-seam advisory recorded)", "npm test 1352 passing; retro suite 10/10; npm run check ok"] }
+notes_for_pr = ["Flips `loom retro write` from file-per-record (retros/<name>.json) to the manifest's [[retros]] section; retro read/list are now manifest-first with file fallback so old file retros still resolve (forward-only). The retro-written event is preserved.", "The create-once guard moved from writeRetro's filesystem check into the verb (appendRetro is a plain append). KNOWN forward-only edge: the guard checks only manifest.retros, not the legacy file store, so a retro that exists ONLY as a legacy file could be (re)written into the manifest. Deliberate: coupling the guard to the file store would re-introduce the dependency Phase 3 deletes.", "lib/retro.ts is untouched (writeRetro now dead-but-present; removed in Phase 3, where it carries a commons-sync wrinkle since lib/retro.ts is mirrored).", "Recorded advisory (evaluator-naming): retroList tags entries with `source` while retroWrite's result uses `section` — adjacent 'where does it live' concepts with different keys. Watch for a consistent result envelope when the pr-respond (D2) and findings (D3) writers land."]
+
+[[checkins]]
+schema_version = 1
+number = "04"
+created = "2026-06-03T18:50:50Z"
+phase = { number = 2, name = "Flip the writers and add the harvest seam" }
+branch = "ev-agent.state-file-format-audit.flip-writers"
+unit = "P2-D2 — flip the pr-respond writer"
+contract = { goal = "Flip `loom pr respond` to append each reply into the manifest's [[replies]] section via appendReply instead of writing responses/<branch>/response-NN.json files. No file written; no reader (responses are write-only); no guard (append-only log). Result uses the `section` envelope, consistent with the retro flip.", acceptance_criteria = ["prRespond reads the manifest, folds each response into [[replies]] as ReviewReply {comment_id, body, branch, created} via appendReply, in one writeManifest; no responses/ file created", "Returns {section: 'replies', count: <n>} (consistent section envelope with retroWrite; closes the recorded source/section seam advisory)", "No dedup/guard (replies are an append-only log; same comment twice allowed)", "Remove the dead local helpers (nextResponseNumber, RESPONSE_FILENAME_RE) and orphaned fs imports (existsSync/mkdirSync/readdirSync/writeFileSync/join; keep readFileSync)", "npm test green"], rules_applied = ["Consistent result envelope (`section`) across the manifest-section writers", "Forward-only: no migrating existing response files; no reader to retain (none ever existed)", "Single read-modify-write (fold appendReply over responses, one writeManifest)"], disqualifiers = ["No other verb touched", "No migrating existing response files", "Keep the input validation + readFileSync of --responses-file"], inputs = ["plugins/loom/cli/verbs/loom/pr.ts (prRespond, nextResponseNumber, imports)", "plugins/loom/cli/lib/manifest-toml.ts (appendReply/readManifestFile/writeManifest/manifestPath)", "plugins/loom/cli/verbs/loom/pr.test.ts (respond tests)", "plugins/loom/cli/lib/types.ts (ReviewReply)"] }
+execution = { actions = ["Flipped prRespond: read manifest, fold each response into [[replies]] as a ReviewReply (branch carries the former partition key), one writeManifest, no file", "Adopted the {section:'replies', count} result envelope, consistent with retroWrite's {section:'retros',...} (acting on the recorded source/section advisory)", "Removed the dead local helpers nextResponseNumber + RESPONSE_FILENAME_RE and the orphaned fs imports (existsSync/mkdirSync/readdirSync/writeFileSync/join)", "Rewrote the two file-behavior respond tests: one asserts replies land in [[replies]] with no responses/ tree; one asserts successive calls accumulate (append-only, same comment_id twice -> 2 replies)"], files_touched = ["plugins/loom/cli/verbs/loom/pr.ts", "plugins/loom/cli/verbs/loom/pr.test.ts"], corrections = ["Scope: removed the dead LOCAL file helpers in this unit rather than deferring to Phase 3 — they are local to pr.ts with no reader retaining them (unlike the commons-mirrored lib/retro.ts whose removal Phase 3 owns); leaving them would be unreferenced dead code. Operator-approved deviation from the literal Phase 2/3 split.", "Result envelope: chose {section:'replies', count} to make the three writers speak one vocabulary, resolving the D1 naming advisory."] }
+scope = ["verbs/loom/pr.ts prRespond flip + dead-helper removal + its tests", "Out: lib write-path removal for retro (Phase 3), other verbs (D3/D4), existing response-file migration (forward-only)"]
+changes_since_previous = "Second Phase-2 unit; mirrors the retro flip (D1) for PR replies. Simpler: no reader, no guard."
+verdict = { result = "approved", reasons = ["Panel approved 3/3: contract-fit (ACs met, disqualifiers held, approved local-dead-code scope), test-unit (no-dedup falsified, no-file invariant pinned), naming (section envelope consistent; created matches the manifest-record convention)", "npm test 1352 passing; pr suite 62/62; npm run check ok"] }
+notes_for_pr = ["Flips `loom pr respond` from responses/<branch>/response-NN.json files to the manifest's [[replies]] section. No reader existed for responses, so old files orphan harmlessly (forward-only); the result envelope is {section:'replies', count}.", "No dedup guard: replies are an append-only log (responding to the same comment twice is allowed), matching the old auto-numbered behavior.", "Removed the now-dead local file machinery (nextResponseNumber, RESPONSE_FILENAME_RE, fs imports) in this unit since it is local to pr.ts with no reader retaining it — the Phase-3 dead-path removal concerns the commons-mirrored lib/retro.ts.", "Result envelopes now consistent across writers: retroWrite {section:'retros',...} and prRespond {section:'replies', count} (resolves the D1 source/section advisory).", "Recorded advisory (evaluator-contract-fit): prRespond does not validate per-element {comment_id, body} shape (only the top-level {pr,branch,responses[]}). Behavior-preserving vs the old path; latent gap, not addressed here."]
+
+[[checkins]]
+schema_version = 1
+number = "05"
+created = "2026-06-03T19:12:49Z"
+phase = { number = 2, name = "Flip the writers and add the harvest seam" }
+branch = "ev-agent.state-file-format-audit.flip-writers"
+unit = "P2-D3 — findings harvest verb"
+contract = { goal = "Add a new `loom findings harvest <slug>` verb that folds guild's append-only .guild-findings.jsonl scratch stream into the manifest's [[findings]] section, deduped on signature, idempotently. The serial single-writer harvest the concurrency design requires.", acceptance_criteria = ["New verbs/loom/findings.ts (findingsHarvest + FINDINGS_VERBS), registered in loom.ts (import + NAMESPACES + VERBS_BY_NAMESPACE)", "Reads .guild-findings.jsonl, maps each row to GuildFinding (drops ts/slug; harvested_at=now), appendFinding, one writeManifest, only when something changed", "Dedupe on signature (already-in-manifest or seen-in-batch) -> idempotent", "No jsonl -> {harvested:0,skipped:0} no error; malformed line skipped; optional --branch/--unit filters; {section:'findings', harvested, skipped} envelope", "npm test green"], rules_applied = ["Harvest seam lives in the loom layer (loom verb reads guild's file); guild's writer untouched (cross-plugin independence)", "Idempotent signature-dedupe; jsonl left intact (gitignored scratch); single-writer optimistic-lock token on the one write", "Consistent section result envelope"], disqualifiers = ["No other verb touched", "Harvest does NOT mutate/truncate the jsonl", "Guild's findings-append writer untouched"], inputs = ["plugins/guild/cli/verbs/guild/findings.ts (the jsonl row shape)", "plugins/loom/cli/verbs/loom/events.ts (verb-file template)", "plugins/loom/cli/lib/manifest-toml.ts (appendFinding/readManifestFile/writeManifest)", "plugins/loom/cli/loom.ts (namespace registration)", "plugins/loom/cli/lib/types.ts (GuildFinding/FindingSeverity)"] }
+execution = { actions = ["Wrote verbs/loom/findings.ts: findingsHarvest reads the jsonl, validates rows (isFindingRow), maps to GuildFinding, dedupes on signature, folds via appendFinding in one guarded writeManifest; optional --branch/--unit filters; no-file and malformed-line handled gracefully", "Registered the findings namespace in loom.ts (import, NAMESPACES description, VERBS_BY_NAMESPACE)", "Wrote findings.test.ts: dedupe/idempotent (re-harvest folds nothing), no-jsonl, --branch filter, malformed-line skip, missing-slug", "Applied evaluator-contract-fit advisory: tightened isFindingRow to reject a non-string branch/unit (was copied through) so a malformed attribute is skipped rather than materialized"], files_touched = ["plugins/loom/cli/verbs/loom/findings.ts", "plugins/loom/cli/verbs/loom/findings.test.ts", "plugins/loom/cli/loom.ts"], corrections = ["Applied evaluator-contract-fit advisory: isFindingRow now validates branch/unit are string-when-present (a non-string would otherwise pass and be copied onto the GuildFinding)."] }
+scope = ["New loom findings harvest verb + registration + tests", "Out: wiring harvest into the ev-loop close + gitignore (D4); guild writer; existing-data migration (forward-only)"]
+changes_since_previous = "Third Phase-2 unit. Net-new verb (not a flip): the serial harvest seam that folds the concurrent guild findings stream into [[findings]] at close."
+verdict = { result = "approved", reasons = ["Panel approved 3/3: contract-fit (ACs met, idempotent signature-dedupe sound, cross-plugin seam in loom, jsonl untouched; the one branch/unit validation advisory was applied), test-unit (idempotency genuinely proven via re-harvest), naming (findings/harvest/GuildFindingRow-vs-GuildFinding all cohere)", "npm test 1357 passing; findings suite 5/5; npm run check ok; namespace dispatches"] }
+notes_for_pr = ["Adds `loom findings harvest <slug>`: folds guild's append-only .guild-findings.jsonl into the manifest [[findings]] section, deduped on signature, idempotently. This is the serial single-writer harvest the concurrency design needs — the parallel evaluator panel appends to the jsonl; this verb folds it once.", "Cross-plugin seam stays in loom: the verb READS guild's file; guild's findings-append writer is untouched, so guild stays usable standalone. The jsonl is left intact (it becomes gitignored scratch in D4); dedupe-on-signature keeps re-harvests clean.", "Graceful: no jsonl -> harvested 0 (not an error); a malformed line is skipped, not fatal; optional --branch/--unit filter which rows fold (default all). Result envelope {section:'findings', harvested, skipped}, consistent with the retro/reply writers.", "The close-WIRING (call harvest at unit/phase close in the ev-loops) + gitignore are the next unit (D4)."]
+
+[[checkins]]
+schema_version = 1
+number = "06"
+created = "2026-06-03T19:19:08Z"
+phase = { number = 2, name = "Flip the writers and add the harvest seam" }
+branch = "ev-agent.state-file-format-audit.flip-writers"
+unit = "P2-D4 — wire harvest into close + gitignore"
+contract = { goal = "Wire `loom findings harvest` into the ev-loop close choreography and gitignore the transient scratch files, completing Phase 2: the findings stream folds into [[findings]] at close and stops being committed.", acceptance_criteria = ["ev-loop-interactive SKILL.md gains a harvest step at unit close (4.5e): run `loom findings harvest <slug> --branch=<branch>` after the per-finding append loop, ONLY at close never mid-panel, idempotent", "ev-loop-confidence SKILL.md gets a one-line N/A note (it does not append findings, so harvest is moot) + a forward-pointer", ".gitignore adds projects/**/.guild-findings.jsonl and projects/**/RECOVERY-STATUS.json", "Dogfood: this project's committed .guild-findings.jsonl is harvested into [[findings]] and git rm --cached'd so the project conforms to the end state", "npm test green"], rules_applied = ["Concurrency invariant encoded: harvest only at the serial close (jsonl is the concurrent O_APPEND buffer; manifest is single-writer)", "Bare command form in the SKILL body (loom findings harvest), per the skill-body convention", "Forward-only with a pragmatic exception for THIS project (the model we're building): harvest + untrack rather than leave its jsonl committed"], disqualifiers = ["No code/verb change (D4 is wiring + config + a dogfood)", "Do not add a moot harvest call to the confidence loop (it appends no findings)"], inputs = ["plugins/ev/skills/ev-loop-interactive/SKILL.md (step 4.5)", "plugins/ev/skills/ev-loop-confidence/SKILL.md (close)", ".gitignore", "plugins/loom/cli/verbs/loom/findings.ts (the harvest verb from D3)"] }
+execution = { actions = ["Added step 4.5e to ev-loop-interactive: harvest the unit's findings into [[findings]] at close, with the only-at-close/never-mid-panel concurrency invariant and idempotency spelled out", "Added an N/A note + forward-pointer to ev-loop-confidence (it has no findings-append step, so nothing to harvest)", "Added the two scratch globs to .gitignore", "Dogfooded the harvest verb on this project: folded the 3 committed advisories into [[findings]] (verified 3 section headers via readManifest), then git rm --cached'd the now-redundant jsonl (still on disk as live scratch, now ignored)"], files_touched = ["plugins/ev/skills/ev-loop-interactive/SKILL.md", "plugins/ev/skills/ev-loop-confidence/SKILL.md", ".gitignore", "projects/2026-06-02-state-file-format-audit/.guild-findings.jsonl (untracked)"], corrections = ["PLAN premise correction: the plan said to wire harvest into BOTH ev-loops, but ev-loop-confidence appends no findings to the jsonl, so harvest is N/A there. Wired interactive only; added a forward-note to confidence. (Discovered at execution; no phase/deliverable structure changed, so not an inner-RPI revision — single phase-boundary signal recorded.)"] }
+scope = ["Harvest close-wiring (interactive) + N/A note (confidence) + gitignore + this-project dogfood", "Out: any verb/lib change; migrating OTHER projects' scratch files (forward-only)"]
+changes_since_previous = "Final Phase-2 unit. Activates the harvest end-to-end and stops committing the scratch stream. Phase 2 deliverables all complete."
+verdict = { result = "approved", reasons = ["Panel approved (evaluator-contract-fit, the substrate-prose panel): harvest wiring coherent, concurrency invariant correctly encoded, confidence N/A note accurate, gitignore + dogfood a consistent end state; no findings", "npm test 1357 passing (incl. skill-body invariants); npm run check ok; dogfood harvest verified (3 [[findings]]); jsonl ignored"] }
+notes_for_pr = ["Completes Phase 2: the harvest is now wired into ev-loop-interactive's unit close (step 4.5e) and the scratch files are gitignored, so guild findings fold into the manifest [[findings]] at close and stop being committed.", "ev-loop-confidence appends no findings to .guild-findings.jsonl, so harvest is N/A there (the plan's 'both loops' premise was off); added a forward-note rather than a moot call.", "Dogfooded the new harvest verb on this very project: its 3 advisory findings now live in [[findings]] and the .guild-findings.jsonl is untracked (gitignored scratch, still on disk).", "signal: phase-boundary: D4 is the last unit in Phase 2 (single structural signal; the plan-premise correction was resolved inline, no scope shift)."]
+
 [[revisions]]
 timestamp = "2026-06-02T21:50:52.633Z"
 target = "PLAN.md"
@@ -111,3 +197,33 @@ seq = 2
 timestamp = "2026-06-02T22:23:08.205Z"
 target = "PLAN.md"
 seq = 3
+
+[[findings]]
+evaluator = "evaluator-contract-fit"
+code = "trusted-enum-cast-unvalidated"
+evidence = "reconstructFinding.severity and reconstructRetroFinding.category use 'as' cast rather than validating literal-union membership; consistent with existing reconstructors' trusted-semantics pattern, future-hardening note"
+severity = "advisory"
+signature = "4500eea199b5995f7604db345f3bc603cac653bb"
+harvested_at = "2026-06-03T19:16:08.281Z"
+branch = "ev-agent.state-file-format-audit.schema"
+unit = "01"
+
+[[findings]]
+evaluator = "evaluator-naming"
+code = "adjacent-keys-source-vs-section"
+evidence = "retroList tags entries source:'manifest'|'file' while retroWrite result uses section:'retros' — adjacent where-does-it-live concepts with different keys; watch for consistency when pr-respond/findings writers (D2/D3) adopt result envelopes"
+severity = "advisory"
+signature = "da03a9cbc0ba757b962e33e67a4ea0bbf1990f0b"
+harvested_at = "2026-06-03T19:16:08.281Z"
+branch = "ev-agent.state-file-format-audit.flip-writers"
+unit = "03"
+
+[[findings]]
+evaluator = "evaluator-contract-fit"
+code = "pr-respond-no-per-element-validation"
+evidence = "prRespond validates the top-level {pr,branch,responses[]} shape but not each response element {comment_id,body}; a malformed element passes comment_id: undefined into appendReply. Behavior-preserving (old file path was equally loose), latent gap"
+severity = "advisory"
+signature = "46a418317b2d4a6a4e5580830bd275556dba521d"
+harvested_at = "2026-06-03T19:16:08.281Z"
+branch = "ev-agent.state-file-format-audit.flip-writers"
+unit = "04"

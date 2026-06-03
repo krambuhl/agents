@@ -481,6 +481,14 @@ For each unit inside a tier:
    - If approved: write a finalization checkin with Execution / Verdict
      `approved` / Notes-for-PR populated. Check off the inventory
      items.
+
+   This loop does not append guild findings to `.guild-findings.jsonl`
+   (unlike `/ev-loop-interactive` step 4.5, it has no per-finding
+   frequency-tracking step), so there is no findings-harvest step here —
+   there is nothing in the scratch stream to fold. If this loop ever
+   gains a findings-append step, mirror `/ev-loop-interactive` step 4.5e
+   and run `loom findings harvest <slug> --branch=<branch>` at unit close
+   (serial, single-writer, never mid-panel).
 5. **Scope-shift detection (restrictive default).** Runs only on
    approved units (flagged-and-iterating units skip this step). Look
    for signals that PLAN.md is stale; offer a plan revision (per
