@@ -3,8 +3,7 @@ import { mkdtempSync, mkdirSync, rmSync, copyFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { readRetro, listRetros, writeRetro } from './retro.ts';
-import type { Retro } from './types.ts';
+import { readRetro, listRetros } from './retro.ts';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const FIXTURES = join(__dirname, '..', 'fixtures');
@@ -69,42 +68,6 @@ test('listRetros on empty project returns []', () => {
   rmSync(emptyProj, { recursive: true, force: true });
 });
 
-test('writeRetro session derives phase-N-tier-M filename', () => {
-  const emptyProj = mkdtempSync(join(tmpdir(), 'loom-retro-write-'));
-  const r: Retro = {
-    schema_version: 1,
-    type: 'session',
-    created: '2026-06-01T12:00:00Z',
-    phase: 3,
-    tier: 1,
-    findings: [],
-  };
-  const written = writeRetro(emptyProj, r);
-  expect(written.path).toContain('retros/phase-3-tier-1.json');
-  expect(readRetro(written.path).type).toBe('session');
-  rmSync(emptyProj, { recursive: true, force: true });
-});
-
-test('writeRetro project derives project.json filename', () => {
-  const emptyProj = mkdtempSync(join(tmpdir(), 'loom-retro-write-'));
-  const r: Retro = {
-    schema_version: 1,
-    type: 'project',
-    created: '2026-06-01T12:00:00Z',
-    findings: [],
-  };
-  const written = writeRetro(emptyProj, r);
-  expect(written.path).toContain('retros/project.json');
-  rmSync(emptyProj, { recursive: true, force: true });
-});
-
-test('writeRetro refuses to overwrite', () => {
-  // Existing setup has retros/project.json
-  const r: Retro = {
-    schema_version: 1,
-    type: 'project',
-    created: '2026-06-01T12:00:00Z',
-    findings: [],
-  };
-  expect(() => writeRetro(projectPath, r)).toThrow(/retro-already-exists/);
-});
+// writeRetro was removed once `loom retro write` flipped to the manifest's
+// [[retros]] section; readRetro/listRetros (and the retroFilename helper) stay
+// to read pre-flip projects' loose retro files.

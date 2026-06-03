@@ -26,13 +26,14 @@ branch = "ev-agent.state-file-format-audit.schema"
 [[phases]]
 number = 2
 name = "Flip the writers and add the harvest seam"
-status = "in-progress"
+status = "completed"
 branch = "ev-agent.state-file-format-audit.flip-writers"
 
 [[phases]]
 number = 3
 name = "Remove the dead file-write paths"
-status = "not-started"
+status = "in-progress"
+branch = "ev-agent.state-file-format-audit.cleanup"
 
 [[phases]]
 number = 4
@@ -98,6 +99,21 @@ detail = { number = "05", branch = "ev-agent.state-file-format-audit.flip-writer
 at = "2026-06-03T19:19:08.715Z"
 event = "checkin-created"
 detail = { number = "06", branch = "ev-agent.state-file-format-audit.flip-writers" }
+
+[[events]]
+at = "2026-06-03T20:25:54.562Z"
+event = "phase-completed"
+detail = { phase = 2 }
+
+[[events]]
+at = "2026-06-03T20:25:54.635Z"
+event = "phase-started"
+detail = { phase = 3, name = "Remove the dead file-write paths" }
+
+[[events]]
+at = "2026-06-03T20:32:28.743Z"
+event = "checkin-created"
+detail = { number = "07", branch = "ev-agent.state-file-format-audit.cleanup" }
 
 [[checkins]]
 schema_version = 1
@@ -182,6 +198,20 @@ scope = ["Harvest close-wiring (interactive) + N/A note (confidence) + gitignore
 changes_since_previous = "Final Phase-2 unit. Activates the harvest end-to-end and stops committing the scratch stream. Phase 2 deliverables all complete."
 verdict = { result = "approved", reasons = ["Panel approved (evaluator-contract-fit, the substrate-prose panel): harvest wiring coherent, concurrency invariant correctly encoded, confidence N/A note accurate, gitignore + dogfood a consistent end state; no findings", "npm test 1357 passing (incl. skill-body invariants); npm run check ok; dogfood harvest verified (3 [[findings]]); jsonl ignored"] }
 notes_for_pr = ["Completes Phase 2: the harvest is now wired into ev-loop-interactive's unit close (step 4.5e) and the scratch files are gitignored, so guild findings fold into the manifest [[findings]] at close and stop being committed.", "ev-loop-confidence appends no findings to .guild-findings.jsonl, so harvest is N/A there (the plan's 'both loops' premise was off); added a forward-note rather than a moot call.", "Dogfooded the new harvest verb on this very project: its 3 advisory findings now live in [[findings]] and the .guild-findings.jsonl is untracked (gitignored scratch, still on disk).", "signal: phase-boundary: D4 is the last unit in Phase 2 (single structural signal; the plan-premise correction was resolved inline, no scope shift)."]
+
+[[checkins]]
+schema_version = 1
+number = "07"
+created = "2026-06-03T20:32:28Z"
+phase = { number = 3, name = "Remove the dead file-write paths" }
+branch = "ev-agent.state-file-format-audit.cleanup"
+unit = "P3-D1 — remove the dead retro file-writer"
+contract = { goal = "Remove the now-orphaned retro file-writer (writeRetro + WriteRetroResult) from the commons-canonical lib/retro.ts and propagate via sync-shared; readers stay.", acceptance_criteria = ["Delete writeRetro + WriteRetroResult + the now-unused mkdirSync/writeFileSync imports from commons/cli/lib/retro.ts", "Keep the readers (readRetro/listRetros/retroFilename) and their deps (existsSync/readdirSync/join/LoomError/Retro/RetroType)", "Remove the 3 writeRetro tests; keep the readRetro/listRetros tests", "sync-shared propagates the deletion byte-identically to loom/griot/guild mirrors", "npm test green; npm run check (sync drift) green"], rules_applied = ["Edit commons-canonical + sync, never the mirrors directly", "Forward-only: keep the readers for pre-flip projects' loose retro files", "Close-the-loop cleanup (the satisfying-small Phase-3 PR)"], disqualifiers = ["Don't touch the readers", "Don't hand-edit the mirrors (commons + sync)", "The commons orphaned-JSON-substrate (adopt.ts/manifest.ts/config.ts/events.ts) is a SEPARATE deferred follow-up, not in scope"], inputs = ["plugins/commons/cli/lib/retro.ts (writeRetro + readers)", "plugins/commons/cli/lib/retro.test.ts (writeRetro + reader tests)", "scripts/sync-shared.ts (propagation)"] }
+execution = { actions = ["Removed writeRetro + WriteRetroResult + the unused mkdirSync/writeFileSync imports from commons/cli/lib/retro.ts; left a comment noting the writer moved to the manifest and the readers stay", "Removed the 3 writeRetro tests + the now-unused writeRetro/Retro imports from commons retro.test.ts; kept the readRetro/listRetros tests", "Ran sync-shared: the deletion propagated byte-identically to loom/griot/guild cli/lib/retro.ts (49 files synced, drift check ok)"], files_touched = ["plugins/commons/cli/lib/retro.ts", "plugins/commons/cli/lib/retro.test.ts", "plugins/loom/cli/lib/retro.ts (synced)", "plugins/griot/cli/lib/retro.ts (synced)", "plugins/guild/cli/lib/retro.ts (synced)"], corrections = [] }
+scope = ["The dead retro writer removal (commons + synced mirrors) + its tests", "Out: the readers; the pr-respond file-write (already removed in Phase 2 D2); the commons orphaned-JSON-substrate cleanup (separate follow-up)"]
+changes_since_previous = "Phase 3 (single unit). The pr-respond write path was already removed in Phase 2 D2 and loom's retro verb already stopped calling writeRetro in Phase 2 D1, so this just deletes the orphaned commons function + syncs."
+verdict = { result = "approved", reasons = ["Panel approved: contract-fit (exactly the dead writer removed, readers intact, imports pruned, mirrors synced not hand-edited, stayed out of the JSON-substrate cleanup) + test-unit (only the deleted-function's tests removed, reader coverage intact); naming N/A for a pure deletion", "npm test 1354 passing (-3 removed writeRetro tests); npm run check ok; grep confirms zero writeRetro/WriteRetroResult definitions remain"] }
+notes_for_pr = ["Phase 3 close-the-loop: deletes the orphaned `writeRetro` file-per-record writer (+ WriteRetroResult) from the commons-canonical lib/retro.ts; readers (readRetro/listRetros/retroFilename) stay for pre-flip projects' loose retro files (forward-only). Propagated to the loom/griot/guild mirrors via sync-shared.", "writeRetro was already dead: loom's retro verb flipped to appendRetro in Phase 2; griot/guild never had a retro verb. The pr-respond file-write path was already removed in Phase 2 D2.", "OUT of scope (separate deferred follow-up): the broader commons orphaned-JSON-substrate (adopt.ts/manifest.ts/config.ts/events.ts) that the old five-file model left behind.", "signal: phase-boundary: this is the only unit in Phase 3 (single structural signal)."]
 
 [[revisions]]
 timestamp = "2026-06-02T21:50:52.633Z"
