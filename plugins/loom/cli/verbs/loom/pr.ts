@@ -1,17 +1,12 @@
 import { parseArgs } from 'node:util';
 import { execSync } from 'node:child_process';
-import {
-  existsSync,
-  mkdirSync,
-  readFileSync,
-  readdirSync,
-  writeFileSync,
-} from 'node:fs';
-import { join } from 'node:path';
+import { readFileSync } from 'node:fs';
 import { resolveProject } from '../../lib/project.ts';
 import {
+  appendReply,
   manifestPath,
   readManifestFile,
+  writeManifest,
 } from '../../lib/manifest-toml.ts';
 import {
   parseCheckinMarker,
@@ -333,22 +328,6 @@ type ResponsesFile = {
   responses: Array<{ comment_id: number; body: string }>;
 };
 
-const RESPONSE_FILENAME_RE = /^response-(\d+)\.json$/;
-
-function nextResponseNumber(dir: string): number {
-  if (!existsSync(dir)) return 1;
-  const entries = readdirSync(dir);
-  let max = 0;
-  for (const entry of entries) {
-    const m = RESPONSE_FILENAME_RE.exec(entry);
-    if (m !== null) {
-      const n = Number.parseInt(m[1] as string, 10);
-      if (!Number.isNaN(n) && n > max) max = n;
-    }
-  }
-  return max + 1;
-}
-
 export function prRespond(rest: string[], ctx: CliContext): DispatchResult {
   const { values, positionals } = parseArgs({
     args: rest,
@@ -389,32 +368,35 @@ export function prRespond(rest: string[], ctx: CliContext): DispatchResult {
       ),
     );
   }
-  let projectPath: string;
   try {
-    projectPath = resolveProject(slug, ctx.projectsRoot);
+    const projectPath = resolveProject(slug, ctx.projectsRoot);
+    const mp = manifestPath(projectPath);
+    const { manifest, token } = readManifestFile(mp);
+    // Append each reply into [[replies]] (a plain append-only log — a reply to
+    // the same comment can legitimately recur, matching the old auto-numbered
+    // file behavior, so there is no dedup guard). The former responses/<branch>/
+    // partition key rides as the `branch` field. One read-modify-write.
+    const created = new Date().toISOString();
+    let next = manifest;
+    for (const r of parsed.responses) {
+      next = appendReply(next, {
+        comment_id: r.comment_id,
+        body: r.body,
+        branch: parsed.branch,
+        created,
+      });
+    }
+    writeManifest(mp, next, { expect: token });
+    return {
+      stdout: emit(
+        { section: 'replies', count: parsed.responses.length },
+        values.pretty === true,
+      ),
+      exitCode: 0,
+    };
   } catch (err) {
     return errToResult(err);
   }
-  const responsesDir = join(projectPath, 'responses', parsed.branch);
-  mkdirSync(responsesDir, { recursive: true });
-  let nextN = nextResponseNumber(responsesDir);
-  const paths: string[] = [];
-  for (const r of parsed.responses) {
-    const filename = `response-${String(nextN).padStart(2, '0')}.json`;
-    const target = join(responsesDir, filename);
-    const written = {
-      comment_id: r.comment_id,
-      body: r.body,
-      created: new Date().toISOString(),
-    };
-    writeFileSync(target, `${JSON.stringify(written, null, 2)}\n`, 'utf8');
-    paths.push(target);
-    nextN += 1;
-  }
-  return {
-    stdout: emit({ paths }, values.pretty === true),
-    exitCode: 0,
-  };
 }
 
 // ---------------------------------------------------------------------------

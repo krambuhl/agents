@@ -1,5 +1,5 @@
 import { test, expect, beforeEach, afterEach } from 'vitest';
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync, readFileSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, rmSync, writeFileSync, readFileSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -423,14 +423,14 @@ test('prComments: gh failure surfaces as gh-failed', () => {
 
 // ---------- prRespond tests ----------
 
-test('prRespond: writes one file per response under responses/<branch>/', () => {
-  setupProjectWithCheckins(['01']);
+test('prRespond: appends each reply into the manifest [[replies]] section, no file', () => {
+  const projectPath = setupProjectWithCheckins(['01']);
   const responsesFile = join(projectsRoot, 'responses.json');
   writeFileSync(
     responsesFile,
     JSON.stringify({
       pr: 42,
-      branch: 'loom-cli/test-branch',
+      branch: TEST_BRANCH,
       responses: [
         { comment_id: 1, body: 'Acknowledged, will fix' },
         { comment_id: 2, body: 'Disagree — see X' },
@@ -443,52 +443,38 @@ test('prRespond: writes one file per response under responses/<branch>/', () => 
     { projectsRoot },
   );
   expect(result.exitCode).toBe(0);
-  const out = JSON.parse(result.stdout as string);
-  expect(out.paths).toHaveLength(2);
-  // Both files exist
-  expect(out.paths[0]).toContain('responses/loom-cli/test-branch');
-  // Re-read first file
-  const written = JSON.parse(readFileSync(out.paths[0], 'utf8'));
-  expect(written.comment_id).toBe(1);
-  expect(written.body).toBe('Acknowledged, will fix');
+  expect(JSON.parse(result.stdout as string)).toEqual({ section: 'replies', count: 2 });
+
+  const { manifest } = readManifestFile(manifestPath(projectPath));
+  expect(manifest.replies).toHaveLength(2);
+  expect(manifest.replies[0]).toMatchObject({
+    comment_id: 1,
+    body: 'Acknowledged, will fix',
+    branch: TEST_BRANCH,
+  });
+  expect(typeof manifest.replies[0].created).toBe('string');
+  // The former responses/<branch>/ file tree is NOT created.
+  expect(existsSync(join(projectPath, 'responses'))).toBe(false);
 });
 
-test('prRespond: advances to next number when responses already exist', () => {
-  setupProjectWithCheckins(['01']);
+test('prRespond: successive calls accumulate replies (append-only log, no dedup)', () => {
+  const projectPath = setupProjectWithCheckins(['01']);
   const responsesFile = join(projectsRoot, 'responses.json');
-  // First batch
-  writeFileSync(
-    responsesFile,
-    JSON.stringify({
-      pr: 42,
-      branch: 'loom-cli/test-branch',
-      responses: [{ comment_id: 1, body: 'first' }],
-    }),
-    'utf8',
-  );
-  const first = prRespond(
-    ['test-loom', `--responses-file=${responsesFile}`],
-    { projectsRoot },
-  );
-  expect(first.exitCode).toBe(0);
-  expect((JSON.parse(first.stdout as string).paths[0] as string)).toContain('response-01.json');
+  const respond = (comment_id: number, body: string) => {
+    writeFileSync(
+      responsesFile,
+      JSON.stringify({ pr: 42, branch: TEST_BRANCH, responses: [{ comment_id, body }] }),
+      'utf8',
+    );
+    return prRespond(['test-loom', `--responses-file=${responsesFile}`], { projectsRoot });
+  };
+  expect(respond(1, 'first').exitCode).toBe(0);
+  // Same comment_id again is allowed — replies are a log, not deduped.
+  expect(respond(1, 'second').exitCode).toBe(0);
 
-  // Second batch — should pick up from 02
-  writeFileSync(
-    responsesFile,
-    JSON.stringify({
-      pr: 42,
-      branch: 'loom-cli/test-branch',
-      responses: [{ comment_id: 2, body: 'second' }],
-    }),
-    'utf8',
-  );
-  const second = prRespond(
-    ['test-loom', `--responses-file=${responsesFile}`],
-    { projectsRoot },
-  );
-  expect(second.exitCode).toBe(0);
-  expect((JSON.parse(second.stdout as string).paths[0] as string)).toContain('response-02.json');
+  const { manifest } = readManifestFile(manifestPath(projectPath));
+  expect(manifest.replies).toHaveLength(2);
+  expect(manifest.replies.map((r) => r.body)).toEqual(['first', 'second']);
 });
 
 test('prRespond: missing --responses-file returns missing-args', () => {
