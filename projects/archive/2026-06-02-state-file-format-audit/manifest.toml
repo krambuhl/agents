@@ -1,5 +1,4 @@
 sessions = []
-retros = []
 replies = []
 
 [meta]
@@ -7,7 +6,7 @@ schema_version = 1
 title = "State File Format Audit"
 slug = "2026-06-02-state-file-format-audit"
 started = "2026-06-02"
-status = "active"
+status = "archived"
 strategy = "interactive"
 
 [config]
@@ -38,7 +37,7 @@ branch = "ev-agent.state-file-format-audit.cleanup"
 [[phases]]
 number = 4
 name = "Docs de-drift, conventions, and the regression guard"
-status = "in-progress"
+status = "completed"
 branch = "ev-agent.state-file-format-audit.docs"
 
 [[events]]
@@ -135,6 +134,21 @@ detail = { number = "08", branch = "ev-agent.state-file-format-audit.docs" }
 at = "2026-06-03T20:52:27.901Z"
 event = "checkin-created"
 detail = { number = "09", branch = "ev-agent.state-file-format-audit.docs" }
+
+[[events]]
+at = "2026-06-03T20:56:03.780Z"
+event = "phase-completed"
+detail = { phase = 4 }
+
+[[events]]
+at = "2026-06-03T20:59:59.612Z"
+event = "retro-written"
+detail = { type = "project" }
+
+[[events]]
+at = "2026-06-03T20:59:59.689Z"
+event = "archived"
+detail = { destination = "/Users/krambuhl/Sites/agents-nebula/projects/archive/2026-06-02-state-file-format-audit" }
 
 [[checkins]]
 schema_version = 1
@@ -276,6 +290,12 @@ seq = 2
 timestamp = "2026-06-02T22:23:08.205Z"
 target = "PLAN.md"
 seq = 3
+
+[[retros]]
+schema_version = 1
+type = "project"
+created = "2026-06-03T20:59:59Z"
+findings = [{ category = "kept-well", description = "Additive-gate decomposition (schema-only -> flip writers -> remove dead code -> docs/guard) made every PR independently revertable and low-risk; all four merged clean off main.", evidence = "PRs #217/#216, #218, #219, #220" }, { category = "kept-well", description = "The generic hand-rolled TOML serializer round-tripped nested array-of-inline-tables (a retro's findings[]) with zero bespoke code, verified empirically before relying on it.", evidence = "checkin 01" }, { category = "kept-well", description = "The antagonist panel repeatedly earned its keep on naming-is-architecture: Response->ReviewReply (DOM/fetch global collision), appendReviewReply->appendReply (family cohesion), the guard's coverage-erosion floor.", evidence = "checkins 01, 02, 09" }, { category = "kept-well", description = "Dogfooding: the new harvest verb folded this project's own findings into [[findings]], and the regression guard proves its own de-drift on every run.", evidence = "checkins 05, 06, 09" }, { category = "improvement", description = "Stacked-PR merge-order strand: #217 merged into the research branch instead of main (top-first merge), needing content-verification and a second merge.", evidence = "#216/#217 episode" }, { category = "improvement", description = "parse-plan format papercuts (Exit-marker token; dependsOn needs the 'Phase N' form, bare integers parse to []) cost two revise-plan cycles before the plan was machine-clean.", evidence = "loom-plan revisions" }, { category = "improvement", description = "loom project read's legacy projection (meta+phases only) masked a successful findings harvest as '0 findings' until readManifest confirmed -- a wasted debug cycle.", evidence = "Phase 2 D4" }, { category = "improvement", description = "PLAN premises drifted by execution time: Phase 4's 'wire both ev-loops' was wrong (confidence appends no findings), and the CONVENTIONS de-drift unexpectedly broke a coupled invariant test.", evidence = "checkins 06, 08" }, { category = "process-change", description = "parallel-work-invariant.test.ts hand-duplicates CONVENTIONS.md's exception registry, so a doc edit silently broke it. Derive one from the other so they cannot drift.", evidence = "checkin 08" }, { category = "process-change", description = "loom project read should expose the full manifest (or a --full flag); a section write (events/checkins/retros/replies/findings) is currently not verifiable through the standard read verb.", evidence = "Phase 2 D4 debug" }, { category = "follow-up", description = "Commons orphaned-JSON-substrate dead-code cleanup (adopt.ts/manifest.ts/config.ts/events.ts) -- the dead five-file lib cluster the consolidation left behind. Deferred Tier C.", evidence = "PLAN Deferred follow-up" }, { category = "follow-up", description = "Fuller parallel-work-invariant.test.ts registry re-model -- its Category-1/2 targets (events.jsonl/checkins/sessions/retros/responses) still name the old files though all moved into the manifest. Deferred Tier C (only the minimal manifest.json->toml coupling fix was done).", evidence = "checkin 08" }, { category = "follow-up", description = "pr-respond per-element-validation gap: a malformed responses[] element passes through (comment_id: undefined into appendReply). Latent, behavior-preserving vs the old path.", evidence = "[[findings]] pr-respond-no-per-element-validation" }]
 
 [[findings]]
 evaluator = "evaluator-contract-fit"
