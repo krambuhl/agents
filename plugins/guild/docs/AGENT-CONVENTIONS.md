@@ -21,7 +21,7 @@ order:
 1. **`AGENT-CONVENTIONS.md`** (this file) — rituals every agent
    honors.
 2. **`LOOM-CONVENTIONS.md`** — project artifact shapes (`PLAN.md`,
-   `manifest.json`, `events.jsonl`, etc).
+   `manifest.toml`, etc).
 3. **`SUBSTRATE-COMPOSITIONS.md`** — named recipes the loops call,
    each documenting its CLI wrap + idempotency + failure modes +
    callers.
@@ -192,7 +192,7 @@ fields:
 ### Path
 
 `RECOVERY-STATUS.json` lives at the project root, alongside
-`manifest.json`:
+`manifest.toml`:
 
 ```
 projects/<slug>/RECOVERY-STATUS.json

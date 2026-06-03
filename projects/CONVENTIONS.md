@@ -25,7 +25,6 @@ won the race.
 
 Examples:
 - `guild findings append` (writes to `.guild-findings.jsonl`)
-- `loom event append` (writes to `events.jsonl`)
 - `griot operator-checks log-intervention` (writes to operator log)
 
 ### Category 2 — partitioned
@@ -67,10 +66,10 @@ chosen from the declared exceptions set below.
 Examples:
 - `loom revise-plan` (target: `projects/<slug>/PLAN.md`,
   exception: `PLAN.md`)
-- `loom phase update` (target: `projects/<slug>/manifest.json`,
-  exception: `manifest.json`)
+- `loom phase update` (target: `projects/<slug>/manifest.toml`,
+  exception: `manifest.toml`)
 - `loom project scaffold` (target:
-  `projects/<slug>/manifest.json`, exception: `manifest.json`)
+  `projects/<slug>/manifest.toml`, exception: `manifest.toml`)
 - `guild plan init` (target:
   `projects/<slug>/plans/{name}.md`, exception:
   `plan`)
@@ -88,7 +87,7 @@ entry in this section AND a corresponding line in the registry.
 - **`PLAN.md`** — the project plan. Mutated by `loom revise-plan`.
   The plan changes when the work changes; the loom-managed workflow
   has the user serializing revisions.
-- **`manifest.json`** — the project manifest. Mutated by
+- **`manifest.toml`** — the project manifest. Mutated by
   `loom phase update` and `loom project scaffold`. The manifest is
   the single source of truth for project state; serial access is a
   property of the human-driven loom session model.

@@ -32,13 +32,14 @@ branch = "ev-agent.state-file-format-audit.flip-writers"
 [[phases]]
 number = 3
 name = "Remove the dead file-write paths"
-status = "in-progress"
+status = "completed"
 branch = "ev-agent.state-file-format-audit.cleanup"
 
 [[phases]]
 number = 4
 name = "Docs de-drift, conventions, and the regression guard"
-status = "not-started"
+status = "in-progress"
+branch = "ev-agent.state-file-format-audit.docs"
 
 [[events]]
 at = "2026-06-02T21:14:22.824Z"
@@ -114,6 +115,21 @@ detail = { phase = 3, name = "Remove the dead file-write paths" }
 at = "2026-06-03T20:32:28.743Z"
 event = "checkin-created"
 detail = { number = "07", branch = "ev-agent.state-file-format-audit.cleanup" }
+
+[[events]]
+at = "2026-06-03T20:35:49.965Z"
+event = "phase-completed"
+detail = { phase = 3 }
+
+[[events]]
+at = "2026-06-03T20:35:50.040Z"
+event = "phase-started"
+detail = { phase = 4, name = "Docs de-drift, conventions, and the regression guard" }
+
+[[events]]
+at = "2026-06-03T20:51:59.446Z"
+event = "checkin-created"
+detail = { number = "08", branch = "ev-agent.state-file-format-audit.docs" }
 
 [[checkins]]
 schema_version = 1
@@ -212,6 +228,20 @@ scope = ["The dead retro writer removal (commons + synced mirrors) + its tests",
 changes_since_previous = "Phase 3 (single unit). The pr-respond write path was already removed in Phase 2 D2 and loom's retro verb already stopped calling writeRetro in Phase 2 D1, so this just deletes the orphaned commons function + syncs."
 verdict = { result = "approved", reasons = ["Panel approved: contract-fit (exactly the dead writer removed, readers intact, imports pruned, mirrors synced not hand-edited, stayed out of the JSON-substrate cleanup) + test-unit (only the deleted-function's tests removed, reader coverage intact); naming N/A for a pure deletion", "npm test 1354 passing (-3 removed writeRetro tests); npm run check ok; grep confirms zero writeRetro/WriteRetroResult definitions remain"] }
 notes_for_pr = ["Phase 3 close-the-loop: deletes the orphaned `writeRetro` file-per-record writer (+ WriteRetroResult) from the commons-canonical lib/retro.ts; readers (readRetro/listRetros/retroFilename) stay for pre-flip projects' loose retro files (forward-only). Propagated to the loom/griot/guild mirrors via sync-shared.", "writeRetro was already dead: loom's retro verb flipped to appendRetro in Phase 2; griot/guild never had a retro verb. The pr-respond file-write path was already removed in Phase 2 D2.", "OUT of scope (separate deferred follow-up): the broader commons orphaned-JSON-substrate (adopt.ts/manifest.ts/config.ts/events.ts) that the old five-file model left behind.", "signal: phase-boundary: this is the only unit in Phase 3 (single structural signal)."]
+
+[[checkins]]
+schema_version = 1
+number = "08"
+created = "2026-06-03T20:51:59Z"
+phase = { number = 4, name = "Docs de-drift, conventions, and the regression guard" }
+branch = "ev-agent.state-file-format-audit.docs"
+unit = "P4-D1 — docs de-drift + new-section conventions"
+contract = { goal = "Make the convention docs + skill bodies accurately describe the consolidated manifest.toml reality, and document the new [[retros]]/[[replies]]/[[findings]] sections + harvest seam + gitignored-scratch convention.", acceptance_criteria = ["Remove the retired trio (manifest.json/config.json/events.jsonl) from the should-be-current prose: AGENT-CONVENTIONS.md, projects/CONVENTIONS.md, 5 skills — contextual replacements (config.json->the manifest's [config]; events.jsonl trail->[[events]]; report file-lists->manifest.toml)", "Document the 3 new sections in LOOM-CONVENTIONS.md (harvest seam in [[findings]]); reframe retros/<filename>.json as legacy-read-only; add the gitignored-scratch note", "Leave the genuinely-historical LOOM-CONVENTIONS mentions intact", "Edit commons docs canonically + sync-shared; npm test + npm run check green"], rules_applied = ["Contextual replacement, not blind sed", "Edit commons-canonical docs + sync (mirrors byte-identical)", "Minimal coupling fix to parallel-work-invariant.test.ts (manifest.json->toml, forced by the CONVENTIONS cross-check); fuller registry re-model deferred to Tier C"], disqualifiers = ["Don't touch the allowlisted LOOM-CONVENTIONS history", "Don't re-model the full parallel-work registry (Tier C)", "Don't hand-edit the doc mirrors (commons + sync)"], inputs = ["the re-scan inventory of stale refs", "LOOM-CONVENTIONS.md manifest-sections area", "parallel-work-invariant.test.ts registry"] }
+execution = { actions = ["De-drifted AGENT-CONVENTIONS.md (:24,:195), projects/CONVENTIONS.md (removed stale events Category-1 line, manifest.json->toml), and 5 skills (ev-loop-interactive/confidence, ev-run, loom-plan, loom-research) with contextual replacements", "Added #### [[retros]]/[[replies]]/[[findings]] subsections to LOOM-CONVENTIONS.md (harvest seam documented in [[findings]]); updated the two section-list lines; reframed retros/<filename>.json as legacy-read-only; added a gitignored-scratch note (.guild-findings.jsonl + RECOVERY-STATUS.json)", "Applied the minimal parallel-work-invariant.test.ts registry fix (manifest.json->manifest.toml) forced by the CONVENTIONS de-drift; the fuller re-model (events.jsonl/checkins/etc still named there) deferred to Tier C", "sync-shared propagated the commons doc edits to the 8 mirror copies (byte-identical)"], files_touched = ["plugins/commons/docs/AGENT-CONVENTIONS.md", "plugins/commons/docs/LOOM-CONVENTIONS.md", "(8 synced mirror docs)", "plugins/ev/skills/ev-loop-interactive/SKILL.md", "plugins/ev/skills/ev-loop-confidence/SKILL.md", "plugins/ev/skills/ev-run/SKILL.md", "plugins/loom/skills/loom-plan/SKILL.md", "plugins/loom/skills/loom-research/SKILL.md", "projects/CONVENTIONS.md", "plugins/commons/cli/parallel-work-invariant.test.ts"], corrections = ["The de-drift to CONVENTIONS.md broke parallel-work-invariant.test.ts (it cross-checks CONVENTIONS's declared exceptions against a hardcoded registry still naming manifest.json). Applied the minimal manifest.json->toml registry fix to re-couple; flagged the fuller registry re-model (events.jsonl/checkins/sessions/retros/responses targets) as Tier-C deferred."] }
+scope = ["AGENT-CONVENTIONS + 5 skills + projects/CONVENTIONS de-drift; LOOM-CONVENTIONS new-section docs; minimal parallel-work test coupling fix", "Out: the regression guard (D2); the fuller parallel-work registry re-model (Tier C); the commons orphaned-JSON-substrate (separate follow-up)"]
+changes_since_previous = "Phase 4 begins (last phase). Closes the original audit Finding 4 (doc drift) + documents what Phases 1-3 built."
+verdict = { result = "approved", reasons = ["Panel approved: contract-fit (contextual replacements correct, new-section docs accurate to Phases 1-3, history preserved, deferral clean) + test-unit (the coupled registry fix in-scope); the regression guard independently proves zero stale refs remain", "npm test 1356 passing; npm run check ok; grep over the should-be-current surfaces returns zero retired-trio refs"] }
+notes_for_pr = ["Closes the original audit Finding 4: the convention docs + 5 skill bodies no longer reference the retired manifest.json/config.json/events.jsonl five-file model. Replacements are contextual (config.json -> the manifest's [config]; events.jsonl trail -> [[events]]; report file-lists -> manifest.toml).", "LOOM-CONVENTIONS.md now documents the [[retros]]/[[replies]]/[[findings]] sections (with the findings harvest-at-close seam), reframes retros/<filename>.json as the legacy read-only format, and states the gitignored-scratch convention.", "Genuinely-historical mentions ('project state lived in five separate files', 'consolidation folded ...') are intentionally kept.", "parallel-work-invariant.test.ts got a MINIMAL manifest.json->manifest.toml registry fix (it cross-checks CONVENTIONS). Its other stale targets (events.jsonl/checkins/sessions/retros/responses, all now manifest sections) are a DEFERRED Tier-C re-model, called out so a reviewer knows it's intentional."]
 
 [[revisions]]
 timestamp = "2026-06-02T21:50:52.633Z"

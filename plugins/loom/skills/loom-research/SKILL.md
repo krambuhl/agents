@@ -316,7 +316,7 @@ One short paragraph in this shape:
 ```
 Created research dossier: <topic>
 Location: projects/<slug>/
-Files: RESEARCH.md, RESEARCH-NOTES.md, manifest.json, config.json, events.jsonl, plans/research-shift-*.md
+Files: RESEARCH.md, RESEARCH-NOTES.md, manifest.toml, plans/research-shift-*.md
 Shifts completed: <N>
 Fact-check: <approved | N flagged claims resolved>
 Next: run /loom-plan <slug> to compose a PLAN.md grounded in this research, OR cite the dossier from an /ev-loop-interactive inner-RPI hop.
@@ -408,7 +408,7 @@ classification gap is a Phase 7 follow-up.
   fact-check / budget-exhausted.** The CLI verb emits
   `research-started` and `research-completed`; the skill emits the
   other six. Use `bin/loom` verbs where possible; for the skill-side
-  events, append to `events.jsonl` via the existing events helper
+  events, append to the manifest's `[[events]]` via `loom events append`
   (call `bin/loom events append <slug> --event=<name> --detail=<json>`
   if/when such a verb exists; until then, the skill's emission paths
   are documented here for future hardening and the writes are made
