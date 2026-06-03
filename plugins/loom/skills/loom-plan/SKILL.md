@@ -67,7 +67,7 @@ interview's questions tersely and the loop closes fast.
   recovery check below cleared), emit `plan-started` with detail
   `{slug, topic: <positional-arg if not a full slug, else null>}`.
   This single emit per session marks the session boundary in the
-  events.jsonl trail.
+  manifest's `[[events]]` trail.
 - Check for `projects/<slug>/RECOVERY-STATUS.json`:
   - Present AND `parent_skill === '/loom-plan'`: surface the failure
     context (`failed_step`, `context.last_decision`, partial
@@ -265,7 +265,7 @@ One short paragraph in this shape:
 Created plan: <title>
 Research foundation: <path to RESEARCH.md, or "auto-spawned this session">
 Location: projects/<slug>/
-Files: PLAN.md, INTERVIEW.md, manifest.json, config.json, events.jsonl, checkins/, sessions/
+Files: PLAN.md, INTERVIEW.md, manifest.toml
 Evaluator panel: <verdict>, <blocking_count> blocking, <advisory_count> advisory
 Next: run /ev-loop-interactive <slug> <phase> to execute the first phase, or /loom-revise-plan <slug> --revision-file=... --rationale=... to amend.
 ```

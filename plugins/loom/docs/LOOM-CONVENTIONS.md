@@ -129,12 +129,14 @@ substrate-consolidation folded `manifest.json` + `config.json` +
 `sessions/<YYYY-MM-DD>-<letter>.json` into one sectioned TOML file.
 Identity scalars and mutable status live in the `[meta]` and
 `[config]` tables; per-record histories (phases, events, checkins,
-sessions, revisions) live in `[[<name>]]` array-of-table sections.
+sessions, revisions, retros, replies, findings) live in `[[<name>]]`
+array-of-table sections.
 
 **Write surface**: every loom verb that mutates state writes the
 whole manifest under atomic temp + rename; append-only sections
-(`[[events]]`, `[[checkins]]`, `[[sessions]]`, `[[revisions]]`) are
-only appended to by CLI discipline. Single-writer-serialized per
+(`[[events]]`, `[[checkins]]`, `[[sessions]]`, `[[revisions]]`,
+`[[retros]]`, `[[replies]]`, `[[findings]]`) are only appended to by
+CLI discipline. Single-writer-serialized per
 `projects/CONVENTIONS.md` § Category 3. The hand-rolled, zero-dep
 TOML parser (`plugins/loom/cli/lib/toml.ts`) encodes the nested
 record bodies (`Checkin.contract`, `Event.detail`, etc) as inline
@@ -341,6 +343,67 @@ target = "PLAN.md"           # the revised artifact (extensible)
 seq = 1                      # 1-based revision number
 ```
 
+#### `[[retros]]`
+
+Project and session retrospectives — the consolidated home for what
+were `retros/<filename>.json` files. **Write surface**: `bin/loom retro
+write` appends the retro into `[[retros]]`. The create-once guard
+(session retros unique by `(phase, tier)`, project retros singleton)
+lives in the verb, since the append helper is a plain append. Reads are
+manifest-first with a fallback to the legacy `retros/` files for
+pre-flip projects (forward-only).
+
+```toml
+[[retros]]
+schema_version = 1
+type = "session"             # "session" | "project"
+created = "<ISO 8601>"
+phase = 2                    # session retros only
+tier = 1                     # session retros only
+findings = [{ category = "kept-well", description = "...", evidence = "..." }]
+```
+
+#### `[[replies]]`
+
+Replies the loop posted to PR review comments — the consolidated home
+for what were `responses/<branch>/response-NN.json` files. **Write
+surface**: `bin/loom pr respond` appends each reply into `[[replies]]`.
+An append-only log (a reply to the same comment can legitimately
+recur), so there is no dedup guard; `branch` carries the former
+partition key.
+
+```toml
+[[replies]]
+comment_id = 12345           # the gh review-comment id
+body = "..."
+branch = "<phase-branch>"
+created = "<ISO 8601>"
+```
+
+#### `[[findings]]`
+
+Guild evaluator findings, harvested from the concurrent
+`.guild-findings.jsonl` scratch stream. **Write surface**: `bin/loom
+findings harvest <slug>` folds the jsonl into `[[findings]]`, deduped on
+`signature`, idempotently. This is the serial, single-writer harvest
+that runs at unit/phase close — never mid-panel, because the jsonl is a
+many-writer `O_APPEND` buffer and the manifest is single-writer.
+`harvested_at` is the fold-in time; `branch`/`unit` are optional
+attribution. The harvest seam lives in the loom/ev layer (it reads
+guild's file); guild's findings-append writer is untouched.
+
+```toml
+[[findings]]
+evaluator = "evaluator-test-unit"
+code = "<finding-code>"
+evidence = "..."
+severity = "advisory"        # "blocking" | "advisory"
+signature = "<content hash>"
+harvested_at = "<ISO 8601>"
+branch = "<branch>"          # optional attribution
+unit = "01"                  # optional attribution
+```
+
 ### `PLAN.md`
 
 Human-authored project plan. **Write surface**: `bin/loom plan`
@@ -378,8 +441,11 @@ writes this once at project creation. Not subsequently mutated
 ### `retros/<filename>.json`
 
 Retrospectives — kept-well / improvement / process-change / follow-
-up findings from a session or the whole project. **Write surface**:
-`bin/loom retro write`. **Partitioned** by retro type and (for
+up findings from a session or the whole project. **Legacy file format**:
+new retros are written into the manifest's `[[retros]]` section (see
+above); this file shape is now read-only, resolved by the `retro
+read`/`list` fallback for pre-flip projects. **Partitioned** by retro
+type and (for
 session retros) phase/tier.
 
 Two shapes — `session` and `project`:
@@ -450,6 +516,14 @@ Present only when a sub-agent invocation failed mid-flight. See
 [`AGENT-CONVENTIONS.md`](./AGENT-CONVENTIONS.md) § Recovery from
 sub-agent failures for the full shape. Lives at the project root
 alongside `manifest.toml`.
+
+**Gitignored scratch.** `RECOVERY-STATUS.json` and the
+`.guild-findings.jsonl` evaluator stream are transient and not
+committed (`.gitignore` excludes `projects/**/.guild-findings.jsonl`
+and `projects/**/RECOVERY-STATUS.json`). Recovery state cannot live in
+the manifest it recovers; the findings stream folds into `[[findings]]`
+at close via `bin/loom findings harvest`. Everything else under
+`projects/<slug>/` is committed.
 
 ## Slug-resolution semantics
 

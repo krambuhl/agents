@@ -665,7 +665,7 @@ For each deliverable (picked per the ordering rule):
      proceeding. The operator (or next `/ev-run`) decides whether
      to retry the sub-agent or skip the revision.
    - Does NOT emit `rpi-inner-completed`. The trail in
-     `events.jsonl` will show `rpi-inner-triggered` without a
+     the manifest's `[[events]]` will show `rpi-inner-triggered` without a
      matching completion — the correct partial-failure signal,
      same shape as the research verb's started-without-completed
      pattern.
@@ -798,8 +798,8 @@ source of truth.
 1. **Collect file paths.** Take the unit's changed and created files.
    Practical recipe: `git status --short` minus any deletions, plus
    any freshly-authored untracked paths that will land in the artifact
-   commit. Substrate-only mutations (`projects/<slug>/manifest.json`
-   or `events.jsonl` updates auto-written by `bin/loom` verbs)
+   commit. Substrate-only mutations (`projects/<slug>/manifest.toml`
+   updates auto-written by `bin/loom` verbs)
    generally should be excluded — they shipped via the substrate
    itself, not as the unit's artifact.
 2. **Derive the panel** per § Derive panel, passing the file paths

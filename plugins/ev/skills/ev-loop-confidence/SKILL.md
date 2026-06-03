@@ -90,7 +90,7 @@ form of the phase name. Inside:
 - `inventory.md` — the full list of files in scope, generated in step 1
 
 Create this directory if it doesn't exist. Phase state lives in the
-project's `manifest.json` (via § Phase update); tactical retros live
+project's `manifest.toml` (via § Phase update); tactical retros live
 in the project's `retros/` directory (via § Retro write). The scope
 directory is now just the inventory home.
 
@@ -182,14 +182,14 @@ Before any work:
   branch before the first write — a write on the wrong branch strands
   the work (see `docs/AGENT-CONVENTIONS.md` § Branch hygiene before
   substrate writes).
-- Run the verification commands from `config.json` as a baseline.
+- Run the verification commands from the manifest's `[config]` as a baseline.
   Record exit status. A red baseline before any work means the loop
   stops — you are not making a red build redder.
 
 ### Step 1. Coverage before transforms
 
 Build `inventory.md` listing every file or item in scope for this phase.
-The phase description in PLAN.md or `config.json` tells you the pattern
+The phase description in PLAN.md or the manifest's `[config]` tells you the pattern
 (e.g. "all .ts/.tsx files using ESLint disable comments"). Use `git ls-files`,
 `grep`, `find`, or equivalent to enumerate. Include counts.
 

@@ -319,7 +319,7 @@ With no message, pick the phase using this policy:
 
 Determine which loop to invoke:
 - Per-phase override in PLAN.md wins.
-- Otherwise, use the preferred loop from `config.json`
+- Otherwise, use the preferred loop from the manifest's `[config]`
   (`worker_bindings` field, e.g. `{"default": "ev-loop-interactive"}`).
 - Otherwise, default to `/ev-loop-confidence`.
 
@@ -370,7 +370,7 @@ The three ambiguity classes:
    skill grill-mes: surface 2-4 interpretations via
    `AskUserQuestion`, recommend the most likely one. In auto-mode,
    `evaluator-contract-fit` reads the redirect text against the
-   project's open PRs (from the events.jsonl trail) and picks the
+   project's open PRs (from the manifest's `[[events]]` trail) and picks the
    highest-confidence match.
 
 2. **Manifest-vs-git drift** (step 0.5 / step 1). The manifest's

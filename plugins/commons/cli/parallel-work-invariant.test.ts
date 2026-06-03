@@ -26,7 +26,7 @@ type Category =
 
 type Exception =
   | 'PLAN.md'
-  | 'manifest.json'
+  | 'manifest.toml'
   | 'plan'
   | 'gitignore-amendment';
 
@@ -103,15 +103,15 @@ const REGISTRY: readonly VerbEntry[] = [
     verb: 'loom phase update',
     family: 'loom',
     category: 'single-writer-serialized',
-    target: 'projects/<slug>/manifest.json',
-    exception: 'manifest.json',
+    target: 'projects/<slug>/manifest.toml',
+    exception: 'manifest.toml',
   },
   {
     verb: 'loom project scaffold (writes manifest)',
     family: 'loom',
     category: 'single-writer-serialized',
-    target: 'projects/<slug>/manifest.json',
-    exception: 'manifest.json',
+    target: 'projects/<slug>/manifest.toml',
+    exception: 'manifest.toml',
   },
   {
     verb: 'guild plan init',
@@ -145,7 +145,7 @@ const VALID_CATEGORIES: ReadonlySet<Category> = new Set([
 
 const DECLARED_EXCEPTIONS: ReadonlySet<Exception> = new Set([
   'PLAN.md',
-  'manifest.json',
+  'manifest.toml',
   'plan',
   'gitignore-amendment',
 ]);
