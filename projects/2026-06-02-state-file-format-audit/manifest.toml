@@ -21,13 +21,14 @@ worker_bindings = {}
 [[phases]]
 number = 1
 name = "Manifest schema + write lib for the new sections"
-status = "in-progress"
+status = "completed"
 branch = "ev-agent.state-file-format-audit.schema"
 
 [[phases]]
 number = 2
 name = "Flip the writers and add the harvest seam"
-status = "not-started"
+status = "in-progress"
+branch = "ev-agent.state-file-format-audit.flip-writers"
 
 [[phases]]
 number = 3
@@ -69,6 +70,21 @@ at = "2026-06-03T02:58:57.087Z"
 event = "checkin-created"
 detail = { number = "02", branch = "ev-agent.state-file-format-audit.schema" }
 
+[[events]]
+at = "2026-06-03T14:28:21.992Z"
+event = "phase-completed"
+detail = { phase = 1 }
+
+[[events]]
+at = "2026-06-03T14:28:22.064Z"
+event = "phase-started"
+detail = { phase = 2, name = "Flip the writers and add the harvest seam" }
+
+[[events]]
+at = "2026-06-03T17:56:01.996Z"
+event = "checkin-created"
+detail = { number = "03", branch = "ev-agent.state-file-format-audit.flip-writers" }
+
 [[checkins]]
 schema_version = 1
 number = "01"
@@ -96,6 +112,20 @@ scope = ["The three append helpers + the SECTIONS extension + their tests", "Out
 changes_since_previous = "Adds the mutation API (three append helpers) on top of unit 01's schema + serializer."
 verdict = { result = "approved", reasons = ["Panel approved 3/3: contract-fit (ACs met, plain-append decision honored, SECTIONS extension in-scope), test-unit (marquee write-cycle non-vacuous, assertions falsifying), naming (family fit; the one advisory was applied as appendReply)", "npm test 1350 passed; npm run check ok"] }
 notes_for_pr = ["Adds appendRetro / appendReply / appendFinding (plain immutable appends, mirroring appendCheckin/appendSession) so Phase 2 writers + the findings-harvest have a mutation API. No verb wired yet.", "Plain-append by design: no dedup guard in the lib helpers. Retro immutability is enforced by the Phase-2 retro verb; finding dedup-on-signature by the Phase-2 harvest step. Two tests lock the no-dedup behavior in.", "Harness SECTIONS extended to retros/replies/findings so the other-sections-untouched consolidation-bug defense actually covers the new sections.", "signal: phase-boundary: D2 is the last unit in Phase 1 (single signal; no scope-shift revise offered).", "Phase 1 deliverables both complete + 1350 tests green; leaving phase status in-progress until the PR merges (completion is merge-gated, not set at phase close)."]
+
+[[checkins]]
+schema_version = 1
+number = "03"
+created = "2026-06-03T17:56:01Z"
+phase = { number = 2, name = "Flip the writers and add the harvest seam" }
+branch = "ev-agent.state-file-format-audit.flip-writers"
+unit = "P2-D1 — flip the retro writer"
+contract = { goal = "Flip `loom retro write` to append the retro into the manifest's [[retros]] section via appendRetro instead of writing a retros/<name>.json file, with the create-once guard moved into the verb; make retro read/list manifest-first with file fallback. No file written for new retros.", acceptance_criteria = ["retroWrite reads the manifest, rejects a duplicate loudly (retro-already-exists; session keyed on (phase,tier), project singleton), then appendRetro + the retro-written event in one writeManifest; no retros/ file created", "retroRead/retroList are manifest-first with file fallback; retroList unions manifest+file entries with a source:'manifest'|'file' tag", "lib/retro.ts NOT modified (writeRetro stays dead-but-present until Phase 3; readRetro/listRetros/retroFilename retained as readers)", "npm test green"], rules_applied = ["Forward-only: retain file readers, do not migrate existing retro files", "Immutability policy lives in the verb (appendRetro is a plain append by Phase-1 design); single read-modify-write (appendRetro + appendEvent in one writeManifest)", "Anchored test assertions (toEqual on result shape, exact lengths, existsSync===false, error-code equality)"], disqualifiers = ["No lib/retro.ts change (commons-mirrored; write-path removal is Phase 3)", "No other verb touched", "No migrating existing retro files (forward-only)", "Do not drop the retro-written event"], inputs = ["plugins/loom/cli/verbs/loom/retro.ts (current writer/readers)", "plugins/loom/cli/lib/retro.ts (readRetro/listRetros/retroFilename signatures, read-only)", "plugins/loom/cli/lib/manifest-toml.ts (appendRetro/appendEvent/readManifestFile/writeManifest)", "plugins/loom/cli/verbs/loom/retro.test.ts"] }
+execution = { actions = ["Flipped retroWrite: read manifest, verb-owned create-once guard (session (phase,tier) / project singleton), appendRetro + retro-written event in one writeManifest, no file", "Made retroRead manifest-first (find in [[retros]]) with file fallback (readRetro); retroList unions manifest entries (source 'manifest') + file entries (source 'file')", "Updated the import to drop writeRetro and add appendRetro + retroFilename; lib/retro.ts untouched", "Updated the write test for the flip (result shape, retro in manifest.retros, no file, event preserved); added duplicate-rejection + manifest-first read/list tests; applied the test-unit advisory (assert legacy entries are source 'file')"], files_touched = ["plugins/loom/cli/verbs/loom/retro.ts", "plugins/loom/cli/verbs/loom/retro.test.ts"], corrections = ["Reader scope was a user fork: chose manifest-first + file fallback for retro read/list (vs flip-writer-only) so the verb round-trips (read back what you write) — user-approved.", "Applied evaluator-test-unit advisory: test #3 now positively asserts the 2 legacy list entries carry source:'file', pinning tagging completeness (not just that exactly one is 'manifest')."] }
+scope = ["verbs/loom/retro.ts (write flip + manifest-first read/list) + its tests", "Out: lib/retro.ts write-path removal (Phase 3), other verbs (D2/D3), existing-retro-file migration (forward-only)"]
+changes_since_previous = "First Phase-2 unit. Also carries the Phase 1->completed / Phase 2->in-progress manifest reconcile (rides with this feature commit per the no-state-only-commit rule)."
+verdict = { result = "approved", reasons = ["Panel approved 3/3: contract-fit (ACs met, disqualifiers held, forward-only guard edge honored), test-unit (manifest-first genuinely proven via a no-fixture-file key; falsifying assertions; advisory applied), naming (source/section discriminators clear; one watch-the-seam advisory recorded)", "npm test 1352 passing; retro suite 10/10; npm run check ok"] }
+notes_for_pr = ["Flips `loom retro write` from file-per-record (retros/<name>.json) to the manifest's [[retros]] section; retro read/list are now manifest-first with file fallback so old file retros still resolve (forward-only). The retro-written event is preserved.", "The create-once guard moved from writeRetro's filesystem check into the verb (appendRetro is a plain append). KNOWN forward-only edge: the guard checks only manifest.retros, not the legacy file store, so a retro that exists ONLY as a legacy file could be (re)written into the manifest. Deliberate: coupling the guard to the file store would re-introduce the dependency Phase 3 deletes.", "lib/retro.ts is untouched (writeRetro now dead-but-present; removed in Phase 3, where it carries a commons-sync wrinkle since lib/retro.ts is mirrored).", "Recorded advisory (evaluator-naming): retroList tags entries with `source` while retroWrite's result uses `section` — adjacent 'where does it live' concepts with different keys. Watch for a consistent result envelope when the pr-respond (D2) and findings (D3) writers land."]
 
 [[revisions]]
 timestamp = "2026-06-02T21:50:52.633Z"
