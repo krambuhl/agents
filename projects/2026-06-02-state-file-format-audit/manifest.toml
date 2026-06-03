@@ -64,6 +64,11 @@ at = "2026-06-03T01:09:47.500Z"
 event = "phase-started"
 detail = { phase = 1, name = "Manifest schema + write lib for the new sections" }
 
+[[events]]
+at = "2026-06-03T02:58:57.087Z"
+event = "checkin-created"
+detail = { number = "02", branch = "ev-agent.state-file-format-audit.schema" }
+
 [[checkins]]
 schema_version = 1
 number = "01"
@@ -77,6 +82,20 @@ scope = ["loom manifest schema (types.ts) + serializer (manifest-toml.ts) + the 
 changes_since_previous = "First unit of Phase 1."
 verdict = { result = "approved", reasons = ["Panel approved 3/3: evaluator-contract-fit (all ACs met, disqualifiers held, scope in bounds), evaluator-test-unit (assertions anchored and falsifying, load-bearing branches covered), evaluator-naming (after Response->ReviewReply rename resolved the global-collision flag)", "npm test 1344 passed; npm run check (sync drift) ok"] }
 notes_for_pr = ["Additive-gate unit: adds [[retros]] / [[replies]] / [[findings]] to the manifest schema + serializer; no verb or writer flipped (that is Phase 2). Old file-writers still work.", "Naming: harvested guild findings are GuildFinding (not ManifestFinding, to avoid collision with the existing RetroFinding); PR review replies are ReviewReply (not Response, to avoid the DOM/fetch/Express global) in the [[replies]] section.", "Cosmetic manifest-shape footprint: because the new sections default to [] (consistent with checkins/sessions), every existing manifest gains retros = [] / replies = [] / findings = [] lines on its next write. Harmless and round-trip-stable.", "Accepted advisory (evaluator-contract-fit, recorded in .guild-findings.jsonl): reconstructFinding.severity and reconstructRetroFinding.category use an 'as' cast rather than validating literal-union membership, consistent with the existing reconstructors' trusted-semantics convention; future-hardening note, not addressed in this unit.", "types.ts/manifest-toml.ts/adopt.ts are loom-authoritative forks (not in the commons LIB_MIRROR_ALLOWLIST), so no sync-shared run is required."]
+
+[[checkins]]
+schema_version = 1
+number = "02"
+created = "2026-06-03T02:58:57Z"
+phase = { number = 1, name = "Manifest schema + write lib for the new sections" }
+branch = "ev-agent.state-file-format-audit.schema"
+unit = "D2 — append helpers"
+contract = { goal = "Add appendRetro / appendReply / appendFinding to manifest-toml.ts, mirroring appendCheckin/appendSession, so Phase 2's writers and the findings-harvest have a mutation API. No verb touched.", acceptance_criteria = ["Three exported (m: ManifestToml, x) => ManifestToml helpers, immutable update appending to retros / replies / findings", "Append-then-read tests in manifest-toml-helpers.test.ts: each appends to the right section, preserves prior entries, does not mutate input; plus the marquee write-cycle other-sections-untouched defense for a new section", "npm test green; nothing under cli/verbs/ changed"], rules_applied = ["Mirror the append<DomainSingular> sibling family (appendEvent/Checkin/Session/Phase/Revision); plain-append form (no dedup guard) per operator decision", "Extend the harness SECTIONS constant so the consolidation-bug defense covers the new sections", "Anchored assertions: exact length/identity, harness section-diff; no loose toContain"], disqualifiers = ["No change under plugins/loom/cli/verbs/", "No reshaping unit 01's read/serialize path", "No wiring the helpers into any verb (Phase 2)"], inputs = ["plugins/loom/cli/lib/manifest-toml.ts (appendCheckin/appendSession/appendPhase/appendRevision precedents)", "plugins/loom/cli/lib/manifest-toml-helpers.test.ts (helper-test + write-cycle patterns)", "plugins/loom/cli/lib/manifest-toml.harness.ts (SECTIONS / assertSectionsUnchanged)"] }
+execution = { actions = ["Added appendRetro / appendReply / appendFinding as plain immutable-append helpers after appendSession (manifest-toml.ts)", "Extended the harness SECTIONS constant with retros/replies/findings so assertSectionsUnchanged diffs them (manifest-toml.harness.ts)", "Added pure append + input-immutability tests, two no-dedup lock-in tests, and a marquee appendFinding write-cycle other-sections-untouched test (manifest-toml-helpers.test.ts)"], files_touched = ["plugins/loom/cli/lib/manifest-toml.ts", "plugins/loom/cli/lib/manifest-toml.harness.ts", "plugins/loom/cli/lib/manifest-toml-helpers.test.ts"], corrections = ["Naming panel (advisory): appendReviewReply was the lone family member keeping its type qualifier while its section singular is 'reply'; renamed appendReviewReply -> appendReply and reconstructReviewReply -> reconstructReply to match the append<DomainSingular> precedent (appendPhase<-ManifestPhase, appendFinding<-GuildFinding). Type ReviewReply and [[replies]] section unchanged."] }
+scope = ["The three append helpers + the SECTIONS extension + their tests", "Out: any verb wiring (Phase 2), dedup/immutability policy (Phase-2 verb + harvest own it)"]
+changes_since_previous = "Adds the mutation API (three append helpers) on top of unit 01's schema + serializer."
+verdict = { result = "approved", reasons = ["Panel approved 3/3: contract-fit (ACs met, plain-append decision honored, SECTIONS extension in-scope), test-unit (marquee write-cycle non-vacuous, assertions falsifying), naming (family fit; the one advisory was applied as appendReply)", "npm test 1350 passed; npm run check ok"] }
+notes_for_pr = ["Adds appendRetro / appendReply / appendFinding (plain immutable appends, mirroring appendCheckin/appendSession) so Phase 2 writers + the findings-harvest have a mutation API. No verb wired yet.", "Plain-append by design: no dedup guard in the lib helpers. Retro immutability is enforced by the Phase-2 retro verb; finding dedup-on-signature by the Phase-2 harvest step. Two tests lock the no-dedup behavior in.", "Harness SECTIONS extended to retros/replies/findings so the other-sections-untouched consolidation-bug defense actually covers the new sections.", "signal: phase-boundary: D2 is the last unit in Phase 1 (single signal; no scope-shift revise offered).", "Phase 1 deliverables both complete + 1350 tests green; leaving phase status in-progress until the PR merges (completion is merge-gated, not set at phase close)."]
 
 [[revisions]]
 timestamp = "2026-06-02T21:50:52.633Z"

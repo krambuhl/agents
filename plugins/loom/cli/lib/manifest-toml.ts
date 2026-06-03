@@ -443,7 +443,7 @@ function reconstructRetro(t: TomlTable, where: string): Retro {
   );
 }
 
-function reconstructReviewReply(t: TomlTable, where: string): ReviewReply {
+function reconstructReply(t: TomlTable, where: string): ReviewReply {
   return {
     comment_id: requireNumber(t, 'comment_id', where),
     body: requireString(t, 'body', where),
@@ -496,7 +496,7 @@ export function readManifest(raw: string): ManifestToml {
       reconstructRetro(t, `[[retros]] #${i + 1}`),
     ),
     replies: sectionTables(root, 'replies').map((t, i) =>
-      reconstructReviewReply(t, `[[replies]] #${i + 1}`),
+      reconstructReply(t, `[[replies]] #${i + 1}`),
     ),
     findings: sectionTables(root, 'findings').map((t, i) =>
       reconstructFinding(t, `[[findings]] #${i + 1}`),
@@ -701,6 +701,27 @@ export function appendSession(m: ManifestToml, session: Session): ManifestToml {
     );
   }
   return { ...m, sessions: [...m.sessions, session] };
+}
+
+// Append a retro to [[retros]]. Plain append: retros are immutable in
+// practice, but the create-once guarantee is enforced by the retro verb
+// (Phase 2 flips it from file-per-record), not this lib helper. Sibling of
+// appendCheckin/appendSession, minus the dedup guard by design.
+export function appendRetro(m: ManifestToml, retro: Retro): ManifestToml {
+  return { ...m, retros: [...m.retros, retro] };
+}
+
+// Append a PR review reply to [[replies]]. Plain append: the pr-respond verb
+// (Phase 2) owns numbering/partitioning; the lib helper just appends.
+export function appendReply(m: ManifestToml, reply: ReviewReply): ManifestToml {
+  return { ...m, replies: [...m.replies, reply] };
+}
+
+// Append a harvested guild finding to [[findings]]. Plain append: the harvest
+// step (Phase 2) dedups on `signature` before calling, so the lib helper does
+// not re-check — keeping dedup policy in one place (the harvester).
+export function appendFinding(m: ManifestToml, finding: GuildFinding): ManifestToml {
+  return { ...m, findings: [...m.findings, finding] };
 }
 
 // Merge a patch into the matching phase (status / branch /

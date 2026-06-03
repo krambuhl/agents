@@ -11,6 +11,9 @@ import { test, expect } from 'vitest';
 import {
   appendCheckin,
   appendEvent,
+  appendFinding,
+  appendRetro,
+  appendReply,
   appendSession,
   backfillPhases,
   readManifestFile,
@@ -24,7 +27,15 @@ import {
   cleanup,
   makeProject,
 } from './manifest-toml.harness.ts';
-import type { Checkin, Event, ManifestToml, Session } from './types.ts';
+import type {
+  Checkin,
+  Event,
+  GuildFinding,
+  ManifestToml,
+  Retro,
+  ReviewReply,
+  Session,
+} from './types.ts';
 import { LoomError } from './errors.ts';
 
 function event(name: string, detail: Record<string, unknown>, at = 't'): Event {
@@ -65,6 +76,32 @@ function session(date: string, letter: string): Session {
     what_happened: [],
     open_threads: [],
     notes: [],
+  };
+}
+
+function retro(phase: number, tier: number): Retro {
+  return {
+    schema_version: 1,
+    type: 'session',
+    created: 't',
+    phase,
+    tier,
+    findings: [{ category: 'kept-well', description: 'd' }],
+  };
+}
+
+function reviewReply(comment_id: number): ReviewReply {
+  return { comment_id, body: 'b', branch: 'br', created: 't' };
+}
+
+function finding(signature: string): GuildFinding {
+  return {
+    evaluator: 'evaluator-test-unit',
+    code: 'c',
+    evidence: 'e',
+    severity: 'advisory',
+    signature,
+    harvested_at: 't',
   };
 }
 
@@ -120,6 +157,43 @@ test('appendSession rejects a duplicate (date, letter) loudly', () => {
   }
   expect(thrown).toBeInstanceOf(LoomError);
   expect((thrown as LoomError).code).toBe('session-already-exists');
+});
+
+// ---------- appendRetro / appendReply / appendFinding: plain append, pure ----------
+
+test('appendRetro appends to [[retros]] and does not mutate its input', () => {
+  const m: ManifestToml = { ...baseManifest(), retros: [retro(1, 1)] };
+  const next = appendRetro(m, retro(2, 1));
+  expect(next.retros).toHaveLength(2);
+  expect(next.retros[1].type === 'session' && next.retros[1].phase).toBe(2);
+  expect(m.retros).toHaveLength(1); // input untouched
+});
+
+test('appendRetro is a plain append — no dedup guard (policy lives in the Phase-2 verb)', () => {
+  const m: ManifestToml = { ...baseManifest(), retros: [retro(1, 1)] };
+  // Same (type, phase, tier) appends a second time rather than throwing.
+  expect(appendRetro(m, retro(1, 1)).retros).toHaveLength(2);
+});
+
+test('appendReply appends to [[replies]] and does not mutate its input', () => {
+  const m: ManifestToml = { ...baseManifest(), replies: [reviewReply(1)] };
+  const next = appendReply(m, reviewReply(2));
+  expect(next.replies).toHaveLength(2);
+  expect(next.replies[1].comment_id).toBe(2);
+  expect(m.replies).toHaveLength(1); // input untouched
+});
+
+test('appendFinding appends to [[findings]] and does not mutate its input', () => {
+  const m: ManifestToml = { ...baseManifest(), findings: [finding('sig-a')] };
+  const next = appendFinding(m, finding('sig-b'));
+  expect(next.findings).toHaveLength(2);
+  expect(next.findings[1].signature).toBe('sig-b');
+  expect(m.findings).toHaveLength(1); // input untouched
+});
+
+test('appendFinding is a plain append — duplicate signatures are NOT deduped here (the harvester owns dedup)', () => {
+  const m: ManifestToml = { ...baseManifest(), findings: [finding('sig-a')] };
+  expect(appendFinding(m, finding('sig-a')).findings).toHaveLength(2);
 });
 
 // ---------- updatePhase / updateMeta ----------
@@ -253,6 +327,24 @@ test('updatePhase through the write cycle leaves non-phase sections untouched', 
     const after = readManifestFile(project.path).manifest;
     expect(after.phases[1].status).toBe('completed');
     assertSectionsUnchanged(before, after, ['phases']);
+  } finally {
+    cleanup(project);
+  }
+});
+
+test('appendFinding through the write cycle leaves other sections untouched', () => {
+  const project = makeProject(seededManifest());
+  try {
+    const before = readManifestFile(project.path).manifest;
+    const mutated = appendFinding(before, finding('sig-x'));
+    writeManifest(project.path, mutated);
+
+    const after = readManifestFile(project.path).manifest;
+    expect(after.findings).toHaveLength(before.findings.length + 1);
+    // The marquee defense, now covering a Phase-1-added section: a [[findings]]
+    // append must not trample checkins/events/phases/etc through the real
+    // write → read cycle.
+    assertSectionsUnchanged(before, after, ['findings']);
   } finally {
     cleanup(project);
   }
