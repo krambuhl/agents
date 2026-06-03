@@ -56,6 +56,9 @@ function syntheticManifest(): ManifestToml {
     checkins: [],
     sessions: [],
     revisions: [],
+    retros: [],
+    replies: [],
+    findings: [],
   };
 }
 
@@ -89,6 +92,64 @@ test('stringifyManifest round-trips a manifest with [[revisions]] entries', () =
   };
   const back = readManifest(stringifyManifest(m));
   expect(back.revisions).toEqual(m.revisions);
+  expect(back).toEqual(m);
+});
+
+test('stringifyManifest round-trips [[retros]] / [[replies]] / [[findings]] (both retro variants, nested findings, optional finding fields)', () => {
+  const m: ManifestToml = {
+    ...syntheticManifest(),
+    retros: [
+      {
+        schema_version: 1,
+        type: 'session',
+        created: '2026-06-02T10:00:00Z',
+        phase: 2,
+        tier: 1,
+        findings: [
+          { category: 'kept-well', description: 'the gate held', evidence: 'PR #14' },
+          { category: 'improvement', description: 'tighten the packet' },
+        ],
+      },
+      {
+        schema_version: 1,
+        type: 'project',
+        created: '2026-06-02T11:00:00Z',
+        findings: [{ category: 'follow-up', description: 'spin the codemod' }],
+      },
+    ],
+    replies: [
+      { comment_id: 99887766, body: 'fixed in 2a3b4c', branch: 'feat.x', created: '2026-06-02T12:00:00Z' },
+    ],
+    findings: [
+      // optional branch/unit present
+      {
+        evaluator: 'evaluator-test-unit',
+        code: 'test-unit-loose-truthy',
+        evidence: 'toContain on a common substring',
+        severity: 'advisory',
+        branch: 'feat.x',
+        unit: '01',
+        signature: 'e7aaf00dbeef',
+        harvested_at: '2026-06-02T13:00:00Z',
+      },
+      // optional branch/unit absent (omitted-on-write, must not reappear)
+      {
+        evaluator: 'evaluator-contract-fit',
+        code: 'contract-ask-drift',
+        evidence: 'unit exceeded its stated scope',
+        severity: 'blocking',
+        signature: 'c0ffee123456',
+        harvested_at: '2026-06-02T13:05:00Z',
+      },
+    ],
+  };
+  const back = readManifest(stringifyManifest(m));
+  expect(back.retros).toEqual(m.retros);
+  expect(back.replies).toEqual(m.replies);
+  expect(back.findings).toEqual(m.findings);
+  // the absent-optional finding must not gain branch/unit keys on round-trip
+  expect('branch' in back.findings[1]).toBe(false);
+  expect('unit' in back.findings[1]).toBe(false);
   expect(back).toEqual(m);
 });
 

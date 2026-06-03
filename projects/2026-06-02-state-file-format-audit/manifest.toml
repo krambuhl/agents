@@ -1,5 +1,7 @@
-checkins = []
 sessions = []
+retros = []
+replies = []
+findings = []
 
 [meta]
 schema_version = 1
@@ -19,7 +21,8 @@ worker_bindings = {}
 [[phases]]
 number = 1
 name = "Manifest schema + write lib for the new sections"
-status = "not-started"
+status = "in-progress"
+branch = "ev-agent.state-file-format-audit.schema"
 
 [[phases]]
 number = 2
@@ -50,6 +53,49 @@ detail = { slug = "2026-06-02-state-file-format-audit", topic = "state file form
 at = "2026-06-02T21:14:22.909Z"
 event = "research-completed"
 detail = { slug = "2026-06-02-state-file-format-audit", research_path = "RESEARCH.md", notes_path = "RESEARCH-NOTES.md" }
+
+[[events]]
+at = "2026-06-03T01:09:31.352Z"
+event = "checkin-created"
+detail = { number = "01", branch = "ev-agent.state-file-format-audit.schema" }
+
+[[events]]
+at = "2026-06-03T01:09:47.500Z"
+event = "phase-started"
+detail = { phase = 1, name = "Manifest schema + write lib for the new sections" }
+
+[[events]]
+at = "2026-06-03T02:58:57.087Z"
+event = "checkin-created"
+detail = { number = "02", branch = "ev-agent.state-file-format-audit.schema" }
+
+[[checkins]]
+schema_version = 1
+number = "01"
+created = "2026-06-03T01:09:31Z"
+phase = { number = 1, name = "Manifest schema + write lib for the new sections" }
+branch = "ev-agent.state-file-format-audit.schema"
+unit = "D1 — schema types + serialize/parse round-trip"
+contract = { goal = "Teach the loom manifest type and TOML serializer to hold and round-trip three new append-only sections (retros, replies, findings), additively. No verb or writer touched.", acceptance_criteria = ["types.ts adds ReviewReply {comment_id:number, body, branch, created} and GuildFinding {evaluator, code, evidence, severity, branch?, unit?, signature, harvested_at}; ManifestToml gains retros: Retro[], replies: ReviewReply[], findings: GuildFinding[]", "manifest-toml.ts adds reconstructRetro (SessionRetro|ProjectRetro union by type + nested findings via reconstructRetroFinding/requireTableArray), reconstructReviewReply, reconstructFinding, each loud on a missing required field", "readManifest populates the three sections via sectionTables (absent -> []); stringifyManifest emits them", "Round-trip test: a manifest with both retro variants, a reply, and two findings (optional fields present and absent) deep-equals after stringify->read", "Back-compat: the manifest-real.toml fixture (no new sections) parses with retros/replies/findings each exactly []", "npm test green; nothing under cli/verbs/ changed"], rules_applied = ["Mirror existing reconstructCheckin/sectionTables/requireX patterns (composition over novelty)", "Semantic naming: GuildFinding (provenance) not ManifestFinding; ReviewReply not Response (avoid the DOM/fetch/Express global collision)", "Additive-only: no existing type reshaped; existing round-trip tests stay green", "Anchored test assertions: toEqual on extracted containers, exact [] emptiness, 'key' in obj === false for omitted-optionals; no loose toContain"], disqualifiers = ["No change under plugins/loom/cli/verbs/ (writer change is Phase 2)", "No bespoke serializer nesting code (generic stringifyToml handles array-of-inline-tables; verified empirically)", "No reshape/rename of existing types", "No append helpers (appendRetro/Reply/Finding are unit D2)"], inputs = ["plugins/loom/cli/lib/types.ts (ManifestToml, Retro/RetroFinding, element types)", "plugins/loom/cli/lib/manifest-toml.ts (sectionTables, reconstructCheckin/Session, readManifest, stringifyManifest, requireX helpers)", "plugins/loom/cli/lib/manifest-toml.test.ts and manifest-toml-write.test.ts (round-trip patterns)", "plugins/loom/cli/fixtures/manifest-real.toml (back-compat fixture)", "plugins/guild/cli/verbs/guild/findings.ts (the jsonl row shape GuildFinding mirrors)"] }
+execution = { actions = ["Added ReviewReply, FindingSeverity, GuildFinding types and the retros/replies/findings fields on ManifestToml (types.ts)", "Added reconstructRetro (union + nested findings), reconstructRetroFinding, requireTableArray, reconstructReviewReply, reconstructFinding; wired all three sections into readManifest and stringifyManifest (manifest-toml.ts)", "Fixed the four ManifestToml constructors forced by the new required fields: adopt.ts, manifest-toml.harness.ts, manifest-toml-write.test.ts syntheticManifest, convert-loom-state-to-toml.ts (additive empty arrays)", "Added round-trip test (both retro variants, nested findings, optional-present/absent findings), back-compat fixture test, extended empty-sections test, and an unknown-retro-type loud-rejection test", "Verified the generic toml lib round-trips array-of-inline-tables (findings) empirically before relying on the no-bespoke-serializer disqualifier"], files_touched = ["plugins/loom/cli/lib/types.ts", "plugins/loom/cli/lib/manifest-toml.ts", "plugins/loom/cli/lib/adopt.ts", "plugins/loom/cli/lib/manifest-toml.test.ts", "plugins/loom/cli/lib/manifest-toml-write.test.ts", "plugins/loom/cli/lib/manifest-toml.harness.ts", "scripts/convert-loom-state-to-toml.ts"], corrections = ["Contract drafted ReviewReply (then named Response) fields as 'all string'; comment_id is actually a number per pr.ts ResponsesFile (Array<{comment_id: number; body}>). Corrected the type to comment_id: number.", "Naming panel flagged Response as colliding with the DOM/fetch/Express Response global; renamed type Response -> ReviewReply and manifest section responses -> replies (single-word, matches sibling sections), user-approved."] }
+scope = ["loom manifest schema (types.ts) + serializer (manifest-toml.ts) + the constructor fixups + round-trip/back-compat/reject tests", "Out: append helpers (D2), any verb/writer change (Phase 2), existing-project migration (forward-only)"]
+changes_since_previous = "First unit of Phase 1."
+verdict = { result = "approved", reasons = ["Panel approved 3/3: evaluator-contract-fit (all ACs met, disqualifiers held, scope in bounds), evaluator-test-unit (assertions anchored and falsifying, load-bearing branches covered), evaluator-naming (after Response->ReviewReply rename resolved the global-collision flag)", "npm test 1344 passed; npm run check (sync drift) ok"] }
+notes_for_pr = ["Additive-gate unit: adds [[retros]] / [[replies]] / [[findings]] to the manifest schema + serializer; no verb or writer flipped (that is Phase 2). Old file-writers still work.", "Naming: harvested guild findings are GuildFinding (not ManifestFinding, to avoid collision with the existing RetroFinding); PR review replies are ReviewReply (not Response, to avoid the DOM/fetch/Express global) in the [[replies]] section.", "Cosmetic manifest-shape footprint: because the new sections default to [] (consistent with checkins/sessions), every existing manifest gains retros = [] / replies = [] / findings = [] lines on its next write. Harmless and round-trip-stable.", "Accepted advisory (evaluator-contract-fit, recorded in .guild-findings.jsonl): reconstructFinding.severity and reconstructRetroFinding.category use an 'as' cast rather than validating literal-union membership, consistent with the existing reconstructors' trusted-semantics convention; future-hardening note, not addressed in this unit.", "types.ts/manifest-toml.ts/adopt.ts are loom-authoritative forks (not in the commons LIB_MIRROR_ALLOWLIST), so no sync-shared run is required."]
+
+[[checkins]]
+schema_version = 1
+number = "02"
+created = "2026-06-03T02:58:57Z"
+phase = { number = 1, name = "Manifest schema + write lib for the new sections" }
+branch = "ev-agent.state-file-format-audit.schema"
+unit = "D2 — append helpers"
+contract = { goal = "Add appendRetro / appendReply / appendFinding to manifest-toml.ts, mirroring appendCheckin/appendSession, so Phase 2's writers and the findings-harvest have a mutation API. No verb touched.", acceptance_criteria = ["Three exported (m: ManifestToml, x) => ManifestToml helpers, immutable update appending to retros / replies / findings", "Append-then-read tests in manifest-toml-helpers.test.ts: each appends to the right section, preserves prior entries, does not mutate input; plus the marquee write-cycle other-sections-untouched defense for a new section", "npm test green; nothing under cli/verbs/ changed"], rules_applied = ["Mirror the append<DomainSingular> sibling family (appendEvent/Checkin/Session/Phase/Revision); plain-append form (no dedup guard) per operator decision", "Extend the harness SECTIONS constant so the consolidation-bug defense covers the new sections", "Anchored assertions: exact length/identity, harness section-diff; no loose toContain"], disqualifiers = ["No change under plugins/loom/cli/verbs/", "No reshaping unit 01's read/serialize path", "No wiring the helpers into any verb (Phase 2)"], inputs = ["plugins/loom/cli/lib/manifest-toml.ts (appendCheckin/appendSession/appendPhase/appendRevision precedents)", "plugins/loom/cli/lib/manifest-toml-helpers.test.ts (helper-test + write-cycle patterns)", "plugins/loom/cli/lib/manifest-toml.harness.ts (SECTIONS / assertSectionsUnchanged)"] }
+execution = { actions = ["Added appendRetro / appendReply / appendFinding as plain immutable-append helpers after appendSession (manifest-toml.ts)", "Extended the harness SECTIONS constant with retros/replies/findings so assertSectionsUnchanged diffs them (manifest-toml.harness.ts)", "Added pure append + input-immutability tests, two no-dedup lock-in tests, and a marquee appendFinding write-cycle other-sections-untouched test (manifest-toml-helpers.test.ts)"], files_touched = ["plugins/loom/cli/lib/manifest-toml.ts", "plugins/loom/cli/lib/manifest-toml.harness.ts", "plugins/loom/cli/lib/manifest-toml-helpers.test.ts"], corrections = ["Naming panel (advisory): appendReviewReply was the lone family member keeping its type qualifier while its section singular is 'reply'; renamed appendReviewReply -> appendReply and reconstructReviewReply -> reconstructReply to match the append<DomainSingular> precedent (appendPhase<-ManifestPhase, appendFinding<-GuildFinding). Type ReviewReply and [[replies]] section unchanged."] }
+scope = ["The three append helpers + the SECTIONS extension + their tests", "Out: any verb wiring (Phase 2), dedup/immutability policy (Phase-2 verb + harvest own it)"]
+changes_since_previous = "Adds the mutation API (three append helpers) on top of unit 01's schema + serializer."
+verdict = { result = "approved", reasons = ["Panel approved 3/3: contract-fit (ACs met, plain-append decision honored, SECTIONS extension in-scope), test-unit (marquee write-cycle non-vacuous, assertions falsifying), naming (family fit; the one advisory was applied as appendReply)", "npm test 1350 passed; npm run check ok"] }
+notes_for_pr = ["Adds appendRetro / appendReply / appendFinding (plain immutable appends, mirroring appendCheckin/appendSession) so Phase 2 writers + the findings-harvest have a mutation API. No verb wired yet.", "Plain-append by design: no dedup guard in the lib helpers. Retro immutability is enforced by the Phase-2 retro verb; finding dedup-on-signature by the Phase-2 harvest step. Two tests lock the no-dedup behavior in.", "Harness SECTIONS extended to retros/replies/findings so the other-sections-untouched consolidation-bug defense actually covers the new sections.", "signal: phase-boundary: D2 is the last unit in Phase 1 (single signal; no scope-shift revise offered).", "Phase 1 deliverables both complete + 1350 tests green; leaving phase status in-progress until the PR merges (completion is merge-gated, not set at phase close)."]
 
 [[revisions]]
 timestamp = "2026-06-02T21:50:52.633Z"
