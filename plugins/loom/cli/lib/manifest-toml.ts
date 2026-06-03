@@ -51,6 +51,12 @@ import type {
   ManifestToml,
   PhaseStatus,
   Revision,
+  Retro,
+  RetroFinding,
+  RetroFindingCategory,
+  ReviewReply,
+  GuildFinding,
+  FindingSeverity,
   SchemaVersion,
 } from './types.ts';
 
@@ -377,6 +383,92 @@ function reconstructRevision(t: TomlTable, where: string): Revision {
   };
 }
 
+// Read a nested array-of-inline-tables value (a retro's `findings`). Absent
+// or non-array → loud; `findings` is required on every retro. Sibling of
+// requireStringArray / requireNumberArray for the table-element case.
+function requireTableArray(bag: TomlTable, key: string, where: string): TomlTable[] {
+  const v = bag[key];
+  if (v === undefined) {
+    throw new LoomError(
+      'manifest-schema-invalid',
+      `${where} is missing required key '${key}'`,
+    );
+  }
+  if (!Array.isArray(v)) {
+    throw new LoomError(
+      'manifest-schema-invalid',
+      `${where} key '${key}' must be an array of tables`,
+    );
+  }
+  return v.map((el, i) => asTable(el, `${where} '${key}'[${i}]`));
+}
+
+function reconstructRetroFinding(t: TomlTable, where: string): RetroFinding {
+  const finding: RetroFinding = {
+    // Trusted semantics: RetroFindingCategory literal via cast.
+    category: requireString(t, 'category', where) as RetroFindingCategory,
+    description: requireString(t, 'description', where),
+  };
+  const evidence = optionalString(t, 'evidence', where);
+  if (evidence !== undefined) finding.evidence = evidence;
+  return finding;
+}
+
+// A retro is the SessionRetro | ProjectRetro union, discriminated by `type`.
+// Both carry `created` + a nested `findings` array; session retros add
+// `phase` + `tier`. An unknown `type` is loud (a malformed retro, not a
+// silently-dropped one).
+function reconstructRetro(t: TomlTable, where: string): Retro {
+  const type = requireString(t, 'type', where);
+  const created = requireString(t, 'created', where);
+  const findings = requireTableArray(t, 'findings', where).map((f, i) =>
+    reconstructRetroFinding(f, `${where} findings[${i}]`),
+  );
+  if (type === 'session') {
+    return {
+      schema_version: SCHEMA_VERSION,
+      type: 'session',
+      created,
+      phase: requireNumber(t, 'phase', where),
+      tier: requireNumber(t, 'tier', where),
+      findings,
+    };
+  }
+  if (type === 'project') {
+    return { schema_version: SCHEMA_VERSION, type: 'project', created, findings };
+  }
+  throw new LoomError(
+    'manifest-schema-invalid',
+    `${where} has unknown retro type '${type}' (expected 'session' | 'project')`,
+  );
+}
+
+function reconstructReviewReply(t: TomlTable, where: string): ReviewReply {
+  return {
+    comment_id: requireNumber(t, 'comment_id', where),
+    body: requireString(t, 'body', where),
+    branch: requireString(t, 'branch', where),
+    created: requireString(t, 'created', where),
+  };
+}
+
+function reconstructFinding(t: TomlTable, where: string): GuildFinding {
+  const finding: GuildFinding = {
+    evaluator: requireString(t, 'evaluator', where),
+    code: requireString(t, 'code', where),
+    evidence: requireString(t, 'evidence', where),
+    // Trusted semantics: FindingSeverity literal via cast.
+    severity: requireString(t, 'severity', where) as FindingSeverity,
+    signature: requireString(t, 'signature', where),
+    harvested_at: requireString(t, 'harvested_at', where),
+  };
+  const branch = optionalString(t, 'branch', where);
+  if (branch !== undefined) finding.branch = branch;
+  const unit = optionalString(t, 'unit', where);
+  if (unit !== undefined) finding.unit = unit;
+  return finding;
+}
+
 // ---------- Entry point ----------
 
 export function readManifest(raw: string): ManifestToml {
@@ -399,6 +491,15 @@ export function readManifest(raw: string): ManifestToml {
     ),
     revisions: sectionTables(root, 'revisions').map((t, i) =>
       reconstructRevision(t, `[[revisions]] #${i + 1}`),
+    ),
+    retros: sectionTables(root, 'retros').map((t, i) =>
+      reconstructRetro(t, `[[retros]] #${i + 1}`),
+    ),
+    replies: sectionTables(root, 'replies').map((t, i) =>
+      reconstructReviewReply(t, `[[replies]] #${i + 1}`),
+    ),
+    findings: sectionTables(root, 'findings').map((t, i) =>
+      reconstructFinding(t, `[[findings]] #${i + 1}`),
     ),
   };
 }
@@ -488,6 +589,9 @@ export function stringifyManifest(m: ManifestToml): string {
     checkins: m.checkins,
     sessions: m.sessions,
     revisions: m.revisions,
+    retros: m.retros,
+    replies: m.replies,
+    findings: m.findings,
   };
   return stringifyToml(stripNullish(root) as TomlTable);
 }

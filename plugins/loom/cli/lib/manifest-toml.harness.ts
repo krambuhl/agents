@@ -60,6 +60,9 @@ export function baseManifest(): ManifestToml {
     checkins: [],
     sessions: [],
     revisions: [],
+    retros: [],
+    replies: [],
+    findings: [],
   };
 }
 
