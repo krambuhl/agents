@@ -137,6 +137,12 @@ export function convertProject(projectDir: string): {
     sessions,
     // Legacy projects predate the [[revisions]] section; they start empty.
     revisions: [],
+    // Legacy projects also predate [[retros]]/[[responses]]/[[findings]]; the
+    // old retro/response/finding files (if any) are not folded here — this is a
+    // state-shape conversion, not a content migration.
+    retros: [],
+    replies: [],
+    findings: [],
   };
 
   writeManifest(manifestPath(projectDir), state);

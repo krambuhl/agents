@@ -79,6 +79,22 @@ test('the torture checkin survives the round-trip through readManifest intact', 
   expect(checkin.verdict).toEqual({ result: 'approved', reasons: [] });
 });
 
+test('a pre-consolidation fixture (no retros/replies/findings sections) parses them as empty arrays', () => {
+  // The real-artifact fixture predates the [[retros]]/[[replies]]/[[findings]]
+  // sections, so reading it exercises the forward-compatible default: an absent
+  // array-of-table section reconstructs to []. This is the back-compat guarantee
+  // for every manifest written before the schema addition.
+  const raw = readFileSync(FIXTURE, 'utf8');
+  expect(raw).not.toContain('[[retros]]');
+  expect(raw).not.toContain('[[replies]]');
+  expect(raw).not.toContain('[[findings]]');
+
+  const m = readManifest(raw);
+  expect(m.retros).toEqual([]);
+  expect(m.replies).toEqual([]);
+  expect(m.findings).toEqual([]);
+});
+
 // ---------- Unit: shaping rules ----------
 
 const MINIMAL = [
@@ -111,6 +127,9 @@ test('absent array-of-table sections read as empty arrays', () => {
   expect(m.events).toEqual([]);
   expect(m.checkins).toEqual([]);
   expect(m.sessions).toEqual([]);
+  expect(m.retros).toEqual([]);
+  expect(m.replies).toEqual([]);
+  expect(m.findings).toEqual([]);
 });
 
 test('present nullable scalar reads as its string value', () => {
@@ -174,6 +193,13 @@ test('rejects an unsupported schema_version', () => {
 test('rejects a missing [config] table', () => {
   const metaOnly = MINIMAL.slice(0, MINIMAL.indexOf('[config]'));
   expectReject(metaOnly, 'manifest-schema-invalid', '[config]');
+});
+
+test('rejects a retro with an unknown type, naming the expected variants', () => {
+  const raw =
+    MINIMAL +
+    ['[[retros]]', 'type = "weekly"', 'created = "t"', 'findings = []', ''].join('\n');
+  expectReject(raw, 'manifest-schema-invalid', "unknown retro type 'weekly'");
 });
 
 test('rejects an event missing its detail table', () => {

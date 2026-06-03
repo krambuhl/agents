@@ -507,6 +507,9 @@ export type ManifestToml = {
   checkins: Checkin[];
   sessions: Session[];
   revisions: Revision[];
+  retros: Retro[];
+  replies: ReviewReply[];
+  findings: GuildFinding[];
 };
 
 // ---------- Retro ----------
@@ -542,6 +545,44 @@ export type ProjectRetro = {
 export type Retro = SessionRetro | ProjectRetro;
 
 export type RetroType = Retro['type'];
+
+// ---------- PR review replies ----------
+//
+// A reply the loop posted to a PR review comment, recorded as machine state in
+// the manifest's [[replies]] section. Pre-consolidation these lived in
+// responses/<branch>/response-NN.json; the `branch` field carries the former
+// partition key. `comment_id` is the gh review-comment id (a number) this reply
+// answers. Named ReviewReply rather than Response to avoid colliding with the
+// DOM/fetch/Express `Response` global at the module surface.
+export type ReviewReply = {
+  comment_id: number;
+  body: string;
+  branch: string;
+  created: string;
+};
+
+// ---------- Harvested guild findings ----------
+//
+// A guild evaluator finding folded into the manifest's [[findings]] section at
+// unit/phase close. Pre-consolidation these streamed concurrently to a
+// .guild-findings.jsonl; the harvest step (Phase 2) reads that buffer and
+// appends each row here. `signature` is guild's content hash
+// (evaluator + code + normalized-evidence), reused as the harvest dedupe key;
+// `harvested_at` is the fold-in timestamp (distinct from the row's original
+// guild-side `ts`). `branch`/`unit` are optional — guild records them when the
+// finding is attributable to a specific unit, absent otherwise.
+export type FindingSeverity = 'blocking' | 'advisory';
+
+export type GuildFinding = {
+  evaluator: string;
+  code: string;
+  evidence: string;
+  severity: FindingSeverity;
+  branch?: string;
+  unit?: string;
+  signature: string;
+  harvested_at: string;
+};
 
 // ---------- Plan parsing (Phase 1: shared plan-parser lib) ----------
 //
