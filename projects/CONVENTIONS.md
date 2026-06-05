@@ -33,20 +33,15 @@ The verb writes to a path that includes a partition variable
 (`{branch}`, `{date}-{letter}`, `{kind}`, `{id}`, `{name}`,
 `{folder}`, `{NN}`). Concurrent writers landing in different
 partitions are independent — no shared file. Concurrent writers
-landing in the same partition (same `{NN}` checkin number for the
-same branch, e.g.) collide. The substrate's job is to reject the
-second write loud (e.g. `checkin-already-exists` for partitioned
-checkin paths) rather than silently overwrite.
+landing in the same partition collide. The substrate's job is to
+reject the second write loud rather than silently overwrite.
+
+(Note: loom's checkin / session / retro / pr-respond writes used to
+live here as partitioned per-record files. The state-file consolidation
+folded them into `manifest.toml` sections, which trades partition-
+independence for single-writer serialization — they are Category 3 now.)
 
 Examples:
-- `loom checkin write` (target:
-  `projects/<slug>/checkins/{branch}/{NN}.json`)
-- `loom session write` (target:
-  `projects/<slug>/sessions/{date}-{letter}.json`)
-- `loom retro write` (target:
-  `projects/<slug>/retros/{kind}.json`)
-- `loom pr respond` (target:
-  `projects/<slug>/checkins/{branch}/responses/{id}.md`)
 - `griot capture` (target:
   `learnings/session-notes/{folder}/`)
 
@@ -70,6 +65,13 @@ Examples:
   exception: `manifest.toml`)
 - `loom project scaffold` (target:
   `projects/<slug>/manifest.toml`, exception: `manifest.toml`)
+- `loom checkin write`, `loom session write`, `loom retro write`,
+  `loom pr respond`, `loom events append`, `loom findings harvest`
+  (target: `projects/<slug>/manifest.toml`, exception: `manifest.toml`)
+  — each appends into the manifest's `[[checkins]]` / `[[sessions]]` /
+  `[[retros]]` / `[[replies]]` / `[[events]]` / `[[findings]]` section.
+  The manifest is rewritten whole under a single-writer optimistic lock,
+  so these are serialized through the one file rather than partitioned.
 - `guild plan init` (target:
   `projects/<slug>/plans/{name}.md`, exception:
   `plan`)

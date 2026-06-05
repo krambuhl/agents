@@ -47,43 +47,17 @@ const REGISTRY: readonly VerbEntry[] = [
     target: 'projects/<slug>/.guild-findings.jsonl',
   },
   {
-    verb: 'loom event append (internal lib)',
-    family: 'loom',
-    category: 'append-only',
-    target: 'projects/<slug>/events.jsonl',
-  },
-  {
     verb: 'griot operator-checks log-intervention',
     family: 'griot',
     category: 'append-only',
     target: '<operator-log-path>',
   },
 
-  // Category 2 — partitioned
-  {
-    verb: 'loom checkin write',
-    family: 'loom',
-    category: 'partitioned',
-    target: 'projects/<slug>/checkins/{branch}/{NN}.json',
-  },
-  {
-    verb: 'loom session write',
-    family: 'loom',
-    category: 'partitioned',
-    target: 'projects/<slug>/sessions/{date}-{letter}.json',
-  },
-  {
-    verb: 'loom retro write',
-    family: 'loom',
-    category: 'partitioned',
-    target: 'projects/<slug>/retros/{kind}.json',
-  },
-  {
-    verb: 'loom pr respond',
-    family: 'loom',
-    category: 'partitioned',
-    target: 'projects/<slug>/checkins/{branch}/responses/{id}.md',
-  },
+  // Category 2 — partitioned. loom's checkin/session/retro/pr-respond
+  // writes lived here as partitioned per-record files; the state-file
+  // consolidation folded them into manifest.toml sections, so they are
+  // Category 3 now (see below). griot capture remains genuinely
+  // partitioned by content-addressed folder.
   {
     verb: 'griot capture',
     family: 'griot',
@@ -108,6 +82,52 @@ const REGISTRY: readonly VerbEntry[] = [
   },
   {
     verb: 'loom project scaffold (writes manifest)',
+    family: 'loom',
+    category: 'single-writer-serialized',
+    target: 'projects/<slug>/manifest.toml',
+    exception: 'manifest.toml',
+  },
+  // Consolidated manifest writers: checkins/sessions/retros/replies/
+  // events/findings are manifest.toml sections now, so each appends
+  // under the single-writer optimistic lock rather than to a partitioned
+  // per-record file.
+  {
+    verb: 'loom checkin write',
+    family: 'loom',
+    category: 'single-writer-serialized',
+    target: 'projects/<slug>/manifest.toml',
+    exception: 'manifest.toml',
+  },
+  {
+    verb: 'loom session write',
+    family: 'loom',
+    category: 'single-writer-serialized',
+    target: 'projects/<slug>/manifest.toml',
+    exception: 'manifest.toml',
+  },
+  {
+    verb: 'loom retro write',
+    family: 'loom',
+    category: 'single-writer-serialized',
+    target: 'projects/<slug>/manifest.toml',
+    exception: 'manifest.toml',
+  },
+  {
+    verb: 'loom pr respond',
+    family: 'loom',
+    category: 'single-writer-serialized',
+    target: 'projects/<slug>/manifest.toml',
+    exception: 'manifest.toml',
+  },
+  {
+    verb: 'loom events append',
+    family: 'loom',
+    category: 'single-writer-serialized',
+    target: 'projects/<slug>/manifest.toml',
+    exception: 'manifest.toml',
+  },
+  {
+    verb: 'loom findings harvest',
     family: 'loom',
     category: 'single-writer-serialized',
     target: 'projects/<slug>/manifest.toml',
@@ -185,8 +205,14 @@ describe('parallel-work invariant: registry well-formedness', () => {
   });
 
   test('every category-2 target includes a partition variable', () => {
-    for (const entry of REGISTRY) {
-      if (entry.category !== 'partitioned') continue;
+    const partitioned = REGISTRY.filter((e) => e.category === 'partitioned');
+    // Non-vacuity guard: the consolidation emptied Category 2 down to a
+    // single survivor (griot capture). If the last partitioned verb is ever
+    // recategorized, the loop below would iterate zero times and this
+    // assertion would silently become a no-op — green while constraining
+    // nothing. Fail loud instead.
+    expect(partitioned.length).toBeGreaterThan(0);
+    for (const entry of partitioned) {
       expect(
         /\{[^}]+\}/.test(entry.target),
         `${entry.verb}: partitioned-category target '${entry.target}' must include at least one partition variable in {braces}`,
