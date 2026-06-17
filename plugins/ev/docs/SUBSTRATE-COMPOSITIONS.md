@@ -322,7 +322,7 @@ Substrate-repo PRs typically tick only the rollback line and strike the other tw
 ```markdown
 - [ ] Verified that the solution works
 - [ ] Added tests for new functionality
-- [ ] `sync-shared` ran (if `plugins/commons/cli/lib/` or `plugins/commons/docs/` was touched)
+- [ ] `sync-shared` ran (if repo-root `docs/` was touched)
 - [ ] `npm test` green
 ```
 

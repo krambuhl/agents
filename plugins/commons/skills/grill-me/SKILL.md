@@ -7,6 +7,6 @@ Interview me relentlessly about every aspect of this plan until we reach a share
 
 Ask the questions one at a time.
 
-For a consequential fork — a decision that changes what we do next, with 2-4 discrete, mutually-exclusive options — use a structured `AskUserQuestion` (recommendation first), not a prose paragraph; for a clarification with an obvious default, prose is fine. See `docs/AGENT-CONVENTIONS.md` § Human-paired decisions: structured vs prose.
+For a consequential fork — a decision that changes what we do next, with 2-4 discrete, mutually-exclusive options — use a structured `AskUserQuestion` (recommendation first), not a prose paragraph; for a clarification with an obvious default, prose is fine.
 
 If a question can be answered by exploring the codebase, explore the codebase instead.

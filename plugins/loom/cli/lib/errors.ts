@@ -1,3 +1,4 @@
+// sync-shared: plugin-local
 // Structured error class for the loom substrate.
 //
 // Errors thrown by lib functions carry a `code` (stable kebab-case

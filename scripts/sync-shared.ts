@@ -1,58 +1,48 @@
 #!/usr/bin/env node
 /**
- * sync-shared — syncs canonical content into consumer plugin trees.
+ * sync-shared — mirrors the canonical cross-cutting docs into consumer
+ * plugin trees.
  *
- * Two source-of-truth directions, distinguished by SyncSpec.origin:
+ * Single source of truth: the repo-root `docs/` directory holds the
+ * cross-cutting convention docs (AGENT-CONVENTIONS, LOOM-CONVENTIONS,
+ * PANEL-COMPOSITION, SUBSTRATE-COMPOSITIONS). A skill that cites
+ * `docs/X.md` reads it from its OWN plugin directory at install time —
+ * plugins are self-contained — so each consuming plugin needs a physical
+ * copy shipped inside it. This script is the fan-out: `docs/**` →
+ * `plugins/<consumer>/docs/**` for every plugin in DOC_CONSUMERS.
  *
- *   1. `root-canonical` — historically claimed cli/lib, cli/verbs/,
- *      cli/(plugin-name).ts, skills/(plugin-prefix), and
- *      agents/(plugin-prefix).md at the repo root. PR3 cut cli/lib
- *      over to commons-canonical; PR4 dissolved the rest. As of PR4,
- *      root-canonical claims NOTHING — the SyncOrigin variant is
- *      kept in the type system so existing DriftRecord/SyncSpec
- *      shapes survive the transition window. PR9 deletes the root
- *      directories outright (they're currently inert duplicates).
- *
- *   2. `commons-canonical` — content authored inside `plugins/commons/`
- *      (cli/lib, docs) mirrored into each consumer plugin's tree per
- *      the `COMMONS_CONSUMERS` table. Lib goes to PLUGINS_WITH_CLI;
- *      docs go to every plugin that cites docs/X.md in its skill bodies.
- *      Post-PR4, this is the ONLY direction emitting specs.
- *
- * Registered as Category 4 `generated-from-upstream` per
- * `projects/CONVENTIONS.md`. The output is deterministically derived
- * from upstream input; concurrent runs against unchanged input
- * converge.
+ * History: earlier revisions also synced a shared CLI lib out of
+ * `plugins/commons/cli/lib/` and supported a now-dissolved root-canonical
+ * direction for skills/agents/verbs. Both are gone — commons is now
+ * skills-only, loom owns its former-shared lib outright, and each plugin's
+ * skills/agents/cli are authoritative in its own tree. Docs are the only
+ * thing left that legitimately needs duplication, so they're the only
+ * thing this script touches.
  *
  * Modes:
- *   - default (`sync`): copy upstream → per-plugin (writes files).
- *     Fail-safe-preserve (ADR-0005): orphans — sync-managed files with
- *     no upstream source — are NEVER deleted in this mode.
+ *   - default (`sync`): copy `docs/**` → each consumer's `docs/` (writes
+ *     files). Fail-safe-preserve (ADR-0005): orphans — sync-managed files
+ *     with no upstream source — are NEVER deleted in this mode.
  *   - `--strict-orphan` (with `sync`): additionally delete UNMARKED
  *     orphans. Files carrying the plugin-local marker survive even here.
- *   - `--check`: read-only drift detection; exit 1 on missing /
- *     divergent / unmarked-orphan / conflicting destinations. Marked
- *     plugin-local files are not orphans (the `--check` orphan report
- *     ignores `--strict-orphan` — it always flags unmarked orphans).
+ *   - `--only=<glob>`: restrict the sync to sources matching the glob.
+ *     Copy-only — never deletes orphans (the bare-run overreach guard).
+ *   - `--check`: read-only drift detection; exit 1 on missing / divergent
+ *     / unmarked-orphan destinations.
  *
  * Plugin-local marker (ADR-0005):
- *   A consumer plugin's cli/lib or docs tree may legitimately hold its
- *   OWN files that have no `plugins/commons/` counterpart (e.g. loom's
- *   `manifest-toml.ts`, guild's `docs/AGENT-CODEGEN.md`). A top-of-file
- *   marker — `// sync-shared: plugin-local` for code, `<!-- sync-shared:
- *   plugin-local -->` for Markdown — declares such a file intentional so
- *   the orphan-sweep preserves it. Unmarked orphans stay ambiguous: the
- *   operator either marks them (plugin-local) or removes them
- *   (`--strict-orphan`).
+ *   A consumer plugin's `docs/` tree may legitimately hold its OWN doc
+ *   with no repo-root counterpart (e.g. guild's `docs/AGENT-CODEGEN.md`).
+ *   A top-of-file marker — `<!-- sync-shared: plugin-local -->` for
+ *   Markdown, `// sync-shared: plugin-local` for code — declares such a
+ *   file intentional so the orphan-sweep preserves it. Unmarked orphans
+ *   stay ambiguous: the operator either marks them (plugin-local) or
+ *   removes them (`--strict-orphan`).
  *
  * Invariants:
- *   - Test files (`*.test.ts`) are NOT copied — runtime code only.
- *   - Test fixtures (`cli/fixtures/`) are NOT copied.
- *   - Every sync destination has EXACTLY ONE upstream source. If a
- *     destination is claimed by both root-canonical and commons-canonical
- *     for the same file, detectDrift returns a `conflict` record and
- *     --check exits non-zero (the dual-write tripwire that survives
- *     Phase 1's transition window).
+ *   - Test files (`*.test.ts`) and fixtures (`/fixtures/`) are NOT copied.
+ *   - Every sync destination has EXACTLY ONE upstream source (guaranteed
+ *     structurally: one source dir, one destination per consumer).
  */
 import {
   copyFileSync,
@@ -69,11 +59,7 @@ import { fileURLToPath } from 'node:url';
 const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = resolve(SCRIPT_DIR, '..');
 
-/** All plugins the sync script handles. Order is sync-iteration order.
- *  `commons` listed first because it's the substrate-source for the
- *  forthcoming commons→consumer sync direction (PR2 lands the plan
- *  extension; PR3 starts moving content in). At PR1 it's a content-empty
- *  placeholder. */
+/** All plugins the sync script iterates. Order is sync-iteration order. */
 export const PLUGINS = [
   'commons',
   'griot',
@@ -84,70 +70,22 @@ export const PLUGINS = [
 ] as const;
 export type PluginName = (typeof PLUGINS)[number];
 
-/** Subset that ships a CLI (lib + verbs + entrypoint). Kept as a
- *  named export because tests still differentiate plugins-with-cli
- *  from skill-only plugins (e.g. ev/agent-loop-full). */
-export const PLUGINS_WITH_CLI = ['griot', 'guild', 'loom'] as const;
+/** Plugins that receive a synced copy of the repo-root `docs/` tree —
+ *  those whose skill bodies cite `docs/X.md` and therefore need the file
+ *  shipped inside their own plugin directory at install time. Today: `ev`
+ *  (loop skills) and `loom` (plan/research/archive skills). griot and
+ *  guild ship no skills that cite the shared convention docs, so they are
+ *  not consumers. */
+export const DOC_CONSUMERS: ReadonlyArray<PluginName> = ['ev', 'loom'];
 
-/** Per-flow consumer rules for the `commons-canonical` sync direction.
- *
- *  The doc-consumer set and lib-consumer set are intentionally separate
- *  arrays — even when they happen to overlap, the shape accommodates
- *  divergence. Today:
- *   - `lib`: which plugins receive a synced copy of `plugins/commons/cli/lib/`.
- *     Matches PLUGINS_WITH_CLI — only CLI-shipping plugins have an
- *     `cli/lib/` destination to receive into.
- *   - `docs`: which plugins receive a synced copy of `plugins/commons/docs/`.
- *     Wider — includes `ev` (skill-only, no cli/ tree) because ev's skill
- *     bodies cite `docs/X.md` paths that must resolve at install-time.
- *
- *  `commons` and `agent-loop-full` are excluded from both. Commons IS
- *  the source, not a consumer. agent-loop-full is zero-content.
- */
-export const COMMONS_CONSUMERS = {
-  lib: ['griot', 'guild', 'loom'] as ReadonlyArray<PluginName>,
-  docs: ['griot', 'guild', 'loom', 'ev'] as ReadonlyArray<PluginName>,
-} as const;
-
-/** Per-consumer override for the lib flow. A consumer listed here is a
- *  PARTIAL lib-consumer: it mirrors ONLY the named `commons/cli/lib`
- *  basenames, not the whole directory. Consumers absent from this map
- *  (griot, guild) mirror all of commons/cli/lib as before.
- *
- *  loom is partial because it forked ahead of commons: it consolidated
- *  the manifest stack into a TOML model (`manifest-toml.ts` etc., all
- *  plugin-local) and derives PR state from gh instead of storing it. So
- *  its `adopt/config/project/types.ts` diverged for loom-specific reasons
- *  and its `checkin/events/manifest/session.ts` were consolidated away —
- *  none of those should be mirrored from commons. loom shares only the
- *  stable substrate utilities below. The forked files loom still has on
- *  disk carry the `// sync-shared: plugin-local` marker so the
- *  orphan-sweep preserves them once they're excluded from the plan here. */
-const LIB_MIRROR_ALLOWLIST: Partial<Record<PluginName, ReadonlySet<string>>> = {
-  loom: new Set(['errors.ts', 'gh.ts', 'git.ts', 'pr-marker.ts', 'retro.ts']),
-};
-
-// PR4 removed the PluginContentRule type and PLUGIN_CONTENT_RULES
-// table. Pre-PR4 they filtered root skills/<dir>/ and root agents/<file>
-// into per-plugin trees; post-PR4 each plugin owns its skills/agents
-// authoritatively (no root-canonical claims), so the rules table has
-// no consumer. If a future sync direction needs per-plugin filtering,
-// reconstitute the shape near its use.
-
-/** Which direction this spec was generated from.
- *  - `root-canonical`: source is at the repo root (cli/, skills/, agents/).
- *  - `commons-canonical`: source is inside plugins/commons/ (cli/lib/, docs/).
- *  Used for drift attribution + conflict detection during Phase 1's
- *  dual-direction window. */
-export type SyncOrigin = 'root-canonical' | 'commons-canonical';
+/** The canonical docs source, repo-root-relative. */
+const DOCS_SOURCE_DIR = 'docs';
 
 interface SyncSpec {
   /** Source path relative to repo root. */
   source: string;
   /** Destination path relative to repo root. */
   destination: string;
-  /** Which sync direction generated this spec. */
-  origin: SyncOrigin;
 }
 
 interface PluginPlan {
@@ -212,62 +150,15 @@ function walkFiles(root: string, repoRoot: string): string[] {
 export function planForPlugin(plugin: PluginName, repoRoot = REPO_ROOT): PluginPlan {
   const files: SyncSpec[] = [];
 
-  // === root-canonical direction (FULLY DISSOLVED in PR4) ===
-  //
-  // Pre-PR3, root-canonical claimed: cli/lib/, cli/verbs/<plugin>/,
-  // cli/(plugin).ts, skills/(plugin-prefix), agents/(plugin-prefix).md.
-  //
-  // PR3 cut cli/lib/ over to commons-canonical (and root cli/lib/ stays
-  // as an inert duplicate until PR9). PR4 dissolves the remaining root
-  // claims — each plugin's own `plugins/<plugin>/cli/verbs/<plugin>/`,
-  // `plugins/<plugin>/cli/<plugin>.ts`, `plugins/<plugin>/skills/`, and
-  // `plugins/<plugin>/agents/` subtrees become AUTHORITATIVE; they are
-  // no longer mirrored from root.
-  //
-  // Root `cli/verbs/`, `cli/<plugin>.ts`, `skills/`, and `agents/` stay
-  // as inert duplicates during the PR4→PR9 window; PR9 deletes them.
-
-  // === commons-canonical direction ===
-  //
-  // The substrate-source plugin (`commons`) is never a consumer of these
-  // flows — it's the source. Skipping consumer logic for commons itself
-  // keeps the loop simple and prevents the plan from accidentally
-  // proposing `plugins/commons/cli/lib/foo.ts → plugins/commons/cli/lib/foo.ts`.
-  if (plugin !== 'commons') {
-    // 6. Lib flow: plugins/commons/cli/lib/** → plugins/<consumer>/cli/lib/**
-    //    Only lib-consumers receive (PLUGINS_WITH_CLI today).
-    if (COMMONS_CONSUMERS.lib.includes(plugin)) {
-      const commonsLibDir = join('plugins', 'commons', 'cli', 'lib');
-      const allowlist = LIB_MIRROR_ALLOWLIST[plugin];
-      for (const rel of walkFiles(join(repoRoot, commonsLibDir), repoRoot)) {
-        // Translate the destination from plugins/commons/cli/lib/<f>
-        // to plugins/<consumer>/cli/lib/<f>.
-        const fileTail = relative(commonsLibDir, rel);
-        // Partial consumers (e.g. loom) mirror only their allowlisted
-        // files; everything else in commons/cli/lib is theirs to own as
-        // plugin-local. Full consumers (no allowlist entry) mirror all.
-        if (allowlist && !allowlist.has(fileTail)) continue;
-        files.push({
-          source: rel,
-          destination: join('plugins', plugin, 'cli', 'lib', fileTail),
-          origin: 'commons-canonical',
-        });
-      }
-    }
-
-    // 7. Docs flow: plugins/commons/docs/** → plugins/<consumer>/docs/**
-    //    Doc-consumers include skill-only plugins like `ev` that cite
-    //    docs/X.md in their skill bodies but have no cli/ tree.
-    if (COMMONS_CONSUMERS.docs.includes(plugin)) {
-      const commonsDocsDir = join('plugins', 'commons', 'docs');
-      for (const rel of walkFiles(join(repoRoot, commonsDocsDir), repoRoot)) {
-        const fileTail = relative(commonsDocsDir, rel);
-        files.push({
-          source: rel,
-          destination: join('plugins', plugin, 'docs', fileTail),
-          origin: 'commons-canonical',
-        });
-      }
+  // Docs flow: docs/** → plugins/<consumer>/docs/**. Consumers are the
+  // plugins whose skill bodies cite docs/X.md (DOC_CONSUMERS).
+  if (DOC_CONSUMERS.includes(plugin)) {
+    for (const rel of walkFiles(join(repoRoot, DOCS_SOURCE_DIR), repoRoot)) {
+      const fileTail = relative(DOCS_SOURCE_DIR, rel);
+      files.push({
+        source: rel,
+        destination: join('plugins', plugin, 'docs', fileTail),
+      });
     }
   }
 
@@ -280,55 +171,27 @@ export function planAll(repoRoot = REPO_ROOT): PluginPlan[] {
 
 interface DriftRecord {
   plugin: PluginName;
-  kind: 'missing' | 'divergent' | 'orphan' | 'conflict';
+  kind: 'missing' | 'divergent' | 'orphan';
   source: string | null;
   destination: string;
   message: string;
-  /** Which sync direction this drift came from. For `conflict` records
-   *  this is the origin of one of the colliding sources (the message
-   *  names both). For `orphan` records this is `null` — orphans have
-   *  no upstream source by definition. */
-  origin: SyncOrigin | null;
 }
+
+/** The only sync-managed subtree in a consumer plugin: `docs/`. Files
+ *  here without an upstream source are orphans (unless marked
+ *  plugin-local). Everything else in a plugin tree — skills/, agents/,
+ *  cli/, bin/, .claude-plugin/ — is authoritative and never swept. */
+const SYNC_MANAGED_SUBDIR = 'docs';
 
 export function detectDrift(repoRoot = REPO_ROOT): DriftRecord[] {
   const records: DriftRecord[] = [];
   const plans = planAll(repoRoot);
 
-  // === Conflict-detection guard (per skeptic plan finding) ===
-  //
-  // Build a map of destination → list of (plugin, source, origin) claimants.
-  // If any destination has more than one claimant, the dual-write window's
-  // invariant ("every destination has exactly one upstream source") is
-  // violated. Emit a conflict record before the per-plan checks run, so
-  // CI fails loudly on the highest-impact drift class.
-  const claimants = new Map<string, Array<{ plugin: PluginName; source: string; origin: SyncOrigin }>>();
-  for (const plan of plans) {
-    for (const { source, destination, origin } of plan.files) {
-      const existing = claimants.get(destination) ?? [];
-      existing.push({ plugin: plan.plugin, source, origin });
-      claimants.set(destination, existing);
-    }
-  }
-  for (const [destination, claims] of claimants) {
-    if (claims.length > 1) {
-      const sources = claims.map((c) => `${c.source} (${c.origin})`).join(' AND ');
-      records.push({
-        plugin: claims[0].plugin,
-        kind: 'conflict',
-        source: claims.map((c) => c.source).join(', '),
-        destination,
-        origin: claims[0].origin,
-        message: `${claims[0].plugin}: destination ${destination} is claimed by multiple upstream sources (${sources}). This violates the one-source-per-destination invariant. Resolve by removing one of the conflicting sources.`,
-      });
-    }
-  }
-
   for (const plan of plans) {
     const expectedDestinations = new Set(plan.files.map((f) => f.destination));
 
-    // Forward check: every source must have a matching destination.
-    for (const { source, destination, origin } of plan.files) {
+    // Forward check: every planned source must have a matching destination.
+    for (const { source, destination } of plan.files) {
       const sourcePath = join(repoRoot, source);
       const destPath = join(repoRoot, destination);
 
@@ -338,8 +201,7 @@ export function detectDrift(repoRoot = REPO_ROOT): DriftRecord[] {
           kind: 'missing',
           source,
           destination,
-          origin,
-          message: `${plan.plugin}: missing generated file ${destination} (expected to mirror ${source}, ${origin}). Run \`node scripts/sync-shared.ts\` to resync.`,
+          message: `${plan.plugin}: missing generated file ${destination} (expected to mirror ${source}). Run \`node scripts/sync-shared.ts\` to resync.`,
         });
         continue;
       }
@@ -352,62 +214,33 @@ export function detectDrift(repoRoot = REPO_ROOT): DriftRecord[] {
           kind: 'divergent',
           source,
           destination,
-          origin,
-          message: `${plan.plugin}: ${destination} diverges from upstream ${source} (${origin}). Run \`node scripts/sync-shared.ts\` to resync.`,
+          message: `${plan.plugin}: ${destination} diverges from upstream ${source}. Run \`node scripts/sync-shared.ts\` to resync.`,
         });
       }
     }
 
-    // Reverse check: every file under the SYNC-MANAGED subdirs of
-    // plugins/<plugin>/ must have a matching source. Catches stale
-    // files left after an upstream rename / delete.
-    //
-    // Post-PR4, only the commons-canonical direction writes into
-    // consumer plugin trees, so only its destination subtrees are
-    // sync-managed:
-    //   - plugins/<consumer>/cli/lib/   (commons-canonical lib mirror)
-    //   - plugins/<consumer>/docs/      (commons-canonical docs mirror)
-    //
-    // Excluded from orphan-sweep:
-    // - plugins/<plugin>/skills/, plugins/<plugin>/agents/,
-    //   plugins/<plugin>/cli/verbs/, plugins/<plugin>/cli/<plugin>.ts
-    //   are AUTHORITATIVE plugin content as of PR4 (no upstream source;
-    //   orphan-sweeping would delete the very files the plugin owns).
-    // - `.claude-plugin/` and `bin/` are hand-authored substrate.
-    // - The `commons` plugin's tree is itself the substrate-source
-    //   (never a destination).
-    if (plan.plugin === 'commons') continue;
-
-    for (const syncManagedSubdir of [join('cli', 'lib'), 'docs']) {
-      const root = join(repoRoot, 'plugins', plan.plugin, syncManagedSubdir);
-      if (!existsSync(root)) continue;
-      for (const rel of walkFiles(root, repoRoot)) {
-        if (expectedDestinations.has(rel)) continue;
-        // ADR-0005: a marked plugin-local file has no upstream source
-        // BY DESIGN — it is intentional, not a stale orphan. Skip it
-        // (no drift record), independent of --strict-orphan.
-        if (isPluginLocal(join(repoRoot, rel))) continue;
-        records.push({
-          plugin: plan.plugin,
-          kind: 'orphan',
-          source: null,
-          destination: rel,
-          origin: null,
-          message: `${plan.plugin}: orphan ${rel} has no upstream source. Either mark it plugin-local (add \`${pluginLocalMarkerFor(rel)}\` near the top of the file) or remove it (\`node scripts/sync-shared.ts --strict-orphan\`).`,
-        });
-      }
+    // Reverse check: every file under a plugin's sync-managed `docs/`
+    // subtree must have a matching source. Catches stale copies left after
+    // an upstream rename/delete, or a doc shipped into a plugin that is no
+    // longer a consumer. A marked plugin-local file (e.g. guild's
+    // AGENT-CODEGEN.md) has no upstream BY DESIGN and is skipped.
+    for (const rel of walkFiles(
+      join(repoRoot, 'plugins', plan.plugin, SYNC_MANAGED_SUBDIR),
+      repoRoot,
+    )) {
+      if (expectedDestinations.has(rel)) continue;
+      if (isPluginLocal(join(repoRoot, rel))) continue;
+      records.push({
+        plugin: plan.plugin,
+        kind: 'orphan',
+        source: null,
+        destination: rel,
+        message: `${plan.plugin}: orphan ${rel} has no upstream source. Either mark it plugin-local (add \`${pluginLocalMarkerFor(rel)}\` near the top of the file) or remove it (\`node scripts/sync-shared.ts --strict-orphan\`).`,
+      });
     }
   }
 
   return records;
-}
-
-const COMMONS_LIB_PREFIX = join('plugins', 'commons', 'cli', 'lib');
-
-/** A lib-flow spec sources from plugins/commons/cli/lib/; a docs-flow spec
- *  from plugins/commons/docs/. --exclude-lib drops the former. */
-function isLibSpec(spec: SyncSpec): boolean {
-  return spec.source.startsWith(COMMONS_LIB_PREFIX);
 }
 
 /** Minimal glob → RegExp for --only: `*` matches within a path segment,
@@ -430,13 +263,12 @@ function globToRegExp(glob: string): RegExp {
   return new RegExp(`^${re}$`);
 }
 
-type ScopeOpts = { only?: string; excludeLib?: boolean };
+type ScopeOpts = { only?: string };
 
-/** Whether a spec is in scope this run. --exclude-lib drops lib-flow specs;
- *  --only keeps specs whose SOURCE matches the glob — the canonical file the
- *  operator edited, whose propagation to consumers is what they want synced. */
+/** Whether a spec is in scope this run. --only keeps specs whose SOURCE
+ *  matches the glob — the canonical file the operator edited, whose
+ *  propagation to consumers is what they want synced. */
 function specInScope(spec: SyncSpec, opts: ScopeOpts): boolean {
-  if (opts.excludeLib && isLibSpec(spec)) return false;
   if (opts.only !== undefined && !globToRegExp(opts.only).test(spec.source)) {
     return false;
   }
@@ -445,9 +277,9 @@ function specInScope(spec: SyncSpec, opts: ScopeOpts): boolean {
 
 export function applySync(
   repoRoot = REPO_ROOT,
-  opts: { strictOrphan?: boolean; only?: string; excludeLib?: boolean } = {},
+  opts: { strictOrphan?: boolean; only?: string } = {},
 ): { copied: number; removed: number; preserved: number } {
-  const scoped = opts.only !== undefined || opts.excludeLib === true;
+  const scoped = opts.only !== undefined;
   const plans = planAll(repoRoot).map((plan) => ({
     plugin: plan.plugin,
     files: plan.files.filter((f) => specInScope(f, opts)),
@@ -459,35 +291,24 @@ export function applySync(
   for (const plan of plans) {
     const expectedDestinations = new Set(plan.files.map((f) => f.destination));
 
-    // Handle orphans (files in the SYNC-MANAGED subdirs that have no
-    // upstream source). Post-PR4, sync-managed subdirs are exactly the
-    // commons-canonical destinations: `cli/lib/` and `docs/`. Everything
-    // else in the plugin tree (`cli/verbs/`, `cli/<plugin>.ts`,
-    // `skills/`, `agents/`, `.claude-plugin/`, `bin/`) is
-    // plugin-authoritative and never orphan-swept. The `commons` plugin
-    // itself is never orphan-swept either (it's the substrate source,
-    // not a destination).
-    //
-    // ADR-0005 fail-safe-preserve: the DEFAULT never deletes — orphans
-    // are preserved. `--strict-orphan` opts back into deleting UNMARKED
-    // orphans; a marked plugin-local file survives even then.
-    // Orphan sweep runs only on a FULL sync. A scoped run (--only /
-    // --exclude-lib) is copy-only and never deletes: files outside the scope
-    // are intentionally unmanaged this run, and treating them as orphans is
-    // exactly the bare-run overreach these flags exist to prevent.
-    if (plan.plugin !== 'commons' && !scoped) {
-      for (const syncManagedSubdir of [join('cli', 'lib'), 'docs']) {
-        const root = join(repoRoot, 'plugins', plan.plugin, syncManagedSubdir);
-        if (!existsSync(root)) continue;
-        for (const rel of walkFiles(root, repoRoot)) {
-          if (expectedDestinations.has(rel)) continue;
-          if (!opts.strictOrphan || isPluginLocal(join(repoRoot, rel))) {
-            preserved += 1;
-            continue;
-          }
-          rmSync(join(repoRoot, rel), { force: true });
-          removed += 1;
+    // Orphan handling. ADR-0005 fail-safe-preserve: the DEFAULT never
+    // deletes — orphans are preserved. `--strict-orphan` opts back into
+    // deleting UNMARKED orphans; a marked plugin-local file survives even
+    // then. A scoped run (--only) is copy-only and never deletes: files
+    // outside the scope are intentionally unmanaged this run, and treating
+    // them as orphans is exactly the bare-run overreach the flag prevents.
+    if (!scoped) {
+      for (const rel of walkFiles(
+        join(repoRoot, 'plugins', plan.plugin, SYNC_MANAGED_SUBDIR),
+        repoRoot,
+      )) {
+        if (expectedDestinations.has(rel)) continue;
+        if (!opts.strictOrphan || isPluginLocal(join(repoRoot, rel))) {
+          preserved += 1;
+          continue;
         }
+        rmSync(join(repoRoot, rel), { force: true });
+        removed += 1;
       }
     }
 
@@ -507,12 +328,11 @@ export function applySync(
 function main(argv: string[]): number {
   const checkMode = argv.includes('--check');
   const strictOrphan = argv.includes('--strict-orphan');
-  const excludeLib = argv.includes('--exclude-lib');
   const onlyArg = argv.find((a) => a.startsWith('--only='));
   const only = onlyArg ? onlyArg.slice('--only='.length) : undefined;
 
-  // --only / --exclude-lib scope the SYNC (write) path only. --check stays a
-  // full-tree drift gate by design — a narrow sync is a convenience, but the
+  // --only scopes the SYNC (write) path only. --check stays a full-tree
+  // drift gate by design — a narrow sync is a convenience, but the
   // pre-commit / CI check must still verify the whole tree is consistent.
   if (checkMode) {
     const drift = detectDrift();
@@ -534,17 +354,10 @@ function main(argv: string[]): number {
   const { copied, removed, preserved } = applySync(REPO_ROOT, {
     strictOrphan,
     only,
-    excludeLib,
   });
   process.stdout.write(`sync-shared: ${copied} file${copied === 1 ? '' : 's'} synced`);
-  if (only !== undefined || excludeLib) {
-    const scope = [
-      only !== undefined ? `--only=${only}` : null,
-      excludeLib ? '--exclude-lib' : null,
-    ]
-      .filter(Boolean)
-      .join(' ');
-    process.stdout.write(` (scoped: ${scope}; orphans untouched)`);
+  if (only !== undefined) {
+    process.stdout.write(` (scoped: --only=${only}; orphans untouched)`);
   }
   if (removed > 0) {
     process.stdout.write(`, ${removed} orphan${removed === 1 ? '' : 's'} removed`);

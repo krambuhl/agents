@@ -4,7 +4,7 @@ Marketplace-wide invariants for the loom / guild / griot / ev substrate.
 This file holds invariants that constrain how mutating CLI verbs may
 write to substrate state. The companion registry of every mutating
 verb and its category lives in
-`plugins/commons/cli/parallel-work-invariant.test.ts`, which asserts
+`scripts/parallel-work-invariant.test.ts`, which asserts
 this doc and the registry stay aligned.
 
 ## Parallel-work invariant
@@ -122,10 +122,9 @@ rather than by the verb being a no-op when state matches.
 
 Examples:
 - `sync-shared` — script at `scripts/sync-shared.ts`. Reads the
-  commons-canonical sources at `plugins/commons/cli/lib/` and
-  `plugins/commons/docs/` and writes per-plugin subsets under
-  `plugins/<name>/cli/lib/` and `plugins/<name>/docs/` for the
-  declared consumer plugins. The CI drift-detection check catches
+  canonical convention docs at the repo-root `docs/` and writes
+  byte-equal copies under `plugins/<name>/docs/` for the declared
+  doc-consumer plugins. The CI drift-detection check catches
   forgotten re-runs by mutating a per-plugin file post-sync and
   asserting non-zero exit.
 

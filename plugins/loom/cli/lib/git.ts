@@ -1,3 +1,4 @@
+// sync-shared: plugin-local
 import { spawnSync } from 'node:child_process';
 import { LoomError } from './errors.ts';
 

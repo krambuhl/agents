@@ -1,22 +1,22 @@
 import { describe, expect, test } from 'vitest';
 
-import { detectDrift } from '../../../scripts/sync-shared.ts';
+import { detectDrift } from './sync-shared.ts';
 
 /**
  * Real-FS drift gate for the two cross-plugin shared docs.
  *
- * `plugins/commons/docs/{LOOM-CONVENTIONS,SUBSTRATE-COMPOSITIONS}.md`
- * are the canonical sources; `scripts/sync-shared.ts` mirrors them
- * into each consumer plugin's `plugins/<consumer>/docs/` tree per
- * `COMMONS_CONSUMERS.docs`. The fixture-based tests in
+ * `docs/{LOOM-CONVENTIONS,SUBSTRATE-COMPOSITIONS}.md` are the canonical
+ * sources at the repo root; `scripts/sync-shared.ts` mirrors them into
+ * each consumer plugin's `plugins/<consumer>/docs/` tree per
+ * `DOC_CONSUMERS`. The fixture-based tests in
  * `scripts/sync-shared.test.ts` cover the drift-detection LOGIC; this
  * test exercises the drift detector against the REAL working tree, so
  * a developer who edits a consumer copy directly (or forgets to run
  * the sync script) finds out at test time rather than at install time.
  *
  * Scoped tightly to the two shared docs across all consumers; broader
- * sync-shared drift (lib files, orphan files, other docs) is out of
- * scope for this gate by design.
+ * sync-shared drift (orphan files, other docs) is out of scope for this
+ * gate by design.
  */
 const SHARED_DOCS = ['LOOM-CONVENTIONS.md', 'SUBSTRATE-COMPOSITIONS.md'] as const;
 

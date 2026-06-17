@@ -456,9 +456,9 @@ describe('loadSpec fallback', () => {
   test('returns valid spec when the file is present but unparseable', () => {
     const tmp = mkdtempSync(join(tmpdir(), 'derive-panel-bad-spec-'));
     try {
-      mkdirSync(join(tmp, 'plugins', 'commons', 'docs'), { recursive: true });
+      mkdirSync(join(tmp, 'docs'), { recursive: true });
       writeFileSync(
-        join(tmp, 'plugins', 'commons', 'docs', 'PANEL-COMPOSITION.md'),
+        join(tmp, 'docs', 'PANEL-COMPOSITION.md'),
         '# nothing useful\n\nno sections.\n',
       );
       const { spec, warning } = loadSpec(tmp);

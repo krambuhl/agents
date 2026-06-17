@@ -9,7 +9,7 @@ import { PhaseRosterError, resolvePhaseRoster } from './phase-roster.ts';
 // agent list a /guild-validate panel should spawn for them.
 //
 // Source of truth for both the file-type → evaluator mapping and the
-// precedence ordering is `plugins/commons/docs/PANEL-COMPOSITION.md`.
+// precedence ordering is the repo-root `docs/PANEL-COMPOSITION.md`.
 // The verb parses it at runtime (per L-006: no parallel TS const, no
 // drift-test). If the spec file is missing or unreadable, the
 // hardcoded fallback below kicks in. The fallback is a defensive
@@ -23,7 +23,7 @@ import { PhaseRosterError, resolvePhaseRoster } from './phase-roster.ts';
 // concern — captured as a substrate-improvement followup in PR9 of
 // repo-compartmentalize.
 
-const SPEC_PATH = 'plugins/commons/docs/PANEL-COMPOSITION.md';
+const SPEC_PATH = 'docs/PANEL-COMPOSITION.md';
 const BASELINE = 'evaluator-contract-fit';
 
 // The five RPI phases derive-panel can compose for. `reviewer` (the
