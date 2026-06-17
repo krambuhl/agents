@@ -197,8 +197,8 @@ parsed by `guild parse-and-aggregate`): a `VERDICT:` line
 section whose bullets become findings. Each finding carries
 `{code, evidence, remedy}` and a `blocking | advisory` severity.
 This shape is **consistent with the `evaluator-finding-emitted`
-event** (`{slug, phase, unit, evaluator, code, severity}` — see
-`commons/cli/lib/types.ts`): the panel emits one such event per
+event** (`{slug, phase, unit, evaluator, code, severity}`): the
+panel emits one such event per
 finding, so a finding's `code` and `severity` are the same fields
 the reviewer's output already carries. The reviewer invents no
 parallel shape; the event is the telemetry projection of the

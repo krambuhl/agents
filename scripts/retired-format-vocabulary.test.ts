@@ -20,7 +20,7 @@ import { describe, expect, test } from 'vitest';
  * forbidden names in its own constants — it is not in the scanned set.)
  */
 
-const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
+const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const PLUGINS_ROOT = join(REPO_ROOT, 'plugins');
 
 const FORBIDDEN: ReadonlyArray<{ name: string; re: RegExp }> = [
@@ -30,7 +30,7 @@ const FORBIDDEN: ReadonlyArray<{ name: string; re: RegExp }> = [
 ];
 
 // Every skill body + the two convention docs that describe project state.
-// AGENT-CONVENTIONS.md is scanned in its commons-canonical copy only; the
+// AGENT-CONVENTIONS.md is scanned in its repo-root canonical copy only; the
 // per-plugin mirrors are held byte-identical by doc-copies-byte-identity.
 function listScannedFiles(): string[] {
   const files: string[] = [];
@@ -53,7 +53,7 @@ function listScannedFiles(): string[] {
       }
     }
   }
-  files.push(join(PLUGINS_ROOT, 'commons', 'docs', 'AGENT-CONVENTIONS.md'));
+  files.push(join(REPO_ROOT, 'docs', 'AGENT-CONVENTIONS.md'));
   files.push(join(REPO_ROOT, 'projects', 'CONVENTIONS.md'));
   return files;
 }

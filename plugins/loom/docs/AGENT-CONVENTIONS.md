@@ -79,13 +79,11 @@ nothing are blockers.
 
 Skill bodies cite docs as `docs/<file>.md`. The resolution rule:
 
-- The substrate plugin `commons` is the authoritative source. Every
-  conventions doc lives at `plugins/commons/docs/<file>.md` in the
-  marketplace repo.
-- Each CLI-shipping or doc-citing consumer plugin (`griot`, `guild`,
-  `loom`, `ev`) receives a byte-equal copy at `plugins/<consumer>/
-  docs/<file>.md` via `scripts/sync-shared.ts` (commons-canonical
-  direction).
+- The repo-root `docs/` tree is the authoritative source. Every
+  conventions doc lives at `docs/<file>.md` in the marketplace repo.
+- Each doc-citing consumer plugin (`ev`, `loom`) receives a byte-equal
+  copy at `plugins/<consumer>/docs/<file>.md` via
+  `scripts/sync-shared.ts`.
 - On a consumer machine with the plugin installed via Claude Code,
   `docs/<file>.md` is the plugin-relative path resolved by Claude
   Code's plugin loader against the consumer plugin's own synced
@@ -95,14 +93,6 @@ Either way, the unqualified `docs/<file>.md` form in skill bodies
 resolves correctly to a file that exists on disk in the plugin's
 own tree. No symlink dance required; no cross-plugin path
 resolution required.
-
-(History note: prior to PR3 of the `repo-compartmentalize` project,
-docs lived at the repo root `docs/` and were NOT mirrored into
-consumer plugins — the doc citations in skill bodies resolved to
-nothing on a fresh install. PR3 cut the canonical source over into
-`plugins/commons/docs/` and extended sync to materialize per-
-consumer copies. Root `docs/` is kept as an inert duplicate during
-the PR3→PR9 window for safety; PR9 deletes it.)
 
 ### `[portable]` marker
 
@@ -376,11 +366,11 @@ primary — and today the only — trigger.
 Coupling the posture to the *harness's* own auto-accept /
 permission mode is **deferred, not wired**. The harness does not
 expose its permission mode to a running skill (confirmed absent),
-so a loop cannot read it. A probe seam ships inert — a util that
-returns `unknown` today — as the single documented place a future
-harness signal would wire in (the `probeHarnessMode` seam in
-`plugins/commons/cli/lib/harness-mode.ts`).
-Until such a signal exists the probe gates nothing: an `unknown`
+so a loop cannot read it. An inert probe seam (`probeHarnessMode`,
+returning `unknown`) once shipped as the documented wire-in point
+but was removed as dead code; a future harness signal would
+reintroduce it.
+Until such a signal exists nothing gates on harness mode: an `unknown`
 return never arms, disarms, or alters the posture. Do not branch
 behavior on it.
 

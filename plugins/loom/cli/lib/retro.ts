@@ -1,3 +1,4 @@
+// sync-shared: plugin-local
 import { readFileSync, existsSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import type { Retro, RetroType } from './types.ts';

@@ -150,34 +150,33 @@ already present. No-ops on re-run.
 ## Authoring against this marketplace
 
 Each plugin under `plugins/<name>/` is the authoritative source for
-its own content: skills, agents, per-plugin CLI verbs, and entry
+its own content: skills, agents, per-plugin CLI verbs, lib, and entry
 points all live in the plugin tree. The only cross-cutting content
-that `scripts/sync-shared.ts` mirrors is what lives under
-`plugins/commons/` (the substrate-source plugin):
+that `scripts/sync-shared.ts` mirrors is the repo-root `docs/` tree:
 
-- **`plugins/commons/cli/lib/`** — shared TypeScript lib. Mirrored
-  via the `commons-canonical` sync direction into every CLI-shipping
-  consumer plugin's `cli/lib/`.
-- **`plugins/commons/docs/`** — substrate-wide conventions docs.
-  Mirrored into every doc-citing consumer plugin's `docs/` (lib
-  consumers + `ev`, which cites docs/X.md in skills without shipping
-  a CLI).
+- **`docs/`** — substrate-wide conventions docs (`AGENT-CONVENTIONS`,
+  `LOOM-CONVENTIONS`, `PANEL-COMPOSITION`, `SUBSTRATE-COMPOSITIONS`).
+  Because a skill that cites `docs/X.md` reads it from its own
+  self-contained plugin at install time, each doc-citing consumer
+  (`ev`, `loom`) receives a byte-equal copy at
+  `plugins/<consumer>/docs/`. `commons` is skills-only — it ships no
+  docs and no CLI.
 
 Everything else — `plugins/<plugin>/skills/`, `plugins/<plugin>/agents/`,
-`plugins/<plugin>/cli/verbs/<plugin>/`, `plugins/<plugin>/cli/<plugin>.ts`,
-and their tests — is plugin-authoritative. Edit there directly; no
-sync step touches those files.
+`plugins/<plugin>/cli/` (verbs, entry, and lib), and their tests — is
+plugin-authoritative. Edit there directly; no sync step touches those
+files.
 
 Workflow:
 1. Edit the authoritative source (in the appropriate plugin tree, or
-   in `plugins/commons/` for cross-cutting lib/docs).
-2. Run `node scripts/sync-shared.ts` if you touched `plugins/commons/`
+   in repo-root `docs/` for the cross-cutting convention docs).
+2. Run `node scripts/sync-shared.ts` if you touched `docs/`
    (otherwise no sync needed — your edit is already in the
    authoritative location).
 3. Commit.
 
 CI gates on `node scripts/sync-shared.ts --check` to catch drift in
-the commons-canonical mirror.
+the docs mirror.
 
 ## Where this came from
 

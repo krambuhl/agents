@@ -232,7 +232,7 @@ consumers — this skill surfaces the signal, it does not yet act on it.
    `operator-judgment-required` is the signal the caller acts on). `loom
    events append` dedupes on (name + detail), so a re-run with identical
    context is idempotent. The detail shapes match the `evaluator-*` event
-   types in `commons/cli/lib/types.ts`.
+   types in `plugins/loom/cli/lib/types.ts`.
 
 5. **Return** the script's output (parsed back into a structured
    value) to the caller. This skill performs no further work.

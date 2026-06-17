@@ -1,3 +1,4 @@
+// sync-shared: plugin-local
 import { execFileSync } from 'node:child_process';
 
 // Thin wrapper around `gh` CLI. Tests inject a stub via CliContext.ghRunner;

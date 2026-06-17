@@ -1,3 +1,4 @@
+// sync-shared: plugin-local
 // PR marker parsing + marker-state computation for the loom-pr workflow.
 //
 // Marker format embedded in PR bodies:

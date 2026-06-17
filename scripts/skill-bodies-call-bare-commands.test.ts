@@ -19,7 +19,7 @@ import { describe, expect, test } from 'vitest';
  * the source-of-truth path, not an invocation.
  */
 
-const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
+const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const PLUGINS_ROOT = join(REPO_ROOT, 'plugins');
 
 interface SkillFile {
