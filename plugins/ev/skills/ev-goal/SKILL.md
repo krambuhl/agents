@@ -1,9 +1,9 @@
 ---
 name: ev-goal
 description: >-
-  DRAFT / DESIGN SKELETON (see projects/adr-log/0009). Autonomous driver
-  over a project — the "human-on-call" sibling of /ev-run. Self-drives
-  phase after phase toward a goal predicate (default: all phases merged),
+  Autonomous driver over a project — the "human-on-call" sibling of
+  /ev-run (ADR-0009). Self-drives phase after phase toward a goal
+  predicate (default: all phases merged),
   re-entering on PR-merge/CI wake, evaluating each phase with the guild
   panel substrate, and pausing to ask only when a panel can't resolve a
   decision. Reuses the existing ev-loop-* bodies unchanged. Use when the
@@ -21,11 +21,16 @@ Autonomous driver. Same loop bodies as `/ev-run`, different control
 posture: instead of dispatching one phase and parking, it **drives to a
 goal predicate**, re-entering itself on the PR-activity wake, and
 escalates to the operator via `AskUserQuestion` only when the auto-mode
-panel posture can't resolve a decision.
+panel posture can't resolve a decision. The fork rationale and the v1
+scope boundary live in
+`projects/adr-log/0009-fork-ev-run-human-in-loop-and-ev-goal-human-on-call.md`.
 
-> **Status: design skeleton.** This body sketches the control flow and
-> the deltas from `/ev-run`; it is intentionally not wired for
-> execution. See `projects/adr-log/0009-fork-ev-run-human-in-loop-and-ev-goal-human-on-call.md`.
+Invocations of `/ev-run`, `/ev-loop-*`, and `/loom-archive` below mean
+`Skill(skill: <name>, args: "…")` — the Skill tool is how the driver
+re-uses those bodies. CLI invocations like `loom pr discover` mean
+`Bash("loom pr discover <args>")`. Citing "`/ev-run`'s § 3" means apply
+that skill's documented procedure; it does not mean shell out to a
+verb.
 
 ## Relationship to /ev-run
 
@@ -47,10 +52,10 @@ where `/ev-run` hands control back to a human:
 - `<project-slug-or-path>` — resolved by loom's standard slug
   resolution, exactly as `/ev-run`.
 - `--until=<predicate>` — the goal/stop condition. Default
-  `all-merged` (every `phases[].status == "completed"`). Other
-  intended forms: `--until=phase:<N>` (stop after phase N merges),
-  `--until=all-merged` (explicit default). Unknown predicate → stop and
-  ask before driving anything.
+  `all-merged` (every `phases[].status == "completed"`). Recognized
+  forms: `--until=phase:<N>` (stop after phase N merges) and
+  `--until=all-merged` (explicit default). Any other predicate → stop
+  and ask before driving anything.
 
 `--mode=auto` is **implied** and need not be passed; `/ev-goal` always
 runs the auto-mode panel-offload posture (see § Escalation).
@@ -72,9 +77,11 @@ Repeat until the goal predicate (§ Goal predicate) is true:
    (in-progress first; else lowest-numbered `not-started` whose
    `loom parse-plan` dependencies are all `completed`).
 
-2. **If a phase is actionable:** dispatch it via `/ev-run`'s § 4
-   (PLAN override → `[config].worker_bindings` → `ev-loop-confidence`),
-   passing the implied auto-mode posture. On the loop body's return,
+2. **If a phase is actionable:** dispatch it via `/ev-run`'s § 4 — the
+   body is `/ev-loop-interactive` or `/ev-loop-confidence`, selected by
+   the same precedence (PLAN per-phase override → `[config].worker_bindings`
+   → `ev-loop-confidence` default) — passing the implied auto-mode
+   posture. On the loop body's return,
    emit `goal-loop-iteration` with `{slug, phase, outcome}` and continue
    the drive loop (back to step 1).
 
@@ -145,6 +152,13 @@ existing `auto-mode-*` vocabulary:
 - `goal-loop-iteration` — `{slug, phase, outcome}`
 - `goal-loop-converged` — `{slug, phases_completed, iterations}`
 - `goal-loop-escalated` — `{slug, phase, decision, resolution}`
+
+Each is appended with the same bare command existing skills use for
+skill-side events — `loom events append <slug> --event=<name>
+--detail=<json>` (run as `Bash("loom events append …")`); there is no
+dedicated verb. Event names are an open kebab-case set, so no allowlist
+needs editing, but the four are typed in `plugins/loom/cli/lib/types.ts`
+alongside the `auto-mode-*` events for compile-time callers.
 
 The existing `auto-mode-entered` / `auto-mode-converged` /
 `auto-mode-budget-exhausted` events still fire from the loop bodies and
