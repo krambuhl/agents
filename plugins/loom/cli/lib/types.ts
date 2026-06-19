@@ -349,6 +349,38 @@ export type AutoModeBudgetExhaustedEvent = EventBase<
   }
 >;
 
+// ---------- Goal-loop events (ev-goal driver) ----------
+//
+// ev-goal is the autonomous "human-on-call" driver (ADR-0009): it
+// reuses the ev-loop-* bodies but, instead of dispatching one phase and
+// parking like ev-run, it drives phase after phase toward a goal
+// predicate (default: all phases merged), re-entering on the PR-activity
+// wake. These events wrap the auto-mode-* events the bodies/panels still
+// emit underneath; they record the *driver* run, mirroring the auto-mode
+// vocabulary's surface/boundary shape. As with auto-mode, the substrate
+// does not enforce the `outcome`/`resolution` enumerations at the type
+// level — the strings are descriptive, kept open for new cases.
+
+export type GoalLoopEnteredEvent = EventBase<
+  'goal-loop-entered',
+  { slug: string; until: string; decision_budget: number; round_budget: number }
+>;
+
+export type GoalLoopIterationEvent = EventBase<
+  'goal-loop-iteration',
+  { slug: string; phase: number; outcome: string }
+>;
+
+export type GoalLoopConvergedEvent = EventBase<
+  'goal-loop-converged',
+  { slug: string; phases_completed: number; iterations: number }
+>;
+
+export type GoalLoopEscalatedEvent = EventBase<
+  'goal-loop-escalated',
+  { slug: string; phase: number; decision: string; resolution: string }
+>;
+
 export type Event =
   | ProjectInitializedEvent
   | PhaseStartedEvent
@@ -388,7 +420,11 @@ export type Event =
   | RpiInnerDeclinedEvent
   | AutoModeEnteredEvent
   | AutoModeConvergedEvent
-  | AutoModeBudgetExhaustedEvent;
+  | AutoModeBudgetExhaustedEvent
+  | GoalLoopEnteredEvent
+  | GoalLoopIterationEvent
+  | GoalLoopConvergedEvent
+  | GoalLoopEscalatedEvent;
 
 export type EventName = Event['event'];
 
