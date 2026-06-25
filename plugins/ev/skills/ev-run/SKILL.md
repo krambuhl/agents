@@ -7,10 +7,10 @@ description: >-
   the loops own execution and the substrate owns state. Use when the
   user wants to make progress on a project without picking the phase
   by hand.
-argument-hint: "<project-slug-or-path> [<free-form message>] [--mode=auto]"
+argument-hint: "<project-slug-or-path> [<free-form message>] [--mode=auto] [--env[=<provider>]]"
 user-invocable: true
 disable-model-invocation: true
-allowed-tools: Read, Skill, Bash, AskUserQuestion, Bash(loom *), Bash(guild *), Bash(griot *)
+allowed-tools: Read, Skill, Bash, AskUserQuestion, Bash(loom *), Bash(guild *), Bash(griot *), Bash(ev *)
 ---
 
 # /ev-run
@@ -25,6 +25,13 @@ the right loop. Owns no work of its own.
 - Optional free-form message — if present, interpret it as a redirect
   (e.g. "address feedback on #14", "pause and save session", "start
   phase 3 even though phase 2 isn't merged yet").
+- `--env[=<provider>]` — opt into running the dispatched work inside a
+  provisioned development environment (ADR-0010). When present, the
+  router provisions an environment via the configured provider before
+  dispatching; see § Environment provisioning. The optional
+  `=<provider>` overrides the machine-local configured provider for this
+  run. Absent, the run executes in the current session exactly as today
+  (the default; v1 does not auto-decide env-need).
 
 Invocations of `/ev-loop-*` and `/loom-archive` and `/loom-plan` skills
 below mean `Skill(skill: <name>, args: "…")` — the Skill tool is how
@@ -420,6 +427,42 @@ auto-mode panel can't resolve is too risky to dispatch through.
 
 Human-paired mode emits no auto-mode events — the `AskUserQuestion`
 exchange is the audit trail.
+
+## Environment provisioning (`--env`)
+
+When `--env` is passed, the router provisions a development environment
+for the project before § 4 Dispatch and routes the dispatched loop's
+build/test/run commands into it. The provider seam is the `ev env` CLI
+(ADR-0010); the router never talks to `fella`/`coder` directly. This is
+a loop-layer concept — loom owns no part of it.
+
+Run, in order, after § 0.5 Sync git state and before § 4 Dispatch:
+
+1. **Resolve the provider.** `Bash("ev env which" + provider-flag)` —
+   pass `--provider=<name>` when the operator wrote `--env=<provider>`.
+   This prints the resolved provider + templates, or a structured
+   `env-*` error.
+2. **On any `env-*` error, do NOT hard-stop.** Surface the error's
+   `detail` as a one-line caveat and **fall back to running in the
+   current session** (proceed to § 4 Dispatch as if `--env` were
+   absent). A misconfigured or offline provider must never block a run
+   that could proceed locally — the absence of an environment when one
+   was requested is a surfaced warning, not a silent downgrade and not a
+   blocker (ADR-0010 § "Watch for").
+3. **Provision-or-reuse.** `Bash("ev env up <slug>")`. The handle is
+   project-slug-keyed, so a parked run re-entering on a PR wake reuses
+   the same environment rather than creating a fresh one.
+4. **Gate on readiness.** `Bash("ev env status <slug>")` before treating
+   the environment as usable — `up` exiting zero does not guarantee the
+   environment is ssh-able yet.
+5. **Dispatch with the env handle.** Dispatch as in § 4, instructing the
+   loop body to run its commands via `Bash("ev env exec <slug>
+   --cmd=…")` rather than directly. The Claude reasoning stays in this
+   session; only the commands run in the environment (v1 exec model,
+   ADR-0010). Full Claude-in-env dispatch is a v2 forward pointer.
+
+Teardown is manual in v1 — the environment persists for reuse; no router
+path calls `ev env down`.
 
 ## Rules
 
