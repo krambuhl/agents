@@ -9,10 +9,10 @@ description: >-
   decision. Reuses the existing ev-loop-* bodies unchanged. Use when the
   user wants a project (or its mechanical tail) driven to completion
   without picking each phase by hand.
-argument-hint: "<project-slug-or-path> [--until=<predicate>]"
+argument-hint: "<project-slug-or-path> [--until=<predicate>] [--env[=<provider>]]"
 user-invocable: true
 disable-model-invocation: true
-allowed-tools: Read, Skill, Bash, AskUserQuestion, Bash(loom *), Bash(guild *), Bash(griot *)
+allowed-tools: Read, Skill, Bash, AskUserQuestion, Bash(loom *), Bash(guild *), Bash(griot *), Bash(ev *)
 ---
 
 # /ev-goal
@@ -59,6 +59,15 @@ where `/ev-run` hands control back to a human:
 
 `--mode=auto` is **implied** and need not be passed; `/ev-goal` always
 runs the auto-mode panel-offload posture (see § Escalation).
+
+`--env[=<provider>]` opts into provisioned-environment execution exactly
+as `/ev-run` — `/ev-goal` reuses `/ev-run`'s § Environment provisioning
+verbatim (provision-or-reuse before each dispatch, fall back to local on
+any `env-*` error, route loop commands via `ev env exec`). Because the
+handle is project-slug-keyed, every drive-loop iteration and every
+PR-wake re-entry reuses the one environment for the project. v1 leaves
+teardown manual; a v2 forward pointer is "tear down at goal-converge,
+alongside the `/loom-archive` step" (ADR-0010 § Forward pointers).
 
 ## Process
 
