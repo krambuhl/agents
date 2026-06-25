@@ -455,11 +455,23 @@ Run, in order, after § 0.5 Sync git state and before § 4 Dispatch:
 4. **Gate on readiness.** `Bash("ev env status <slug>")` before treating
    the environment as usable — `up` exiting zero does not guarantee the
    environment is ssh-able yet.
-5. **Dispatch with the env handle.** Dispatch as in § 4, instructing the
-   loop body to run its commands via `Bash("ev env exec <slug>
-   --cmd=…")` rather than directly. The Claude reasoning stays in this
-   session; only the commands run in the environment (v1 exec model,
-   ADR-0010). Full Claude-in-env dispatch is a v2 forward pointer.
+5. **Dispatch with the env signal.** Dispatch as in § 4, but append
+   `--env=<provider>` to the loop's args:
+   `Skill(ev-loop-*, args: "<slug> <phase> --env=<provider>")`. The loop
+   body reads that token and routes its repo commands through
+   `ev env exec <slug>` (see each loop's § Environment-aware execution).
+   The Claude reasoning + file edits stay in this session; only the
+   shell commands run in the environment (v1 exec model, ADR-0010). Full
+   Claude-in-env dispatch is a v2 forward pointer.
+
+**Shared-tree requirement.** The v1 exec model assumes the provider
+exposes *this checkout's working tree* to the environment (e.g. an
+OrbStack bind-mount via `fella`), so edits made in this session are the
+same bytes the env's commands see. A provider whose environment has its
+own separate clone (a `coder` cloud workspace) does **not** satisfy this
+yet — routing commands there would run them against a different tree.
+Until a tree-sync step or the v2 dispatch model lands, only use `--env`
+with a shared-tree provider; see ADR-0010 § Forward pointers.
 
 Teardown is manual in v1 — the environment persists for reuse; no router
 path calls `ev env down`.

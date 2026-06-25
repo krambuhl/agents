@@ -8,9 +8,9 @@ description: >-
   directly; composes /guild-validate; composes no other loop. Use
   when a phase is a bulk transform, audit, or find-replace-style
   operation across many files.
-argument-hint: "<project-slug-or-path> <phase-number>"
+argument-hint: "<project-slug-or-path> <phase-number> [--env=<provider>]"
 user-invocable: true
-allowed-tools: Read, Write, Edit, Bash, Agent, Skill, mcp__github__get_file_contents, mcp__github__subscribe_pr_activity, Bash(loom *), Bash(guild *), Bash(griot *)
+allowed-tools: Read, Write, Edit, Bash, Agent, Skill, mcp__github__get_file_contents, mcp__github__subscribe_pr_activity, Bash(loom *), Bash(guild *), Bash(griot *), Bash(ev *)
 ---
 
 # /ev-loop-confidence
@@ -77,9 +77,39 @@ For loom verb shapes and event vocabulary, see
   (full slug → date-less suffix → relative or absolute path).
 - `<phase-number>` — which phase of the project to run. Must exist in
   the manifest and not be in `completed` state.
+- `--env=<provider>` (optional) — set by `/ev-run` / `/ev-goal` when the
+  operator passed `--env`. Routes this loop's repo shell commands through
+  the provisioned environment; see § Environment-aware execution.
 
 If `<phase-number>` is missing, already `completed`, or the slug does
 not resolve, stop and ask the user rather than guessing.
+
+## Environment-aware execution
+
+When dispatched with `--env=<provider>` (ADR-0010), run every **repo
+shell command** — the test suite, `npm run lint`, `npm run build`, a dev
+server, codegen — through the environment instead of directly:
+
+```
+Bash("ev env exec <slug> --cmd=\"<the command>\"")
+```
+
+rather than `Bash("<the command>")`. The `<slug>` is the project slug
+(the env handle is slug-keyed). Pass the whole command as a single
+`--cmd` string; `ev env` shell-quotes it.
+
+What does **not** route through the env, in the v1 exec model:
+
+- **File reads/writes/edits** and all reasoning — stay in this session.
+- **Substrate commands** — `loom *`, `guild *`, `griot *`, `git *`, and
+  `ev env *` itself — run locally; they operate on the manifest and the
+  working tree, not on the code-under-test.
+
+Only build/test/run commands cross into the environment. This assumes
+the provider exposes *this* working tree to the env (a shared bind-mount,
+e.g. `fella`/OrbStack); `/ev-run` § Environment provisioning gates on
+that shared-tree requirement before dispatching. Absent `--env`, run
+every command directly as before — this section is inert.
 
 ## Scope directory
 
