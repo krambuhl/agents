@@ -68,9 +68,10 @@ function resolve(opts: { config?: string; provider?: string }): ResolvedProvider
 
 const USAGE = `ev env <which|up|exec|status|down> [args]
 
-  ev env which                          show the resolved provider + templates
+  ev env which                          show the resolved provider + mode + templates
   ev env up <project>                   provision-or-reuse an environment
-  ev env exec <handle> --cmd="<cmd>"    run a command inside the environment
+  ev env exec <handle> --cmd="<cmd>"    run a command inside the environment (exec mode)
+  ev env dispatch <handle> --phase=<N>  run a phase inside the environment (dispatch mode)
   ev env status <handle>                report readiness
   ev env down <handle>                  tear the environment down
 
@@ -80,8 +81,10 @@ Flags:
   --config=<path>      use a specific settings.local.json
 `;
 
+const RUN_OPS: ReadonlyArray<string> = [...ENV_OPS, 'dispatch'];
+
 function runEnv(rest: string[]): number {
-  const op = rest[0] as EnvOp | 'which' | undefined;
+  const op = rest[0] as EnvOp | 'dispatch' | 'which' | undefined;
   const { values, positionals } = parseArgs({
     args: rest.slice(1),
     allowPositionals: true,
@@ -90,6 +93,8 @@ function runEnv(rest: string[]): number {
       provider: { type: 'string' },
       config: { type: 'string' },
       cmd: { type: 'string' },
+      phase: { type: 'string' },
+      task: { type: 'string' },
     },
   });
   const common = { config: values.config, provider: values.provider };
@@ -100,7 +105,7 @@ function runEnv(rest: string[]): number {
     return 0;
   }
 
-  if (op === undefined || !ENV_OPS.includes(op as EnvOp)) {
+  if (op === undefined || !RUN_OPS.includes(op)) {
     process.stderr.write(USAGE);
     return 2;
   }
@@ -114,15 +119,16 @@ function runEnv(rest: string[]): number {
     );
   }
 
-  // Handles are project-slug-keyed (ADR-0010), so `up <project>` and
-  // `exec/status/down <handle>` share one positional; for up it doubles
-  // as the handle so the rendered command can reuse it.
+  // Handles are project-slug-keyed (ADR-0010), so `up <project>` and the
+  // rest share one positional; for up it doubles as the handle.
   const vars =
     op === 'exec'
       ? { handle: subject, cmd: values.cmd }
-      : op === 'up'
-        ? { project: subject, handle: subject }
-        : { handle: subject };
+      : op === 'dispatch'
+        ? { handle: subject, phase: values.phase, task: values.task }
+        : op === 'up'
+          ? { project: subject, handle: subject }
+          : { handle: subject };
 
   if (op === 'exec' && (values.cmd === undefined || values.cmd === '')) {
     throw new EnvironmentError(
@@ -131,7 +137,7 @@ function runEnv(rest: string[]): number {
     );
   }
 
-  const command = planCommand(op as EnvOp, provider, vars);
+  const command = planCommand(op, provider, vars);
 
   if (values['dry-run']) {
     process.stdout.write(`[${provider.name}] would run: ${command}\n`);

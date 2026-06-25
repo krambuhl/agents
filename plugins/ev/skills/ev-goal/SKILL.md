@@ -62,12 +62,18 @@ runs the auto-mode panel-offload posture (see § Escalation).
 
 `--env[=<provider>]` opts into provisioned-environment execution exactly
 as `/ev-run` — `/ev-goal` reuses `/ev-run`'s § Environment provisioning
-verbatim (provision-or-reuse before each dispatch, fall back to local on
-any `env-*` error, route loop commands via `ev env exec`). Because the
-handle is project-slug-keyed, every drive-loop iteration and every
-PR-wake re-entry reuses the one environment for the project. v1 leaves
-teardown manual; a v2 forward pointer is "tear down at goal-converge,
-alongside the `/loom-archive` step" (ADR-0010 § Forward pointers).
+verbatim, including the mode branch (ADR-0011): provision-or-reuse before
+each dispatch, fall back to local on any `env-*` error, then — per the
+provider's `mode` — either route loop commands via `ev env exec` (exec /
+shared-tree) or run the whole phase inside the env via `ev env dispatch
+<slug> --phase=<N>` (dispatch / separate-tree, e.g. `coder`). In dispatch
+mode the in-env Claude opens the phase PR, and `/ev-goal`'s existing
+PR-wake re-entry advances the drive loop on merge exactly as for a local
+run. Because the handle is project-slug-keyed, every drive-loop iteration
+and PR-wake re-entry reuses the one environment for the project. v1
+leaves teardown manual; a v2 forward pointer is "tear down at
+goal-converge, alongside the `/loom-archive` step" (ADR-0010 § Forward
+pointers).
 
 ## Process
 
