@@ -7,6 +7,7 @@ import {
   planCommand,
   renderTemplate,
   resolveProvider,
+  shellQuote,
 } from './environment.ts';
 
 describe('loadEnvironmentConfig', () => {
@@ -110,17 +111,51 @@ describe('resolveProvider', () => {
   });
 });
 
+describe('shellQuote', () => {
+  test('leaves safe tokens bare', () => {
+    expect(shellQuote('2026-06-25-thing')).toBe('2026-06-25-thing');
+    expect(shellQuote('npm')).toBe('npm');
+  });
+
+  test('single-quotes values with spaces or shell metacharacters', () => {
+    expect(shellQuote('npm test')).toBe("'npm test'");
+    expect(shellQuote('a && b')).toBe("'a && b'");
+  });
+
+  test('escapes embedded single quotes (the hang-bug case)', () => {
+    expect(shellQuote("node -e 'console.log(2+2)'")).toBe(
+      "'node -e '\\''console.log(2+2)'\\'''",
+    );
+  });
+
+  test('empty string quotes to a pair of single quotes', () => {
+    expect(shellQuote('')).toBe("''");
+  });
+});
+
 describe('renderTemplate', () => {
-  test('substitutes provided vars', () => {
+  test('substitutes safe vars bare', () => {
     expect(renderTemplate('fella up {project}', { project: 'my-proj' })).toBe(
       'fella up my-proj',
     );
+  });
+
+  test('shell-quotes a multi-word command', () => {
     expect(
       renderTemplate('fella exec {handle} -- {cmd}', {
         handle: 'h1',
         cmd: 'npm test',
       }),
-    ).toBe('fella exec h1 -- npm test');
+    ).toBe("fella exec h1 -- 'npm test'");
+  });
+
+  test('a command with embedded quotes renders safely (no mis-split)', () => {
+    expect(
+      renderTemplate('coder ssh {handle} -- {cmd}', {
+        handle: 'ws',
+        cmd: "node -e 'console.log(1)'",
+      }),
+    ).toBe("coder ssh ws -- 'node -e '\\''console.log(1)'\\'''");
   });
 
   test('throws env-template-unrendered on a missing var', () => {
@@ -141,9 +176,9 @@ describe('planCommand', () => {
     );
   });
 
-  test('renders exec with handle + cmd', () => {
+  test('renders exec with handle + cmd (cmd shell-quoted)', () => {
     expect(
       planCommand('exec', fella, { handle: '2026-06-25-thing', cmd: 'npm test' }),
-    ).toBe('fella exec 2026-06-25-thing -- npm test');
+    ).toBe("fella exec 2026-06-25-thing -- 'npm test'");
   });
 });

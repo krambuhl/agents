@@ -154,13 +154,30 @@ export interface RenderVars {
 const PLACEHOLDER = /\{(project|handle|cmd)\}/g;
 const ANY_PLACEHOLDER = /\{[a-zA-Z0-9_]+\}/;
 
-// Substitute `{project}` / `{handle}` / `{cmd}` in a template. Any
-// placeholder left unsubstituted (a var the op didn't supply) is an
-// error, not a silently-half-rendered command.
+// Tokens safe to leave bare in a shell command line. Anything outside
+// this set (spaces, quotes, $, &, |, globs, …) gets single-quoted.
+const SHELL_SAFE = /^[A-Za-z0-9_@%+=:,./-]+$/;
+
+// POSIX shell-quote a single value, shlex.quote-style: bare when safe
+// (keeps dry-run output and simple slugs readable), else wrapped in
+// single quotes with embedded `'` escaped as `'\''`. This is what makes
+// `--cmd="node -e 'x'"` survive the local `sh -c` parse instead of
+// mis-splitting (the 2-minute-hang bug from the prototype).
+export function shellQuote(value: string): string {
+  if (value === '') return "''";
+  if (SHELL_SAFE.test(value)) return value;
+  return `'${value.replace(/'/g, `'\\''`)}'`;
+}
+
+// Substitute `{project}` / `{handle}` / `{cmd}` in a template, shell-
+// quoting each substituted value so a slug or command with spaces/quotes
+// can't break the rendered command line. Any placeholder left
+// unsubstituted (a var the op didn't supply) is an error, not a
+// silently-half-rendered command.
 export function renderTemplate(template: string, vars: RenderVars): string {
   const rendered = template.replace(PLACEHOLDER, (_match, key: string) => {
     const value = (vars as Record<string, string | undefined>)[key];
-    return value === undefined ? `{${key}}` : value;
+    return value === undefined ? `{${key}}` : shellQuote(value);
   });
   const leftover = rendered.match(ANY_PLACEHOLDER);
   if (leftover !== null) {
