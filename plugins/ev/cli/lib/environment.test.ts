@@ -28,10 +28,51 @@ describe('loadEnvironmentConfig', () => {
 });
 
 describe('resolveProvider', () => {
-  test('resolves a shipped provider to its default templates', () => {
+  test('resolves a shipped provider to its default templates + mode', () => {
     const r = resolveProvider({ provider: 'fella' });
     expect(r.name).toBe('fella');
-    expect(r.templates).toEqual(DEFAULT_PROVIDERS.fella);
+    expect(r.mode).toBe('exec');
+    expect(r.templates.up).toBe(DEFAULT_PROVIDERS.fella.up);
+    expect(r.templates.exec).toBe(DEFAULT_PROVIDERS.fella.exec);
+  });
+
+  test('coder resolves to dispatch mode with a dispatch template', () => {
+    const r = resolveProvider({ provider: 'coder' });
+    expect(r.mode).toBe('dispatch');
+    expect(typeof r.dispatch).toBe('string');
+    expect(r.dispatch).toContain('{handle}');
+    expect(r.dispatch).toContain('{phase}');
+  });
+
+  test('mode defaults to exec when unset', () => {
+    const r = resolveProvider({
+      provider: 'x',
+      providers: {
+        x: { up: 'u {project}', exec: 'e {cmd}', status: 's', down: 'd' },
+      },
+    });
+    expect(r.mode).toBe('exec');
+  });
+
+  test('env-dispatch-template-missing when mode=dispatch but no dispatch template', () => {
+    try {
+      resolveProvider({
+        provider: 'x',
+        providers: {
+          x: {
+            mode: 'dispatch',
+            up: 'u {project}',
+            exec: 'e {cmd}',
+            status: 's',
+            down: 'd',
+          },
+        },
+      });
+    } catch (err) {
+      expect((err as EnvironmentError).code).toBe(
+        'env-dispatch-template-missing',
+      );
+    }
   });
 
   test('merges config overrides over defaults field-by-field', () => {
@@ -180,5 +221,23 @@ describe('planCommand', () => {
     expect(
       planCommand('exec', fella, { handle: '2026-06-25-thing', cmd: 'npm test' }),
     ).toBe("fella exec 2026-06-25-thing -- 'npm test'");
+  });
+
+  test('renders dispatch for a dispatch-mode provider', () => {
+    const coder = resolveProvider({ provider: 'coder' });
+    const cmd = planCommand('dispatch', coder, {
+      handle: '2026-06-25-thing',
+      phase: '2',
+    });
+    expect(cmd).toContain('coder ssh 2026-06-25-thing');
+    expect(cmd).toContain('/ev-run 2026-06-25-thing 2');
+  });
+
+  test('env-dispatch-unsupported when dispatching an exec-mode provider', () => {
+    try {
+      planCommand('dispatch', fella, { handle: 'h', phase: '1' });
+    } catch (err) {
+      expect((err as EnvironmentError).code).toBe('env-dispatch-unsupported');
+    }
   });
 });

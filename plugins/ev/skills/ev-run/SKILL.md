@@ -431,17 +431,20 @@ exchange is the audit trail.
 ## Environment provisioning (`--env`)
 
 When `--env` is passed, the router provisions a development environment
-for the project before § 4 Dispatch and routes the dispatched loop's
-build/test/run commands into it. The provider seam is the `ev env` CLI
-(ADR-0010); the router never talks to `fella`/`coder` directly. This is
-a loop-layer concept — loom owns no part of it.
+for the project before § 4 Dispatch. The provider seam is the `ev env`
+CLI (ADR-0010); the router never talks to `fella`/`coder` directly. This
+is a loop-layer concept — loom owns no part of it. **The provider's
+`mode` (ADR-0011) decides what happens next**: `exec` (shared-tree, e.g.
+`fella`/OrbStack) routes the dispatched loop's commands into the env;
+`dispatch` (separate-tree, e.g. a `coder` cloud workspace) runs the
+whole phase inside the env via a Claude running there.
 
 Run, in order, after § 0.5 Sync git state and before § 4 Dispatch:
 
-1. **Resolve the provider.** `Bash("ev env which" + provider-flag)` —
-   pass `--provider=<name>` when the operator wrote `--env=<provider>`.
-   This prints the resolved provider + templates, or a structured
-   `env-*` error.
+1. **Resolve the provider + mode.** `Bash("ev env which" +
+   provider-flag)` — pass `--provider=<name>` when the operator wrote
+   `--env=<provider>`. This prints the resolved provider, its `mode`,
+   and templates, or a structured `env-*` error.
 2. **On any `env-*` error, do NOT hard-stop.** Surface the error's
    `detail` as a one-line caveat and **fall back to running in the
    current session** (proceed to § 4 Dispatch as if `--env` were
@@ -455,23 +458,30 @@ Run, in order, after § 0.5 Sync git state and before § 4 Dispatch:
 4. **Gate on readiness.** `Bash("ev env status <slug>")` before treating
    the environment as usable — `up` exiting zero does not guarantee the
    environment is ssh-able yet.
-5. **Dispatch with the env signal.** Dispatch as in § 4, but append
-   `--env=<provider>` to the loop's args:
-   `Skill(ev-loop-*, args: "<slug> <phase> --env=<provider>")`. The loop
-   body reads that token and routes its repo commands through
-   `ev env exec <slug>` (see each loop's § Environment-aware execution).
-   The Claude reasoning + file edits stay in this session; only the
-   shell commands run in the environment (v1 exec model, ADR-0010). Full
-   Claude-in-env dispatch is a v2 forward pointer.
+5. **Act on `mode`:**
 
-**Shared-tree requirement.** The v1 exec model assumes the provider
-exposes *this checkout's working tree* to the environment (e.g. an
-OrbStack bind-mount via `fella`), so edits made in this session are the
-same bytes the env's commands see. A provider whose environment has its
-own separate clone (a `coder` cloud workspace) does **not** satisfy this
-yet — routing commands there would run them against a different tree.
-Until a tree-sync step or the v2 dispatch model lands, only use `--env`
-with a shared-tree provider; see ADR-0010 § Forward pointers.
+   - **`exec` (shared-tree).** Dispatch as in § 4, but append
+     `--env=<provider>` to the loop's args:
+     `Skill(ev-loop-*, args: "<slug> <phase> --env=<provider>")`. The
+     loop body routes its repo commands through `ev env exec <slug>`
+     (see each loop's § Environment-aware execution). Claude reasoning +
+     file edits stay in this session; only shell commands run in the
+     env. **Shared-tree requirement:** this assumes the provider exposes
+     *this checkout's working tree* to the env (an OrbStack bind-mount),
+     so edits here are the bytes the env's commands see. Do not use
+     `exec` mode with a separate-clone provider.
+
+   - **`dispatch` (separate-tree).** Do **not** dispatch a loop body in
+     this session. Hand the whole phase to a Claude running inside the
+     env: `Bash("ev env dispatch <slug> --phase=<N>")`. The dispatch
+     template (per the resolved provider) runs the loop on `<slug>`
+     phase `<N>` inside the env's own checkout — the literal automation
+     of "spin up the workspace, run Claude inside it." The in-env run
+     does the edits, commits, and opens the PR; this session waits for
+     `ev env dispatch` to return, then reports its outcome. No
+     exec-routing and no shared-tree requirement — the env owns the tree.
+     The env (provider's workspace/template) must provide an authed
+     `claude` + the substrate plugins + the repo (ADR-0011).
 
 Teardown is manual in v1 — the environment persists for reuse; no router
 path calls `ev env down`.

@@ -11,9 +11,18 @@ export type EnvOp = 'up' | 'exec' | 'status' | 'down';
 
 export const ENV_OPS: ReadonlyArray<EnvOp> = ['up', 'exec', 'status', 'down'];
 
+// How the loop uses a provider's environment (ADR-0011):
+// - `exec`     — the env shares THIS working tree (a bind-mount, e.g.
+//                fella/OrbStack), so the loop edits here and routes its
+//                repo commands into the env via `exec`.
+// - `dispatch` — the env has its OWN clone (a coder cloud workspace), so
+//                the loop hands the whole phase to a Claude running
+//                INSIDE the env via `dispatch`, and does no exec-routing.
+export type EnvMode = 'exec' | 'dispatch';
+
 // The four command templates every provider implements. Each is a shell
-// command string with `{project}` / `{handle}` / `{cmd}` placeholders the
-// renderer substitutes.
+// command string with `{project}` / `{handle}` / `{cmd}` / `{phase}` /
+// `{task}` placeholders the renderer substitutes.
 export interface ProviderTemplates {
   up: string;
   exec: string;
@@ -21,39 +30,60 @@ export interface ProviderTemplates {
   down: string;
 }
 
+// A provider's config/defaults: the four core templates plus the optional
+// `mode` (default `exec`) and the `dispatch` template (required when
+// `mode` is `dispatch`).
+export interface ProviderConfig extends Partial<ProviderTemplates> {
+  mode?: EnvMode;
+  dispatch?: string;
+}
+
 // The `ev.environment` block read from machine-local settings
 // (.claude/settings.local.json). `provider` names the active backend on
 // THIS machine; `providers` overrides/extends the shipped defaults.
 export interface EnvironmentConfig {
   provider?: string;
-  providers?: Record<string, Partial<ProviderTemplates>>;
+  providers?: Record<string, ProviderConfig>;
 }
 
 export interface ResolvedProvider {
   name: string;
+  mode: EnvMode;
   templates: ProviderTemplates;
+  dispatch?: string;
 }
 
-// Shipped defaults for the two v1 providers (ADR-0010). These are
+// Shipped defaults for the v1 providers (ADR-0010/0011). These are
 // best-effort command shapes; an operator whose `fella`/`coder` differ
 // overrides any field via the `providers` block in settings.local.json.
-// `{project}` is the project slug; `{handle}` is the env handle (v1:
-// the project slug — handles are project-slug-keyed); `{cmd}` is the
-// command to run inside the env.
-export const DEFAULT_PROVIDERS: Record<string, ProviderTemplates> = {
-  // Home: OrbStack via the `fella` wrapper (krambuhl/local-dev).
+// `{project}`/`{handle}` are the project slug (handles are slug-keyed);
+// `{cmd}` is a command to run inside the env (exec mode); `{phase}` is
+// the phase number handed to the in-env runner (dispatch mode).
+export const DEFAULT_PROVIDERS: Record<string, ProviderConfig> = {
+  // Home: OrbStack via the `fella` wrapper (krambuhl/local-dev). Shared
+  // tree → exec mode.
   fella: {
+    mode: 'exec',
     up: 'fella up {project}',
     exec: 'fella exec {handle} -- {cmd}',
     status: 'fella status {handle}',
     down: 'fella down {handle}',
   },
-  // Work: Coder cloud workspaces.
+  // Work: Coder cloud workspaces. Separate clone → dispatch mode. The
+  // `dispatch` template runs the phase INSIDE the workspace via a headless
+  // Claude. The part after `--` is workspace-specific (repo path, runner),
+  // so most operators override it — what matters is that it ends up
+  // invoking the loop on slug `{handle}` phase `{phase}` inside the
+  // workspace's checkout. The workspace (coder template) must provide an
+  // authed `claude` + the krambuhl plugins + the repo (see ADR-0011).
   coder: {
+    mode: 'dispatch',
     up: 'coder create --yes {project}',
     exec: 'coder ssh {handle} -- {cmd}',
     status: 'coder show {handle}',
     down: 'coder delete --yes {handle}',
+    dispatch:
+      'coder ssh {handle} -- bash -lc "cd ~/agents && claude -p \'/ev-run {handle} {phase}\'"',
   },
 };
 
@@ -127,7 +157,7 @@ export function resolveProvider(
     );
   }
 
-  const merged: Partial<ProviderTemplates> = {
+  const merged: ProviderConfig = {
     ...(defaults ?? {}),
     ...(override ?? {}),
   };
@@ -142,16 +172,38 @@ export function resolveProvider(
     }
   }
 
-  return { name, templates: merged as ProviderTemplates };
+  const mode: EnvMode = merged.mode === 'dispatch' ? 'dispatch' : 'exec';
+  if (mode === 'dispatch') {
+    if (typeof merged.dispatch !== 'string' || merged.dispatch.trim() === '') {
+      throw new EnvironmentError(
+        'env-dispatch-template-missing',
+        `provider "${name}" is mode=dispatch but has no non-empty "dispatch" template`,
+      );
+    }
+  }
+
+  return {
+    name,
+    mode,
+    templates: {
+      up: merged.up as string,
+      exec: merged.exec as string,
+      status: merged.status as string,
+      down: merged.down as string,
+    },
+    dispatch: merged.dispatch,
+  };
 }
 
 export interface RenderVars {
   project?: string;
   handle?: string;
   cmd?: string;
+  phase?: string;
+  task?: string;
 }
 
-const PLACEHOLDER = /\{(project|handle|cmd)\}/g;
+const PLACEHOLDER = /\{(project|handle|cmd|phase|task)\}/g;
 const ANY_PLACEHOLDER = /\{[a-zA-Z0-9_]+\}/;
 
 // Tokens safe to leave bare in a shell command line. Anything outside
@@ -191,10 +243,21 @@ export function renderTemplate(template: string, vars: RenderVars): string {
 
 // Render the full command for an op against a resolved provider. The
 // returned string is a shell command line the CLI hands to `sh -c`.
+// `dispatch` resolves the provider's dispatch template (dispatch-mode
+// providers only); the four core ops resolve from `templates`.
 export function planCommand(
-  op: EnvOp,
+  op: EnvOp | 'dispatch',
   provider: ResolvedProvider,
   vars: RenderVars,
 ): string {
+  if (op === 'dispatch') {
+    if (provider.dispatch === undefined || provider.dispatch.trim() === '') {
+      throw new EnvironmentError(
+        'env-dispatch-unsupported',
+        `provider "${provider.name}" has no dispatch template (mode=${provider.mode})`,
+      );
+    }
+    return renderTemplate(provider.dispatch, vars);
+  }
   return renderTemplate(provider.templates[op], vars);
 }
