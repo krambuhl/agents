@@ -181,17 +181,23 @@ central inventory; `npm test` green.
 **Depends on**: Phase 3, Phase 4
 
 **Goal**: Keep the human in **ADR moments** during autonomous/dispatch runs
-without omitting them, via a git-synced async question channel (decision
-0006) — not remote control.
+without omitting them, via a git-synced async question channel relayed by a
+host/broker node (decisions 0006 + 0007) — not worker remote control.
 
 1. ADR-moment classification: reuse the `[adr-candidate]` marker / ADR-emit
    hook + a severity threshold to decide escalate-vs-auto-decide.
-2. Async question channel: on an ADR-moment the run writes a partitioned
-   `questions/<id>.md` (or pending `decisions/` entry) and **parks** that
-   phase/site (others proceed — per-phase parking); a notification fires.
-3. Resume: the operator answers via commit (or a web UI that commits); the
-   loop picks it up on the next pull-before-act and continues.
-4. Record (VERIFIED, decision 0006) that remote-control is **not available**
+2. Async question channel (worker side): on an ADR-moment the **worker**
+   writes a partitioned `questions/<id>.md` (or pending `decisions/` entry)
+   and **parks** that phase/site (others proceed — per-phase parking).
+3. Host/broker relay (decision 0007): the operator's driving session (host
+   node — full-scope login, human-attended, optionally remote-controllable)
+   watches the `questions/` partition and surfaces pending questions to the
+   human (`AskUserQuestion` locally, or the operator attends via Remote
+   Control from a phone), then writes the answer back. Workers ↔ host
+   rendezvous through the store, never a direct connection.
+4. Resume: the loop picks the committed answer up on the next pull-before-act
+   and continues.
+5. Record (VERIFIED, decision 0006) that **worker** remote-control is **not available**
    for the autonomous headless + setup-token path — inference-only scope,
    needs a persistent full-scope interactive session, and is a take-the-
    wheel model rather than async escalation. The git-synced channel is the
@@ -203,4 +209,4 @@ on the next pull; routine decisions still auto-resolve; `npm test` green.
 
 ## Revision log
 
-- 2026-06-30 — Lock Phase 9: VERIFIED that setup-token cannot do Remote Control (inference-only scope; needs persistent full-scope interactive session; take-the-wheel not async-escalation; docs + issue #33105). Git-synced question channel is the sole escalation transport
+- 2026-06-30 — Add host/broker node role (decision 0007): workers escalate ADR questions into the shared store; the operator's full-scope host/driver session relays them to the human (locally or via Remote Control from a phone) and commits answers back. The git store is the message bus; no worker login/RC
