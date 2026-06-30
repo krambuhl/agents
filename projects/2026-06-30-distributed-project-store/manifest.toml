@@ -21,12 +21,12 @@ worker_bindings = {}
 
 [[phases]]
 number = 1
-name = "project.toml + per-phase manifest format + dual-read"
+name = "Split format (project.toml + per-phase descriptor) + dual-read"
 status = "not-started"
 
 [[phases]]
 number = 2
-name = "Flip writers to per-phase manifests"
+name = "Flip writers + revise-plan to per-phase descriptors"
 status = "not-started"
 
 [[phases]]
@@ -36,7 +36,7 @@ status = "not-started"
 
 [[phases]]
 number = 4
-name = "External repo + git-as-sync; retire the ev-env sidecar"
+name = "External repo + git-as-sync/awareness; retire the ev-env sidecar"
 status = "not-started"
 
 [[phases]]
@@ -53,3 +53,8 @@ detail = {}
 timestamp = "2026-06-30T06:07:52.715Z"
 target = "PLAN.md"
 seq = 1
+
+[[revisions]]
+timestamp = "2026-06-30T06:23:18.640Z"
+target = "PLAN.md"
+seq = 2

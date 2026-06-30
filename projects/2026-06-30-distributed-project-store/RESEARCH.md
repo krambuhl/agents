@@ -105,33 +105,59 @@ Layout (in the project dir, which lives in the external shared repo):
 
 ```
 projects/<slug>/
-  project.toml             # [meta], [config], [[phases]] index:
-                           #   number, title, dependsOn, branch
-                           #   (set at plan time; near-static thereafter)
-  phases/<N>/manifest.toml # status + [[checkins]] [[events]] [[sessions]]
-                           #   [[retros]] [[replies]] [[findings]] for phase N
-  decisions/<NNNN>-<slug>.md   # project-scoped ADRs (shared via the repo)
-  PLAN.md RESEARCH.md INTERVIEW.md   # prose (committed)
+  project.toml             # [meta], [config] ONLY — identity + settings,
+                           #   write-once at scaffold. NO central phase index.
+  phases/<N>/manifest.toml # the phase DESCRIPTOR (title, dependsOn, status,
+                           #   branch) + that phase's [[checkins]] [[events]]
+                           #   [[sessions]] [[retros]] [[replies]] [[findings]]
+  decisions/<NNNN>-<slug>.md   # project-scoped ADRs (per-record, shared via repo)
+  PLAN.md RESEARCH.md INTERVIEW.md   # prose narrative (committed)
 ```
 
-- **Phase status lives in the per-phase manifest**, so there is **no
-  shared mutable file** during parallel execution; dependency checks read
-  the depended-on phase's manifest. The `project.toml` index carries the
-  static phase list + deps, written at plan/scaffold time.
-- **Conflict surface shrinks to "two workers on the same phase,"** which
-  the substrate already serializes (one loop per phase). Different-phase
-  workers never touch the same file.
-- **Consolidation preserved at the phase grain** — the machine-consumption
-  ergonomics the original consolidation bought are kept; we only changed
-  the *unit* of consolidation from project to phase.
-- **Reads aggregate** the per-phase manifests; the read path is already
-  centralized (`project read`, `parse-plan`).
+There is **no central mutable index** (decision 0001). Each phase's
+descriptor — title, `dependsOn`, status, branch — lives **in that phase's
+own** `manifest.toml`. "The plan index" is the *aggregate* of per-phase
+files, computed by reading `phases/`. This is the correction to the
+earlier "near-static index" assumption: looms self-regulate, a completing
+block can re-path the plan, and under parallelism a peer may do the
+re-pathing — so a single `project.toml` index would be a hot contended
+surface, exactly what partitioning avoids.
 
-This makes the pull→rebase→push coordination *lighter* than (C)
-anticipated: during parallel work writers touch disjoint per-phase files,
-so a racing push auto-merges — no TOML merge driver needed for the common
-case. The `project.toml` index is the only shared file, and it is
-near-static after planning.
+- **No shared mutable file during parallel execution.** Phase status +
+  descriptor live per-phase; dependency checks read the depended-on
+  phase's manifest. `loom revise-plan` reconciles per-phase descriptors —
+  re-pathing different phases writes different files.
+- **Conflict surface shrinks to "two workers on the same phase,"** which
+  the substrate already serializes (one loop per phase). Re-pathing an
+  *in-flight* phase contends on that phase's file with its worker — an
+  inherent coordination event, serialized.
+- **`PLAN.md` is the one serialized narrative.** The machine-actionable
+  structure is the partitioned per-phase descriptors; revise-plan updates
+  both; PLAN.md conflicts are accepted as the cost of a deliberate
+  planning act.
+- **Consolidation preserved at the phase grain** — a worker reads/writes
+  one file for its phase; only the *unit* of consolidation changed from
+  project to phase.
+
+## Cross-machine coherence (pull-before-act)
+
+Partitioning makes peers' writes land conflict-free; it does not make them
+**visible**. So git is the *awareness* layer too (decision 0002): every
+loop iteration begins with `git -C $LOOM_PROJECTS_ROOT pull --rebase`
+before orient/decide, so new per-phase descriptors, decisions, and
+learnings from other machines arrive as new/updated files and are
+re-read each iteration. A machine "checks in with main" by pulling, every
+iteration.
+
+## Decentralized work inventories (sibling axis)
+
+A second partitioning axis — **work distribution** — is recorded in
+decision 0003 and kept out of scope here. For massively-parallel
+mechanical work (migrations), the inventory can live **in the code**
+(site `TODO`s + metadata + a small migration dictionary) plucked by
+migration skills, so `ev-goal` fans out with **no central inventory** to
+contend on. This project must not foreclose it; per-phase partitioning
+already aligns. Recommended as a **sibling project**, not a phase here.
 
 ## Git-as-sync replaces the ev-env #6 sidecar
 
