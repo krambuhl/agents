@@ -1,6 +1,5 @@
 checkins = []
 sessions = []
-revisions = []
 retros = []
 replies = []
 findings = []
@@ -22,17 +21,17 @@ worker_bindings = {}
 
 [[phases]]
 number = 1
-name = "Per-record storage lib + dual-read readers"
+name = "project.toml + per-phase manifest format + dual-read"
 status = "not-started"
 
 [[phases]]
 number = 2
-name = "Flip the collection writers to per-record files"
+name = "Flip writers to per-phase manifests"
 status = "not-started"
 
 [[phases]]
 number = 3
-name = "Thin core + git coordination seam"
+name = "Project-scoped decision/ADR log"
 status = "not-started"
 
 [[phases]]
@@ -49,3 +48,8 @@ status = "not-started"
 at = "2026-06-30T06:01:50.926Z"
 event = "project-initialized"
 detail = {}
+
+[[revisions]]
+timestamp = "2026-06-30T06:07:52.715Z"
+target = "PLAN.md"
+seq = 1

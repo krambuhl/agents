@@ -86,23 +86,52 @@ coordinated with pull→rebase→push. Conflict-free for the high-frequency
 95% (checkins/events/sessions/retros/replies/findings); simple git
 coordination for the rare, small core write (phase transitions).
 
-## Recommendation: Hybrid (C)
+**D. Per-phase consolidated manifests (CHOSEN).** Partition by **phase**
+— the grain at which work parallelizes — not by record-type. Stay
+consolidated *within* a phase (one file a worker reads/writes for its
+phase, machine-friendly), but give each phase its own `manifest.toml` so
+two containers on different phases write **different files** → git
+auto-merges. This keeps the consolidation the project values while making
+parallel writes disjoint, and avoids the per-record file explosion of (C).
 
-- **Append-only collections → per-record files** under the partition
-  keys `projects/CONVENTIONS.md` already names:
-  - `checkins/<branch>/<NN>.json` — partition `(branch, NN)`
-  - `events/<sortable-ts>-<rand>.json` — append-only, order-by-filename
-  - `sessions/<date>-<letter>.json` — partition `(date, letter)`
-  - `retros/<type>-<phase>-<tier>.json` — partition `(type, phase, tier)`
-  - `replies/<branch>/<comment-id>.json` — partition `(branch, id)`
-  - `findings/…` — append-only per-record (or keep `.jsonl` append, which
-    is already Category-1 conflict-tolerant)
-- **Thin core `manifest.toml`** = `[meta]`, `[config]`, `[[phases]]`
-  only. Phase transitions are low-frequency and serialized per project
-  via pull→rebase→push (small file, rare conflicts, cheap retry).
-- **Reads aggregate** the collection directories. The read path is
-  already centralized (`project read`, `parse-plan`), so aggregation is
-  localized.
+## Recommendation: Per-phase consolidated manifests (D)
+
+Chosen over the per-record hybrid (C) on the operator's steer: stay
+fairly consolidated, but split the one manifest **by phase**. The
+parallelism grain *is* the phase (`/ev-run` dispatches per phase), so
+per-phase files give each concurrent worker its own file.
+
+Layout (in the project dir, which lives in the external shared repo):
+
+```
+projects/<slug>/
+  project.toml             # [meta], [config], [[phases]] index:
+                           #   number, title, dependsOn, branch
+                           #   (set at plan time; near-static thereafter)
+  phases/<N>/manifest.toml # status + [[checkins]] [[events]] [[sessions]]
+                           #   [[retros]] [[replies]] [[findings]] for phase N
+  decisions/<NNNN>-<slug>.md   # project-scoped ADRs (shared via the repo)
+  PLAN.md RESEARCH.md INTERVIEW.md   # prose (committed)
+```
+
+- **Phase status lives in the per-phase manifest**, so there is **no
+  shared mutable file** during parallel execution; dependency checks read
+  the depended-on phase's manifest. The `project.toml` index carries the
+  static phase list + deps, written at plan/scaffold time.
+- **Conflict surface shrinks to "two workers on the same phase,"** which
+  the substrate already serializes (one loop per phase). Different-phase
+  workers never touch the same file.
+- **Consolidation preserved at the phase grain** — the machine-consumption
+  ergonomics the original consolidation bought are kept; we only changed
+  the *unit* of consolidation from project to phase.
+- **Reads aggregate** the per-phase manifests; the read path is already
+  centralized (`project read`, `parse-plan`).
+
+This makes the pull→rebase→push coordination *lighter* than (C)
+anticipated: during parallel work writers touch disjoint per-phase files,
+so a racing push auto-merges — no TOML merge driver needed for the common
+case. The `project.toml` index is the only shared file, and it is
+near-static after planning.
 
 ## Git-as-sync replaces the ev-env #6 sidecar
 
@@ -113,6 +142,25 @@ external projects repo and points `LOOM_PROJECTS_ROOT` at it. A write is
 longer needs tar-over-ssh: the in-workspace `/ev-run` reads/writes its
 own clone and pushes to shared `main`; the local session pulls (PR-wake
 re-entry pulls first) to observe progress. Git is the sync layer.
+
+## Project-scoped decisions (ADRs in the project repo)
+
+Today `loom adr` writes **workspace-level** `projects/adr-log/` — code-repo
+conventions, in the code repo. But project-level learnings and decisions
+(why this project chose X, a constraint discovered mid-build) should
+travel **with the project** so every machine working it sees them. So add
+a **project-scoped** decision log: a `loom` verb writes
+`projects/<slug>/decisions/<NNNN>-<title>.md`, committed into the project
+dir and therefore distributed through the shared projects repo.
+
+- Workspace ADRs (`projects/adr-log/`) stay where they are — they are
+  about the *substrate/code*, not a single project.
+- Project ADRs (`projects/<slug>/decisions/`) are append-only per-record
+  markdown (numbered), so concurrent decision writes from different
+  machines land on different filenames — conflict-free, same as the
+  per-phase manifests.
+- This is the natural home for the "project level learnings/decisions are
+  shared to the project repo" requirement.
 
 ## Open questions / risks (for the plan to resolve)
 
