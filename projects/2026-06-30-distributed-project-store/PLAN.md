@@ -41,8 +41,10 @@ consolidation: distributed multi-write needs partition-independence.
 - ev-env shipped-default ergonomics — separate quick PRs.
 - Per-record decomposition of collections (RESEARCH.md option C).
 - Auto-provisioning the external repo or per-migration dictionaries.
-- Remote-control as the escalation transport (constraint: setup-token is
-  inference-only; see decision 0006) — optional UI only.
+- Remote-control as an escalation transport — VERIFIED out of scope: a
+  setup-token credential is inference-only and cannot establish Remote
+  Control, which also needs a persistent full-scope interactive session
+  (decision 0006). A different deployment, not built here.
 
 ## Phase 1 — Split format (project.toml + per-phase descriptor) + dual-read
 
@@ -189,8 +191,11 @@ without omitting them, via a git-synced async question channel (decision
    phase/site (others proceed — per-phase parking); a notification fires.
 3. Resume: the operator answers via commit (or a web UI that commits); the
    loop picks it up on the next pull-before-act and continues.
-4. Document remote-control as an optional answering UI only where a full
-   interactive session exists; record the setup-token constraint.
+4. Record (VERIFIED, decision 0006) that remote-control is **not available**
+   for the autonomous headless + setup-token path — inference-only scope,
+   needs a persistent full-scope interactive session, and is a take-the-
+   wheel model rather than async escalation. The git-synced channel is the
+   sole transport; remote-control is a different deployment, out of scope.
 
 **Exit**: an ADR-moment in an autonomous dispatch parks the phase and
 records a question; an answer committed to the shared repo resumes the run
@@ -198,4 +203,4 @@ on the next pull; routine decisions still auto-resolve; `npm test` green.
 
 ## Revision log
 
-- 2026-06-30 — Add /loom-runbook decentralized authoring skill (decision 0005, Phase 6) and ADR-moment human escalation via git-synced async questions (decision 0006, Phase 9); flag setup-token cannot do remote-control. 9 phases
+- 2026-06-30 — Lock Phase 9: VERIFIED that setup-token cannot do Remote Control (inference-only scope; needs persistent full-scope interactive session; take-the-wheel not async-escalation; docs + issue #33105). Git-synced question channel is the sole escalation transport

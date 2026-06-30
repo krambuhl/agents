@@ -20,7 +20,8 @@ commit); the loop picks the answer up on the next **pull-before-act**
 (decision 0002) and resumes. This is ADR-0009's deferred "v2 non-blocking
 escalation," realized for free by this project's git-as-awareness layer.
 
-**Remote control is an optional richer UI, not the load-bearing path.**
+**Remote control is NOT available for this autonomous path** (verified —
+see the constraint section); the git-synced channel is the only transport.
 
 ## Why
 
@@ -31,24 +32,41 @@ operator's principle: do not omit the human from ADR moments. So the
 auto-mode panel keeps routine throughput; ADR-classified decisions break
 out to the human.
 
-## The remote-control constraint (load-bearing)
+## The remote-control constraint (VERIFIED, load-bearing)
 
-The natural instinct — "auto-enable `/remote-control` on the coder box" —
-collides with this project's autonomy auth:
+Verified against the Claude Code docs (`remote-control.md`,
+`authentication.md`) + GitHub issue #33105. The natural instinct —
+"auto-enable `/remote-control` on the coder box" — is **not available** for
+this project's headless + subscription-token autonomy. Three independent
+blockers:
 
-- A `setup-token` credential (subscription billing, used for headless
-  autonomy) is **inference-only and cannot establish Remote Control
-  sessions** (Claude Code docs, fetched this session — verify before
-  relying on it).
-- Dispatch runs headless `claude -p`, which is non-interactive; remote
-  control targets interactive sessions.
+1. **Scope.** `setup-token` / `CLAUDE_CODE_OAUTH_TOKEN` is **inference-only
+   and cannot establish Remote Control sessions** (docs, verbatim: *"These
+   tokens are limited to inference-only and cannot establish Remote Control
+   sessions. Run `claude auth login` to authenticate with a full-scope
+   session token instead."*). Remote Control requires the
+   `user:sessions:claude_code` OAuth scope, obtained via interactive
+   `/login` — not setup-token (issue #33105).
+2. **Process model.** Remote Control needs a **persistent running process**
+   (interactive session or `claude remote-control` server mode). Dispatch
+   runs `claude -p`, which is non-interactive and **exits immediately** — it
+   cannot be remote-controlled.
+3. **Interaction model.** Remote Control is "continue/steer a session from
+   another device" — a *take-the-wheel* model, not an *agent-parks-and-asks*
+   escalation. It does not provide the async-question semantics we want.
 
-So remote control is **not** the portable escalation mechanism for a
-subscription-token headless box. The shared-store async question channel
-is — it needs no special credential and rides the coherence layer we are
-already building. Remote control may be layered on *where a full
-interactive, remote-control-capable session exists*, as a nicer answering
-UI, but the transport of record is the git-synced question/answer.
+No single configuration gives headless + remote-controllable + subscription
++ non-interactive (verified matrix). Achieving remote control would mean
+giving up headlessness (persistent server-mode session) AND swapping the
+subscription `setup-token` for an interactive full-scope `/login` — a
+different deployment, not a layer on the autonomous one.
+
+**Therefore (locked):** the shared-store async question channel is the
+escalation transport of record. It needs no special credential and rides
+the coherence layer we are already building. Remote control is **out of
+scope** for the autonomous-dispatch path; it remains available only to an
+operator running a separate, full-scope, persistent interactive session,
+which is a different mode this project does not build.
 
 ## Open questions (for the phase to resolve)
 

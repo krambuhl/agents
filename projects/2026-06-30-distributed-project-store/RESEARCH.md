@@ -206,12 +206,18 @@ phase/site; the operator answers via a commit (or a web UI that commits);
 the loop resumes on the next pull-before-act. This is the v2 non-blocking
 escalation ADR-0009 deferred, realized by the coherence layer.
 
-**Constraint:** "enable `/remote-control` on the coder box" does not fit the
-subscription-token autonomy setup — a `setup-token` credential is
-inference-only and *cannot establish remote-control sessions* (Claude Code
-docs, fetched this session; verify), and dispatch is headless `claude -p`.
-So remote control is an optional UI where a full interactive session
-exists, not the portable transport. The git-synced question/answer is.
+**Constraint (VERIFIED):** "enable `/remote-control` on the coder box" is
+**not available** for the subscription-token autonomy setup. Verified
+against the Claude Code docs + GitHub issue #33105 (decision 0006): a
+`setup-token`/`CLAUDE_CODE_OAUTH_TOKEN` credential is **inference-only and
+cannot establish Remote Control sessions** (it lacks the
+`user:sessions:claude_code` scope, which only interactive `/login`
+grants); Remote Control also needs a **persistent process**, which headless
+`claude -p` is not; and it is a *take-the-wheel* model, not async
+escalation. So the git-synced question/answer is the **only** escalation
+transport for the autonomous path; remote control belongs to a different
+(full-scope, persistent, interactive) deployment this project does not
+build.
 
 ## Git-as-sync replaces the ev-env #6 sidecar
 
