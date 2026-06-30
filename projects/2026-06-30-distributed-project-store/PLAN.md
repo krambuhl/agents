@@ -98,15 +98,24 @@ don't collide; `decisions/0001..0006` are the fixtures; `npm test` green.
 
 **Goal**: External shared repo home; git distributes AND surfaces it.
 
-1. `LOOM_PROJECTS_ROOT` → external clone; write path commits + `pull
+1. **Repo layout** (decision 0009): `[projects-repo]/projects/` holds the
+   project dirs (`LOOM_PROJECTS_ROOT` → it); `[projects-repo]/.claude/`
+   carries committed `settings.json` (shared `ev.environment.providers`
+   templates) + gitignored `settings.local.json` (per-machine active
+   provider + overrides). ev resolves provider config from the
+   projects-repo `.claude/` **relative to `LOOM_PROJECTS_ROOT`** (not cwd),
+   so config travels with the data. Secrets stay in coder secrets/env; a
+   guard rejects secrets in committed `settings.json`.
+2. `LOOM_PROJECTS_ROOT` → external clone; write path commits + `pull
    --rebase` + pushes (disjoint per-phase files auto-merge).
-2. **Pull-before-act** in the orient step each iteration.
-3. ev dispatch reads/writes the workspace clone and pushes; local pulls on
+3. **Pull-before-act** in the orient step each iteration.
+4. ev dispatch reads/writes the workspace clone and pushes; local pulls on
    PR-wake; remove the tar-over-ssh sidecar.
-4. Smoke across two clones; no sidecar path remains.
+5. Smoke across two clones; no sidecar path remains.
 
-**Exit**: state + decisions round-trip across clones; pull-before-act
-surfaces a peer write; `npm test` green.
+**Exit**: state + decisions round-trip across clones; provider config
+resolves from the projects-repo `.claude/`; pull-before-act surfaces a peer
+write; `npm test` green.
 
 ## Phase 5 — Migration converter + conventions/regression guard
 
@@ -219,4 +228,4 @@ reaches a peer env; routine decisions still auto-resolve; `npm test` green.
 
 ## Revision log
 
-- 2026-06-30 — Two buses (decision 0008): live control-plane bus (primary) for real-time worker->host AskUserQuestion routing + cross-env learning broadcast, with the durable git store as fallback + system of record. Reworks Phase 9
+- 2026-06-30 — Projects-repo layout (decision 0009): [repo]/projects + [repo]/.claude with committed settings.json (shared provider templates) and gitignored settings.local.json (per-machine provider); ev resolves config relative to LOOM_PROJECTS_ROOT. Added to Phase 4
