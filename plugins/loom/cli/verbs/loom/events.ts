@@ -6,6 +6,7 @@ import {
   appendEvent,
   writeManifest,
 } from '../../lib/manifest-toml.ts';
+import { readProjectStore } from '../../lib/split-store.ts';
 import { LoomError } from '../../lib/errors.ts';
 import type { Event, EventName } from '../../lib/types.ts';
 import type { CliContext, DispatchResult } from './project.ts';
@@ -18,7 +19,7 @@ function readEvents(
   projectPath: string,
   opts: { since?: string; event?: EventName; limit?: number } = {},
 ): Event[] {
-  const { manifest } = readManifestFile(manifestPath(projectPath));
+  const manifest = readProjectStore(projectPath);
   const filtered = manifest.events.filter((e) => {
     if (opts.event !== undefined && e.event !== opts.event) return false;
     if (opts.since !== undefined && e.at < opts.since) return false;
@@ -235,7 +236,7 @@ export function eventsAggregate(rest: string[], ctx: CliContext): DispatchResult
     for (const project of projects) {
       let events: Event[];
       try {
-        events = readManifestFile(manifestPath(project.path)).manifest.events;
+        events = readProjectStore(project.path).events;
       } catch {
         // Missing or unreadable manifest — skip this project, never crash
         // the whole fold.

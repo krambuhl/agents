@@ -21,6 +21,7 @@ import {
   updateMeta,
   writeManifest,
 } from '../../lib/manifest-toml.ts';
+import { readProjectStore } from '../../lib/split-store.ts';
 import { readConfig } from '../../lib/config.ts';
 import { LoomError } from '../../lib/errors.ts';
 import { writeLoomSubstrate, type ManifestInit } from '../../lib/adopt.ts';
@@ -81,7 +82,7 @@ export function projectRead(rest: string[], ctx: CliContext): DispatchResult {
   }
   try {
     const path = resolveProject(slug, ctx.projectsRoot);
-    const { manifest } = readManifestFile(manifestPath(path));
+    const manifest = readProjectStore(path);
     return { stdout: emit(toLegacyManifest(manifest), values.pretty === true), exitCode: 0 };
   } catch (err) {
     return errToResult(err);
@@ -124,7 +125,7 @@ export function projectStatus(rest: string[], ctx: CliContext): DispatchResult {
     );
   }
   try {
-    const { manifest } = readManifestFile(manifestPath(match.path));
+    const manifest = readProjectStore(match.path);
     const summary = {
       slug: match.slug,
       status: manifest.meta.status,
