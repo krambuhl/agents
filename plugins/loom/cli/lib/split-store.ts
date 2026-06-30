@@ -16,8 +16,34 @@
 // Records with no direct phase number (replies / findings / events) stay
 // project-level in this unit; tightening their phase association is later work.
 
-import { readManifest, stringifyManifest } from './manifest-toml.ts';
+import {
+  existsSync,
+  mkdirSync,
+  readdirSync,
+  readFileSync,
+  writeFileSync,
+} from 'node:fs';
+import { join } from 'node:path';
+import {
+  manifestPath,
+  readManifest,
+  readManifestFile,
+  stringifyManifest,
+} from './manifest-toml.ts';
 import type { Checkin, ManifestToml, Retro } from './types.ts';
+
+// Split-store on-disk layout (relative to a project dir):
+//   project.toml            — the project part (presence = "this is split")
+//   phases/<N>/manifest.toml — one per phase
+export const PROJECT_FILENAME = 'project.toml';
+export const PHASES_DIRNAME = 'phases';
+
+function projectTomlPath(projectDir: string): string {
+  return join(projectDir, PROJECT_FILENAME);
+}
+function phaseManifestPath(projectDir: string, phase: number): string {
+  return join(projectDir, PHASES_DIRNAME, String(phase), 'manifest.toml');
+}
 
 export type SplitStore = {
   // Project-level sections; phases/checkins/session-retros are empty here.
@@ -120,4 +146,46 @@ export function stringifyPhasePart(store: SplitStore, phase: number): string {
 
 export function readPart(raw: string): ManifestToml {
   return readManifest(raw);
+}
+
+// ---------- on-disk fs layer ----------
+
+// True when a project dir uses the split format (a project.toml is present).
+export function isSplitStore(projectDir: string): boolean {
+  return existsSync(projectTomlPath(projectDir));
+}
+
+export function writeSplitStore(projectDir: string, store: SplitStore): void {
+  writeFileSync(projectTomlPath(projectDir), stringifyProjectPart(store), 'utf8');
+  for (const [num] of store.phases) {
+    const p = phaseManifestPath(projectDir, num);
+    mkdirSync(join(projectDir, PHASES_DIRNAME, String(num)), { recursive: true });
+    writeFileSync(p, stringifyPhasePart(store, num), 'utf8');
+  }
+}
+
+export function readSplitStore(projectDir: string): SplitStore {
+  const project = readManifest(readFileSync(projectTomlPath(projectDir), 'utf8'));
+  const phases = new Map<number, ManifestToml>();
+  const phasesDir = join(projectDir, PHASES_DIRNAME);
+  if (existsSync(phasesDir)) {
+    for (const entry of readdirSync(phasesDir, { withFileTypes: true })) {
+      if (!entry.isDirectory()) continue;
+      const num = Number(entry.name);
+      if (!Number.isInteger(num)) continue;
+      const mp = phaseManifestPath(projectDir, num);
+      if (existsSync(mp)) phases.set(num, readManifest(readFileSync(mp, 'utf8')));
+    }
+  }
+  return { project, phases };
+}
+
+// Dual-read (Phase 1): resolve a project's state from the split format when
+// present, else from the legacy single manifest.toml. Read-only — the
+// optimistic-lock token path stays on the legacy writer until Phase 2.
+export function readProjectStore(projectDir: string): ManifestToml {
+  if (isSplitStore(projectDir)) {
+    return composeManifest(readSplitStore(projectDir));
+  }
+  return readManifestFile(manifestPath(projectDir)).manifest;
 }

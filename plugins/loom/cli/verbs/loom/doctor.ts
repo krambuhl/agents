@@ -4,6 +4,7 @@ import { existsSync } from 'node:fs';
 import { join, resolve, sep } from 'node:path';
 import { resolveProject, listProjects } from '../../lib/project.ts';
 import { manifestPath, readManifestFile } from '../../lib/manifest-toml.ts';
+import { isSplitStore, readProjectStore } from '../../lib/split-store.ts';
 import { LoomError } from '../../lib/errors.ts';
 import type { CliContext, DispatchResult } from './project.ts';
 
@@ -34,19 +35,28 @@ function checkProject(projectPath: string, slug: string): DoctorReport {
   const issues: DoctorIssue[] = [];
   const mp = manifestPath(projectPath);
 
-  // Post-cutover, all state lives in one manifest.toml; a clean parse of it
-  // certifies meta + config + the append-only sections in one read
-  // (readManifest validates the required sections + schema version).
-  if (!existsSync(mp)) {
+  // Dual-read (Phase 1): a split-format project (project.toml + phases/) is
+  // certified by a clean compose-read; otherwise the legacy single
+  // manifest.toml must exist and parse. A clean read of either form certifies
+  // meta + config + the append-only sections (readManifest validates the
+  // required sections + schema version).
+  if (isSplitStore(projectPath)) {
+    try {
+      readProjectStore(projectPath);
+    } catch (err: unknown) {
+      issues.push({
+        code: 'manifest-unreadable',
+        severity: 'error',
+        detail: (err as Error).message,
+      });
+    }
+  } else if (!existsSync(mp)) {
     issues.push({
       code: 'manifest-missing',
       severity: 'error',
       detail: `manifest.toml not found at ${mp}`,
     });
   } else {
-    // readManifest validates the required sections AND the schema version
-    // (it throws manifest-unsupported-version for anything but v1), so a
-    // clean parse is the whole health check; any failure is unreadable.
     try {
       readManifestFile(mp);
     } catch (err: unknown) {

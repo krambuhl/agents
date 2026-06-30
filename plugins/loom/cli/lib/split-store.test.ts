@@ -1,14 +1,26 @@
 import { describe, expect, test } from 'vitest';
-import { existsSync, readFileSync, readdirSync } from 'node:fs';
+import {
+  existsSync,
+  mkdtempSync,
+  readFileSync,
+  readdirSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
+import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { readManifest } from './manifest-toml.ts';
+import { readManifest, stringifyManifest } from './manifest-toml.ts';
 import {
   composeManifest,
+  isSplitStore,
   readPart,
+  readProjectStore,
+  readSplitStore,
   splitManifest,
   stringifyPhasePart,
   stringifyProjectPart,
+  writeSplitStore,
 } from './split-store.ts';
 
 // lib -> cli -> loom -> plugins -> repo root
@@ -81,6 +93,53 @@ describe('split-store: parts serialize through the existing manifest serializer'
       expect(asMultiset(back.phases)).toEqual(asMultiset(pm.phases));
       expect(asMultiset(back.checkins)).toEqual(asMultiset(pm.checkins));
       expect(asMultiset(back.retros)).toEqual(asMultiset(pm.retros));
+    }
+  });
+});
+
+describe('split-store: fs layer + dual-read resolver', () => {
+  test('write -> readSplitStore -> compose round-trips through disk', () => {
+    const m = readManifest(readFileSync(MANIFESTS[0], 'utf8'));
+    const dir = mkdtempSync(join(tmpdir(), 'split-store-'));
+    try {
+      writeSplitStore(dir, splitManifest(m));
+      expect(isSplitStore(dir)).toBe(true);
+      const back = composeManifest(readSplitStore(dir));
+      expect(back.meta).toEqual(m.meta);
+      expect(asMultiset(back.phases)).toEqual(asMultiset(m.phases));
+      expect(asMultiset(back.checkins)).toEqual(asMultiset(m.checkins));
+      expect(back.events).toEqual(m.events);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  test('readProjectStore reads a split-format project dir', () => {
+    const m = readManifest(readFileSync(MANIFESTS[0], 'utf8'));
+    const dir = mkdtempSync(join(tmpdir(), 'split-store-'));
+    try {
+      writeSplitStore(dir, splitManifest(m));
+      const back = readProjectStore(dir);
+      expect(back.meta).toEqual(m.meta);
+      expect(asMultiset(back.checkins)).toEqual(asMultiset(m.checkins));
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  test('readProjectStore falls back to legacy single manifest.toml', () => {
+    const raw = readFileSync(MANIFESTS[0], 'utf8');
+    const m = readManifest(raw);
+    const dir = mkdtempSync(join(tmpdir(), 'split-store-legacy-'));
+    try {
+      // legacy layout: a single manifest.toml, no project.toml
+      writeFileSync(join(dir, 'manifest.toml'), stringifyManifest(m), 'utf8');
+      expect(isSplitStore(dir)).toBe(false);
+      const back = readProjectStore(dir);
+      expect(back.meta).toEqual(m.meta);
+      expect(asMultiset(back.checkins)).toEqual(asMultiset(m.checkins));
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
     }
   });
 });
