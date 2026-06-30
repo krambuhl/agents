@@ -19,10 +19,12 @@ project data and the config to operate it:
 ```
 
 - `LOOM_PROJECTS_ROOT` points at `[projects-repo]/projects`.
-- ev resolves provider config from the **projects repo's** `.claude/`
-  (`dirname(LOOM_PROJECTS_ROOT)/.claude`), not by walking up from the cwd
-  you happened to run `/ev-run` from. Config travels with the data;
-  discovery is deterministic.
+- **Accepted (operator):** run `/ev-run` etc. **from the projects-repo
+  cwd**, so a committed `.claude/settings.json` is found by ordinary
+  walk-up discovery — no new resolution rule needed. Resolving config
+  *relative to `LOOM_PROJECTS_ROOT`* (`dirname/.claude`) stays an
+  **optional** convenience for the case where you operate from a different
+  cwd; it is not required for the primary flow.
 
 ## Config split (load-bearing)
 
