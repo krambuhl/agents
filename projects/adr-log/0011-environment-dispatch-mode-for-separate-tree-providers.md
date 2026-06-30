@@ -100,6 +100,26 @@ Load-bearing properties:
   dispatch default's leading `unset ANTHROPIC_API_KEY` is the
   belt-and-suspenders for a stray key in the base image.
 
+  **VALIDATED end-to-end** (work-coder run, `2026-06-30-distributed-project-store`):
+  a `setup-token` OAuth token (108-char `sk-ant-…`) with **no**
+  `ANTHROPIC_API_KEY` and no `~/.claude/.credentials.json` ran a headless
+  `claude -p` that created a file in-box, exit 0, zero interaction —
+  proving the autonomy round-trip. Two operational facts the validation
+  pinned down:
+  - **Billing proof.** Running with `ANTHROPIC_API_KEY` provably unset is a
+    *stronger* subscription-billing assertion than interactive `/status`
+    (which hangs a headless session) — the precedence (decision 0006)
+    guarantees the OAuth token is the only credential in play.
+  - **Permission flag.** A headless `claude -p` stalls on a permission
+    prompt with no one to answer. A write-only task needs at least
+    `--permission-mode acceptEdits`; a real `/ev-run` also runs bash
+    (tests, git, loom), which acceptEdits does not cover, so the shipped
+    coder `dispatch` default now carries **`--dangerously-skip-permissions`**.
+    That flag is normally a smell, but the dispatch target is a
+    provisioned, disposable coder workspace — the intended sandbox for
+    unattended autonomy — so it is the correct posture here, not a
+    shortcut. Operators on a non-disposable target should narrow it.
+
 - **Tree-sync is rejected** (option 1). It trades one clean handoff for
   per-command shuttling with a sync-back problem; dispatch matches the
   operator's actual workflow and the substrate's "open a PR, subscribe,

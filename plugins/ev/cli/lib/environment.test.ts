@@ -195,6 +195,13 @@ describe('handleMaxLen surfacing + coder up uses {handle}', () => {
     expect(DEFAULT_PROVIDERS.coder.up).toContain('{handle}');
     expect(DEFAULT_PROVIDERS.coder.up).not.toContain('{project}');
   });
+
+  test('coder dispatch is headless-autonomy-ready (validation: permission + billing)', () => {
+    const d = DEFAULT_PROVIDERS.coder.dispatch ?? '';
+    expect(d).toContain('--dangerously-skip-permissions'); // bash won't stall
+    expect(d).toContain('unset ANTHROPIC_API_KEY'); // subscription billing
+    expect(d).toContain('{run}'); // canonical slug + --mode=auto, not {handle}
+  });
 });
 
 describe('deepMerge', () => {
@@ -352,7 +359,8 @@ describe('planCommand', () => {
     });
     expect(cmd).toContain('coder ssh short-name');
     // {run} lands raw inside the operator's single quotes — not re-quoted.
-    expect(cmd).toContain("claude -p '/ev-run 2026-06-25-thing 2 --mode=auto'");
+    // (`-p` is preceded by --dangerously-skip-permissions in the default.)
+    expect(cmd).toContain("-p '/ev-run 2026-06-25-thing 2 --mode=auto'");
   });
 
   test('{run} is not shell-quoted even though it contains spaces', () => {

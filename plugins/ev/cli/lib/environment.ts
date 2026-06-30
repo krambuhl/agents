@@ -103,8 +103,14 @@ export const DEFAULT_PROVIDERS: Record<string, ProviderConfig> = {
     exec: 'coder ssh {handle} -- {cmd}',
     status: 'coder show {handle}',
     down: 'coder delete --yes {handle}',
+    // `--dangerously-skip-permissions`: the dispatched `/ev-run` runs bash
+    // (tests, git, loom) + edits with no human to answer prompts, and the
+    // coder workspace is a provisioned, disposable sandbox — the intended
+    // place for unattended autonomy. Validation: a headless `claude -p` that
+    // only writes needs at least `--permission-mode acceptEdits`; a real
+    // `/ev-run` needs the broader skip so it doesn't stall on a bash prompt.
     dispatch:
-      'coder ssh {handle} -- bash -lc "unset ANTHROPIC_API_KEY; cd ~/agents && claude -p \'{run}\'"',
+      'coder ssh {handle} -- bash -lc "unset ANTHROPIC_API_KEY; cd ~/agents && claude --dangerously-skip-permissions -p \'{run}\'"',
   },
 };
 
