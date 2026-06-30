@@ -18,6 +18,7 @@ import {
 } from './verbs/loom/plan.ts';
 import { RESEARCH_VERBS } from './verbs/loom/research.ts';
 import { ADR_VERBS } from './verbs/loom/adr.ts';
+import { DECISION_VERBS } from './verbs/loom/decision.ts';
 import { FINDINGS_VERBS } from './verbs/loom/findings.ts';
 import type { CliContext, DispatchResult } from './verbs/loom/project.ts';
 
@@ -40,6 +41,7 @@ export const NAMESPACES: Record<string, string> = {
   research: 'Create a new research dossier (writes RESEARCH.md + RESEARCH-NOTES.md)',
   'parse-plan': 'Parse a project PLAN.md into a typed tree + diagnostics (JSON)',
   adr: 'Append a workspace-level Architectural Decision Record',
+  decision: 'Record a project-scoped decision (projects/<slug>/decisions/NNNN-*.md)',
   findings: 'Harvest guild evaluator findings into the manifest [[findings]] section',
 };
 
@@ -60,6 +62,7 @@ const VERBS_BY_NAMESPACE: Record<string, Record<string, VerbHandler>> = {
   research: RESEARCH_VERBS,
   'parse-plan': PARSE_PLAN_VERBS,
   adr: ADR_VERBS,
+  decision: DECISION_VERBS,
   findings: FINDINGS_VERBS,
 };
 
@@ -77,6 +80,7 @@ const VERBLESS_NAMESPACES: ReadonlySet<string> = new Set([
   'revise-plan',
   'parse-plan',
   'adr',
+  'decision',
 ]);
 
 // ---------- Pure helpers (exported for direct unit tests) ----------

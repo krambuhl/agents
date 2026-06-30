@@ -22,7 +22,7 @@ worker_bindings = {}
 [[phases]]
 number = 1
 name = "Split format (project.toml + per-phase descriptor) + dual-read"
-status = "in-progress"
+status = "completed"
 branch = "claude/dps-phase-1"
 
 [[phases]]
@@ -33,7 +33,8 @@ status = "not-started"
 [[phases]]
 number = 3
 name = "Project-scoped decision/ADR log"
-status = "not-started"
+status = "in-progress"
+branch = "claude/dps-phase-3"
 
 [[phases]]
 number = 4
@@ -74,6 +75,16 @@ detail = {}
 at = "2026-06-30T16:48:28.267Z"
 event = "phase-started"
 detail = { phase = 1, name = "Split format (project.toml + per-phase descriptor) + dual-read" }
+
+[[events]]
+at = "2026-06-30T17:12:52.261Z"
+event = "phase-completed"
+detail = { phase = 1 }
+
+[[events]]
+at = "2026-06-30T17:12:52.503Z"
+event = "phase-started"
+detail = { phase = 3, name = "Project-scoped decision/ADR log" }
 
 [[revisions]]
 timestamp = "2026-06-30T06:07:52.715Z"
