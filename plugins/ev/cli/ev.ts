@@ -10,6 +10,7 @@ import { spawnSync } from 'node:child_process';
 import {
   ENV_OPS,
   EnvironmentError,
+  deriveHandle,
   loadEnvironmentConfig,
   planCommand,
   resolveProvider,
@@ -102,16 +103,22 @@ function runEnv(rest: string[]): number {
       ? `/ev-run ${subject} ${values.phase} --mode=auto`
       : undefined;
 
-  // Handles are project-slug-keyed (ADR-0010), so `up <project>` and the
-  // rest share one positional; for up it doubles as the handle.
+  // `{handle}` is the env/workspace NAME — a backend-safe projection of the
+  // slug when the provider sets handleMaxLen (e.g. coder's 32-char limit);
+  // else the slug itself (ADR-0010). `{project}`/`{slug}` stay the canonical
+  // slug so the in-box `/ev-run` (via `{run}`) resolves the real project.
+  const handle =
+    provider.handleMaxLen !== undefined
+      ? deriveHandle(subject, provider.handleMaxLen)
+      : subject;
   const vars =
     op === 'exec'
-      ? { handle: subject, cmd: values.cmd }
+      ? { handle, cmd: values.cmd }
       : op === 'dispatch'
-        ? { handle: subject, slug: subject, phase: values.phase, task: values.task, run }
+        ? { handle, slug: subject, phase: values.phase, task: values.task, run }
         : op === 'up'
-          ? { project: subject, handle: subject }
-          : { handle: subject };
+          ? { project: subject, slug: subject, handle }
+          : { handle };
 
   if (op === 'exec' && (values.cmd === undefined || values.cmd === '')) {
     throw new EnvironmentError(

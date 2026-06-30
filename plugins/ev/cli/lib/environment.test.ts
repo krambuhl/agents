@@ -7,6 +7,7 @@ import {
   EnvironmentError,
   ENV_OPS,
   deepMerge,
+  deriveHandle,
   loadEnvironmentConfig,
   loadMergedSettings,
   planCommand,
@@ -160,6 +161,39 @@ describe('resolveProvider', () => {
 describe('the coder default is non-interactive (validation finding #2)', () => {
   test('coder up carries --use-parameter-defaults', () => {
     expect(DEFAULT_PROVIDERS.coder.up).toContain('--use-parameter-defaults');
+  });
+});
+
+describe('deriveHandle (validation finding #1: coder 32-char names)', () => {
+  test('drops the date, keeps the descriptive words within maxLen', () => {
+    expect(deriveHandle('2026-06-30-distributed-project-store', 32)).toBe(
+      'distributed-project-store',
+    );
+  });
+  test('caps to the first 3 words', () => {
+    expect(deriveHandle('2026-06-26-test-ev-run-with-env-coder', 32)).toBe('test-ev-run');
+  });
+  test('truncates over-long results to maxLen (no trailing dash)', () => {
+    const h = deriveHandle('aaaaaaaaaa-bbbbbbbbbb-cccccccccc-dddddddddd', 12);
+    expect(h.length).toBeLessThanOrEqual(12);
+    expect(h.endsWith('-')).toBe(false);
+  });
+  test('ensures it starts with a letter', () => {
+    expect(deriveHandle('2026-06-30-9lives', 32)).toMatch(/^[a-z]/);
+  });
+  test('empty projection falls back to "project"', () => {
+    expect(deriveHandle('2026-06-30-', 32)).toBe('project');
+  });
+});
+
+describe('handleMaxLen surfacing + coder up uses {handle}', () => {
+  test('coder resolves handleMaxLen=32; fella has none', () => {
+    expect(resolveProvider({ provider: 'coder' }).handleMaxLen).toBe(32);
+    expect(resolveProvider({ provider: 'fella' }).handleMaxLen).toBeUndefined();
+  });
+  test('coder up renders against {handle} (the workspace name)', () => {
+    expect(DEFAULT_PROVIDERS.coder.up).toContain('{handle}');
+    expect(DEFAULT_PROVIDERS.coder.up).not.toContain('{project}');
   });
 });
 
