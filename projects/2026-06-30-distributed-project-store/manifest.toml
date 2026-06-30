@@ -36,12 +36,27 @@ status = "not-started"
 
 [[phases]]
 number = 4
-name = "External repo + git-as-sync/awareness; retire the ev-env sidecar"
+name = "External repo + git-as-sync/awareness; retire ev-env sidecar"
 status = "not-started"
 
 [[phases]]
 number = 5
 name = "Migration converter + conventions/regression guard"
+status = "not-started"
+
+[[phases]]
+number = 6
+name = "Site-annotation schema + migration dictionary"
+status = "not-started"
+
+[[phases]]
+number = 7
+name = "Migration skills: find, pluck, transform a batch"
+status = "not-started"
+
+[[phases]]
+number = 8
+name = "Decentralized claim/lease + massive concurrency"
 status = "not-started"
 
 [[events]]
@@ -58,3 +73,8 @@ seq = 1
 timestamp = "2026-06-30T06:23:18.640Z"
 target = "PLAN.md"
 seq = 2
+
+[[revisions]]
+timestamp = "2026-06-30T06:31:06.310Z"
+target = "PLAN.md"
+seq = 3

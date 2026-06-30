@@ -149,15 +149,35 @@ learnings from other machines arrive as new/updated files and are
 re-read each iteration. A machine "checks in with main" by pulling, every
 iteration.
 
-## Decentralized work inventories (sibling axis)
+## Work distribution: decentralized site-annotated inventory (in scope)
 
-A second partitioning axis — **work distribution** — is recorded in
-decision 0003 and kept out of scope here. For massively-parallel
-mechanical work (migrations), the inventory can live **in the code**
-(site `TODO`s + metadata + a small migration dictionary) plucked by
-migration skills, so `ev-goal` fans out with **no central inventory** to
-contend on. This project must not foreclose it; per-phase partitioning
-already aligns. Recommended as a **sibling project**, not a phase here.
+The second partitioning axis — **work distribution** — is **in scope**
+(decisions 0003 + 0004). Where the storage axis partitions *project
+state*, this partitions *the work itself*: for massively-parallel
+mechanical work (large migrations), the inventory lives **in the code**,
+not in a central plan.
+
+- **Site annotation.** Each work site carries a structured `TODO`/`MIGRATE`
+  comment with metadata: which migration it belongs to (a dictionary id),
+  any per-site parameters, and claim state. The set of sites is discovered
+  by scanning, never enumerated centrally.
+- **Migration dictionary.** A small shared file maps a dictionary id → the
+  transform spec/instructions for that migration. Written once; read by
+  every run. This is the only shared artifact, and it is read-mostly.
+- **Migration skills.** Skills scan for annotated sites, select a bounded
+  **batch**, apply the dictionary transform per site, and open a PR — the
+  "pluck off migration sites" loop.
+- **Decentralized claim/lease.** Many `ev-goal` runs execute concurrently
+  without two grabbing the same site. The **partition is the site** (plus
+  the claiming branch/PR): a run claims a batch site-locally (annotation
+  edit on its branch, or the open PR is the claim), and pull-before-act
+  (decision 0002) lets runs see peers' open claims and skip them. No
+  central registry to contend on.
+- **Why it belongs here.** This is the same partitioning principle as the
+  storage axis, and the two **meet**: massive `ev-goal` fan-out needs the
+  cross-machine coherence and shared store this project builds, so the
+  claim/lease layer depends on the git-as-sync/awareness layer. Folding
+  them avoids an artificial cross-project dependency (decision 0004).
 
 ## Git-as-sync replaces the ev-env #6 sidecar
 
@@ -215,7 +235,9 @@ dir and therefore distributed through the shared projects repo.
 
 ## Scope boundary
 
-This project covers the **external-repo + storage-format** change only.
-The remaining ev-env shipped-default fixes (handle projection,
-`--use-parameter-defaults`, multi-agent `{target}`, auth preflight,
-up-retry) ship as **separate quick PRs** outside this plan.
+This project covers **both** the external-repo + storage-format change
+(Phases 1–5) **and** the decentralized work-distribution model (Phases
+6–8) — one project, two partitioning axes that meet at the coherence
+layer (decision 0004). The remaining ev-env shipped-default fixes (handle
+projection, `--use-parameter-defaults`, multi-agent `{target}`, auth
+preflight, up-retry) ship as **separate quick PRs** outside this plan.

@@ -1,6 +1,6 @@
 # 0003. Decentralized, site-annotated work inventories (sibling direction)
 
-- **Status**: noted (out of scope here; candidate sibling project)
+- **Status**: superseded by decision 0004 (folded into this project)
 - **Scope**: cross-project direction — recorded so this project's storage
   model doesn't foreclose it
 
