@@ -1,11 +1,15 @@
 // Loop-layer environment-provider seam (ADR-0010).
 //
-// Pure resolution + command templating: these functions decide WHICH
-// provider is active on this machine and render the exact shell command
-// for an op (`up` / `exec` / `status` / `down`). They never spawn — the
-// CLI layer (cli/ev.ts) is what executes what these render. Keeping the
-// seam pure is what makes it unit-testable without a real fella/coder
-// install (ADR-0010 § "v1 runs the phase's commands in the environment").
+// Resolution + command templating: these functions decide WHICH provider is
+// active on this machine and render the exact shell command for an op
+// (`up` / `exec` / `status` / `down`). They never spawn — the CLI layer
+// (cli/ev.ts) is what executes what these render. Config discovery
+// (settings.json + settings.local.json) also lives here so it is unit-testable
+// (cli/ev.ts process.exit()s on import and can't be tested directly).
+
+import { existsSync, readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { homedir } from 'node:os';
 
 export type EnvOp = 'up' | 'exec' | 'status' | 'down';
 
@@ -81,7 +85,11 @@ export const DEFAULT_PROVIDERS: Record<string, ProviderConfig> = {
   // plugins + the repo (see ADR-0011).
   coder: {
     mode: 'dispatch',
-    up: 'coder create --yes {project}',
+    // `--yes` only auto-confirms the final build; it does NOT fill a
+    // template's defaulted-but-prompting rich params (validation: `coder
+    // create --yes` fast-fails `prepare build: EOF` on such a template).
+    // `--use-parameter-defaults` is the flag that makes it non-interactive.
+    up: 'coder create --yes --use-parameter-defaults {project}',
     exec: 'coder ssh {handle} -- {cmd}',
     status: 'coder show {handle}',
     down: 'coder delete --yes {handle}',
@@ -125,6 +133,80 @@ export function loadEnvironmentConfig(settings: unknown): EnvironmentConfig | nu
   const env = (ev as Record<string, unknown>).environment;
   if (env === null || typeof env !== 'object') return null;
   return env as EnvironmentConfig;
+}
+
+// ---------- settings discovery (settings.json + settings.local.json) ----------
+
+function isPlainObject(v: unknown): v is Record<string, unknown> {
+  return v !== null && typeof v === 'object' && !Array.isArray(v);
+}
+
+// Deep-merge two config trees, `over` winning. Objects merge key-by-key;
+// arrays and scalars are replaced wholesale. This is what lets a committed
+// `settings.json` carry the shared `ev.environment.providers` while a
+// per-machine `settings.local.json` overrides individual fields (decision
+// 0009).
+export function deepMerge(base: unknown, over: unknown): unknown {
+  if (!isPlainObject(base) || !isPlainObject(over)) return over;
+  const out: Record<string, unknown> = { ...base };
+  for (const [k, v] of Object.entries(over)) {
+    out[k] = k in out ? deepMerge(out[k], v) : v;
+  }
+  return out;
+}
+
+function readJsonIfExists(path: string): unknown {
+  if (!existsSync(path)) return undefined;
+  try {
+    return JSON.parse(readFileSync(path, 'utf8'));
+  } catch (err) {
+    throw new EnvironmentError(
+      'env-settings-unreadable',
+      `could not read/parse ${path}: ${(err as Error).message}`,
+    );
+  }
+}
+
+// Merge a single `.claude/` dir's committed `settings.json` (shared) UNDER its
+// `settings.local.json` (machine-local override). Returns null when neither
+// exists. Exported for unit tests.
+export function loadMergedSettings(claudeDir: string): unknown {
+  const shared = readJsonIfExists(join(claudeDir, 'settings.json'));
+  const local = readJsonIfExists(join(claudeDir, 'settings.local.json'));
+  if (shared === undefined && local === undefined) return null;
+  return deepMerge(shared ?? {}, local ?? {});
+}
+
+// Nearest `.claude/` dir (walking up from cwd) carrying a settings file; else
+// ~/.claude.
+function findClaudeDir(): string | null {
+  let dir = process.cwd();
+  for (;;) {
+    const cd = join(dir, '.claude');
+    if (existsSync(join(cd, 'settings.json')) || existsSync(join(cd, 'settings.local.json'))) {
+      return cd;
+    }
+    const parent = dirname(dir);
+    if (parent === dir) break;
+    dir = parent;
+  }
+  const home = join(homedir(), '.claude');
+  if (existsSync(join(home, 'settings.json')) || existsSync(join(home, 'settings.local.json'))) {
+    return home;
+  }
+  return null;
+}
+
+// Resolve settings: an explicit path reads exactly that file; otherwise the
+// nearest `.claude/` dir's settings.json + settings.local.json, merged.
+// Validation found ev only ever read settings.local.json, leaving a committed
+// settings.json dead (decision 0009 was aspirational); this implements it.
+export function resolveSettings(explicit?: string): unknown {
+  if (explicit !== undefined && explicit !== '') {
+    return existsSync(explicit) ? (readJsonIfExists(explicit) ?? null) : null;
+  }
+  const dir = findClaudeDir();
+  return dir === null ? null : loadMergedSettings(dir);
 }
 
 // Resolve the active provider on this machine: the configured name, with

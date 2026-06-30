@@ -7,15 +7,13 @@
 
 import { parseArgs } from 'node:util';
 import { spawnSync } from 'node:child_process';
-import { existsSync, readFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
-import { homedir } from 'node:os';
 import {
   ENV_OPS,
   EnvironmentError,
   loadEnvironmentConfig,
   planCommand,
   resolveProvider,
+  resolveSettings,
   type EnvOp,
   type ResolvedProvider,
 } from './lib/environment.ts';
@@ -28,40 +26,8 @@ function fail(err: unknown): never {
   throw err;
 }
 
-// Find the machine-local settings file: an explicit --config wins,
-// else the nearest .claude/settings.local.json walking up from cwd,
-// else ~/.claude/settings.local.json. Returns null if none exists.
-function findSettingsPath(explicit?: string): string | null {
-  if (explicit !== undefined && explicit !== '') {
-    return existsSync(explicit) ? explicit : null;
-  }
-  let dir = process.cwd();
-  for (;;) {
-    const candidate = join(dir, '.claude', 'settings.local.json');
-    if (existsSync(candidate)) return candidate;
-    const parent = dirname(dir);
-    if (parent === dir) break;
-    dir = parent;
-  }
-  const home = join(homedir(), '.claude', 'settings.local.json');
-  return existsSync(home) ? home : null;
-}
-
-function readSettings(explicit?: string): unknown {
-  const path = findSettingsPath(explicit);
-  if (path === null) return null;
-  try {
-    return JSON.parse(readFileSync(path, 'utf8'));
-  } catch (err) {
-    throw new EnvironmentError(
-      'env-settings-unreadable',
-      `could not read/parse ${path}: ${(err as Error).message}`,
-    );
-  }
-}
-
 function resolve(opts: { config?: string; provider?: string }): ResolvedProvider {
-  const settings = readSettings(opts.config);
+  const settings = resolveSettings(opts.config);
   const config = loadEnvironmentConfig(settings);
   return resolveProvider(config, opts.provider);
 }

@@ -1,9 +1,14 @@
-import { describe, expect, test } from 'vitest';
+import { afterEach, beforeEach, describe, expect, test } from 'vitest';
+import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import {
   DEFAULT_PROVIDERS,
   EnvironmentError,
   ENV_OPS,
+  deepMerge,
   loadEnvironmentConfig,
+  loadMergedSettings,
   planCommand,
   renderTemplate,
   resolveProvider,
@@ -149,6 +154,86 @@ describe('resolveProvider', () => {
         expect(r.templates[op].length).toBeGreaterThan(0);
       }
     }
+  });
+});
+
+describe('the coder default is non-interactive (validation finding #2)', () => {
+  test('coder up carries --use-parameter-defaults', () => {
+    expect(DEFAULT_PROVIDERS.coder.up).toContain('--use-parameter-defaults');
+  });
+});
+
+describe('deepMerge', () => {
+  test('objects merge key-by-key; over wins; arrays/scalars replaced', () => {
+    expect(
+      deepMerge(
+        { a: 1, nested: { x: 1, y: 2 }, list: [1, 2] },
+        { a: 9, nested: { y: 3, z: 4 }, list: [9] },
+      ),
+    ).toEqual({ a: 9, nested: { x: 1, y: 3, z: 4 }, list: [9] });
+  });
+});
+
+describe('loadMergedSettings (settings.json + settings.local.json)', () => {
+  let dir: string;
+  beforeEach(() => {
+    dir = mkdtempSync(join(tmpdir(), 'ev-settings-'));
+    mkdirSync(join(dir, '.claude'), { recursive: true });
+  });
+  afterEach(() => rmSync(dir, { recursive: true, force: true }));
+
+  const cd = (): string => join(dir, '.claude');
+
+  test('committed settings.json provides shared templates; local overrides + selects', () => {
+    // shared (committed): full coder templates that should travel (decision 0009)
+    const shared = {
+      ev: {
+        environment: {
+          providers: {
+            coder: {
+              mode: 'dispatch',
+              up: 'coder create --shared {project}',
+              exec: 'coder ssh {handle} -- {cmd}',
+              status: 'coder show {handle}',
+              down: 'coder delete {handle}',
+              dispatch: "coder ssh {handle} -- bash -lc '{run}'",
+            },
+          },
+        },
+      },
+    };
+    // local (gitignored): pick the provider + override one field
+    const local = {
+      ev: {
+        environment: {
+          provider: 'coder',
+          providers: { coder: { up: 'coder create --local-override {project}' } },
+        },
+      },
+    };
+    writeFileSync(join(cd(), 'settings.json'), JSON.stringify(shared));
+    writeFileSync(join(cd(), 'settings.local.json'), JSON.stringify(local));
+
+    const merged = loadMergedSettings(cd());
+    const config = loadEnvironmentConfig(merged);
+    const resolved = resolveProvider(config);
+    expect(resolved.name).toBe('coder'); // selected by local
+    expect(resolved.templates.up).toBe('coder create --local-override {project}'); // local wins
+    expect(resolved.templates.status).toBe('coder show {handle}'); // shared survives
+    expect(resolved.mode).toBe('dispatch');
+  });
+
+  test('settings.json alone is read (the bug: it used to be ignored)', () => {
+    writeFileSync(
+      join(cd(), 'settings.json'),
+      JSON.stringify({ ev: { environment: { provider: 'fella' } } }),
+    );
+    const config = loadEnvironmentConfig(loadMergedSettings(cd()));
+    expect(resolveProvider(config).name).toBe('fella');
+  });
+
+  test('neither file present -> null', () => {
+    expect(loadMergedSettings(cd())).toBeNull();
   });
 });
 
