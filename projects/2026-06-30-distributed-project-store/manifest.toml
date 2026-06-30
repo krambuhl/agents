@@ -46,17 +46,22 @@ status = "not-started"
 
 [[phases]]
 number = 6
-name = "Site-annotation schema + migration dictionary"
+name = "Site-annotation schema + migration dictionary + `/loom-runbook`"
 status = "not-started"
 
 [[phases]]
 number = 7
-name = "Migration skills: find, pluck, transform a batch"
+name = "Migration execution skills: find, pluck, transform a batch"
 status = "not-started"
 
 [[phases]]
 number = 8
 name = "Decentralized claim/lease + massive concurrency"
+status = "not-started"
+
+[[phases]]
+number = 9
+name = "ADR-moment human escalation for autonomous dispatch"
 status = "not-started"
 
 [[events]]
@@ -78,3 +83,8 @@ seq = 2
 timestamp = "2026-06-30T06:31:06.310Z"
 target = "PLAN.md"
 seq = 3
+
+[[revisions]]
+timestamp = "2026-06-30T06:45:51.308Z"
+target = "PLAN.md"
+seq = 4

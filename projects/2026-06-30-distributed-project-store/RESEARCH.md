@@ -179,6 +179,40 @@ not in a central plan.
   claim/lease layer depends on the git-as-sync/awareness layer. Folding
   them avoids an artificial cross-project dependency (decision 0004).
 
+## Two authoring modes (decision 0005)
+
+`/loom-research` should feed **two** downstream authoring skills:
+
+- **`/loom-plan` (central)** — `PLAN.md` + per-phase manifests; persistent,
+  project-managed, sequenced. The existing path.
+- **`/loom-runbook` (decentralized, new)** — emits the in-code TODO/`MIGRATE`
+  annotations + the runbook (migration dictionary) + the execution skills,
+  from a `RESEARCH.md`. The authoring half of the work-distribution axis.
+
+Both are consumed by `/ev-run` and `/ev-goal`; the modes can mix (a planned
+phase whose body is a runbook fan-out). One research source, two shapes.
+
+## Autonomy & the human in ADR moments (decision 0006)
+
+Dispatch forces `--mode=auto` so the headless inner run never hangs on a
+question (ADR-0011 §5) — but that routes *every* decision to the guild
+panels. The posture this project adopts: panels handle **routine**
+decisions; an **ADR-moment** decision **escalates to the human**, never
+to a panel.
+
+The escalation channel is the **shared store** itself: on an ADR-moment the
+run records an async question as a partitioned record and parks that
+phase/site; the operator answers via a commit (or a web UI that commits);
+the loop resumes on the next pull-before-act. This is the v2 non-blocking
+escalation ADR-0009 deferred, realized by the coherence layer.
+
+**Constraint:** "enable `/remote-control` on the coder box" does not fit the
+subscription-token autonomy setup — a `setup-token` credential is
+inference-only and *cannot establish remote-control sessions* (Claude Code
+docs, fetched this session; verify), and dispatch is headless `claude -p`.
+So remote control is an optional UI where a full interactive session
+exists, not the portable transport. The git-synced question/answer is.
+
 ## Git-as-sync replaces the ev-env #6 sidecar
 
 Confirmed direction: **the shared projects repo replaces the dispatch
