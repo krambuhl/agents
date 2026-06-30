@@ -19,6 +19,7 @@ import {
 import { RESEARCH_VERBS } from './verbs/loom/research.ts';
 import { ADR_VERBS } from './verbs/loom/adr.ts';
 import { DECISION_VERBS } from './verbs/loom/decision.ts';
+import { RUNBOOK_VERBS } from './verbs/loom/runbook.ts';
 import { FINDINGS_VERBS } from './verbs/loom/findings.ts';
 import type { CliContext, DispatchResult } from './verbs/loom/project.ts';
 
@@ -42,6 +43,7 @@ export const NAMESPACES: Record<string, string> = {
   'parse-plan': 'Parse a project PLAN.md into a typed tree + diagnostics (JSON)',
   adr: 'Append a workspace-level Architectural Decision Record',
   decision: 'Record a project-scoped decision (projects/<slug>/decisions/NNNN-*.md)',
+  runbook: 'Scan a tree for in-code migration site annotations (decentralized work inventory)',
   findings: 'Harvest guild evaluator findings into the manifest [[findings]] section',
 };
 
@@ -63,6 +65,7 @@ const VERBS_BY_NAMESPACE: Record<string, Record<string, VerbHandler>> = {
   'parse-plan': PARSE_PLAN_VERBS,
   adr: ADR_VERBS,
   decision: DECISION_VERBS,
+  runbook: RUNBOOK_VERBS,
   findings: FINDINGS_VERBS,
 };
 
@@ -81,6 +84,7 @@ const VERBLESS_NAMESPACES: ReadonlySet<string> = new Set([
   'parse-plan',
   'adr',
   'decision',
+  'runbook',
 ]);
 
 // ---------- Pure helpers (exported for direct unit tests) ----------

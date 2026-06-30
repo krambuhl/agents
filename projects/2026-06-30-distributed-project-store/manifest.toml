@@ -33,7 +33,7 @@ status = "not-started"
 [[phases]]
 number = 3
 name = "Project-scoped decision/ADR log"
-status = "in-progress"
+status = "completed"
 branch = "claude/dps-phase-3"
 
 [[phases]]
@@ -49,7 +49,8 @@ status = "not-started"
 [[phases]]
 number = 6
 name = "Site-annotation schema + migration dictionary + `/loom-runbook`"
-status = "not-started"
+status = "in-progress"
+branch = "claude/dps-phase-6"
 
 [[phases]]
 number = 7
@@ -85,6 +86,16 @@ detail = { phase = 1 }
 at = "2026-06-30T17:12:52.503Z"
 event = "phase-started"
 detail = { phase = 3, name = "Project-scoped decision/ADR log" }
+
+[[events]]
+at = "2026-06-30T17:23:04.974Z"
+event = "phase-completed"
+detail = { phase = 3 }
+
+[[events]]
+at = "2026-06-30T17:23:05.302Z"
+event = "phase-started"
+detail = { phase = 6, name = "Site-annotation schema + migration dictionary + `/loom-runbook`" }
 
 [[revisions]]
 timestamp = "2026-06-30T06:07:52.715Z"
