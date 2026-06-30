@@ -134,6 +134,28 @@ orient); it never caches PR state. A phase counts toward the goal only
 once its PR is merged — `loom pr discover` is the source of truth, the
 manifest status its reconciled reflection.
 
+## Runbook execution mode
+
+Besides driving a phase graph, `/ev-goal` can drive a **runbook
+migration** — the decentralized work-distribution mode (project
+`2026-06-30-distributed-project-store`, Phases 6–8). Instead of a
+manifest of phases, the inventory is `MIGRATE:<dict-id>` annotations in
+the code referencing a runbook authored by `/loom-runbook`.
+
+- **Argument shape:** `/ev-goal --runbook=<path> [--dict-id=<id>]
+  [--batch=<N>]` (instead of a project slug).
+- **Drive step:** dispatch `/loom-migrate` per batch (it plucks a bounded
+  batch, transforms it, opens one PR); re-enter on the PR-activity wake,
+  same as the phase loop.
+- **Goal predicate:** `loom runbook scan <root> --dict=<path>
+  [--dict-id=<id>]` returns **zero sites** — the migration is worked off.
+  This replaces the `all-merged` manifest read for this mode.
+- **Escalation + events** behave as below; an ADR-moment in a transform
+  escalates through the same channel (decision 0006).
+
+v1 runs one `/loom-migrate` at a time per dict-id; **decentralized
+claim/lease for concurrent runs is Phase 8**.
+
 ## Escalation
 
 `/ev-goal` runs the standard auto-mode posture (per
