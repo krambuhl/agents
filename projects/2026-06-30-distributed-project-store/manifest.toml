@@ -61,7 +61,7 @@ status = "not-started"
 
 [[phases]]
 number = 9
-name = "ADR-moment human escalation for autonomous dispatch"
+name = "ADR-moment escalation: live control-plane bus + durable fallback"
 status = "not-started"
 
 [[events]]
@@ -98,3 +98,8 @@ seq = 5
 timestamp = "2026-06-30T06:53:25.948Z"
 target = "PLAN.md"
 seq = 6
+
+[[revisions]]
+timestamp = "2026-06-30T07:02:11.550Z"
+target = "PLAN.md"
+seq = 7

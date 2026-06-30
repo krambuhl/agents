@@ -176,37 +176,47 @@ same site — no central registry.
 **Exit**: N concurrent runs partition the sites with no double-work or
 central inventory; `npm test` green.
 
-## Phase 9 — ADR-moment human escalation for autonomous dispatch
+## Phase 9 — ADR-moment escalation: live control-plane bus + durable fallback
 
 **Depends on**: Phase 3, Phase 4
 
 **Goal**: Keep the human in **ADR moments** during autonomous/dispatch runs
-without omitting them, via a git-synced async question channel relayed by a
-host/broker node (decisions 0006 + 0007) — not worker remote control.
+via **two composed buses** (decisions 0006/0007/0008): a **live
+control-plane** bus for real-time worker→host question routing and
+cross-env coordination, with the **durable git store** as fallback +
+system of record. Worker remote-control is verified out of scope (0006).
 
-1. ADR-moment classification: reuse the `[adr-candidate]` marker / ADR-emit
-   hook + a severity threshold to decide escalate-vs-auto-decide.
-2. Async question channel (worker side): on an ADR-moment the **worker**
-   writes a partitioned `questions/<id>.md` (or pending `decisions/` entry)
-   and **parks** that phase/site (others proceed — per-phase parking).
-3. Host/broker relay (decision 0007): the operator's driving session (host
-   node — full-scope login, human-attended, optionally remote-controllable)
-   watches the `questions/` partition and surfaces pending questions to the
-   human (`AskUserQuestion` locally, or the operator attends via Remote
-   Control from a phone), then writes the answer back. Workers ↔ host
-   rendezvous through the store, never a direct connection.
-4. Resume: the loop picks the committed answer up on the next pull-before-act
-   and continues.
-5. Record (VERIFIED, decision 0006) that **worker** remote-control is **not available**
-   for the autonomous headless + setup-token path — inference-only scope,
-   needs a persistent full-scope interactive session, and is a take-the-
-   wheel model rather than async escalation. The git-synced channel is the
-   sole transport; remote-control is a different deployment, out of scope.
+1. **ADR-moment classification**: reuse the `[adr-candidate]` marker /
+   ADR-emit hook + a severity threshold to decide escalate-vs-auto-decide.
+2. **Live control-plane bus (primary)**: a broker interface
+   (`ask(question)→answer`, `publish(learning)`, `subscribe`) backed by an
+   operator-configured transport — idiomatic candidate an **MCP broker the
+   host runs**, alt. HTTP long-poll / pub-sub. On an ADR moment the worker
+   **posts-and-waits** on the bus so the operator can intervene and direct
+   traffic in near-real-time.
+3. **Host/broker relay** (decision 0007): the operator's driving session
+   (host — full-scope login, human-attended, optionally remote-controllable)
+   receives the live question and surfaces it via `AskUserQuestion`
+   (locally) or Remote Control (operator away), then answers over the bus.
+4. **Durable fallback + record** (decisions 0006/0008): if the live bus is
+   down or times out, the worker writes a partitioned `questions/<id>.md`
+   and **parks** that phase/site (others proceed); the host relays it from
+   the store; the answer is committed and picked up on the next
+   pull-before-act. Every live exchange is also committed, keeping the store
+   the system of record.
+5. **Cross-env learning broadcast**: workers `publish` fresh learnings on
+   the live bus so peer envs pick them up promptly; the griot learnings tree
+   (committed) is the durable record. Same dual-bus shape.
+6. Record (VERIFIED, decision 0006) that **worker** remote-control is **not
+   available** (inference-only scope; needs a persistent full-scope
+   interactive session; take-the-wheel not async escalation) — it belongs
+   to the host, never the workers.
 
-**Exit**: an ADR-moment in an autonomous dispatch parks the phase and
-records a question; an answer committed to the shared repo resumes the run
-on the next pull; routine decisions still auto-resolve; `npm test` green.
+**Exit**: an ADR-moment routes to the operator over the live bus and a
+returned answer resumes the worker promptly; with the live bus down, the
+same exchange completes durably through the store; a published learning
+reaches a peer env; routine decisions still auto-resolve; `npm test` green.
 
 ## Revision log
 
-- 2026-06-30 — Add host/broker node role (decision 0007): workers escalate ADR questions into the shared store; the operator's full-scope host/driver session relays them to the human (locally or via Remote Control from a phone) and commits answers back. The git store is the message bus; no worker login/RC
+- 2026-06-30 — Two buses (decision 0008): live control-plane bus (primary) for real-time worker->host AskUserQuestion routing + cross-env learning broadcast, with the durable git store as fallback + system of record. Reworks Phase 9
