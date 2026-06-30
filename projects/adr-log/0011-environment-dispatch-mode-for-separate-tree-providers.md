@@ -56,14 +56,22 @@ Load-bearing properties:
   enters a loop body in this session at all — it shells `ev env
   dispatch` and waits. The `ev-loop-*` bodies are unchanged by this ADR.
 
-- **The `dispatch` template owns the in-env runner.** `ev env dispatch`
-  renders a provider-configured template with `{handle}` (slug) and
-  `{phase}`. The shipped `coder` default is
-  `coder ssh {handle} -- bash -lc "cd ~/agents && claude -p '/ev-run {handle} {phase}'"`
-  — a headless Claude re-invoking the loop **without** `--env` (it is
-  already in the env, so it runs locally to the workspace). The repo
-  path and runner are workspace-specific, so operators override the
-  template; `ev` stays generic.
+- **The `dispatch` template owns the shell; ev owns the invocation
+  (§5).** `ev env dispatch` renders a provider-configured template, but
+  the canonical inner-loop invocation is **composed by ev** and exposed
+  as the `{run}` placeholder — `/ev-run {slug} {phase} --mode=auto` —
+  inserted raw inside the operator's quoting. The operator's template
+  decides only how to get a shell in the env (ssh target, repo path,
+  runner, env hygiene); it **cannot drop `--mode=auto`** because it never
+  writes it. This is load-bearing: dispatch is headless, so an
+  interactive clarifying question would hang forever with nobody to
+  answer. The shipped `coder` default is
+  `coder ssh {handle} -- bash -lc "unset ANTHROPIC_API_KEY; cd ~/agents && claude -p '{run}'"`.
+  The inner `/ev-run` carries `--mode=auto` but **not** `--env` (it is
+  already in the env, so it runs locally to the workspace). `{slug}` is
+  the canonical loom slug for project resolution; `{handle}` is the
+  env handle. `unset ANTHROPIC_API_KEY` keeps billing on the
+  subscription OAuth token (`CLAUDE_CODE_OAUTH_TOKEN`, see § auth below).
 
 - **The in-env run is a normal local run.** Because the inner `/ev-run`
   carries no `--env`, it provisions nothing, edits the workspace's own
@@ -83,6 +91,14 @@ Load-bearing properties:
   substrate plugins (`commons`/`griot`/`guild`/`loom`/`ev`), and the
   repo checkout. This is the provider's (coder template's)
   responsibility, declared once, not something `ev` bootstraps per run.
+  **Auth must be non-interactive for autonomy** (a hands-off loop can't
+  do a browser login): the workspace carries a
+  `CLAUDE_CODE_OAUTH_TOKEN` (from `claude setup-token`, one-year,
+  subscription billing — generated on a machine with a browser, injected
+  as a coder secret) and **no** `ANTHROPIC_API_KEY` (which would outrank
+  the OAuth token and silently route to API billing). The shipped
+  dispatch default's leading `unset ANTHROPIC_API_KEY` is the
+  belt-and-suspenders for a stray key in the base image.
 
 - **Tree-sync is rejected** (option 1). It trades one clean handoff for
   per-command shuttling with a sync-back problem; dispatch matches the

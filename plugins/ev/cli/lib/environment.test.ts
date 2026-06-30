@@ -41,7 +41,7 @@ describe('resolveProvider', () => {
     expect(r.mode).toBe('dispatch');
     expect(typeof r.dispatch).toBe('string');
     expect(r.dispatch).toContain('{handle}');
-    expect(r.dispatch).toContain('{phase}');
+    expect(r.dispatch).toContain('{run}');
   });
 
   test('mode defaults to exec when unset', () => {
@@ -223,14 +223,25 @@ describe('planCommand', () => {
     ).toBe("fella exec 2026-06-25-thing -- 'npm test'");
   });
 
-  test('renders dispatch for a dispatch-mode provider', () => {
+  test('renders dispatch with {run} inserted raw (inside the template quotes)', () => {
     const coder = resolveProvider({ provider: 'coder' });
     const cmd = planCommand('dispatch', coder, {
-      handle: '2026-06-25-thing',
+      handle: 'short-name',
+      slug: '2026-06-25-thing',
       phase: '2',
+      run: '/ev-run 2026-06-25-thing 2 --mode=auto',
     });
-    expect(cmd).toContain('coder ssh 2026-06-25-thing');
-    expect(cmd).toContain('/ev-run 2026-06-25-thing 2');
+    expect(cmd).toContain('coder ssh short-name');
+    // {run} lands raw inside the operator's single quotes — not re-quoted.
+    expect(cmd).toContain("claude -p '/ev-run 2026-06-25-thing 2 --mode=auto'");
+  });
+
+  test('{run} is not shell-quoted even though it contains spaces', () => {
+    expect(
+      renderTemplate("claude -p '{run}'", {
+        run: '/ev-run my-slug 3 --mode=auto',
+      }),
+    ).toBe("claude -p '/ev-run my-slug 3 --mode=auto'");
   });
 
   test('env-dispatch-unsupported when dispatching an exec-mode provider', () => {
