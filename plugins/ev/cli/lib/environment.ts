@@ -40,6 +40,10 @@ export interface ProviderTemplates {
 export interface ProviderConfig extends Partial<ProviderTemplates> {
   mode?: EnvMode;
   dispatch?: string;
+  // When set, `{handle}` is a date-less, ≤handleMaxLen projection of the slug
+  // (the env/workspace NAME must satisfy the backend's limits, e.g. coder's
+  // 32-char workspace names). `{slug}`/`{project}` stay the canonical slug.
+  handleMaxLen?: number;
 }
 
 // The `ev.environment` block read from machine-local settings
@@ -55,6 +59,7 @@ export interface ResolvedProvider {
   mode: EnvMode;
   templates: ProviderTemplates;
   dispatch?: string;
+  handleMaxLen?: number;
 }
 
 // Shipped defaults for the v1 providers (ADR-0010/0011). These are
@@ -85,11 +90,16 @@ export const DEFAULT_PROVIDERS: Record<string, ProviderConfig> = {
   // plugins + the repo (see ADR-0011).
   coder: {
     mode: 'dispatch',
+    // Workspace names are `{handle}` — a date-less ≤32-char projection of the
+    // slug — because coder rejects names > 32 chars. `{run}` (dispatch)
+    // still carries the canonical `{slug}` so the in-box `/ev-run` resolves
+    // the real project.
+    handleMaxLen: 32,
     // `--yes` only auto-confirms the final build; it does NOT fill a
     // template's defaulted-but-prompting rich params (validation: `coder
     // create --yes` fast-fails `prepare build: EOF` on such a template).
     // `--use-parameter-defaults` is the flag that makes it non-interactive.
-    up: 'coder create --yes --use-parameter-defaults {project}',
+    up: 'coder create --yes --use-parameter-defaults {handle}',
     exec: 'coder ssh {handle} -- {cmd}',
     status: 'coder show {handle}',
     down: 'coder delete --yes {handle}',
@@ -277,7 +287,31 @@ export function resolveProvider(
       down: merged.down as string,
     },
     dispatch: merged.dispatch,
+    handleMaxLen: merged.handleMaxLen,
   };
+}
+
+const ISO_DATE_PREFIX = /^\d{4}-\d{2}-\d{2}-/;
+
+// Project a loom slug into a backend-safe env/workspace handle: drop a
+// leading ISO date, lowercase + sanitize to `[a-z0-9-]`, keep the first 3
+// descriptive words, cap to maxLen, and ensure it starts with a letter.
+// Deterministic, so `up`/`status`/`exec`/`down`/`dispatch` (separate ev
+// invocations) all derive the same name for a slug. E.g.
+// `2026-06-30-distributed-project-store` → `distributed-project-store`;
+// `2026-06-26-test-ev-run-with-env-coder` → `test-ev-run`.
+export function deriveHandle(slug: string, maxLen: number): string {
+  let s = slug.replace(ISO_DATE_PREFIX, '');
+  s = s
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '');
+  s = s.split('-').filter((w) => w.length > 0).slice(0, 3).join('-');
+  if (s === '') return 'project';
+  if (s.length > maxLen) s = s.slice(0, maxLen).replace(/-+$/, '');
+  if (!/^[a-z]/.test(s)) s = `p-${s}`.slice(0, maxLen).replace(/-+$/, '');
+  return s;
 }
 
 export interface RenderVars {
