@@ -476,10 +476,14 @@ Run, in order, after § 0.5 Sync git state and before § 4 Dispatch:
      env: `Bash("ev env dispatch <slug> --phase=<N>")`. The dispatch
      template (per the resolved provider) runs the loop on `<slug>`
      phase `<N>` inside the env's own checkout — the literal automation
-     of "spin up the workspace, run Claude inside it." The in-env run
-     does the edits, commits, and opens the PR; this session waits for
-     `ev env dispatch` to return, then reports its outcome. No
-     exec-routing and no shared-tree requirement — the env owns the tree.
+     of "spin up the workspace, run Claude inside it." **Dispatch is
+     headless**, so `ev env dispatch` composes the inner invocation with
+     `--mode=auto` baked in (the seam's `{run}` placeholder, ADR-0011
+     §5) — the in-env Claude never stops to ask a clarifying question
+     with nobody there to answer. The in-env run does the edits,
+     commits, and opens the PR; this session waits for `ev env dispatch`
+     to return, then reports its outcome. No exec-routing and no
+     shared-tree requirement — the env owns the tree.
      The env (provider's workspace/template) must provide an authed
      `claude` + the substrate plugins + the repo (ADR-0011).
 

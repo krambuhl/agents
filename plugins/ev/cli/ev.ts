@@ -119,13 +119,30 @@ function runEnv(rest: string[]): number {
     );
   }
 
+  if (op === 'dispatch' && (values.phase === undefined || values.phase === '')) {
+    throw new EnvironmentError(
+      'env-missing-arg',
+      '`ev env dispatch` needs --phase=<N>',
+    );
+  }
+
+  // Dispatch is inherently headless, so ev composes the canonical inner
+  // invocation with `--mode=auto` baked in (ADR-0011 §5) and exposes it as
+  // `{run}`. The operator's template can't drop the flag because it never
+  // writes it. `{slug}` is the canonical (dated) loom slug for project
+  // resolution; `{handle}` is the env handle.
+  const run =
+    op === 'dispatch'
+      ? `/ev-run ${subject} ${values.phase} --mode=auto`
+      : undefined;
+
   // Handles are project-slug-keyed (ADR-0010), so `up <project>` and the
   // rest share one positional; for up it doubles as the handle.
   const vars =
     op === 'exec'
       ? { handle: subject, cmd: values.cmd }
       : op === 'dispatch'
-        ? { handle: subject, phase: values.phase, task: values.task }
+        ? { handle: subject, slug: subject, phase: values.phase, task: values.task, run }
         : op === 'up'
           ? { project: subject, handle: subject }
           : { handle: subject };

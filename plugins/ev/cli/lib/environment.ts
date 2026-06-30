@@ -71,11 +71,14 @@ export const DEFAULT_PROVIDERS: Record<string, ProviderConfig> = {
   },
   // Work: Coder cloud workspaces. Separate clone → dispatch mode. The
   // `dispatch` template runs the phase INSIDE the workspace via a headless
-  // Claude. The part after `--` is workspace-specific (repo path, runner),
-  // so most operators override it — what matters is that it ends up
-  // invoking the loop on slug `{handle}` phase `{phase}` inside the
-  // workspace's checkout. The workspace (coder template) must provide an
-  // authed `claude` + the krambuhl plugins + the repo (see ADR-0011).
+  // Claude. The `{run}` placeholder is ev's canonical inner-loop
+  // invocation — `/ev-run <slug> <phase> --mode=auto` — so the operator
+  // can't forget headless `--mode=auto` (ADR-0011 §5). The rest is
+  // workspace-specific (ssh target, repo path, runner, env hygiene), so
+  // most operators override it. `unset ANTHROPIC_API_KEY` keeps billing on
+  // the subscription OAuth token (`CLAUDE_CODE_OAUTH_TOKEN`); the workspace
+  // (coder template) must provide an authed `claude` + the krambuhl
+  // plugins + the repo (see ADR-0011).
   coder: {
     mode: 'dispatch',
     up: 'coder create --yes {project}',
@@ -83,7 +86,7 @@ export const DEFAULT_PROVIDERS: Record<string, ProviderConfig> = {
     status: 'coder show {handle}',
     down: 'coder delete --yes {handle}',
     dispatch:
-      'coder ssh {handle} -- bash -lc "cd ~/agents && claude -p \'/ev-run {handle} {phase}\'"',
+      'coder ssh {handle} -- bash -lc "unset ANTHROPIC_API_KEY; cd ~/agents && claude -p \'{run}\'"',
   },
 };
 
@@ -201,10 +204,20 @@ export interface RenderVars {
   cmd?: string;
   phase?: string;
   task?: string;
+  slug?: string;
+  run?: string;
 }
 
-const PLACEHOLDER = /\{(project|handle|cmd|phase|task)\}/g;
+const PLACEHOLDER = /\{(project|handle|cmd|phase|task|slug|run)\}/g;
 const ANY_PLACEHOLDER = /\{[a-zA-Z0-9_]+\}/;
+
+// `{run}` is the canonical inner-loop invocation ev composes for dispatch
+// (e.g. `/ev-run <slug> <phase> --mode=auto`). Unlike every other var it
+// is inserted RAW, not shell-quoted: the operator's dispatch template
+// places it inside their own quoting (`claude -p '{run}'`), so quoting it
+// here would double-wrap. Its contents are ev-composed from a loom slug +
+// phase number (no shell metacharacters), so raw insertion is safe.
+const RAW_VARS: ReadonlySet<string> = new Set(['run']);
 
 // Tokens safe to leave bare in a shell command line. Anything outside
 // this set (spaces, quotes, $, &, |, globs, …) gets single-quoted.
@@ -229,7 +242,8 @@ export function shellQuote(value: string): string {
 export function renderTemplate(template: string, vars: RenderVars): string {
   const rendered = template.replace(PLACEHOLDER, (_match, key: string) => {
     const value = (vars as Record<string, string | undefined>)[key];
-    return value === undefined ? `{${key}}` : shellQuote(value);
+    if (value === undefined) return `{${key}}`;
+    return RAW_VARS.has(key) ? value : shellQuote(value);
   });
   const leftover = rendered.match(ANY_PLACEHOLDER);
   if (leftover !== null) {
