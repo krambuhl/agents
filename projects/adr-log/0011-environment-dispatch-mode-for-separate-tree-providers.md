@@ -120,6 +120,40 @@ Load-bearing properties:
     unattended autonomy — so it is the correct posture here, not a
     shortcut. Operators on a non-disposable target should narrow it.
 
+  **Coder-template facts a real provision taught** (work-coder run,
+  `2026-07-01-test-dispatch`, `ec2-rdev` template). A dry-run render is
+  structurally blind to these — only a live `coder create`/`coder ssh`
+  surfaces them, and each cost a real EC2 provision to learn:
+  - **`coder create` takes the workspace name as a *positional*, not
+    `--name`.** The shipped `up` default is
+    `coder create --yes --use-parameter-defaults {handle}` — positional,
+    and correct. A `--name {handle}` form dies with `unknown flag: --name`.
+    This is recorded because a well-meaning "hardening" pass regressed the
+    positional to `--name` once; keep it positional.
+  - **Multi-agent templates need a `{handle}.<agent>` ssh selector.**
+    `ec2-rdev` provisions a two-agent workspace (`dev` + `host`), so bare
+    `coder ssh {handle}` is rejected with `multiple agents found`. Such an
+    operator must override `exec`/`dispatch`/`status` to
+    `coder ssh {handle}.dev -- …`. The shipped bare-`{handle}` default is
+    the correct **single-agent generic**; the `.dev` suffix is
+    template-specific and belongs in the operator's override, *not* the
+    shipped default. (An earlier read of `.dev` as a mis-ported defect was
+    wrong — it is a required agent selector for multi-agent workspaces.)
+
+  **Still unproven: the dispatch *payload*.** The auth round-trip above is
+  validated, and `up`/`down` drive real coder infra (a 40-resource EC2
+  workspace provisioned and torn down clean). But a full `/ev-run` has
+  **not** yet run inside a dispatched box: on the `2026-07-01` run the
+  `ec2-rdev` **dev agent timed out on first boot** (`connecting → timeout
+  [210s]`; only `host` came up healthy), so no in-box `claude` ever
+  started. That is a provider/health issue (possibly transient first-boot),
+  not a seam defect — but it means the central claim the dispatch model
+  exists to prove is **open**: that an in-box `/ev-run` commits its
+  **project artifacts to the external store** (`LOOM_PROJECTS_ROOT`, e.g. a
+  `krambuhl/projects` clone) while its **code changes** go to the work
+  repo — the two trees staying separate. Closing this requires a healthy
+  dev agent; it is the top open item for a dispatch-mode round-trip.
+
 - **Tree-sync is rejected** (option 1). It trades one clean handoff for
   per-command shuttling with a sync-back problem; dispatch matches the
   operator's actual workflow and the substrate's "open a PR, subscribe,
