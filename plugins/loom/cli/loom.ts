@@ -3,6 +3,7 @@ import { parseArgs } from 'node:util';
 import { fileURLToPath } from 'node:url';
 import { realpathSync } from 'node:fs';
 import { join } from 'node:path';
+import { resolveStoreRepoRoot } from './lib/git.ts';
 import { PROJECT_VERBS } from './verbs/loom/project.ts';
 import { PHASE_VERBS } from './verbs/loom/phase.ts';
 import { EVENTS_VERBS } from './verbs/loom/events.ts';
@@ -195,6 +196,28 @@ function deriveProjectsRoot(): string {
   return process.env.LOOM_PROJECTS_ROOT ?? join(process.cwd(), 'projects');
 }
 
+// The repo loom commits project state INTO — the git work-tree that holds
+// `projectsRoot`, NOT the process cwd. Under `--env=coder` dispatch the cwd
+// is the *code* repo (e.g. ~/patreon_react_features) while the store is a
+// separate clone (e.g. ~/projects) named by LOOM_PROJECTS_ROOT; committing
+// to cwd would stage a store path in the wrong repo (ADR-0011, decision
+// 0014). undefined when the store isn't in a git repo yet — verbs then fall
+// back to their cwd default, preserving pre-store-sync behavior.
+function deriveStoreRoot(projectsRoot: string): string | undefined {
+  return resolveStoreRepoRoot(projectsRoot) ?? undefined;
+}
+
+// Whether loom should rebase-and-push after committing state. True only for
+// the DISTRIBUTED store — a store repo distinct from the cwd's repo — so we
+// never auto-push a monorepo where `projects/` rides inside the working
+// repo's own commit workflow. `LOOM_STORE_NO_PUSH=1` forces it off.
+function deriveStoreAutosync(storeRoot: string | undefined): boolean {
+  if (storeRoot === undefined) return false;
+  if (process.env.LOOM_STORE_NO_PUSH === '1') return false;
+  const cwdRoot = resolveStoreRepoRoot(process.cwd());
+  return cwdRoot !== storeRoot; // null (cwd not a repo) counts as distinct → push
+}
+
 function main(argv: string[]): never {
   // parseArgs is called for forward compatibility with top-level flags.
   // Verb-level argument parsing lives in each handler.
@@ -208,7 +231,13 @@ function main(argv: string[]): never {
     strict: false,
   });
 
-  const ctx: CliContext = { projectsRoot: deriveProjectsRoot() };
+  const projectsRoot = deriveProjectsRoot();
+  const storeRoot = deriveStoreRoot(projectsRoot);
+  const ctx: CliContext = {
+    projectsRoot,
+    repoRoot: storeRoot,
+    storeAutosync: deriveStoreAutosync(storeRoot),
+  };
   const invocation = parseInvocation(argv);
   const result = dispatch(invocation, ctx);
   if (result.stdout !== undefined) process.stdout.write(result.stdout + '\n');

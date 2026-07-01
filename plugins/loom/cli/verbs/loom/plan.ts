@@ -12,7 +12,7 @@ import { LoomError } from '../../lib/errors.ts';
 import { createSlug } from '../../lib/project.ts';
 import { resolveProjectByPlan } from '../../lib/project.ts';
 import { parsePlan } from '../../lib/plan.ts';
-import { type GitRunner, defaultGitRunner } from '../../lib/git.ts';
+import { type GitRunner, defaultGitRunner, commitState } from '../../lib/git.ts';
 import {
   writeLoomSubstrate,
   synthesizeManifestInit,
@@ -37,6 +37,7 @@ export type PlanCliContext = {
   today?: string;
   gitRunner?: GitRunner;
   repoRoot?: string;
+  storeAutosync?: boolean;
 };
 
 export type DispatchResult = {
@@ -219,10 +220,12 @@ export function planVerb(
 
   if (!noCommit) {
     try {
-      gitRunnerOf(ctx).addAndCommit(
+      commitState(
+        gitRunnerOf(ctx),
         repoRootOf(ctx),
         filesToCommit,
         `[loom plan] ${slug}`,
+        { push: ctx.storeAutosync === true },
       );
     } catch (err) {
       return errToResult(err);
@@ -407,10 +410,12 @@ export function reviseVerb(
       const filesToCommit = existsSync(manifestFilePath)
         ? [planMdPath, manifestFilePath]
         : [planMdPath];
-      gitRunnerOf(ctx).addAndCommit(
+      commitState(
+        gitRunnerOf(ctx),
         repoRootOf(ctx),
         filesToCommit,
         `[loom revise-plan] ${slug}: ${rationale}`,
+        { push: ctx.storeAutosync === true },
       );
     } catch (err) {
       return errToResult(err);

@@ -3,7 +3,7 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 
 import { join } from 'node:path';
 import { LoomError } from '../../lib/errors.ts';
 import { kebabCase, resolveProject } from '../../lib/project.ts';
-import { type GitRunner, defaultGitRunner } from '../../lib/git.ts';
+import { type GitRunner, defaultGitRunner, commitState } from '../../lib/git.ts';
 import type { CliContext, DispatchResult } from './project.ts';
 
 // `loom decision <slug> "<title>" [--body-file=<path>] [--status=<status>]
@@ -166,7 +166,7 @@ function writeDecision(rest: string[], ctx: CliContext): DispatchResult {
 
   if (values['no-commit'] !== true) {
     try {
-      gitRunnerOf(ctx).addAndCommit(repoRootOf(ctx), [decisionPath], `[loom] decision ${numberStr}: ${title}`);
+      commitState(gitRunnerOf(ctx), repoRootOf(ctx), [decisionPath], `[loom] decision ${numberStr}: ${title}`, { push: ctx.storeAutosync === true });
     } catch (err) {
       return errToResult(err);
     }
