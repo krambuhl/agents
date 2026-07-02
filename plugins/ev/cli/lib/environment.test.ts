@@ -6,6 +6,7 @@ import {
   DEFAULT_PROVIDERS,
   EnvironmentError,
   ENV_OPS,
+  appendHandleTag,
   deepMerge,
   deriveHandle,
   loadEnvironmentConfig,
@@ -183,6 +184,36 @@ describe('deriveHandle (validation finding #1: coder 32-char names)', () => {
   });
   test('empty projection falls back to "project"', () => {
     expect(deriveHandle('2026-06-30-', 32)).toBe('project');
+  });
+});
+
+describe('appendHandleTag (ADR-0012: per-phase parallel dispatch handles)', () => {
+  test('appends the tag after an unbounded handle', () => {
+    expect(appendHandleTag('test-ev-run', 'p2')).toBe('test-ev-run-p2');
+  });
+
+  test('sanitizes the tag the same way deriveHandle sanitizes a slug', () => {
+    expect(appendHandleTag('handle', 'Phase 2!')).toBe('handle-phase-2');
+  });
+
+  test('no-op when the tag sanitizes to empty', () => {
+    expect(appendHandleTag('handle', '   ')).toBe('handle');
+  });
+
+  test('truncates the BASE, not the tag, to fit maxLen — the tag always survives', () => {
+    // A 3-word handle at the 32-char cap would otherwise leave no room for
+    // "-p2"; the base must give way, not the disambiguating suffix.
+    const base = deriveHandle('2026-06-30-distributed-project-store', 32);
+    const tagged = appendHandleTag(base, 'p2', 32);
+    expect(tagged.length).toBeLessThanOrEqual(32);
+    expect(tagged.endsWith('-p2')).toBe(true);
+  });
+
+  test('two different tags on the same base never collide', () => {
+    const base = deriveHandle('2026-06-30-distributed-project-store', 12);
+    const a = appendHandleTag(base, 'p2', 12);
+    const b = appendHandleTag(base, 'p3', 12);
+    expect(a).not.toBe(b);
   });
 });
 

@@ -1,4 +1,6 @@
 import { parseArgs } from 'node:util';
+import { existsSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { resolveProject } from '../../lib/project.ts';
 import {
   appendEvent,
@@ -8,6 +10,7 @@ import {
   updatePhase,
   writeManifest,
 } from '../../lib/manifest-toml.ts';
+import { parsePlan } from '../../lib/plan.ts';
 import { LoomError } from '../../lib/errors.ts';
 import type { Event, ManifestPhase, PhaseStatus } from '../../lib/types.ts';
 import type { CliContext, DispatchResult } from './project.ts';
@@ -81,6 +84,70 @@ export function phaseList(rest: string[], ctx: CliContext): DispatchResult {
     const path = resolveProject(slug, ctx.projectsRoot);
     const { manifest } = readManifestFile(manifestPath(path));
     return { stdout: emit(manifest.phases, values.pretty === true), exitCode: 0 };
+  } catch (err) {
+    return errToResult(err);
+  }
+}
+
+// `loom phase ready <slug>` — the FULL set of not-started phases whose
+// dependencies are all satisfied, not just the single lowest-numbered one
+// `/ev-run`'s §3 next-phase policy picks. Exists to back parallel dispatch
+// (ADR-0012): fanning out N independent phases to N environments needs to
+// know all of them at once, not just "the next one." §3's single-pick
+// policy is unchanged — it can (and does) just take the lowest-numbered
+// entry from this same set.
+//
+// A dependency is satisfied when the depended-on phase's manifest status is
+// `completed` (mirrors §3 exactly). A dependsOn id with no matching manifest
+// phase is treated as unsatisfied (conservative) and reported in
+// `unresolvedDeps` rather than silently ignored.
+export function phaseReady(rest: string[], ctx: CliContext): DispatchResult {
+  const { values, positionals } = parseArgs({
+    args: rest,
+    options: { pretty: { type: 'boolean' } },
+    allowPositionals: true,
+    strict: false,
+  });
+  const slug = positionals[0];
+  if (slug === undefined) {
+    return errToResult(new LoomError('missing-slug', 'phase ready requires a slug'));
+  }
+  try {
+    const path = resolveProject(slug, ctx.projectsRoot);
+    const { manifest } = readManifestFile(manifestPath(path));
+
+    const planMdPath = join(path, 'PLAN.md');
+    if (!existsSync(planMdPath)) {
+      return errToResult(new LoomError('plan-not-found', `no PLAN.md at ${planMdPath}`));
+    }
+    const { plan } = parsePlan(readFileSync(planMdPath, 'utf8'));
+
+    const statusByNumber = new Map(manifest.phases.map((p) => [p.number, p.status]));
+    const ready: ManifestPhase[] = [];
+    const unresolvedDeps: Array<{ number: number; depId: string }> = [];
+
+    for (const phase of manifest.phases) {
+      if (phase.status !== 'not-started') continue;
+      const parsed = plan.phasesById[String(phase.number)];
+      const dependsOn = parsed?.dependsOn ?? [];
+      let satisfied = true;
+      for (const depId of dependsOn) {
+        const depNumber = Number(depId);
+        const depStatus = statusByNumber.get(depNumber);
+        if (depStatus === undefined) {
+          unresolvedDeps.push({ number: phase.number, depId });
+          satisfied = false;
+          continue;
+        }
+        if (depStatus !== 'completed') satisfied = false;
+      }
+      if (satisfied) ready.push(phase);
+    }
+
+    return {
+      stdout: emit({ ready, unresolvedDeps }, values.pretty === true),
+      exitCode: 0,
+    };
   } catch (err) {
     return errToResult(err);
   }
@@ -287,6 +354,7 @@ export function phaseAdd(rest: string[], ctx: CliContext): DispatchResult {
 export const PHASE_VERBS = {
   read: phaseRead,
   list: phaseList,
+  ready: phaseReady,
   update: phaseUpdate,
   add: phaseAdd,
 };
