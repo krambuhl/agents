@@ -1,9 +1,13 @@
 # 0013. Box store access: two-token credential routing + bootstrap contract
 
-- **Status**: accepted (credential routing VALIDATED live; bootstrap gaps
-  identified — see § Correction: the `/etc/profile.d` fix for gap 1 was
-  itself wrong and is superseded by moving the clone to the coder
-  `coder_agent`'s `startup_script`)
+- **Status**: accepted, with two corrections. § Correction: the original
+  `/etc/profile.d` fix for gap 1 didn't fire (wrong hook for the box's
+  shell). § Correction 2 (current): the `coder_agent` `startup_script`
+  route proposed in § Correction was abandoned for an on-disk
+  self-sufficient dispatch bootstrap script instead; that script's store
+  clone additionally needed its own inline (not global) credential
+  injection, validated by five live repro cycles — see § Correction 2 for
+  the exact fix.
 - **Scope**: Phase 4/dispatch — a coder box reaching the external store
 
 ## Context
@@ -146,6 +150,70 @@ runs. This is a template-layer change; nothing in `krambuhl/agents`
 changes as a result. Re-verify the dispatch-path quoting question above
 independently once this lands — it may be a second, unrelated defect
 masked by the same symptom.
+
+## Correction 2 (2026-07-02): the `coder_agent` `startup_script` route was abandoned; two more bugs found and fixed by live repro
+
+The Correction-1 fix above (move to `coder_agent`'s `startup_script`) was
+never landed — a Terraform/`coder_agent` edit was judged too invasive given
+an already-unresolved quoting mystery in that area (below), and a smaller,
+safer alternative was chosen instead: **stop depending on any ambient
+shell-startup mechanism at all; make the dispatch command self-sufficient.**
+
+- **The dispatch `bash -lc "..."` invocation is fragile under nested
+  quotes.** A manually-typed `coder ssh HANDLE.dev -- bash -lc '<script>'`
+  reliably mangled complex nested-quote scripts (`bash: -c: option requires
+  an argument`) while simple one-liners survived. Rather than diagnose the
+  exact SSH-exec quoting mechanics, the fix collapses all dispatch-time
+  logic (env hygiene, store clone, exports, `cd`, the `claude` invocation
+  itself) into a single **on-disk script**
+  (`~/.local/bin/loom-dispatch-bootstrap.sh`, written by the box's
+  `install.sh`), so the actual SSH-exec'd command shrinks to one short,
+  single-quoted call:
+  `coder ssh {handle}.dev -- bash -lc "~/.local/bin/loom-dispatch-bootstrap.sh '{run}'"`.
+  This sidesteps the quoting bug instead of hoping it doesn't trigger, and
+  keeps the same nesting depth the dispatch command already had (no *new*
+  quoting introduced).
+
+- **The global path-scoped `credential.helper` (this decision's original
+  design, § "Decision" above) does not reliably reach the dispatch-time
+  clone.** Confirmed by **five** live repro cycles on a rebuilt template:
+  the box's global helper for `krambuhl/projects` was live-inspected and
+  correct (`!f(){...};f`, no literal-placeholder regression), the PAT was
+  confirmed present and valid (`GET /repos/krambuhl/projects` → 200), and
+  the clone **still** failed `Invalid username or token` every time. The
+  global/path-scoped config is real but something about the environment
+  the bootstrap script's `git clone` runs in doesn't pick it up (root cause
+  not fully pinned down — possibly a scope or ordering gap between
+  `install-projects()`'s global config and the bootstrap script's
+  execution context; not worth chasing further given the fix below is
+  simple and fully self-contained regardless of the answer).
+
+  **Validated fix:** don't rely on the global helper for this one clone at
+  all — inject the credential inline via `git -c`, then persist it
+  **repo-locally** (not globally) immediately after, so the *next* op in
+  that checkout (loom's rebase-and-push, ADR-0014) also authenticates:
+  ```bash
+  if [ ! -d "$HOME/projects/.git" ]; then
+    git -c credential.helper='!f(){ echo username=x-access-token; echo "password=$GITHUB_PERSONAL_PAT"; };f' \
+        clone https://github.com/krambuhl/projects "$HOME/projects" \
+      && git -C "$HOME/projects" config credential.helper \
+        '!f(){ echo username=x-access-token; echo "password=$GITHUB_PERSONAL_PAT"; };f' \
+      || echo "[loom-store] WARNING: krambuhl/projects clone failed" >&2
+  fi
+  ```
+  The repo-local persist step is **load-bearing, not cosmetic** — the
+  inline `-c` override is one-shot (scoped to that single `clone`
+  invocation); without persisting it into the checkout's own config, the
+  clone succeeds but the first `git push` from loom's store-sync hits the
+  identical wall.
+
+**Net effect on this decision's original design:** the global path-scoped
+helper (§ "Decision") is still correct and necessary for *other* git
+operations against `krambuhl/projects` on the box (e.g. an interactive
+`coder ssh` session's manual `git` commands) — it is simply **not
+sufficient** for the one clone the dispatch bootstrap script runs, which
+needs its own inline, self-contained credential. Both mechanisms coexist;
+neither replaces the other.
 
 ## Forward pointers
 
