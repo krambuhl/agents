@@ -75,6 +75,12 @@ leaves teardown manual; a v2 forward pointer is "tear down at
 goal-converge, alongside the `/loom-archive` step" (ADR-0010 § Forward
 pointers).
 
+`--parallel` (requires `--env`, dispatch-mode providers only, e.g.
+`coder`) opts into fanning out every *simultaneously* unblocked phase to
+its own environment at once, instead of the normal one-at-a-time pick —
+see § Parallel dispatch + convergence (ADR-0012). A no-op (falls back to
+normal single dispatch) when the ready set has 0 or 1 phases in it.
+
 ## Process
 
 ### 0. Preflight + orient (delegate to /ev-run's sections)
@@ -91,6 +97,17 @@ Repeat until the goal predicate (§ Goal predicate) is true:
 1. **Pick the next actionable phase** using `/ev-run`'s § 3 policy
    (in-progress first; else lowest-numbered `not-started` whose
    `loom parse-plan` dependencies are all `completed`).
+
+   **With `--parallel`:** before applying §3's single pick, run
+   `Bash("loom phase ready <slug> --pretty")`. If its `ready` array has
+   more than one entry AND none of them is already `in-progress` with an
+   open PR (a batch already in flight — see § Parallel dispatch +
+   convergence, step 2), fan out to all of them at once instead of
+   picking one — go to § Parallel dispatch + convergence, step 1, then
+   return to step 3 below once dispatched (do not also apply the
+   single-phase pick this turn). Otherwise (0 or 1 ready, or a batch
+   already dispatching), fall through to the normal single-pick behavior
+   below unchanged.
 
 2. **If a phase is actionable:** dispatch it via `/ev-run`'s § 4 — the
    body is `/ev-loop-interactive` or `/ev-loop-confidence`, selected by
@@ -121,6 +138,63 @@ Repeat until the goal predicate (§ Goal predicate) is true:
 When the goal predicate is true, emit `goal-loop-converged` with
 `{slug, phases_completed, iterations}` and invoke `/loom-archive
 <slug>`. Stop.
+
+## Parallel dispatch + convergence (`--parallel`, ADR-0012)
+
+Only reachable from § Drive loop step 1's `--parallel` branch. Requires
+`--env` in `dispatch` mode (e.g. `coder`) — `--parallel` with an `exec`-mode
+provider or no `--env` at all is a usage error: stop and report, do not
+silently ignore the flag.
+
+### 1. Fan out
+
+For each phase N in `loom phase ready <slug>`'s `ready` array, run these
+three **concurrently** (one set per phase, not sequentially phase-by-phase):
+
+1. `Bash("ev env up <slug> --tag=p<N> --provider=<provider>")` —
+   provision-or-reuse, tagged so phase N gets its own handle.
+2. `Bash("ev env status <slug> --tag=p<N> --provider=<provider>")` — gate
+   on readiness exactly as the single-dispatch path does.
+3. `Bash("ev env dispatch <slug> --phase=<N> --tag=p<N> --provider=<provider>")`
+   — the in-env `/ev-run <slug> <N> --mode=auto` opens phase N's PR
+   against the tree state at provisioning time. Safe by construction: the
+   ready set has no `dependsOn` between its members, so no fanned-out
+   phase is waiting on another's code.
+
+Record the batch (slugs, phase numbers, tags) for step 2. Subscribe to
+all N PRs as they open (the existing "open a PR, subscribe, move on"
+posture, generalized from one PR to N). Then park — return to the drive
+loop's PR-wake handling (§ Drive loop step 3) exactly as a single dispatch
+would, just for N PRs instead of one.
+
+### 2. Converge, on wake
+
+When a PR-activity wake re-enters `/ev-goal` and a batch from step 1 has
+**every** member's PR open (none still mid-dispatch):
+
+1. `loom pr discover` each batch member's branch to confirm all N are
+   open. If any is still dispatching, do not converge yet — keep parking
+   (this is the "batch already dispatching" check § Drive loop step 1
+   guards on, so a partially-open batch doesn't get a second fan-out
+   layered on top).
+2. Order the batch by phase number (the plan's intended read order — the
+   ready set had no *dependency* order among these phases, only the
+   absence of one; phase numbering is still the intended presentation
+   order for a reviewer).
+3. Stack via graphite for review ergonomics — **not** a correctness
+   requirement, since these phases have no declared code dependency on
+   each other: `gt track` each branch not already tracked, then retarget
+   each PR's base sequentially (phase *i* bases onto phase *i-1* instead
+   of the project's base branch), so the batch reads as one ordered stack
+   instead of N independent siblings.
+4. **A rebase conflict during stacking is a stop-and-ask, never an
+   auto-resolve** — a "cleanly partitioned" project can still have
+   incidental file overlap the ready-set computation had no way to see
+   (ADR-0012 § Consequences). Escalate via § Escalation exactly as an
+   unresolvable drive-loop decision would.
+5. Resume the normal drive loop (§ Drive loop step 1) — each phase now
+   advances through the ordinary PR-activity wake / merge-cascade path,
+   same as a single-dispatch phase.
 
 ## Goal predicate
 

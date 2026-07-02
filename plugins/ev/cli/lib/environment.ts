@@ -320,6 +320,27 @@ export function deriveHandle(slug: string, maxLen: number): string {
   return s;
 }
 
+// Disambiguate an already-derived HANDLE with a tag (ADR-0012 parallel
+// dispatch: N concurrently-dispatched phases of the same project need N
+// distinct env handles). Applied AFTER `deriveHandle`, never before —
+// `deriveHandle` keeps only the first 3 words, so appending the tag to the
+// raw slug first can silently drop it for a slug with 3+ descriptive words.
+// Truncates the BASE (not the tag) to stay within `maxLen`, so the tag —
+// the part that actually disambiguates — always survives.
+export function appendHandleTag(handle: string, tag: string, maxLen?: number): string {
+  const cleanTag = tag
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '');
+  if (cleanTag === '') return handle;
+  if (maxLen === undefined) return `${handle}-${cleanTag}`;
+  const suffix = `-${cleanTag}`;
+  const baseMax = Math.max(1, maxLen - suffix.length);
+  const base = handle.length > baseMax ? handle.slice(0, baseMax).replace(/-+$/, '') : handle;
+  return `${base}${suffix}`.slice(0, maxLen);
+}
+
 export interface RenderVars {
   project?: string;
   handle?: string;

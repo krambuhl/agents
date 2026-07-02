@@ -10,6 +10,7 @@ import { spawnSync } from 'node:child_process';
 import {
   ENV_OPS,
   EnvironmentError,
+  appendHandleTag,
   deriveHandle,
   loadEnvironmentConfig,
   planCommand,
@@ -46,6 +47,8 @@ Flags:
   --dry-run            print the command instead of running it
   --provider=<name>    override the configured provider
   --config=<path>      use a specific settings.local.json
+  --tag=<x>            disambiguate the env HANDLE (e.g. per-phase parallel dispatch);
+                       {slug}/{run} still name the project the tag was derived from
 `;
 
 const RUN_OPS: ReadonlyArray<string> = [...ENV_OPS, 'dispatch'];
@@ -62,6 +65,7 @@ function runEnv(rest: string[]): number {
       cmd: { type: 'string' },
       phase: { type: 'string' },
       task: { type: 'string' },
+      tag: { type: 'string' },
     },
   });
   const common = { config: values.config, provider: values.provider };
@@ -107,10 +111,20 @@ function runEnv(rest: string[]): number {
   // slug when the provider sets handleMaxLen (e.g. coder's 32-char limit);
   // else the slug itself (ADR-0010). `{project}`/`{slug}` stay the canonical
   // slug so the in-box `/ev-run` (via `{run}`) resolves the real project.
-  const handle =
+  const baseHandle =
     provider.handleMaxLen !== undefined
       ? deriveHandle(subject, provider.handleMaxLen)
       : subject;
+
+  // `--tag=<x>` disambiguates the HANDLE only, applied AFTER derivation —
+  // parallel dispatch (ADR-0012) needs N distinct environments for the SAME
+  // project (one per concurrently-dispatched phase), but `{slug}`/`{run}`
+  // must still name the one real project. Without `--tag`, unchanged
+  // (ADR-0010): one env per subject, keyed by the slug itself.
+  const handle =
+    values.tag !== undefined
+      ? appendHandleTag(baseHandle, values.tag, provider.handleMaxLen)
+      : baseHandle;
   const vars =
     op === 'exec'
       ? { handle, cmd: values.cmd }
