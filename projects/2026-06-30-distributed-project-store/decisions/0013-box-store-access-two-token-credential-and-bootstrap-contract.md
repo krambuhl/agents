@@ -1,6 +1,9 @@
 # 0013. Box store access: two-token credential routing + bootstrap contract
 
-- **Status**: accepted (credential routing VALIDATED live; bootstrap gaps identified)
+- **Status**: accepted (credential routing VALIDATED live; bootstrap gaps
+  identified — see § Correction: the `/etc/profile.d` fix for gap 1 was
+  itself wrong and is superseded by moving the clone to the coder
+  `coder_agent`'s `startup_script`)
 - **Scope**: Phase 4/dispatch — a coder box reaching the external store
 
 ## Context
@@ -78,10 +81,12 @@ the box otherwise half-provisioned; a dispatch-ready box must also:
    fail at its first `ev env which` / `loom project read`. Bootstrap must
    symlink `~/agents/plugins/<p>/bin/<p>` into a PATH dir for
    `ev`/`loom`/`guild`/`griot`.
-3. **Persist env for the login-shell dispatch.** Dispatch runs
-   `coder ssh … bash -lc "…"` — a login shell — so exporting `PATH` and
-   `LOOM_PROJECTS_ROOT` from `/etc/profile.d/*.sh` makes the dispatched
-   `/ev-run` inherit both without the dispatch string setting them.
+3. **~~Persist env for the login-shell dispatch via `/etc/profile.d`~~ —
+   SUPERSEDED, see § Correction below.** `/etc/profile.d/*.sh` is only
+   sourced by a **bash** login shell reading `/etc/profile`; it is not
+   sourced by an interactive `zsh` login (the box's default shell), and a
+   live run found the dispatch's own `bash -lc "…"` also failed to pick it
+   up. Do not rely on `profile.d` for this — see the correction.
 4. **`cd` to the store.** The dispatch template's working dir is
    `~/projects` (the store), not `~/agents` (the substrate checkout) and
    not a mis-named product path. The store is where a dispatched run's
@@ -101,6 +106,46 @@ the box otherwise half-provisioned; a dispatch-ready box must also:
   store (this run's failure) — cred success is not store presence. And a
   dispatch that silently `cd`s to the wrong tree, committing artifacts
   into `~/agents` instead of the store.
+
+## Correction (2026-07-02): `/etc/profile.d` is the wrong hook — supersedes the earlier PAT-timing theory
+
+A follow-up fix moved the store clone from `install.sh`'s main body into
+`/etc/profile.d/loom-store.sh`, reasoning that `GITHUB_PERSONAL_PAT`
+wasn't visible at `install.sh`'s (build-time) execution and would be
+visible by the time any shell logged in. **That diagnosis was itself
+wrong.** A live run on a rebuilt image proved:
+
+- The PAT **is** present at first login (`echo ${GITHUB_PERSONAL_PAT:+present}`
+  → `present`, confirmed directly in an interactive session).
+- The `[loom-store]` diagnostic line **never printed at all** — not "PAT
+  visible: NO", just absent — because **the hook never ran**:
+  - The box's interactive login shell is **`zsh`**, and `/etc/profile.d/*.sh`
+    is a **bash**-only convention (sourced via `/etc/profile`, which zsh's
+    login sequence does not read). The store clone silently never fired
+    on `coder ssh` alone.
+  - The dispatch path's own `bash -lc "…"` — which *should* force a login
+    shell regardless of default shell — **also** came back with
+    `LOOM_PROJECTS_ROOT` `UNSET` and a stray `bash: -c: option requires an
+    argument` error, suggesting the multi-word command string is getting
+    mangled somewhere in the `coder ssh <target> -- bash -lc "…"` exec
+    path (a distinct, still-open question — not yet root-caused; do not
+    assume fixing the interactive case also fixes dispatch without
+    re-verifying).
+
+So the PAT-timing/build-vs-runtime theory (§ above, and the original
+"move the clone to first login" fix) was solving the wrong problem — the
+PAT was never the blocker on this build; the hook simply never executed,
+under either shell path.
+
+**Corrected fix:** move the store clone (and the `PATH`/
+`LOOM_PROJECTS_ROOT` exports) out of `/etc/profile.d` entirely and into
+the Coder **agent's `startup_script`** (the `coder_agent` Terraform
+resource) — shell-agnostic (runs once at agent boot, independent of the
+user's login shell), and secrets are already resolved by the time it
+runs. This is a template-layer change; nothing in `krambuhl/agents`
+changes as a result. Re-verify the dispatch-path quoting question above
+independently once this lands — it may be a second, unrelated defect
+masked by the same symptom.
 
 ## Forward pointers
 
