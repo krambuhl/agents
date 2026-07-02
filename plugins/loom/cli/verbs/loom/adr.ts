@@ -3,7 +3,7 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 
 import { join } from 'node:path';
 import { LoomError } from '../../lib/errors.ts';
 import { kebabCase } from '../../lib/project.ts';
-import { type GitRunner, defaultGitRunner } from '../../lib/git.ts';
+import { type GitRunner, defaultGitRunner, commitState } from '../../lib/git.ts';
 import type { CliContext, DispatchResult } from './project.ts';
 
 // `loom adr "<title>" [--body-file=<path>] [--status=<status>]
@@ -146,7 +146,7 @@ export function adrVerb(rest: string[], ctx: CliContext): DispatchResult {
 
   if (!noCommit) {
     try {
-      gitRunnerOf(ctx).addAndCommit(repoRootOf(ctx), [adrPath], `[loom] adr ${numberStr}: ${title}`);
+      commitState(gitRunnerOf(ctx), repoRootOf(ctx), [adrPath], `[loom] adr ${numberStr}: ${title}`, { push: ctx.storeAutosync === true });
     } catch (err) {
       return errToResult(err);
     }

@@ -9,7 +9,7 @@ import {
 import { basename, join, relative } from 'node:path';
 import { LoomError } from '../../lib/errors.ts';
 import { createSlug, resolveProject } from '../../lib/project.ts';
-import { type GitRunner, defaultGitRunner } from '../../lib/git.ts';
+import { type GitRunner, defaultGitRunner, commitState } from '../../lib/git.ts';
 import {
   appendEvent,
   manifestPath as manifestPathFor,
@@ -41,6 +41,7 @@ export type ResearchCliContext = {
   today?: string;
   gitRunner?: GitRunner;
   repoRoot?: string;
+  storeAutosync?: boolean;
 };
 
 export type DispatchResult = {
@@ -258,10 +259,12 @@ export function researchInit(
 
   if (!noCommit) {
     try {
-      gitRunnerOf(ctx).addAndCommit(
+      commitState(
+        gitRunnerOf(ctx),
         repoRootOf(ctx),
         filesToCommit,
         `[loom research] ${slug}`,
+        { push: ctx.storeAutosync === true },
       );
     } catch (err) {
       return errToResult(err);
@@ -418,10 +421,12 @@ export function researchAppend(
 
   if (!noCommit) {
     try {
-      gitRunnerOf(ctx).addAndCommit(
+      commitState(
+        gitRunnerOf(ctx),
         repoRootOf(ctx),
         [researchMdPath],
         `[loom research] append "${section}" to ${resolvedSlug}`,
+        { push: ctx.storeAutosync === true },
       );
     } catch (err) {
       return errToResult(err);

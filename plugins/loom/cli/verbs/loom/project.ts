@@ -40,6 +40,10 @@ export type CliContext = {
   today?: string;
   gitRunner?: GitRunner;
   repoRoot?: string;
+  // When true, state-committing verbs rebase-and-push the store repo after
+  // committing (distributed store; set by loom.ts). Omitted/false → commit
+  // only, the pre-store-sync behavior (decision 0014).
+  storeAutosync?: boolean;
   // pr wait clock + sleep injection — tests stub these to drive deterministic
   // polling timelines without real wall-clock delays. Production callers omit
   // both; the verb falls back to Date.now() + execSync('sleep N'). The sleep
