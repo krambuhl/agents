@@ -32,7 +32,7 @@ Node ≥22.6 is required for the test harness (`package.json` engines); plugin b
 
 The repo-root `docs/` tree (cross-cutting convention docs — `AGENT-CONVENTIONS`, `LOOM-CONVENTIONS`, `PANEL-COMPOSITION`, `SUBSTRATE-COMPOSITIONS`) is the **canonical source** for cross-cutting content. Because a skill that cites `docs/X.md` reads it from its own self-contained plugin at install time, each doc-consuming plugin needs a physical copy; `scripts/sync-shared.ts` mirrors `docs/**` into every doc-consumer's `docs/` tree (today `ev` and `loom`). After editing anything in `docs/`, run the sync script before committing. The drift check is **enforced** (ADR-0007), not honor-system: a pre-commit hook (`.githooks/pre-commit`, auto-configured by the `prepare` npm script on `npm install`) blocks a drifted commit, and the `sync-check` GitHub Actions workflow (`.github/workflows/sync-check.yml`) fails the PR. Run `npm run check` to verify before committing.
 
-`commons` is **skills-only** — it ships `grill-me`, `find-skills`, and `review-skill` and nothing else (no CLI, no docs). Everything else — `plugins/<plugin>/skills/`, `agents/`, `cli/` (entrypoint, verbs, and lib), and tests — is **plugin-authoritative**. Edit in place; no sync touches those files. (`loom` owns the only `cli/lib/`; its shared utilities — `errors`, `gh`, `git`, `pr-marker`, `retro` — carry the `// sync-shared: plugin-local` marker.)
+`commons` ships **skills and hooks only** — `grill-me`, `find-skills`, `review-skill`, `write-as-me`, `pr-comments`, plus the skill-activation hooks under `hooks/` — and no CLI, no docs. Everything else — `plugins/<plugin>/skills/`, `agents/`, `cli/` (entrypoint, verbs, and lib), and tests — is **plugin-authoritative**. Edit in place; no sync touches those files. (`loom` owns the only `cli/lib/`; its shared utilities — `errors`, `gh`, `git`, `pr-marker`, `retro` — carry the `// sync-shared: plugin-local` marker.)
 
 ### Plugin layout
 
@@ -45,8 +45,9 @@ Each consumer plugin (`griot`, `guild`, `loom`, `ev`) follows:
 - `docs/` — synced copy of repo-root `docs/` for doc-citing plugins (do not edit directly)
 - `skills/<name>/SKILL.md` — slash-command skills surfaced to Claude Code
 - `agents/<name>.md` — subagent definitions
+- `hooks/hooks.json` + scripts — plugin hooks, registered by Claude Code on install (only `commons` has them)
 
-`plugins/commons` ships only `skills/` (`grill-me`, `find-skills`, `review-skill`) — no CLI, no docs; `plugins/agent-loop-full` is content-free.
+`plugins/commons` ships `skills/` (`grill-me`, `find-skills`, `review-skill`, `write-as-me`, `pr-comments`) and `hooks/` (an activation log for every skill, plus a gate that blocks PR-thread posts until `pr-comments` has loaded and commits or PR creation until `write-as-me` has) — no CLI, no docs; `plugins/agent-loop-full` is content-free.
 
 ### Runtime data (not source)
 
