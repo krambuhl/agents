@@ -3,72 +3,76 @@ name: write-as-me
 description: >
   The engineer's voice for what ships under their name in the repo: PR
   descriptions and titles, commit messages, code comments. Load when writing or
-  editing any of those — opening a PR, committing, adding or rewriting a comment
-  in code. Direct, durable, written for a peer who knows the basics; reads as
-  the engineer wrote it, with no agent voice. Not for PR thread comments, which are Snerf's
-  (pr-comments).
+  editing any of those: opening a PR, committing, adding or rewriting a comment
+  in code. Lowercase, plain, durable, written for a peer who knows the basics.
+  Reads as the engineer wrote it, with no agent voice. Not for PR thread
+  comments, which are Snerf's (pr-comments).
 ---
 
-# Write as me
+# write as me
 
-What ships under the engineer's name reads as they wrote it — not a style manual's idea of an engineer, their actual register. The reader is another engineer, arriving later, with none of this conversation.
+what ships under the engineer's name reads as they wrote it. not a style manual's idea of an engineer, their actual register. the reader is another engineer, arriving later, with none of this conversation.
 
-**How the engineer writes.** Direct, opinionated, lightly wry, pragmatic. States a preference plainly and gives the reason in the same breath ("not sold on the wrapper — it hides the one prop people actually reach for"). Names the next dependency or what'll break while they're at it. Specific over general: one stake, one model, one consequence. Inline code for identifiers. A dry aside is fine when it costs nothing ("this is the close-the-loop PR; it should be small and satisfying"); a paragraph of personality is not. Sentence case. No exclamation points, no corporate enthusiasm, no meeting-speak.
+**how the engineer writes.** direct, opinionated, lightly wry, pragmatic. states a preference plainly and gives the reason in the same breath ("not sold on the wrapper, it hides the one prop people actually reach for"). names the next dependency or what'll break while they're at it. specific over general: one stake, one model, one consequence. inline code for identifiers. a dry aside is fine when it costs nothing ("this is the close-the-loop pr, it should be small and satisfying"). a paragraph of personality is not. no exclamation points, no corporate enthusiasm, no meeting-speak.
 
-**Speak human engineer.** Breathe before you write — what does the reviewer actually need to know? Then be direct. The reader knows the basics; don't explain what they already understand or restate what the diff shows. That's respect, and it's what keeps the body short: say what a reviewer needs to navigate and judge the change, then stop.
+**the aesthetic.** lowercase, including the first word of a sentence and most proper nouns. capitals stay only where they carry meaning: identifiers, acronyms, product names that look wrong flattened. medium good grammar: complete thoughts, commas where you'd breathe, and nobody's checking. internet friendly, the way a good commit or a good thread reads. short sentences. plain words. text someone can consume without deep attention.
 
-**Durable.** Describe the code and the decision as they stand — never the process, the review, or where we are in a plan. No "as discussed", "per review feedback", "first tried X", "migrated from", "TODO: remove after phase 3". The session that produced the change is not part of the record.
+**punctuation.** no em dashes, ever. no en dashes doing an em dash's job. use a comma, a period, or a colon instead. parentheses are fine and rare. semicolons are rarer.
 
-**The engineer's first person, not an agent's.** "I" is fine — it's the engineer's "I". Nothing that reveals or performs the agent: no "this PR was generated", no "as an AI", no Snerf. Attribution belongs in the co-author trailer, nowhere else.
+**speak human engineer.** breathe before you write. what does the reviewer actually need to know? then be direct. the reader knows the basics, so don't explain what they already understand or restate what the diff shows. that's respect, and it's what keeps the body short: say what a reviewer needs to navigate and judge the change, then stop.
 
-## Commit messages
+**durable.** describe the code and the decision as they stand. never the process, the review, or where we are in a plan. no "as discussed", "per review feedback", "first tried x", "migrated from", "todo: remove after phase 3". the session that produced the change is not part of the record.
 
-- **Subject**: descriptive verb, sentence case, under ~70 characters, no trailing period. Describes the change, not the conversation — never `Fix typo`, `Address review`, `Apply suggestion`.
-- **Body**: the *why*, not the *what*. Motivation, hidden constraints, surprising decisions. Blank line after the subject; wrap at ~72 characters (the one place hard-wrapping is right, since git tooling expects it).
-- **Co-author trailer**: when an agent wrote meaningful content, end with `Co-Authored-By: <Agent Name> <email>`.
-- **New commits over amends.** Amend only before pushing, and only for mechanical cleanup (typo, forgotten file). Substantive changes get their own commit.
+**the engineer's first person, not an agent's.** "i" is fine, it's the engineer's "i". nothing that reveals or performs the agent: no "this pr was generated", no "as an ai", no Snerf. attribution belongs in the co-author trailer, nowhere else.
 
-## PR titles
+## commit messages
 
-- **Bracket prefix** for component-scoped work: `[Table] Add createAvatarColumn`, `[codemod] global tokens (components)`.
-- **Descriptive verb** otherwise: `Migrate shared utilities from moment-timezone to date-fns-tz`, `Remove creatorTheming layout prop`.
-- Under 70 characters. No ticket IDs. No emoji.
+- **subject**: descriptive verb, lowercase, under ~70 characters, no trailing period. describes the change, not the conversation. never `fix typo`, `address review`, `apply suggestion`.
+- **body**: the *why*, not the *what*. motivation, hidden constraints, surprising decisions. blank line after the subject, wrap at ~72 characters (the one place hard-wrapping is right, since git tooling expects it).
+- **co-author trailer**: when an agent wrote meaningful content, end with `Co-Authored-By: <Agent Name> <email>`. the trailer keeps its conventional capitalization so tooling parses it.
+- **new commits over amends.** amend only before pushing, and only for mechanical cleanup (typo, forgotten file). substantive changes get their own commit.
 
-## PR descriptions
+## pr titles
 
-High-level, for a reviewer deciding where to look — the diff is the detail. Pick the shape:
+- **bracket prefix** for component-scoped work: `[Table] add createAvatarColumn`, `[codemod] global tokens (components)`. the bracket keeps the component's real name, the rest is lowercase.
+- **descriptive verb** otherwise: `migrate shared utilities from moment-timezone to date-fns-tz`, `remove creatorTheming layout prop`.
+- under 70 characters. no ticket ids. no emoji.
 
-- **Architectural** (new components, API changes): `## Motivation` → `## Solution` → `## Verification`. Motivation is the *why* at a conceptual level. Solution names every behavioral shift and API change at the level a reviewer needs to navigate the diff.
-- **Migration**: `## Summary` bullets, a table of files changed with complexity notes, `## Test plan` with checkboxes for specific routes.
-- **Bug fix**: `## Problem` (with repro or bug link) → `## Root cause` (the mechanism, not the symptom) → `## Fix` (what changed, why this over alternatives) → `## Verification`.
-- **Refactor** (no behavior change): `## Motivation` → `## Before / After` → `## Verification` that behavior is preserved. If tests had to change, it isn't a pure refactor — split it.
-- **Dependency**: `## Why this bump` → `## Diff highlights` → `## Rollout`. Auto-generated changelogs are welcome; still name what *we* care about.
+## pr descriptions
 
-Every shape ends with `## Rollout` and `## Checklist`:
+high-level, for a reviewer deciding where to look. the diff is the detail. pick the shape:
+
+- **architectural** (new components, api changes): `## motivation`, then `## solution`, then `## verification`. motivation is the *why* at a conceptual level. solution names every behavioral shift and api change at the level a reviewer needs to navigate the diff.
+- **migration**: `## summary` bullets, a table of files changed with complexity notes, `## test plan` with checkboxes for specific routes.
+- **bug fix**: `## problem` (with repro or bug link), then `## root cause` (the mechanism, not the symptom), then `## fix` (what changed, why this over alternatives), then `## verification`.
+- **refactor** (no behavior change): `## motivation`, then `## before / after`, then `## verification` that behavior is preserved. if tests had to change, it isn't a pure refactor. split it.
+- **dependency**: `## why this bump`, then `## diff highlights`, then `## rollout`. auto-generated changelogs are welcome, still name what *we* care about.
+
+every shape ends with `## rollout` and `## checklist`:
 
 ```markdown
-## Rollout
-- Risk level: low / medium / high
-- Revert: single PR revert sufficient / requires forward fix /
-  coordinated revert across multiple PRs
-- Feature flag or staged rollout if applicable
-- Anything ops should watch post-deploy (specific dashboards, error
+## rollout
+- risk level: low / medium / high
+- revert: single pr revert sufficient / requires forward fix /
+  coordinated revert across multiple prs
+- feature flag or staged rollout if applicable
+- anything ops should watch post-deploy (specific dashboards, error
   rates, latency)
 
-## Checklist
-- [ ] Verified locally
-- [ ] Tests added or updated
+## checklist
+- [ ] verified locally
+- [ ] tests added or updated
 - [ ] i18n strings extracted (if user-facing copy changed)
-- [ ] Accessibility spot-check (keyboard, focus, ARIA)
-- [ ] Happo green
+- [ ] accessibility spot-check (keyboard, focus, aria)
+- [ ] happo green
 ```
 
-Adapt the items to the PR — a refactor doesn't need an i18n line, a backend-only change doesn't need Happo. Predictable shape, not rote box-checking.
+adapt the items to the pr. a refactor doesn't need an i18n line, a backend-only change doesn't need happo. predictable shape, not rote box-checking.
 
-## Code comments
+## code comments
 
-One or two lines describing the code as it stands, for whoever reads it next. If a comment wants a paragraph, the code wants restructuring or the explanation belongs in a doc.
+one or two lines describing the code as it stands, for whoever reads it next. if a comment wants a paragraph, the code wants restructuring or the explanation belongs in a doc. lowercase here too, and the no-em-dash rule holds.
 
-Never the change that produced it: no `// migrated from Flex`, `// TODO: remove after phase 3`, `// was a Spacer`, `// per review feedback`, `// this is correct because…`, and no play-by-play of the next line. Code coming out of a codemod wave reads as if it had always been written that way.
+never the change that produced it: no `// migrated from Flex`, `// todo: remove after phase 3`, `// was a Spacer`, `// per review feedback`, `// this is correct because...`, and no play-by-play of the next line. code coming out of a codemod wave reads as if it had always been written that way.
 
-The one note a temporary thing should carry is what makes it safe to delete, as a standing fact: `// supports callers still passing layout; remove with the last of them`.
+the one note a temporary thing should carry is what makes it safe to delete, as a standing fact: `// supports callers still passing layout; remove with the last of them`.
