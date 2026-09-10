@@ -1,7 +1,7 @@
 // guild verb registry — flat verb namespace.
 // Each verb is a standalone operation in the antagonist-panel
 // substrate (findings JSONL, panel derivation, verdict
-// parse-and-aggregate, plan composition). Matches bin/griot's
+// parse-and-aggregate, plan composition). Matches bin/loom's
 // flat-verb shape.
 
 import { compileVerb } from './compile-cli.ts';

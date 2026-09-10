@@ -62,7 +62,6 @@ const REPO_ROOT = resolve(SCRIPT_DIR, '..');
 /** All plugins the sync script iterates. Order is sync-iteration order. */
 export const PLUGINS = [
   'commons',
-  'griot',
   'guild',
   'loom',
   'ev',
@@ -73,7 +72,7 @@ export type PluginName = (typeof PLUGINS)[number];
 /** Plugins that receive a synced copy of the repo-root `docs/` tree —
  *  those whose skill bodies cite `docs/X.md` and therefore need the file
  *  shipped inside their own plugin directory at install time. Today: `ev`
- *  (loop skills) and `loom` (plan/research/archive skills). griot and
+ *  (loop skills) and `loom` (plan/research/archive skills). commons and
  *  guild ship no skills that cite the shared convention docs, so they are
  *  not consumers. */
 export const DOC_CONSUMERS: ReadonlyArray<PluginName> = ['ev', 'loom'];

@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Repository purpose
 
-This repo is a Claude Code **plugin marketplace** named `krambuhl`. It ships six plugins forming the **guild / griot / loom / ev** agent framework. The marketplace catalog lives at `.claude-plugin/marketplace.json`; each plugin under `plugins/<name>/` is self-contained and authoritative for its own content.
+This repo is a Claude Code **plugin marketplace** named `krambuhl`. It ships five plugins forming the **guild / loom / ev** agent framework. The marketplace catalog lives at `.claude-plugin/marketplace.json`; each plugin under `plugins/<name>/` is self-contained and authoritative for its own content.
 
 ## Commands
 
@@ -26,7 +26,7 @@ Node ≥22.6 is required for the test harness (`package.json` engines); plugin b
 
 ### Plugin family (dependency order)
 
-`commons` → `griot` / `guild` → `loom` → `ev` → `agent-loop-full` (zero-content meta-bundle that cascade-installs the family). Dependencies are declared in `.claude-plugin/marketplace.json`; Claude Code resolves and cascade-installs them.
+`commons` → `guild` → `loom` → `ev` → `agent-loop-full` (zero-content meta-bundle that cascade-installs the family). Dependencies are declared in `.claude-plugin/marketplace.json`; Claude Code resolves and cascade-installs them.
 
 ### Cross-cutting docs are synced; everything else is plugin-authoritative
 
@@ -36,7 +36,7 @@ The repo-root `docs/` tree (cross-cutting convention docs — `AGENT-CONVENTIONS
 
 ### Plugin layout
 
-Each consumer plugin (`griot`, `guild`, `loom`, `ev`) follows:
+Each consumer plugin (`guild`, `loom`, `ev`) follows:
 
 - `.claude-plugin/plugin.json` — identity
 - `bin/<cli>` — bash entry shim (symlink-safe path resolution + Node ≥24 enforcement), execs `cli/<cli>.ts` via Node's TS loader
@@ -52,7 +52,7 @@ Each consumer plugin (`griot`, `guild`, `loom`, `ev`) follows:
 ### Runtime data (not source)
 
 - `projects/` — Loom-managed project artifacts (PLAN.md, RESEARCH.md, checkins, sessions, retros). Append-only at runtime; archived projects live under `projects/archive/`.
-- `learnings/` — accumulated craft notes surfaced via `griot use --as=llm`. Per-consumer-project `learnings/` trees are created by `griot init`.
+- `learnings/` — accumulated craft notes, kept as plain markdown. Left over from the retired `griot` plugin; no CLI reads them now.
 
 ## Editing workflow
 

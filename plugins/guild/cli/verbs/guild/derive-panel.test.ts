@@ -296,7 +296,7 @@ describe('globToRegex', () => {
   test('** matches any path segments', () => {
     const re = globToRegex('.claude/scripts/**/*.ts');
     expect(re.test('.claude/scripts/guild/derive-panel.ts')).toBe(true);
-    expect(re.test('.claude/scripts/griot/capture.ts')).toBe(true);
+    expect(re.test('.claude/scripts/loom/capture.ts')).toBe(true);
     expect(re.test('app/foo/bar.ts')).toBe(false);
   });
 

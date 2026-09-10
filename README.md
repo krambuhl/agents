@@ -1,6 +1,6 @@
 # agents
 
-Marketplace for the **guild / griot / loom** agent framework, shipped
+Marketplace for the **guild / loom / ev** agent framework, shipped
 as a family of Claude Code plugins. Source-of-truth for skills,
 subagents, CLIs, and accumulated learnings used across Evan's
 projects (originally evolved in
@@ -10,16 +10,15 @@ being coupled to one repo).
 
 ## Install
 
-The marketplace ships as six self-contained Claude Code plugins:
+The marketplace ships as five self-contained Claude Code plugins:
 
 | Plugin | What it provides | Depends on |
 |---|---|---|
 | `commons@krambuhl` | Foundation substrate: the shared skills (`grill-me`, `find-skills`, `review-skill`, `write-as-me`, `pr-comments`) and the skill-activation hooks the rest of the family relies on | — |
-| `griot@krambuhl` | Learnings substrate: `griot` CLI + `griot-*` skills + judge/rewriter agents | `commons` |
 | `guild@krambuhl` | Antagonist-panel substrate: `guild` CLI + `guild-*` skills + `plan-*` / `research-*` / `evaluator-*` / `implementer-*` / `fixer-*` agents | `commons` |
-| `loom@krambuhl` | Project substrate: `loom` CLI + `loom-*` skills (plans, research, sessions, checkins, retros, archives) | `commons`, `guild`, `griot` |
-| `ev@krambuhl` | Execution loops: `ev-loop-confidence`, `ev-loop-interactive`, `ev-run` skills | `commons`, `loom`, `guild`, `griot` |
-| `agent-loop-full@krambuhl` | Meta-bundle: zero-content plugin that cascade-installs the full family | all five above |
+| `loom@krambuhl` | Project substrate: `loom` CLI + `loom-*` skills (plans, research, sessions, checkins, retros, archives) | `commons`, `guild` |
+| `ev@krambuhl` | Execution loops: `ev-loop-confidence`, `ev-loop-interactive`, `ev-run` skills | `commons`, `loom`, `guild` |
+| `agent-loop-full@krambuhl` | Meta-bundle: zero-content plugin that cascade-installs the full family | all four above |
 
 ### Recommended: turnkey install with `--scope user`
 
@@ -43,7 +42,7 @@ Claude Code sessions**. See § Install scopes below for the load-
 bearing rationale.
 
 `agent-loop-full@krambuhl` is zero-content; its only job is to
-cascade-install `commons` + `griot` + `guild` + `loom` + `ev`
+cascade-install `commons` + `guild` + `loom` + `ev`
 in dependency order. The cascade is a Claude Code
 feature (confirmed empirically in the migration's V4 smoke test).
 `commons` is the foundation substrate every other family plugin
@@ -60,8 +59,8 @@ claude plugin install loom@krambuhl --scope user
 ```
 
 Each plugin's `dependencies` are declared in the marketplace
-manifest, so installing `loom` also pulls in `commons` + `guild` +
-`griot`. Installing `griot` alone is fine too — pulls in `commons`.
+manifest, so installing `loom` also pulls in `commons` + `guild`.
+Installing `guild` alone is fine too — pulls in `commons`.
 
 ## Upgrade
 
@@ -121,31 +120,16 @@ two:
 `--scope user` is the default recommended path because it avoids the
 `.gitignore` footgun entirely.
 
-### After install: per-project `griot init`
-
-For consumer projects that want griot to land learnings/captures
-into a project-local `learnings/` tree (so the rollup can grow over
-time without polluting the user's global learnings), run inside
-each consumer repo:
-
-```bash
-griot init
-```
-
-This idempotently creates `learnings/{session-notes,nightly}/` and
-appends `learnings/` to the project's `.gitignore` if it's not
-already present. No-ops on re-run.
-
 ## What's inside
 
 | Dir | What | Count |
 |---|---|---|
-| `.claude-plugin/marketplace.json` | The marketplace catalog. Lists all 6 plugins + dependencies cascade. | 1 |
-| `plugins/<name>/` | Per-plugin source trees. Each is self-contained: `.claude-plugin/plugin.json` (identity), `bin/<cli>` (entry shim w/ Node ≥24 check), `skills/` (slash commands), `agents/` (subagents), and `cli/` (TypeScript implementation). The plugin tree is authoritative for everything it ships. | 6 |
+| `.claude-plugin/marketplace.json` | The marketplace catalog. Lists all 5 plugins + dependencies cascade. | 1 |
+| `plugins/<name>/` | Per-plugin source trees. Each is self-contained: `.claude-plugin/plugin.json` (identity), `bin/<cli>` (entry shim w/ Node ≥24 check), `skills/` (slash commands), `agents/` (subagents), and `cli/` (TypeScript implementation). The plugin tree is authoritative for everything it ships. | 5 |
 | `plugins/commons/` | Foundation substrate plugin: the shared skills (`grill-me`, `find-skills`, `review-skill`, `write-as-me`, `pr-comments`) and `hooks/` (skill-activation log + the gate that requires the voice skills before posting to PR threads or committing). No CLI, no docs. | 1 (within plugins/) |
 | `scripts/sync-shared.ts` | Build script that propagates `plugins/commons/{cli/lib,docs}/` into consumer plugin trees. Run after editing `plugins/commons/`. CI also drift-checks (`--check`). | — |
 | `projects/` | Loom-managed project artifacts: PLAN.md / RESEARCH.md / checkins / sessions / retros. Append-only at runtime; archived projects live under `projects/archive/`. | — |
-| `learnings/` | Accumulated craft knowledge — short markdown notes that show up in `griot use --as=llm` output for any plugin-enabled session. | 4+ |
+| `learnings/` | Accumulated craft notes kept as plain markdown, read by hand. Retained from the retired griot plugin; nothing reads them automatically now. | 3 |
 
 ## Authoring against this marketplace
 

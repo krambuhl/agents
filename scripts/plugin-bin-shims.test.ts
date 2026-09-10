@@ -28,7 +28,7 @@ import { afterEach, beforeEach, describe, expect, test } from 'vitest';
  */
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const PLUGINS = ['griot', 'guild', 'loom'] as const;
+const PLUGINS = ['guild', 'loom'] as const;
 
 // A minimal PATH for tests that need to RESTRICT node availability.
 // Keeps bash builtins + system tools (dirname, readlink) reachable.

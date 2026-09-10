@@ -480,7 +480,7 @@ learnings/session-notes/<YYYY-MM-DD>-guild-smoke-postcutover.md
 Capture: which agents were dispatched, the verdict line each emitted
 verbatim, the parse-and-aggregate output, and whether the smoke is
 green. Commit alongside the session it ran in; the substrate trail
-survives even if `/griot-compact` later does not promote the note
+survives even if the note is never promoted further
 into the rollup.
 
 ### What "green" looks like

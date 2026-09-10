@@ -4,7 +4,7 @@
 
 The shape of the CLI-owned state and coordination layer: the loom
 event log, the project manifest, checkins, agent-registry definitions,
-and the `guild`/`griot`/`loom` verbs that read and write them.
+and the `guild`/`loom` verbs that read and write them.
 Substrate is the work that makes other work parallel-safe, replayable,
 and observable across sessions — the state machine underneath every
 loop. It is not infrastructure (CI/deploy), not tooling (editor

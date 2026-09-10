@@ -10,7 +10,7 @@ description: >-
 argument-hint: "<project-slug-or-path> [<free-form message>] [--mode=auto] [--env[=<provider>]]"
 user-invocable: true
 disable-model-invocation: true
-allowed-tools: Read, Skill, Bash, AskUserQuestion, Bash(loom *), Bash(guild *), Bash(griot *), Bash(ev *)
+allowed-tools: Read, Skill, Bash, AskUserQuestion, Bash(loom *), Bash(guild *), Bash(ev *)
 ---
 
 # /ev-run
@@ -49,7 +49,7 @@ where a user disabled a dep plugin mid-session.
 Run:
 
 ```
-Bash("command -v loom guild griot >/dev/null 2>&1 || { echo 'ev-run requires loom + guild + griot plugins on PATH. Enable them with: claude plugin enable loom@krambuhl guild@krambuhl griot@krambuhl' >&2; exit 1; }")
+Bash("command -v loom guild >/dev/null 2>&1 || { echo 'ev-run requires loom + guild plugins on PATH. Enable them with: claude plugin enable loom@krambuhl guild@krambuhl' >&2; exit 1; }")
 ```
 
 If exit code is non-zero, stop and surface the message to the
@@ -185,47 +185,12 @@ off a freshly pulled base). This is why the `pr-opened` / `pr-merged`
 event vocabulary was retired: their reconcile-time timestamps were
 fiction, and `gh` is the actual source of truth.
 
-**Griot write on drift detection**: the remaining drift class is the
-manifest's phase status disagreeing with git/gh reality (e.g. a phase
-marked `in-progress` whose branch PR is `MERGED` with no successor unit
-started). Surface the discrepancy as a one-line warning and write a
-session-note via § Capture finding documenting the drift shape
-(manifest-says-X vs git-says-Y). Substrate-wide signal worth keeping:
-"what kinds of drift happen in practice." The classification gap is the
-same as other Phase-7-wired captures (no precise classification today
-for "manifest-vs-git drift shape"); intent recorded; the event-stream +
-the warning surface are the substrate trace until the verb supports a
-finer classification.
-
-### 1.5. Load learnings
-
-Run `Bash("griot use --as=llm")`. The verb reads
-`learnings/rollup.json` and renders it as LLM-friendly prose, prints
-the status line and (if loaded) the content + citation contract to
-stdout — the Bash result lands the load in conversation context. Do
-this once per `/ev-run` invocation — the rollup is session-scoped,
-not per-dispatch. The `--as=llm` flag is the default render mode and
-is currently the only mode shipped; `/ev-run` calls the CLI directly
-via Bash rather than composing the `/griot-load` skill, to keep the
-loader-step path skill-composition-free.
-
-Handle the three outcomes the verb's `griot-use:` status line reports:
-- **`loaded N learnings`** — note it in the dispatch report.
-- **`rollup empty`** — note "no rollup entries" in the dispatch report
-  and proceed.
-- **`no rollup yet`** — note "no rollup yet — `/griot-compact` has
-  not run" and proceed. Do not stop.
-
-A format-detection error from the verb (exit 1, stderr names
-`learnings/rollup.md` as a legacy artifact requiring migration)
-indicates a mid-flight session running an older skill body against
-post-cutover on-disk state, or vice-versa. Surface the verb's stderr
-message to the user verbatim and stop — the remedy is in the message
-(run `node .claude/scripts/migrate-rollup-md-to-json.ts` and restart).
-
-Do not read `learnings/session-notes/` or `learnings/nightly/` from the
-router — the tier separation is a hard rule of the learnings system,
-and the substrate must respect it.
+**Drift detection**: the remaining drift class is the manifest's phase
+status disagreeing with git/gh reality (e.g. a phase marked
+`in-progress` whose branch PR is `MERGED` with no successor unit
+started). Surface the discrepancy as a one-line warning naming the
+drift shape (manifest-says-X vs git-says-Y). The event stream plus
+that warning are the substrate's trace of the drift.
 
 ### 2. Handle explicit redirects
 
@@ -343,14 +308,8 @@ One paragraph in this shape:
 
 ```
 Dispatching <slug> → phase <N> "<phase-title>" via <loop-name>.
-<Dependency-check sentence.> <Learnings-loaded sentence.>
-<Caveats or "No caveats.">
+<Dependency-check sentence.> <Caveats or "No caveats.">
 ```
-
-The learnings-loaded sentence is one of:
-- `Loaded N learnings from rollup.json (citation contract active).`
-- `No rollup yet — proceeding without citation contract.`
-- `Rollup empty — proceeding without citation contract.`
 
 Then dispatch. Don't ask for permission unless a redirect or drift
 warrants it. Example dispatch:
@@ -404,13 +363,8 @@ with a single high-confidence resolution) OR 3 × 3 budget exhaust.
 
 **On budget exhaust**: emit `auto-mode-budget-exhausted` with
 `{surface: 'ev-run', slug, decisions_completed, rounds_completed,
-reason}`. Alongside the emission, write a session-note via
-§ Capture finding documenting which ambiguity class exhausted +
-the candidate options the panel considered. Substrate-wide signal
-for "which router-level ambiguities resist auto-mode resolution"
-— useful cross-skill input alongside the per-skill
-budget-exhausted captures from /ev-loop-interactive and
-/loom-archive.
+reason}`. The event's detail names which ambiguity class exhausted
+and the candidate options the panel considered.
 
 The router falls back to declining to dispatch — it surfaces the
 unresolved ambiguity to the operator (or upstream caller) with a

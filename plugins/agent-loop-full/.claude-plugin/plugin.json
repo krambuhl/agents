@@ -1,4 +1,4 @@
 {
   "name": "agent-loop-full",
-  "description": "Meta-bundle: zero-content plugin that cascade-installs the full agent-loop family (commons, griot, guild, loom, ev)."
+  "description": "Meta-bundle: zero-content plugin that cascade-installs the full agent-loop family (commons, guild, loom, ev)."
 }

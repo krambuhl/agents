@@ -94,47 +94,6 @@ resolves correctly to a file that exists on disk in the plugin's
 own tree. No symlink dance required; no cross-plugin path
 resolution required.
 
-### `[portable]` marker
-
-Plan engineers and evaluators surface findings that should be
-captured to the griot learnings system by suffixing the finding
-with `[portable]`:
-
-```
-Finding: <description>. [portable]
-```
-
-The marker says: this finding generalizes beyond the current
-project. When a skill body scans agent output for findings, it
-treats `[portable]`-marked entries as triggers to call the
-`§ Capture finding` recipe, which writes a session-note under
-`learnings/session-notes/`.
-
-The convention name `[portable]` describes *meaning* (this
-generalizes), not appearance (no `[GLOBAL]`, no `[!]`, no
-`[learning]`). Semantic naming applies even to inline markers.
-
-## Sub-agent startup brief
-
-Every skill that spawns a sub-agent via the `Agent` tool MUST
-include the rollup-load step in the sub-agent's startup brief:
-
-> Run `bin/griot use --as=llm` first. This loads the substrate-
-> wide learnings rollup into your context. After it succeeds, read
-> your task brief below.
-
-This ensures every sub-agent starts with the substrate's
-accumulated learnings as context, not just the spawning skill's
-brief. The verb is no-op when the rollup is empty or missing, and
-logs which case it hit, so the convention is safe to apply
-universally.
-
-The startup-brief convention applies to sub-agents invoked via the
-`Agent` tool — i.e. fresh-context spawns where the sub-agent does
-not inherit the parent's conversation. Sub-skills invoked via the
-`Skill` tool (which run in the parent's context) do not need the
-rollup-load step because they inherit it from the parent.
-
 ## Recovery from sub-agent failures
 
 When a sub-agent invocation fails (timeout, partial commit, hard

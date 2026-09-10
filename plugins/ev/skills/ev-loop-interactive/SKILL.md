@@ -9,7 +9,7 @@ description: >-
   a phase is exploratory, creative, or otherwise not a bulk transform.
 argument-hint: "<project-slug-or-path> <phase-number> [--env=<provider>]"
 user-invocable: true
-allowed-tools: Read, Write, Edit, Bash, Agent, Skill, mcp__github__subscribe_pr_activity, Bash(loom *), Bash(guild *), Bash(griot *), Bash(ev *)
+allowed-tools: Read, Write, Edit, Bash, Agent, Skill, mcp__github__subscribe_pr_activity, Bash(loom *), Bash(guild *), Bash(ev *)
 ---
 
 # /ev-loop-interactive
@@ -52,7 +52,7 @@ not re-implement that logic.
   yourself, once, before any substrate op. First the presence check:
 
   ```
-  Bash("command -v loom guild griot >/dev/null 2>&1 || { echo 'ev-loop-interactive requires loom + guild + griot plugins on PATH. Enable them with: claude plugin enable loom@krambuhl guild@krambuhl griot@krambuhl' >&2; exit 1; }")
+  Bash("command -v loom guild >/dev/null 2>&1 || { echo 'ev-loop-interactive requires loom + guild plugins on PATH. Enable them with: claude plugin enable loom@krambuhl guild@krambuhl' >&2; exit 1; }")
   ```
 
   If that exits non-zero, stop and surface the message verbatim. Then,
@@ -65,7 +65,7 @@ not re-implement that logic.
 ## Substrate compositions
 
 Every substrate operation this loop performs dispatches directly to
-`bin/loom`, `bin/griot`, or `bin/guild` — no ambient
+`bin/loom` or `bin/guild` — no ambient
 skills, no trout scripts. The unit loop steps below cite recipes by
 name (e.g. "checkpoint per § Compose PR"). All `§ <Recipe>` references
 in this body resolve in `docs/SUBSTRATE-COMPOSITIONS.md`. For loom
@@ -109,7 +109,7 @@ rather than `Bash("<the command>")`. The `<slug>` is the project slug
 What does **not** route through the env, in the v1 exec model:
 
 - **File reads/writes/edits** and all reasoning — stay in this session.
-- **Substrate commands** — `loom *`, `guild *`, `griot *`, `git *`, and
+- **Substrate commands** — `loom *`, `guild *`, `git *`, and
   `ev env *` itself — run locally; they operate on the manifest and the
   working tree, not on the code-under-test.
 
@@ -340,12 +340,9 @@ For each deliverable (picked per the ordering rule):
      `{surface, slug, decisions_completed, rounds_completed}`.
    - On budget exhaust: emit `auto-mode-budget-exhausted` with
      `{surface, slug, decisions_completed, rounds_completed,
-     reason: 'decision-budget' | 'round-budget'}`. Alongside the
-     emission, write a session-note via § Capture finding with the
-     exhaustion context (which contract fields didn't converge,
-     how many rounds spent on each). Substrate-wide question this
-     answers: "which auto-mode situations fail to converge."
-     Same classification-gap as the other Phase-7-wired captures.
+     reason: 'decision-budget' | 'round-budget'}`. The event's
+     detail carries the exhaustion context: which contract fields
+     didn't converge, and how many rounds were spent on each.
 
    Human-paired mode emits no auto-mode events — the conversation
    itself is the audit trail.
@@ -552,10 +549,9 @@ For each deliverable (picked per the ordering rule):
         ```
 
         Threshold-triggered corrections feed into session close
-        (§ Save session) → § Capture finding (recurring pathway) at
-        session boundary, no manual intervention. The loop does not
-        invoke the verb directly here; capture happens at session
-        close.
+        (§ Save session), where they land in the session handoff's
+        unresolved-corrections list. The loop writes no learnings
+        of its own.
 
      d. Generator-antipattern detection is NOT done here. That
         classification requires human judgment about whether the
@@ -617,19 +613,8 @@ For each deliverable (picked per the ordering rule):
    signal_count, signals: ['evaluator-finding' | 'user-comment' |
    'plan-contradiction' | 'phase-boundary', ...]}`.
 
-   **Griot write**: alongside the event emission, write a
-   session-note via § Capture finding (the
-   `bin/griot capture --evaluator-finding=<classification> ...`
-   pathway). The noticing itself is high-signal substrate data:
-   "we saw this kind of drift pattern in this kind of unit at
-   this kind of phase boundary." Classification gap: today
-   `bin/griot capture` doesn't have a precise classification for
-   "scope-shift detection in a unit context"; the closest match
-   once the verb supports it is `catalog-gap` (the plan didn't
-   anticipate the shift). Until the verb extension lands, this
-   capture intent is recorded here; the actual write falls back
-   to the event itself as the only substrate trace. Phase 7
-   follow-up.
+   The event is the substrate's only trace of the detection; the
+   loop writes no learnings of its own.
 
    **Offer flow**: surface a short paragraph naming the two signals
    and a proposed one-line rationale (the "trigger" for the inner
@@ -642,19 +627,13 @@ For each deliverable (picked per the ordering rule):
    **On accept (inner-RPI sub-sequence)**:
 
    1. Emit `rpi-inner-triggered` with detail `{slug, phase,
-      trigger: <the one-line rationale>}`. Alongside the emission,
-      write a session-note via § Capture finding with the trigger
-      rationale as the evidence — this is the highest-signal
-      substrate trace the loop emits ("what kind of learning
-      forced revisions"). Same classification-gap caveat as the
-      scope-shift-detected write above: Phase 7 follow-up wires the
-      capture once the verb supports a `revision-trigger` (or
-      similar) classification.
+      trigger: <the one-line rationale>}`. The trigger rationale in
+      the event detail is the substrate's record of what forced the
+      revision.
    2. Spawn `/loom-research` via the `Agent` tool with
       `subagent_type=loom-research` and a brief carrying the
       trigger as the research topic + `--mode=auto`. The sub-agent
-      runs fresh-context; its startup brief includes
-      `bin/griot use --as=llm` per the substrate convention. Wait.
+      runs fresh-context. Wait.
    3. On sub-agent success: a fresh `RESEARCH.md` lands at project
       root (either net-new or appended — see the open question
       flagged in `/loom-revise-plan` § Open questions about the
@@ -662,12 +641,8 @@ For each deliverable (picked per the ordering rule):
       to step 4 below.
    4. Spawn `/loom-revise-plan` via the `Agent` tool with
       `subagent_type=loom-revise-plan` and a brief carrying the
-      slug + `--flavor=research` + `--mode=auto`. The sub-agent's
-      startup brief includes `bin/griot use --as=llm` per the
-      substrate convention (the `/loom-revise-plan` skill body
-      handles this in its own step 1; no additional caller-side
-      instruction needed — matches the /loom-research spawn at
-      sub-step 2). The skill reads the just-committed RESEARCH.md,
+      slug + `--flavor=research` + `--mode=auto`. The sub-agent
+      runs fresh-context. The skill reads the just-committed RESEARCH.md,
       runs its grill-me on the revision, gates through the
       evaluator pass, and commits via `bin/loom revise-plan`.
       Wait.
@@ -1037,11 +1012,8 @@ For "address feedback on #N":
   mid-flight, overrides a decision, or the evaluator flags something
   the generator defaulted to incorrectly, note it verbatim in the
   checkin JSON's `execution.corrections[]` array. The session handoff
-  (§ Save session) surfaces unresolved corrections into `open_threads`;
-  § Capture finding (from-checkin pathway) promotes notable ones into
-  `learnings/session-notes/` at session close, and `/griot-compact`
-  decides which get promoted further. The loop itself never writes
-  to `learnings/`.
+  (§ Save session) surfaces unresolved corrections into `open_threads`.
+  The loop itself writes no learnings.
 - **No emojis.**
 
 ## Failure modes

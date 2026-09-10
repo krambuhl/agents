@@ -2,7 +2,7 @@
 
 Named recipes the loop bodies (`/ev-loop-interactive`,
 `/ev-loop-confidence`, `/ev-run`, `/loom-archive`) cite when
-calling the loom / guild / griot CLIs. Each recipe wraps
+calling the loom / guild CLIs. Each recipe wraps
 one or two CLI invocations in a small composition with a stable
 idempotency story and named failure modes. Loops cite recipes by
 section heading (`§ <Recipe>`); this file is the authoritative
@@ -470,49 +470,6 @@ fires, not on every loop iteration.
 
 **Used by**: `/ev-loop-confidence` (lines 331, 355),
 `/ev-loop-interactive` (lines 271, 295).
-
-## § Capture finding
-
-**Purpose**: Write a `[portable]`-marked finding from a plan
-engineer, an evaluator, or a checkin correction into the griot
-learnings system as a session-note. The note becomes input to
-`/griot-compact` for promotion into the substrate-wide rollup.
-
-**Wraps** — two pathways:
-
-```bash
-# from a checkin's corrections array:
-bin/griot capture --from-checkin=<path> --slug=<slug> [--correction-text=<text>]
-
-# from an evaluator finding (recurring threshold or other classification):
-bin/griot capture --evaluator-finding=<classification> \
-  --evaluator-name=<name> --code=<code> --evidence=<text> \
-  --slug=<slug> [--file-line=<path:line>] [--frequency-count=<N>]
-```
-
-Classifications supported by the current verb:
-`recurring` (requires `--frequency-count`). Others are reserved
-(`generator-antipattern`, `catalog-gap`, `evaluator-conflict`,
-`sanctioned-exception`) — not yet implemented.
-
-**Partitioned** per `projects/CONVENTIONS.md` § Category 2 — the
-partition is the session-note folder under
-`learnings/session-notes/<folder>/`.
-
-**Idempotency**: `safe`. The verb's partition shape uses
-timestamps + content hashes so duplicate captures don't collide;
-the write is effectively content-addressed.
-
-**Failure modes**:
-
-- `capture-error` (missing required flag) → loop bug; surface.
-- `not-yet-supported` (the named classification isn't
-  implemented) → loop should fall back to a simpler
-  classification or skip the capture.
-- `from-checkin-unreadable` → bad path; loop bug; surface.
-
-**Used by**: `/ev-loop-confidence` (lines 486 / 487),
-`/ev-loop-interactive` (lines 251, 427).
 
 ## § Triage PR comments
 

@@ -27,12 +27,11 @@ type Category =
 type Exception =
   | 'PLAN.md'
   | 'manifest.toml'
-  | 'plan'
-  | 'gitignore-amendment';
+  | 'plan';
 
 interface VerbEntry {
   verb: string;
-  family: 'loom' | 'griot' | 'guild';
+  family: 'loom' | 'guild';
   category: Category;
   target: string;
   exception?: Exception;
@@ -46,24 +45,13 @@ const REGISTRY: readonly VerbEntry[] = [
     category: 'append-only',
     target: 'projects/<slug>/.guild-findings.jsonl',
   },
-  {
-    verb: 'griot operator-checks log-intervention',
-    family: 'griot',
-    category: 'append-only',
-    target: '<operator-log-path>',
-  },
 
   // Category 2 — partitioned. loom's checkin/session/retro/pr-respond
   // writes lived here as partitioned per-record files; the state-file
   // consolidation folded them into manifest.toml sections, so they are
-  // Category 3 now (see below). griot capture remains genuinely
-  // partitioned by content-addressed folder.
-  {
-    verb: 'griot capture',
-    family: 'griot',
-    category: 'partitioned',
-    target: 'learnings/session-notes/{folder}/',
-  },
+  // Category 3 now (see below). `griot capture` was the last remaining
+  // partitioned verb; the griot plugin's removal leaves the category
+  // with no current members.
 
   // Category 3 — single-writer-serialized (must declare exception)
   {
@@ -147,13 +135,6 @@ const REGISTRY: readonly VerbEntry[] = [
     target: 'projects/<slug>/plans/{name}.md',
     exception: 'plan',
   },
-  {
-    verb: 'griot init',
-    family: 'griot',
-    category: 'single-writer-serialized',
-    target: '<project-root>/.gitignore',
-    exception: 'gitignore-amendment',
-  },
 ];
 
 const VALID_CATEGORIES: ReadonlySet<Category> = new Set([
@@ -206,12 +187,12 @@ describe('parallel-work invariant: registry well-formedness', () => {
 
   test('every category-2 target includes a partition variable', () => {
     const partitioned = REGISTRY.filter((e) => e.category === 'partitioned');
-    // Non-vacuity guard: the consolidation emptied Category 2 down to a
-    // single survivor (griot capture). If the last partitioned verb is ever
-    // recategorized, the loop below would iterate zero times and this
-    // assertion would silently become a no-op — green while constraining
-    // nothing. Fail loud instead.
-    expect(partitioned.length).toBeGreaterThan(0);
+    // Category 2 is currently empty: the state-file consolidation moved
+    // loom's per-record writes to Category 3, and griot capture — the last
+    // partitioned verb — left with the griot plugin. The loop below is
+    // therefore vacuous today by design; it starts constraining again the
+    // moment a partitioned verb is registered. Do not re-add a
+    // non-vacuity guard until one exists.
     for (const entry of partitioned) {
       expect(
         /\{[^}]+\}/.test(entry.target),

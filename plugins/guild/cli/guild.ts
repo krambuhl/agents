@@ -13,7 +13,7 @@ export type { DispatchResult, GuildCliContext };
 // ---------- Verb registry ----------
 
 // guild has a flat verb namespace — each verb is a standalone
-// operation in the antagonist-panel substrate. Matches bin/griot's
+// operation in the antagonist-panel substrate. Matches bin/loom's
 // flat-verb shape.
 export const VERBS: Record<string, string> = {
   compile:

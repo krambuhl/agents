@@ -5,7 +5,7 @@ import { describe, expect, test } from 'vitest';
 
 /**
  * V11 tripwire (from the marketplace-portable-install plan):
- * skill bodies must invoke CLIs as bare commands (`loom`, `griot`,
+ * skill bodies must invoke CLIs as bare commands (`loom`,
  * `guild`) rather than the marketplace-local `bin/<cli>` path. After
  * plugin install, each plugin's `bin/` directory lands on Claude
  * Code's Bash PATH automatically, so bare invocations resolve.
@@ -72,7 +72,7 @@ describe('V11: skill bodies invoke CLIs as bare commands (no bin/<cli>)', () => 
   for (const skill of SKILLS) {
     describe(skill.relativePath, () => {
       test('no Bash("bin/<cli> ...) tool invocations', () => {
-        const bashInvocationRe = /Bash\("bin\/(loom|griot|guild)\b/;
+        const bashInvocationRe = /Bash\("bin\/(loom|guild)\b/;
         const offending: string[] = [];
         skill.lines.forEach((line, idx) => {
           if (bashInvocationRe.test(line)) {
@@ -99,7 +99,7 @@ describe('V11: skill bodies invoke CLIs as bare commands (no bin/<cli>)', () => 
         let blockIsShell = false;
         const offending: string[] = [];
         const codeFenceRe = /^[ \t]*```([a-zA-Z0-9_-]*)/;
-        const invocationRe = /^[ \t]*bin\/(loom|griot|guild)\b/;
+        const invocationRe = /^[ \t]*bin\/(loom|guild)\b/;
         const SHELL_LANGS = new Set(['', 'bash', 'sh', 'shell', 'zsh', 'console']);
         skill.lines.forEach((line, idx) => {
           const fence = codeFenceRe.exec(line);

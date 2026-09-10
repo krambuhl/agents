@@ -13,7 +13,7 @@ description: >-
 argument-hint: "<topic or short description> [--mode=auto] [--mode=amend]"
 user-invocable: true
 disable-model-invocation: true
-allowed-tools: Read, Write, Bash, Skill, AskUserQuestion, Bash(loom *), Bash(guild *), Bash(griot *)
+allowed-tools: Read, Write, Bash, Skill, AskUserQuestion, Bash(loom *), Bash(guild *)
 ---
 
 # /loom-research
@@ -38,8 +38,6 @@ sentences are flagged at the fact-check gate, not at commit time.
   (the convergence rule + the 3 × 5 default for `/loom-research`).
 - `docs/AGENT-CONVENTIONS.md` § Recovery from sub-agent failures
   (`RECOVERY-STATUS.json` shape + lifecycle).
-- `docs/SUBSTRATE-COMPOSITIONS.md` § Capture finding (the griot
-  integration pathway for `[portable]` markers).
 
 ## Inputs
 
@@ -65,9 +63,6 @@ sentences are flagged at the fact-check gate, not at commit time.
 
 ### 1. Pre-flight + recovery check
 
-- Run `Bash("griot use --as=llm")` to load the learnings rollup
-  per the substrate startup-brief convention (rollup may be empty;
-  status line in stdout reports the load result).
 - Resolve the slug from the topic (kebab-case derivation, same as
   `/loom-plan`'s slug-proposal step). If the user passed a full
   `<YYYY-MM-DD>-<slug>` form, use it verbatim.
@@ -212,17 +207,6 @@ Emit a `research-panel-verdict` event with:
 - `verdict: 'questions-raised'` with `question_count` if engineers
   raised follow-up questions (resolve them via the interview loop
   before moving on; engineers' questions feed back into step 3).
-
-#### Griot `[portable]` scan
-
-At each plan close, scan each engineer's contribution for
-`[portable]` markers (the convention is documented in
-`docs/AGENT-CONVENTIONS.md`). For each marker found, write a
-session-note via `§ Capture finding` (the
-`bin/griot capture --evaluator-finding=...` pathway — the verb's
-classification names need extension in a future workstream to cover
-plan-portable markers; for now, document the capture intent
-here and accept the verb-shape gap as a Phase 7 follow-up).
 
 ### 5. Fact-check pass
 
@@ -381,18 +365,9 @@ auto-accepts in auto-mode), and resumes from `resume_from`. After a
 successful resume that produces a committed `RESEARCH.md`, the skill
 deletes `RECOVERY-STATUS.json` per the convention's removal rule.
 
-The hardcoded `research-budget-exhausted` write also captures the
-failure pattern into the griot learnings system via § Capture finding
-(the `bin/griot capture --evaluator-finding=<classification> ...`
-pathway). The current classification surface (`recurring` plus
-`generator-antipattern` / `catalog-gap` / `evaluator-conflict` /
-`sanctioned-exception` as reserved-but-not-yet-implemented) does not
-include a precise match for "budget-exhausted research session"; the
-skill uses the closest match (`catalog-gap` once the verb supports it;
-falls back to skipping the capture today and emits a one-line
+The hardcoded `research-budget-exhausted` write emits a one-line
 `research-budget-exhausted` event with the exhaustion detail as the
-only record). PLAN.md Phase 3.4 calls this hardcoded write out; the
-classification gap is a Phase 7 follow-up.
+only record.
 
 ## Rules
 

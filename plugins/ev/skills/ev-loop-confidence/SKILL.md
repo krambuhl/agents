@@ -10,7 +10,7 @@ description: >-
   operation across many files.
 argument-hint: "<project-slug-or-path> <phase-number> [--env=<provider>]"
 user-invocable: true
-allowed-tools: Read, Write, Edit, Bash, Agent, Skill, mcp__github__get_file_contents, mcp__github__subscribe_pr_activity, Bash(loom *), Bash(guild *), Bash(griot *), Bash(ev *)
+allowed-tools: Read, Write, Edit, Bash, Agent, Skill, mcp__github__get_file_contents, mcp__github__subscribe_pr_activity, Bash(loom *), Bash(guild *), Bash(ev *)
 ---
 
 # /ev-loop-confidence
@@ -51,7 +51,7 @@ not re-implement that logic.
   yourself, once, before any substrate op. First the presence check:
 
   ```
-  Bash("command -v loom guild griot >/dev/null 2>&1 || { echo 'ev-loop-confidence requires loom + guild + griot plugins on PATH. Enable them with: claude plugin enable loom@krambuhl guild@krambuhl griot@krambuhl' >&2; exit 1; }")
+  Bash("command -v loom guild >/dev/null 2>&1 || { echo 'ev-loop-confidence requires loom + guild plugins on PATH. Enable them with: claude plugin enable loom@krambuhl guild@krambuhl' >&2; exit 1; }")
   ```
 
   If that exits non-zero, stop and surface the message verbatim. Then,
@@ -64,7 +64,7 @@ not re-implement that logic.
 ## Substrate compositions
 
 Every substrate operation this loop performs dispatches directly to
-`bin/loom`, `bin/griot`, or `bin/guild` — no ambient
+`bin/loom` or `bin/guild` — no ambient
 skills, no trout scripts. The unit/tier loop steps below cite recipes
 by name (e.g. "checkpoint per § Compose PR"). All `§ <Recipe>`
 references in this body resolve in `docs/SUBSTRATE-COMPOSITIONS.md`.
@@ -101,7 +101,7 @@ rather than `Bash("<the command>")`. The `<slug>` is the project slug
 What does **not** route through the env, in the v1 exec model:
 
 - **File reads/writes/edits** and all reasoning — stay in this session.
-- **Substrate commands** — `loom *`, `guild *`, `griot *`, `git *`, and
+- **Substrate commands** — `loom *`, `guild *`, `git *`, and
   `ev env *` itself — run locally; they operate on the manifest and the
   working tree, not on the code-under-test.
 
@@ -204,7 +204,7 @@ Before any work:
   -b <branch-name>` — using the naming convention from
   `docs/LOOM-CONVENTIONS.md` § Branch naming:
   `<project-name>.<phase-lazy-name>` (e.g.
-  `loom-absorb-draft.phase-7-griot-writes`). Otherwise confirm the
+  `loom-absorb-draft.phase-7-substrate-writes`). Otherwise confirm the
   current branch matches the phase's recorded branch in the manifest;
   if not, stop and ask whether to switch. **Branch hygiene**: every
   checkin / phase / event write below commits to whatever branch is
@@ -674,11 +674,8 @@ loop:
   mid-flight, overrides a decision, or the evaluator flags something
   the generator defaulted to incorrectly, note it verbatim in the
   checkin JSON's `execution.corrections[]` array. The session handoff
-  (§ Save session) surfaces unresolved corrections into `open_threads`;
-  § Capture finding (from-checkin pathway) promotes notable ones into
-  `learnings/session-notes/` at session close, and `/griot-compact`
-  decides which get promoted further. The loop itself never writes
-  to `learnings/`.
+  (§ Save session) surfaces unresolved corrections into `open_threads`.
+  The loop itself writes no learnings.
 - **No `AskUserQuestion` under the armed posture.** When
   `--mode=auto` is armed (`docs/AGENT-CONVENTIONS.md` § Guild-offload
   posture), the loop makes **no `AskUserQuestion` calls** mid-phase.
