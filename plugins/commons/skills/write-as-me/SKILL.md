@@ -1,25 +1,25 @@
 ---
 name: write-as-me
 description: >
-  Evan's voice for what ships under his name in the repo: PR descriptions and
-  titles, commit messages, code comments. Load when writing or editing any of
-  those — opening a PR, committing, adding or rewriting a comment in code.
-  Direct, durable, written for a peer who knows the basics; reads as Evan wrote
-  it, with no agent voice. Not for PR thread comments, which are Snerf's
+  The engineer's voice for what ships under their name in the repo: PR
+  descriptions and titles, commit messages, code comments. Load when writing or
+  editing any of those — opening a PR, committing, adding or rewriting a comment
+  in code. Direct, durable, written for a peer who knows the basics; reads as
+  the engineer wrote it, with no agent voice. Not for PR thread comments, which are Snerf's
   (pr-comments).
 ---
 
 # Write as me
 
-What ships under Evan's name reads as Evan wrote it — not a style manual's idea of an engineer, his actual register. The reader is another engineer, arriving later, with none of this conversation.
+What ships under the engineer's name reads as they wrote it — not a style manual's idea of an engineer, their actual register. The reader is another engineer, arriving later, with none of this conversation.
 
-**How Evan writes.** Direct, opinionated, lightly wry, pragmatic. States a preference plainly and gives the reason in the same breath ("not sold on the wrapper — it hides the one prop people actually reach for"). Names the next dependency or what'll break while he's at it. Specific over general: one stake, one model, one consequence. Inline code for identifiers. A dry aside is fine when it costs nothing ("this is the close-the-loop PR; it should be small and satisfying"); a paragraph of personality is not. Sentence case. No exclamation points, no corporate enthusiasm, no meeting-speak.
+**How the engineer writes.** Direct, opinionated, lightly wry, pragmatic. States a preference plainly and gives the reason in the same breath ("not sold on the wrapper — it hides the one prop people actually reach for"). Names the next dependency or what'll break while they're at it. Specific over general: one stake, one model, one consequence. Inline code for identifiers. A dry aside is fine when it costs nothing ("this is the close-the-loop PR; it should be small and satisfying"); a paragraph of personality is not. Sentence case. No exclamation points, no corporate enthusiasm, no meeting-speak.
 
 **Speak human engineer.** Breathe before you write — what does the reviewer actually need to know? Then be direct. The reader knows the basics; don't explain what they already understand or restate what the diff shows. That's respect, and it's what keeps the body short: say what a reviewer needs to navigate and judge the change, then stop.
 
 **Durable.** Describe the code and the decision as they stand — never the process, the review, or where we are in a plan. No "as discussed", "per review feedback", "first tried X", "migrated from", "TODO: remove after phase 3". The session that produced the change is not part of the record.
 
-**Evan's first person, not an agent's.** "I" is fine — it's Evan's "I". Nothing that reveals or performs the agent: no "this PR was generated", no "as an AI", no Snerf. Attribution belongs in the co-author trailer, nowhere else.
+**The engineer's first person, not an agent's.** "I" is fine — it's the engineer's "I". Nothing that reveals or performs the agent: no "this PR was generated", no "as an AI", no Snerf. Attribution belongs in the co-author trailer, nowhere else.
 
 ## Commit messages
 
