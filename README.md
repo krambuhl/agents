@@ -144,6 +144,8 @@ already present. No-ops on re-run.
 | `plugins/<name>/` | Per-plugin source trees. Each is self-contained: `.claude-plugin/plugin.json` (identity), `bin/<cli>` (entry shim w/ Node ≥24 check), `skills/` (slash commands), `agents/` (subagents), and `cli/` (TypeScript implementation). The plugin tree is authoritative for everything it ships. | 6 |
 | `plugins/commons/` | Foundation substrate plugin: the shared skills (`grill-me`, `find-skills`, `review-skill`, `write-as-me`, `pr-comments`) and `hooks/` (skill-activation log + the gate that requires the voice skills before posting to PR threads or committing). No CLI, no docs. | 1 (within plugins/) |
 | `scripts/sync-shared.ts` | Build script that propagates `plugins/commons/{cli/lib,docs}/` into consumer plugin trees. Run after editing `plugins/commons/`. CI also drift-checks (`--check`). | — |
+| `plugins/<name>/skills/<skill>/evals/` | Optional promptfoo regression suite for one skill: `promptfooconfig.yaml`, `prompt.txt`, `tests.yaml`, `fixtures/`. Runs on demand against a live model (`npm run eval:<skill>`), never in `npm test`. Today: `write-as-me`, `pr-comments`. | 2 |
+| `scripts/skill-evals.test.ts` | Static tripwire for the eval suites: configs parse, every `file://` fixture resolves, the provider loads the right plugin and skill, `skill-used` is asserted. No model calls. | — |
 | `projects/` | Loom-managed project artifacts: PLAN.md / RESEARCH.md / checkins / sessions / retros. Append-only at runtime; archived projects live under `projects/archive/`. | — |
 | `learnings/` | Accumulated craft knowledge — short markdown notes that show up in `griot use --as=llm` output for any plugin-enabled session. | 4+ |
 
@@ -177,6 +179,29 @@ Workflow:
 
 CI gates on `node scripts/sync-shared.ts --check` to catch drift in
 the docs mirror.
+
+### Skill evals
+
+Changing a skill's prose changes behavior, and `npm test` cannot see
+that. The voice skills carry a promptfoo suite next to them
+(`plugins/commons/skills/<skill>/evals/`) that runs a handful of fixed
+situations through the skill and checks the output: deterministic
+checks for the hard rules (skill actually loaded, lowercase, no em
+dashes, no model name), a model-graded rubric for the judgment calls.
+
+```bash
+npm install                 # promptfoo + @anthropic-ai/claude-agent-sdk are dev deps
+claude auth status          # the target and the judge both use your local Claude login
+npm run eval:validate       # config check, no model calls
+npm run eval:write-as-me    # or eval:pr-comments, or eval:skills for both
+npm run eval:view           # browse results
+```
+
+Record a baseline before editing a skill, rerun the same cases after,
+and add a case when a real failure shows a gap. `--filter-metadata
+case_id=<id>` runs one case. Fixtures are text; a `file://` reference
+ending in `.js` or `.ts` is executed by promptfoo, so keep fixtures on
+`.txt`, `.md`, or `.diff`.
 
 ## Where this came from
 

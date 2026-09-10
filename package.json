@@ -23,9 +23,17 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "check": "node scripts/sync-shared.ts --check",
-    "prepare": "git config core.hooksPath .githooks || true"
+    "prepare": "git config core.hooksPath .githooks || true",
+    "eval:validate": "promptfoo validate -c plugins/commons/skills/write-as-me/evals/promptfooconfig.yaml && promptfoo validate -c plugins/commons/skills/pr-comments/evals/promptfooconfig.yaml",
+    "eval:write-as-me": "PROMPTFOO_DISABLE_TELEMETRY=true PROMPTFOO_DISABLE_UPDATE=true PROMPTFOO_DISABLE_SHARING=true PROMPTFOO_DISABLE_REMOTE_GENERATION=true promptfoo eval -c plugins/commons/skills/write-as-me/evals/promptfooconfig.yaml --no-cache",
+    "eval:pr-comments": "PROMPTFOO_DISABLE_TELEMETRY=true PROMPTFOO_DISABLE_UPDATE=true PROMPTFOO_DISABLE_SHARING=true PROMPTFOO_DISABLE_REMOTE_GENERATION=true promptfoo eval -c plugins/commons/skills/pr-comments/evals/promptfooconfig.yaml --no-cache",
+    "eval:skills": "npm run eval:write-as-me && npm run eval:pr-comments",
+    "eval:view": "promptfoo view"
   },
   "devDependencies": {
-    "vitest": "^4.1.0"
+    "@anthropic-ai/claude-agent-sdk": "^0.3.267",
+    "promptfoo": "^0.123.0",
+    "vitest": "^4.1.0",
+    "js-yaml": "^4.1.0"
   }
 }

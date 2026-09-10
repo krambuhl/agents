@@ -1,0 +1,20 @@
+diff --git a/src/billing/proration.ts b/src/billing/proration.ts
+index 3f1c2a9..8d4e0b1 100644
+--- a/src/billing/proration.ts
++++ b/src/billing/proration.ts
+@@ -12,7 +12,9 @@ export function prorate(amountCents: number, daysUsed: number, daysInPeriod: number): number {
+-  return Math.round((amountCents * daysUsed) / daysInPeriod);
++  // round half up in cents so a 30/31 split never drops a cent
++  const scaled = (amountCents * daysUsed) / daysInPeriod;
++  return Math.floor(scaled + 0.5);
+ }
+diff --git a/src/billing/proration.test.ts b/src/billing/proration.test.ts
+index a1b2c3d..e4f5a6b 100644
+--- a/src/billing/proration.test.ts
++++ b/src/billing/proration.test.ts
+@@ -20,4 +20,9 @@ describe('prorate', () => {
++  it('rounds .5 up instead of to even', () => {
++    // 1250 * 15 / 30 = 625 exactly; 1251 * 15 / 30 = 625.5
++    expect(prorate(1251, 15, 30)).toBe(626);
++  });
+ });

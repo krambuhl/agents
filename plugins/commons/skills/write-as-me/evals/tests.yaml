@@ -1,0 +1,170 @@
+# write-as-me regression cases. each case is one thing the engineer would ask
+# the agent to write under their name. the shared checks in
+# promptfooconfig.yaml cover routing, lowercase, and punctuation; the
+# per-case assertions here cover the shape and the durability rules.
+
+- description: commit message for a rounding bug fix
+  metadata:
+    suite: write-as-me
+    case_id: commit-bugfix
+    kind: commit
+  vars:
+    goal: write the commit message for this diff. subject line, blank line, body.
+    artifact: file://fixtures/bugfix.diff
+    rubric: >-
+      pass only if the subject describes the change (rounding behavior in
+      proration), not the conversation; the body explains why the rounding
+      changed rather than restating the diff; and the tone is plain and direct
+      with no corporate enthusiasm.
+  assert:
+    - type: javascript
+      value: |
+        const first = output.trim().split('\n')[0];
+        const okLen = first.length <= 72;
+        const noPeriod = !first.endsWith('.');
+        const lower = /^[a-z\[`]/.test(first);
+        const pass = okLen && noPeriod && lower;
+        return { pass, score: pass ? 1 : 0, reason: `subject: ${JSON.stringify(first)} len=${first.length} period=${!noPeriod} lower=${lower}` };
+      metric: commit_subject_shape
+    - type: not-icontains
+      value: fix typo
+    - type: not-icontains
+      value: address review
+
+- description: pr description for a new table column (architectural shape)
+  metadata:
+    suite: write-as-me
+    case_id: pr-architectural
+    kind: pr-description
+  vars:
+    goal: write the pr description for this change. it adds a new column factory to the shared table package.
+    artifact: file://fixtures/new-column.diff
+    rubric: >-
+      pass only if motivation gives the why at a conceptual level, solution
+      names the new export and its options at the level a reviewer needs to
+      navigate the diff, and the body does not restate what the diff already
+      shows line by line.
+  assert:
+    - type: icontains-all
+      value:
+        - '## motivation'
+        - '## solution'
+        - '## verification'
+        - '## rollout'
+        - '## checklist'
+      metric: pr_shape
+    - type: not-regex
+      value: '^## [A-Z]'
+      metric: pr_shape
+
+- description: pr title for the new table column
+  metadata:
+    suite: write-as-me
+    case_id: pr-title
+    kind: pr-title
+  vars:
+    goal: write only the pr title for this change, one line.
+    artifact: file://fixtures/new-column.diff
+    rubric: >-
+      pass if the title is a single line that names the component in a bracket
+      prefix or leads with a descriptive verb, and says what was added.
+  assert:
+    - type: javascript
+      value: |
+        const t = output.trim();
+        const oneLine = !t.includes('\n');
+        const short = t.length <= 70;
+        const noEmoji = !/[\u{1F300}-\u{1FAFF}]/u.test(t);
+        const noTicket = !/\b[A-Z]{2,}-\d+\b/.test(t);
+        const pass = oneLine && short && noEmoji && noTicket;
+        return { pass, score: pass ? 1 : 0, reason: `title: ${JSON.stringify(t)}` };
+      metric: pr_title_shape
+
+- description: rewrite a comment that narrates the change instead of the code
+  metadata:
+    suite: write-as-me
+    case_id: code-comment-durable
+    kind: code-comment
+  vars:
+    goal: rewrite the comment block above this function so it describes the code as it stands. return the comment lines and the function, nothing else.
+    artifact: file://fixtures/stale-comment.txt
+    rubric: >-
+      pass only if the comment is one or two lines, describes what Stack does
+      or why it exists as a standing fact, and carries no history of how it
+      got here.
+  assert:
+    - type: not-icontains
+      value: migrated
+      metric: durable
+    - type: not-icontains
+      value: phase
+      metric: durable
+    - type: not-icontains
+      value: todo
+      metric: durable
+    - type: not-icontains
+      value: review
+      metric: durable
+    - type: word-count
+      value:
+        max: 80
+      metric: response_efficiency
+
+- description: commit body with tempting session context to leak
+  metadata:
+    suite: write-as-me
+    case_id: commit-durable
+    kind: commit
+  vars:
+    goal: write the commit message for the diff at the bottom of the notes. the notes are background only.
+    artifact: file://fixtures/session-notes.txt
+    rubric: >-
+      pass only if the message describes the retry client and the decision as
+      they stand (cap, jitter, why a constant) and says nothing about the
+      review, what was tried first, or the plan phase.
+  assert:
+    - type: not-icontains
+      value: as discussed
+      metric: durable
+    - type: not-icontains
+      value: review feedback
+      metric: durable
+    - type: not-icontains
+      value: first tried
+      metric: durable
+    - type: not-icontains
+      value: phase 3
+      metric: durable
+    - type: not-icontains
+      value: migrated
+      metric: durable
+
+- description: an opinionated change stays statements, not feelings
+  metadata:
+    suite: write-as-me
+    case_id: statements-over-i
+    kind: commit
+  vars:
+    goal: write the commit message. the engineer removed the wrapper because it hid the one prop people reach for. make the reason land.
+    artifact: |
+      diff --git a/src/ui/Card.tsx b/src/ui/Card.tsx
+      @@
+      -export function CardWrapper({ padding, children }: CardWrapperProps) {
+      -  return <Card padding={padding ?? 16}>{children}</Card>;
+      -}
+      +// callers pass padding to Card directly
+      diff --git a/src/pages/Home.tsx b/src/pages/Home.tsx
+      @@
+      -<CardWrapper padding={24}>
+      +<Card padding={24}>
+    rubric: >-
+      pass only if the reason is stated as a fact about the code (the wrapper
+      hid padding, callers reach for it) rather than as a feeling attributed
+      to the author, and first person appears at most once.
+  assert:
+    - type: javascript
+      value: |
+        const count = (output.match(/\bi\b/gi) || []).length;
+        const pass = count <= 1;
+        return { pass, score: pass ? 1 : 0, reason: `first-person count: ${count}` };
+      metric: statements_over_i

@@ -1,0 +1,70 @@
+# yaml-language-server: $schema=https://promptfoo.dev/config-schema.json
+# pr-comments regression suite. run from the repository root:
+#   npm run eval:pr-comments
+# the provider loads the commons plugin straight from this tree, so the skill
+# under test is the file next door, not an installed copy. the agent gets no
+# github tools here: every case hands it the thread as a fixture and asks for
+# the text it would post.
+description: pr-comments regression suite
+sharing: false
+
+prompts:
+  - file://prompt.txt
+
+providers:
+  - id: anthropic:claude-agent-sdk
+    label: claude-pr-comments
+    config:
+      apiKeyRequired: false
+      working_dir: .
+      setting_sources: []
+      plugins:
+        - type: local
+          path: ../../..
+      skills: [commons:pr-comments]
+      model: sonnet
+      max_turns: 6
+      tools: [Read, Skill]
+      custom_allowed_tools: [Read]
+      disallowed_tools: [Bash, Edit, Write, Grep, Glob, WebFetch, WebSearch, Task]
+      permission_mode: dontAsk
+      persist_session: false
+
+defaultTest:
+  assert:
+    - type: skill-used
+      value:
+        name: commons:pr-comments
+      metric: skill_routing
+    - type: not-is-refusal
+      metric: useful_response
+    - type: not-regex
+      value: '[—–]'
+      metric: punctuation
+    - type: javascript
+      value: file://../../../evals/lib/lowercase.js
+      metric: lowercase
+    - type: not-icontains-any
+      value:
+        - as an ai
+        - as a language model
+        - as an llm
+      metric: no_hand_wringing
+    - type: not-regex
+      value: '[Ss]nerf,? on behalf of'
+      metric: no_hand_rolled_signoff
+    - type: llm-rubric
+      value: '{{rubric}}'
+      threshold: 0.8
+      metric: semantic_correctness
+      provider:
+        id: anthropic:messages:claude-sonnet-4-6
+        config:
+          apiKeyRequired: false
+
+tests:
+  - file://tests.yaml
+
+commandLineOptions:
+  maxConcurrency: 1
+  cache: false
