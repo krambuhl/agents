@@ -1,0 +1,26 @@
+notes from the working session, for context only:
+
+- as discussed in review yesterday, the reviewer wanted the retry to live in the client, not the worker
+- we first tried a decorator on the handler but it swallowed the original error type
+- then we migrated the retry into fetchWithRetry in src/net/client.ts with a 3-attempt cap and jittered backoff
+- per review feedback the cap is a constant, not a config knob, until someone needs it
+- phase 3 of the plan will remove the legacy worker retry entirely
+
+the diff itself:
+
+diff --git a/src/net/client.ts b/src/net/client.ts
+@@
++const MAX_ATTEMPTS = 3;
++
++export async function fetchWithRetry(input: RequestInfo, init?: RequestInit): Promise<Response> {
++  let lastError: unknown;
++  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
++    try {
++      return await fetch(input, init);
++    } catch (err) {
++      lastError = err;
++      await sleep(jitter(attempt));
++    }
++  }
++  throw lastError;
++}

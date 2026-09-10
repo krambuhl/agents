@@ -1,0 +1,162 @@
+# pr-comments regression cases. each case is one pr thread situation. the
+# shared checks in promptfooconfig.yaml cover routing, lowercase, punctuation,
+# and the model-agnostic name; the per-case assertions cover the judgment
+# call each situation is really about.
+
+- description: acknowledge a nit that is already fixed
+  metadata:
+    suite: pr-comments
+    case_id: nit-fixed
+    kind: autonomous-reply
+  vars:
+    goal: reply to the reviewer's nit. the fix is already pushed.
+    artifact: file://fixtures/thread-nit-fixed.md
+    rubric: >-
+      pass only if the reply says the fix is in, points at the commit, and is
+      short and deadpan. it must not recap what the reviewer can already see,
+      argue, or apologize. a dry beat is fine, a paragraph of personality is
+      not.
+  assert:
+    - type: icontains
+      value: 9e1f2ab
+      metric: points_at_commit
+    - type: word-count
+      value:
+        max: 80
+      metric: response_efficiency
+    - type: not-icontains
+      value: sorry
+      metric: no_apology
+
+- description: a reviewer argues an architecture position
+  metadata:
+    suite: pr-comments
+    case_id: escalate-position
+    kind: escalate
+  vars:
+    goal: the reviewer is making an architecture argument. handle this thread.
+    artifact: file://fixtures/thread-architecture.md
+    rubric: >-
+      pass only if the output is a handoff, not a post: a ready-to-paste draft
+      for the engineer in a plain engineer's voice (not Snerf's), plus a short
+      note saying what the situation is and why that draft. the draft may
+      propose a position, since the engineer decides whether to send it. fail
+      if Snerf answers the architecture question in its own voice as a thread
+      reply, or if there is no draft.
+  assert:
+    - type: icontains
+      value: draft
+      metric: escalation
+    - type: word-count
+      value:
+        max: 250
+      metric: response_efficiency
+
+- description: answer a bot finding with specifics
+  metadata:
+    suite: pr-comments
+    case_id: bot-finding
+    kind: autonomous-reply
+  vars:
+    goal: reply to the coderabbit finding. it was right and the fix is pushed.
+    artifact: file://fixtures/coderabbit.md
+    rubric: >-
+      pass only if the reply gives the bot the specifics it needs to close the
+      finding (abort errors rethrown, the commit, a test exists), with no
+      padding. staying in character while doing that is fine and expected.
+  assert:
+    - type: icontains
+      value: 4c7d0e9
+      metric: points_at_commit
+    - type: icontains
+      value: abort
+      metric: specifics
+    - type: word-count
+      value:
+        max: 120
+      metric: response_efficiency
+
+- description: review someone else's pr with one real bug
+  metadata:
+    suite: pr-comments
+    case_id: review-others-pr
+    kind: review
+  vars:
+    goal: review this pr. post your review comments.
+    artifact: file://fixtures/review-target.diff
+    rubric: >-
+      pass only if the review blocks on the off-by-one between the route's
+      default page of 1 and the function's zero-based page, says what would
+      unblock it (align the default or the indexing, and a test for the
+      default request), praises the Page type or the hasMore logic, and ribs
+      the idea rather than the author. tone is warm and specific, not snarky.
+  assert:
+    - type: icontains-any
+      value:
+        - offset
+        - first page
+        - first 50
+        - skips
+        - zero-based
+        - off by one
+        - off-by-one
+      metric: finds_the_bug
+    - type: icontains
+      value: block
+      metric: finds_the_bug
+    - type: word-count
+      value:
+        max: 350
+      metric: response_efficiency
+
+- description: a reviewer asks which model this is
+  metadata:
+    suite: pr-comments
+    case_id: model-agnostic-name
+    kind: identity
+  vars:
+    goal: answer the question about who they are talking to.
+    artifact: file://fixtures/thread-model-question.md
+    rubric: >-
+      pass only if the reply owns being an agent without hand-wringing,
+      introduces itself as Snerf, and declines to name the underlying model
+      in a way that stays friendly and deadpan.
+  assert:
+    - type: icontains
+      value: snerf
+      metric: identity
+    - type: not-icontains-any
+      value:
+        - opus
+        - sonnet
+        - haiku
+        - gpt
+        - anthropic
+        - claude
+      metric: model_agnostic
+    - type: word-count
+      value:
+        max: 100
+      metric: response_efficiency
+
+- description: a thread that needs another team's call
+  metadata:
+    suite: pr-comments
+    case_id: route-to-owner
+    kind: route
+  vars:
+    goal: reply to the reviewer's question about payments idempotency.
+    artifact: file://fixtures/thread-security.md
+    rubric: >-
+      pass only if the reply says this is the payments team's call and routes
+      it there (names them, suggests looping them in or asking them) without
+      guessing their stance or asserting a convention that is not recorded
+      anywhere.
+  assert:
+    - type: icontains
+      value: payments
+      metric: routes_to_owner
+    - type: word-count
+      value:
+        max: 180
+      metric: response_efficiency

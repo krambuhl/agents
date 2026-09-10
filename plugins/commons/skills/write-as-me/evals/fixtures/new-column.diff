@@ -1,0 +1,51 @@
+diff --git a/packages/table/src/columns/createAvatarColumn.tsx b/packages/table/src/columns/createAvatarColumn.tsx
+new file mode 100644
+index 0000000..9c1d2e3
+--- /dev/null
++++ b/packages/table/src/columns/createAvatarColumn.tsx
+@@ -0,0 +1,38 @@
++import { Avatar } from '@ui/avatar';
++import type { ColumnDef } from '../types';
++
++export interface AvatarColumnOptions<Row> {
++  readonly getName: (row: Row) => string;
++  readonly getImageUrl: (row: Row) => string | undefined;
++  readonly size?: 'sm' | 'md';
++  readonly header?: string;
++}
++
++export function createAvatarColumn<Row>(opts: AvatarColumnOptions<Row>): ColumnDef<Row> {
++  return {
++    id: 'avatar',
++    header: opts.header ?? '',
++    width: opts.size === 'sm' ? 40 : 56,
++    cell: (row) => (
++      <Avatar
++        name={opts.getName(row)}
++        src={opts.getImageUrl(row)}
++        size={opts.size ?? 'md'}
++      />
++    ),
++  };
++}
+diff --git a/packages/table/src/index.ts b/packages/table/src/index.ts
+index 1111111..2222222 100644
+--- a/packages/table/src/index.ts
++++ b/packages/table/src/index.ts
+@@ -4,3 +4,4 @@ export { createTextColumn } from './columns/createTextColumn';
+ export { createDateColumn } from './columns/createDateColumn';
++export { createAvatarColumn } from './columns/createAvatarColumn';
+diff --git a/packages/table/src/columns/createAvatarColumn.test.tsx b/packages/table/src/columns/createAvatarColumn.test.tsx
+new file mode 100644
+index 0000000..3333333
+--- /dev/null
++++ b/packages/table/src/columns/createAvatarColumn.test.tsx
+@@ -0,0 +1,14 @@
++import { render } from '@testing-library/react';
++import { createAvatarColumn } from './createAvatarColumn';
++
++it('renders the avatar with the row name', () => {
++  const col = createAvatarColumn({ getName: (r: { n: string }) => r.n, getImageUrl: () => undefined });
++  const { getByLabelText } = render(<>{col.cell({ n: 'ada' })}</>);
++  expect(getByLabelText('ada')).toBeTruthy();
++});

@@ -1,0 +1,6 @@
+// migrated from Flex during the layout codemod (phase 2)
+// TODO: remove after phase 3 once all callers pass `gap` directly
+// this is correct because Stack now owns spacing, see review thread
+export function Stack({ gap = 8, children }: StackProps) {
+  return <div className="stack" style={stackStyle(gap)}>{children}</div>;
+}

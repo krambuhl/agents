@@ -18,7 +18,15 @@ npx vitest run -t "<name>"  # run tests by name pattern
 node scripts/sync-shared.ts          # propagate repo-root docs/ into doc-consumer plugins (ev, loom)
 node scripts/sync-shared.ts --check  # drift check
 npm run check                        # alias for the drift check — what the pre-commit hook + CI run
+
+npm run eval:validate                # promptfoo config check for the skill eval suites (no model calls)
+npm run eval:write-as-me             # run the write-as-me suite against a live model (needs `claude /login`)
+npm run eval:pr-comments             # same for pr-comments
+npm run eval:skills                  # both suites
+npm run eval:view                    # open the promptfoo result viewer
 ```
+
+Skill evals are offline regression suites, not part of `npm test`: they call a model, so run them on demand when changing a skill. Each lives at `plugins/<plugin>/skills/<skill>/evals/` (`promptfooconfig.yaml`, `prompt.txt`, `tests.yaml`, `fixtures/`). The provider loads the plugin straight from the tree (`plugins: [{type: local, path: ../../..}]`) so the skill under test is the file next door. `scripts/skill-evals.test.ts` is the static tripwire that keeps the wiring honest without a model call. The judge uses Claude Code's local oauth credential (`apiKeyRequired: false`); set `ANTHROPIC_API_KEY` instead if there is no logged-in `claude`.
 
 Node ≥22.6 is required for the test harness (`package.json` engines); plugin bin shims enforce Node ≥24 at runtime for end users.
 
@@ -44,6 +52,7 @@ Each consumer plugin (`guild`, `loom`, `ev`) follows:
 - `cli/lib/` — plugin-owned shared lib (only `loom` has one; edit in place)
 - `docs/` — synced copy of repo-root `docs/` for doc-citing plugins (do not edit directly)
 - `skills/<name>/SKILL.md` — slash-command skills surfaced to Claude Code
+- `skills/<name>/evals/` — optional promptfoo regression suite for that skill (today `write-as-me` and `pr-comments`)
 - `agents/<name>.md` — subagent definitions
 - `hooks/hooks.json` + scripts — plugin hooks, registered by Claude Code on install (only `commons` has them)
 
