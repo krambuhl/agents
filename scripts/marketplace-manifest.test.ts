@@ -52,7 +52,6 @@ interface PluginManifest {
 
 const EXPECTED_PLUGIN_NAMES = [
   'commons',
-  'griot',
   'guild',
   'loom',
   'ev',
@@ -182,27 +181,22 @@ describe('marketplace manifest: declared dependency edges (per PLAN)', () => {
     expect(depsOf('commons')).toEqual([]);
   });
 
-  test('griot depends on commons (and only commons)', () => {
-    expect([...depsOf('griot')].sort()).toEqual(['commons']);
-  });
-
   test('guild depends on commons (and only commons)', () => {
     expect([...depsOf('guild')].sort()).toEqual(['commons']);
   });
 
-  test('loom depends on commons, guild, griot', () => {
-    expect([...depsOf('loom')].sort()).toEqual(['commons', 'griot', 'guild']);
+  test('loom depends on commons, guild', () => {
+    expect([...depsOf('loom')].sort()).toEqual(['commons', 'guild']);
   });
 
-  test('ev depends on commons, loom, guild, griot', () => {
-    expect([...depsOf('ev')].sort()).toEqual(['commons', 'griot', 'guild', 'loom']);
+  test('ev depends on commons, loom, guild', () => {
+    expect([...depsOf('ev')].sort()).toEqual(['commons', 'guild', 'loom']);
   });
 
-  test('agent-loop-full depends on all five family plugins (including commons)', () => {
+  test('agent-loop-full depends on all four family plugins (including commons)', () => {
     expect([...depsOf('agent-loop-full')].sort()).toEqual([
       'commons',
       'ev',
-      'griot',
       'guild',
       'loom',
     ]);
@@ -211,7 +205,7 @@ describe('marketplace manifest: declared dependency edges (per PLAN)', () => {
 
 describe('marketplace manifest: substrate-first dependency ordering', () => {
   // Substrate-kind dependencies (commons) precede peer-kind dependencies
-  // (guild, griot, loom) in each consumer's `dependencies` array. This
+  // (guild, loom) in each consumer's `dependencies` array. This
   // encodes the semantic distinction so the JSON read order makes
   // "depends on the foundation" visually distinct from "depends on a
   // peer." If a future re-order alphabetizes the array for tidiness,
@@ -229,7 +223,7 @@ describe('marketplace manifest: substrate-first dependency ordering', () => {
     return entry.dependencies.map((d) => (typeof d === 'string' ? d : d.name));
   }
 
-  for (const pluginName of ['griot', 'guild', 'loom', 'ev', 'agent-loop-full'] as const) {
+  for (const pluginName of ['guild', 'loom', 'ev', 'agent-loop-full'] as const) {
     test(`${pluginName} lists commons as its first dependency`, () => {
       const deps = rawDepsOf(pluginName);
       expect(deps.length).toBeGreaterThan(0);

@@ -12,7 +12,7 @@ description: >-
 argument-hint: "<slug> [--flavor=mechanical|research] [--mode=auto]"
 user-invocable: true
 disable-model-invocation: true
-allowed-tools: Read, Write, Bash, Skill, Agent, AskUserQuestion, Bash(loom *), Bash(griot *)
+allowed-tools: Read, Write, Bash, Skill, Agent, AskUserQuestion, Bash(loom *)
 ---
 
 # /loom-revise-plan
@@ -37,7 +37,7 @@ branches accordingly.
   (convergence rule + the 3 × 10 default for `/loom-revise-plan`).
 - `docs/AGENT-CONVENTIONS.md` § Recovery from sub-agent failures
   (`RECOVERY-STATUS.json` shape + lifecycle).
-- `docs/SUBSTRATE-COMPOSITIONS.md` § Derive panel + § Capture finding.
+- `docs/SUBSTRATE-COMPOSITIONS.md` § Derive panel.
 - `skills/loom-research/SKILL.md` (the sub-agent target for the
   research-flavored branch).
 - `skills/loom-plan/SKILL.md` (the sibling skill — birth path; this
@@ -56,7 +56,6 @@ branches accordingly.
 
 ### 1. Pre-flight + recovery check
 
-- Run `Bash("griot use --as=llm")` to load the learnings rollup.
 - Resolve the slug via loom's standard resolution. If the project
   doesn't exist, stop with `project-not-found` (surface verbatim
   from `bin/loom`'s shape).
@@ -223,20 +222,6 @@ surfaces context, and resumes. Successful re-invocation that
 produces a committed revised PLAN.md deletes the file per the
 convention.
 
-## Griot integration
-
-At each evaluator panel close (step 5), scan findings for
-`[portable]` markers and write captures via § Capture finding —
-same pattern as `/loom-plan` and `/loom-research`.
-
-Hardcoded writes via § Capture finding on:
-
-- `plan-revise-budget-exhausted` — substrate signal (same as the
-  other budget-exhausted captures).
-- (No equivalent of `plan-research-auto-spawned`'s hardcoded write
-  here — the research-flavored branch is the EXPECTED revision
-  shape when research is needed, not a gap signal.)
-
 ## Rules
 
 - **The first question is ALWAYS flavor.** No shortcut to mechanical
@@ -246,9 +231,8 @@ Hardcoded writes via § Capture finding on:
   question in the topic.** No default flavor — defaults silently
   hide the routing decision.
 - **Same sub-agent orchestration rules as `/loom-plan`.** Agent tool
-  for fresh-context spawn; sub-agent has its own startup brief
-  including `bin/griot use --as=llm`; parent owns recovery writes
-  on sub-agent failure.
+  for fresh-context spawn; parent owns recovery writes on sub-agent
+  failure.
 - **Rationale is mandatory.** `bin/loom revise-plan` rejects empty
   rationale (`missing-args`) per the CLI shape.
 - **Don't write directly into `projects/<slug>/PLAN.md`.** All

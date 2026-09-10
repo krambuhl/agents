@@ -18,7 +18,7 @@
     },
     {
       "category": "follow-up",
-      "description": "Retro storage is currently a loom tenant; lift to griot CLI when that exists.",
+      "description": "Retro storage is currently a loom tenant; lift to a dedicated CLI when one exists.",
       "evidence": "PLAN.md scope explicitly marks this as deferred."
     },
     {

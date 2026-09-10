@@ -66,7 +66,7 @@ describe('planForPlugin: only DOC_CONSUMERS receive docs specs', () => {
     }
   });
 
-  test('non-consumer plugins (commons, griot, guild, agent-loop-full) plan zero files', () => {
+  test('non-consumer plugins (commons, guild, agent-loop-full) plan zero files', () => {
     buildDocsFixture();
     for (const plugin of PLUGINS) {
       if (DOC_CONSUMERS.includes(plugin)) continue;
@@ -112,7 +112,6 @@ describe('applySync: end-to-end byte-for-byte mirror', () => {
   test('non-consumer plugins receive no docs tree', () => {
     buildDocsFixture();
     applySync(root);
-    expect(() => read('plugins/griot/docs/AGENT-CONVENTIONS.md')).toThrow();
     expect(() => read('plugins/guild/docs/AGENT-CONVENTIONS.md')).toThrow();
   });
 });

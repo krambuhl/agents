@@ -12,7 +12,7 @@ description: >-
 argument-hint: "<project-slug-or-path> [--until=<predicate>] [--env[=<provider>]]"
 user-invocable: true
 disable-model-invocation: true
-allowed-tools: Read, Skill, Bash, AskUserQuestion, Bash(loom *), Bash(guild *), Bash(griot *), Bash(ev *)
+allowed-tools: Read, Skill, Bash, AskUserQuestion, Bash(loom *), Bash(guild *), Bash(ev *)
 ---
 
 # /ev-goal
@@ -35,8 +35,8 @@ verb.
 ## Relationship to /ev-run
 
 `/ev-goal` reuses, verbatim, `/ev-run`'s Preflight (Tiers 1–3),
-§ 0.5 Sync git state, § 1 Orient, § 1.5 Load learnings, § 3 next-phase
-policy, and § 4 Dispatch. It does **not** re-implement them — it cites
+§ 0.5 Sync git state, § 1 Orient, § 3 next-phase policy, and
+§ 4 Dispatch. It does **not** re-implement them — it cites
 them. The only behavior it overrides is what happens at the two points
 where `/ev-run` hands control back to a human:
 
@@ -85,9 +85,8 @@ normal single dispatch) when the ready set has 0 or 1 phases in it.
 
 ### 0. Preflight + orient (delegate to /ev-run's sections)
 
-Run `/ev-run`'s Preflight, § 0.5, § 1, and § 1.5 unchanged. Load
-learnings once per `/ev-goal` invocation (session-scoped), not per
-iteration. Emit `goal-loop-entered` with `{slug, until, decision_budget,
+Run `/ev-run`'s Preflight, § 0.5, and § 1 unchanged. Emit
+`goal-loop-entered` with `{slug, until, decision_budget,
 round_budget}` once, after orientation succeeds.
 
 ### 1. Drive loop

@@ -1,6 +1,6 @@
 # Project conventions
 
-Marketplace-wide invariants for the loom / guild / griot / ev substrate.
+Marketplace-wide invariants for the loom / guild / ev substrate.
 This file holds invariants that constrain how mutating CLI verbs may
 write to substrate state. The companion registry of every mutating
 verb and its category lives in
@@ -9,7 +9,7 @@ this doc and the registry stay aligned.
 
 ## Parallel-work invariant
 
-Every mutating verb in the four CLI families belongs to exactly one
+Every mutating verb in the three CLI families belongs to exactly one
 of three concurrency categories. The category determines what
 guarantees the substrate provides when the verb is invoked
 concurrently from two or more sessions against the same slug.
@@ -25,7 +25,6 @@ won the race.
 
 Examples:
 - `guild findings append` (writes to `.guild-findings.jsonl`)
-- `griot operator-checks log-intervention` (writes to operator log)
 
 ### Category 2 — partitioned
 
@@ -39,11 +38,10 @@ reject the second write loud rather than silently overwrite.
 (Note: loom's checkin / session / retro / pr-respond writes used to
 live here as partitioned per-record files. The state-file consolidation
 folded them into `manifest.toml` sections, which trades partition-
-independence for single-writer serialization — they are Category 3 now.)
-
-Examples:
-- `griot capture` (target:
-  `learnings/session-notes/{folder}/`)
+independence for single-writer serialization — they are Category 3 now.
+`griot capture` was the last remaining partitioned verb; the griot
+plugin's removal leaves this category with no current members. It stays
+documented as the category a future partitioned verb must declare.)
 
 ### Category 3 — single-writer-serialized
 
@@ -97,14 +95,6 @@ entry in this section AND a corresponding line in the registry.
   `guild plan {init,append}` write here; concurrent rounds
   against the same plan file are unsupported and would
   corrupt the round-numbering invariant.
-- **`gitignore-amendment`** — a consumer-repo `.gitignore` file at
-  the project root. `griot init` writes here to add a `learnings/`
-  entry if one isn't already present. The write is idempotent
-  (second-run-is-noop) and the line is appended at the end of the
-  file preserving trailing newline behavior. Concurrent `griot
-  init` runs against the same consumer repo are an unsupported
-  shape; the verb assumes a serialized human invoking it during
-  plugin onboarding.
 
 ## Category 4 — generated-from-upstream
 

@@ -315,7 +315,7 @@ export type RpiInnerDeclinedEvent = EventBase<
 // (research-budget-exhausted, plan-budget-exhausted, etc.) remain
 // the canonical record of *which* skill exhausted; auto-mode-
 // budget-exhausted is the substrate-wide counterpart, useful for
-// griot ingestion of cross-skill auto-mode patterns.
+// downstream ingestion of cross-skill auto-mode patterns.
 //
 // `surface` names which skill's auto-mode is running:
 // `ev-loop-interactive` | `loom-archive` | `ev-run` | `loom-plan`

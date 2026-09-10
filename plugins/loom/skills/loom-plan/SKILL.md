@@ -14,7 +14,7 @@ description: >-
 argument-hint: "<topic or short description> [--mode=auto]"
 user-invocable: true
 disable-model-invocation: true
-allowed-tools: Read, Write, Bash, Skill, Agent, AskUserQuestion, Bash(loom *), Bash(guild *), Bash(griot *)
+allowed-tools: Read, Write, Bash, Skill, Agent, AskUserQuestion, Bash(loom *), Bash(guild *)
 ---
 
 # /loom-plan
@@ -38,8 +38,6 @@ interview's questions tersely and the loop closes fast.
   (`RECOVERY-STATUS.json` shape + lifecycle).
 - `docs/SUBSTRATE-COMPOSITIONS.md` § Derive panel (the
   `bin/guild derive-panel` invocation pattern).
-- `docs/SUBSTRATE-COMPOSITIONS.md` § Capture finding (griot
-  integration for `[portable]` markers).
 - `skills/loom-research/SKILL.md` (the research half of the RPI loop;
   this skill auto-spawns it).
 
@@ -59,12 +57,10 @@ interview's questions tersely and the loop closes fast.
 
 ### 1. Pre-flight + recovery check
 
-- Run `Bash("griot use --as=llm")` to load the learnings rollup
-  per the substrate startup-brief convention.
 - Resolve the slug from the topic (same kebab-case derivation as
   `/loom-research`).
-- After pre-flight completes (slug resolved, learnings loaded,
-  recovery check below cleared), emit `plan-started` with detail
+- After pre-flight completes (slug resolved, recovery check below
+  cleared), emit `plan-started` with detail
   `{slug, topic: <positional-arg if not a full slug, else null>}`.
   This single emit per session marks the session boundary in the
   manifest's `[[events]]` trail.
@@ -101,11 +97,6 @@ Check for `projects/<slug>/RESEARCH.md`:
     `projects/<slug>/RECOVERY-STATUS.json`}) and exit non-zero. The
     next `/loom-plan` invocation against the same slug resumes from
     the sub-agent's own recovery file rather than re-spawning blind.
-
-Note: the sub-agent's startup brief MUST include
-`bin/griot use --as=llm` per the substrate convention (the
-`/loom-research` skill body handles this in its own step 1; no
-additional caller-side instruction needed).
 
 ### 3. Frame the topic
 
@@ -282,8 +273,7 @@ The skill spawns sub-agents in two places:
 The sub-agent invocation uses the `Agent` tool, not the `Skill`
 tool. The distinction matters: `Agent` spawns a fresh-context
 sub-agent (no inherited conversation); `Skill` runs in the parent's
-context. Sub-agents need their own learnings load
-(`bin/griot use --as=llm` in their startup brief).
+context.
 
 On sub-agent failure (timeout, partial commit, budget-exhausted),
 the parent (this skill) writes its own `RECOVERY-STATUS.json` to
@@ -332,26 +322,6 @@ On re-invocation against a slug with `RECOVERY-STATUS.json` whose
 context (or auto-accepts in auto-mode), and resumes. Successful
 re-invocation that produces a committed PLAN.md deletes the file
 per the convention.
-
-## Griot integration
-
-At each evaluator panel close (step 6), scan the panel's findings
-output for `[portable]` markers and write matching captures via
-§ Capture finding (the `bin/griot capture --evaluator-finding=...`
-pathway). The classification surface gap noted in `/loom-research`
-applies here too — the integration intent is recorded; the verb
-extension is a Phase 7 follow-up.
-
-Hardcoded writes via § Capture finding on:
-
-- `plan-budget-exhausted` — the budget-exhaust pattern itself is
-  substrate signal worth promoting (the same as
-  `research-budget-exhausted`).
-- `plan-research-auto-spawned` — the fact that a plan needed
-  research is substrate signal: a plan birthed without prior
-  research means the user-facing path failed to surface the gap.
-  Worth capturing as a `catalog-gap` once that classification
-  ships.
 
 ## Rules
 

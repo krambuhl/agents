@@ -22,7 +22,7 @@ describe('ev-goal frontmatter', () => {
     expect(EV_GOAL).toMatch(/disable-model-invocation:\s*true/);
   });
 
-  test('declares the Skill, AskUserQuestion, and loom/guild/griot tools', () => {
+  test('declares the Skill, AskUserQuestion, and loom/guild tools', () => {
     const tools = EV_GOAL.match(/allowed-tools:.*/)?.[0] ?? '';
     expect(tools).toContain('Skill');
     expect(tools).toContain('AskUserQuestion');

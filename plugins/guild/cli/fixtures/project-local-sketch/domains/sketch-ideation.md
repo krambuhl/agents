@@ -96,5 +96,5 @@ Use this vocabulary when describing sketch-ideation findings:
   idioms (the p5 draw loop, canvas rendering, no React re-render).
   Mostly defer; collaborate when a design proposes shared-canvas
   patterns that could degrade the gallery.
-- Defers entirely on **substrate** work (the guild-/griot- families,
+- Defers entirely on **substrate** work (the guild-/loom- families,
   ev-loop skills, the loom CLI, scripts) — out of scope; pass.

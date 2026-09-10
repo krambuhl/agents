@@ -4,18 +4,12 @@
     "name": "Evan Krambuhl",
     "email": "evan.krambuhl@gmail.com"
   },
-  "description": "Agent-loop substrate: commons (foundation), loom (projects), griot (learnings), guild (panels), ev (loops), and the agent-loop-full meta-bundle.",
+  "description": "Agent-loop substrate: commons (foundation), loom (projects), guild (panels), ev (loops), and the agent-loop-full meta-bundle.",
   "plugins": [
     {
       "name": "commons",
       "source": "./plugins/commons",
       "description": "Cross-cutting skills (grill-me, find-skills, review-skill, write-as-me, pr-comments) and skill-activation hooks. Usable on its own; the other plugins in this marketplace also pull it in."
-    },
-    {
-      "name": "griot",
-      "source": "./plugins/griot",
-      "description": "Learnings substrate: griot capture/use/compact CLI + griot-* skills + griot-* judge/rewriter/operator/rubric-author agents.",
-      "dependencies": ["commons"]
     },
     {
       "name": "guild",
@@ -27,19 +21,19 @@
       "name": "loom",
       "source": "./plugins/loom",
       "description": "Project substrate: loom-* skills + loom CLI for plans, research, sessions, checkins, retros, archives.",
-      "dependencies": ["commons", "guild", "griot"]
+      "dependencies": ["commons", "guild"]
     },
     {
       "name": "ev",
       "source": "./plugins/ev",
       "description": "Execution loops: ev-loop-confidence (tiered transforms), ev-loop-interactive (paired units), ev-run (router).",
-      "dependencies": ["commons", "loom", "guild", "griot"]
+      "dependencies": ["commons", "loom", "guild"]
     },
     {
       "name": "agent-loop-full",
       "source": "./plugins/agent-loop-full",
-      "description": "Meta-bundle: zero-content plugin that cascade-installs the full agent-loop family (commons, griot, guild, loom, ev).",
-      "dependencies": ["commons", "griot", "guild", "loom", "ev"]
+      "description": "Meta-bundle: zero-content plugin that cascade-installs the full agent-loop family (commons, guild, loom, ev).",
+      "dependencies": ["commons", "guild", "loom", "ev"]
     }
   ]
 }

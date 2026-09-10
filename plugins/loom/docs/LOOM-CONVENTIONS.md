@@ -75,7 +75,7 @@ Examples:
 
 ```
 marketplace-portable-install.migration
-loom-absorb-draft.phase-7-griot-writes
+loom-absorb-draft.phase-7-substrate-writes
 trout-sunset.bootstrap
 my-project.cleanup
 ```
@@ -568,10 +568,10 @@ Archived projects are still readable: `bin/loom project read
 archived projects are not currently blocked at the CLI layer but
 are out-of-bounds by convention.
 
-The archive flow is one of the inputs to the griot pipeline: the
-project retro lands in `learnings/retros/project/` (via
-`/loom-archive`'s retro write), and the project's final state
-contributes to the substrate-wide learnings rollup.
+The archive flow closes the project out: the project retro lands in
+the manifest's `[[retros]]` section (via `/loom-archive`'s retro
+write) and the archived tree keeps the project's final state
+readable.
 
 ## Where loop bodies and skills come in
 
