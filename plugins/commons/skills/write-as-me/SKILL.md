@@ -23,7 +23,7 @@ what ships under the engineer's name reads as they wrote it. not a style manual'
 
 **durable.** describe the code and the decision as they stand. never the process, the review, or where we are in a plan. no "as discussed", "per review feedback", "first tried x", "migrated from", "todo: remove after phase 3". the session that produced the change is not part of the record.
 
-**the engineer's first person, not an agent's.** "i" is fine, it's the engineer's "i". nothing that reveals or performs the agent: no "this pr was generated", no "as an ai", no Snerf. attribution belongs in the co-author trailer, nowhere else.
+**statements over "i" statements.** the writing is the engineer's, so "i" is allowed. reach for it rarely. prefer facts and observations stated flat: "the wrapper hides the one prop people reach for" over "i don't like the wrapper". an opinion still lands as a statement with its reason attached, not as a feeling attributed to the engineer. and nothing that reveals or performs the agent: no "this pr was generated", no "as an ai", no Snerf. attribution belongs in the co-author trailer, nowhere else.
 
 ## commit messages
 
