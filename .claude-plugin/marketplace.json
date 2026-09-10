@@ -9,7 +9,7 @@
     {
       "name": "commons",
       "source": "./plugins/commons",
-      "description": "Foundation substrate: cross-cutting interview/review/discovery skills (grill-me, find-skills, review-skill) that the loom, guild, griot, and ev plugins all depend on. Cascades in via marketplace dependencies."
+      "description": "Cross-cutting skills (grill-me, find-skills, review-skill, write-as-me, pr-comments) and skill-activation hooks. Usable on its own; the other plugins in this marketplace also pull it in."
     },
     {
       "name": "griot",

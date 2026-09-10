@@ -14,7 +14,7 @@ The marketplace ships as six self-contained Claude Code plugins:
 
 | Plugin | What it provides | Depends on |
 |---|---|---|
-| `commons@krambuhl` | Foundation substrate: cross-cutting helpers (shared CLI lib + agent-conventions docs + interview/review skills) used by the rest of the family | — |
+| `commons@krambuhl` | Foundation substrate: the shared skills (`grill-me`, `find-skills`, `review-skill`, `write-as-me`, `pr-comments`) and the skill-activation hooks the rest of the family relies on | — |
 | `griot@krambuhl` | Learnings substrate: `griot` CLI + `griot-*` skills + judge/rewriter agents | `commons` |
 | `guild@krambuhl` | Antagonist-panel substrate: `guild` CLI + `guild-*` skills + `plan-*` / `research-*` / `evaluator-*` / `implementer-*` / `fixer-*` agents | `commons` |
 | `loom@krambuhl` | Project substrate: `loom` CLI + `loom-*` skills (plans, research, sessions, checkins, retros, archives) | `commons`, `guild`, `griot` |
@@ -142,7 +142,7 @@ already present. No-ops on re-run.
 |---|---|---|
 | `.claude-plugin/marketplace.json` | The marketplace catalog. Lists all 6 plugins + dependencies cascade. | 1 |
 | `plugins/<name>/` | Per-plugin source trees. Each is self-contained: `.claude-plugin/plugin.json` (identity), `bin/<cli>` (entry shim w/ Node ≥24 check), `skills/` (slash commands), `agents/` (subagents), and `cli/` (TypeScript implementation). The plugin tree is authoritative for everything it ships. | 6 |
-| `plugins/commons/` | Foundation substrate plugin: cross-cutting helpers (`cli/lib/` and `docs/`) that the other plugins receive via `scripts/sync-shared.ts`. Also ships the shared skills (`grill-me`, `find-skills`, `review-skill`). | 1 (within plugins/) |
+| `plugins/commons/` | Foundation substrate plugin: the shared skills (`grill-me`, `find-skills`, `review-skill`, `write-as-me`, `pr-comments`) and `hooks/` (skill-activation log + the gate that requires the voice skills before posting to PR threads or committing). No CLI, no docs. | 1 (within plugins/) |
 | `scripts/sync-shared.ts` | Build script that propagates `plugins/commons/{cli/lib,docs}/` into consumer plugin trees. Run after editing `plugins/commons/`. CI also drift-checks (`--check`). | — |
 | `projects/` | Loom-managed project artifacts: PLAN.md / RESEARCH.md / checkins / sessions / retros. Append-only at runtime; archived projects live under `projects/archive/`. | — |
 | `learnings/` | Accumulated craft knowledge — short markdown notes that show up in `griot use --as=llm` output for any plugin-enabled session. | 4+ |
