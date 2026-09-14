@@ -16,12 +16,12 @@ the reader of the final text is another engineer, arriving later, with none of t
 
 score each pass or fail. a fail names the exact words that caused it.
 
-- **durable.** describes the code and the decision as they stand. fail on any trace of process, review, session, or plan: "as discussed", "per review feedback", "first tried", "migrated from", "after phase 3", "the reviewer asked".
+- **durable.** describes the code and the decision as they stand, and still reads true months from now. fail on any trace of process, review, session, or plan: "as discussed", "per review feedback", "first tried", "migrated from", "after phase 3", "the reviewer asked". fail on words that date the text: "currently", "recently", "for now", "the new", "soon", "today", "at the moment".
 - **simple.** plain words, short sentences, one idea per sentence. fail on filler, throat-clearing, restating the diff line by line, or a sentence that needs a second read.
 - **direct.** says the thing. a preference comes with its reason in the same breath. fail on hedging ("might", "perhaps we could"), softeners, exclamation points, or enthusiasm.
 - **sharp.** specific over general. fail on a claim with no stake attached: "improves maintainability", "cleaner", "better dx". pass when it names what breaks, who depends on it, or the number that changed.
 - **human focused.** written for the reader arriving later who knows the basics. fail on explaining what they already know, on anything about the agent or the model ("generated", "as an ai", a persona), and on material the reader does not need to navigate or judge the change.
-- **time aware.** holds up months from now: fail on "currently", "recently", "for now", "the new", "soon", "today", "at the moment". also fail when length is out of proportion to the change: a one-line fix with a five-paragraph body, a nit reply longer than the nit.
+- **time aware.** the reader has other things to do, and this text is spending their attention. fail on a wall of text, on length out of proportion to the change (a one-line fix with a five-paragraph body, a nit reply longer than the nit), on anything that makes the reader hunt for the point, and on a second paragraph that says what the first already did. the point lands in one pass or the draft fails.
 
 ## register checks
 

@@ -1,9 +1,9 @@
 {
-  "description": "Skill-activation log. Records every skill activation (model-invoked via the Skill tool, or typed as /name) to ~/.claude/skill-activations.jsonl so skill-report.sh can show which skills fire and how they were reached.",
+  "description": "Skill-activation log plus the write-as-me gate. The log records every skill activation and every writing-judge subagent run. The gate blocks calls that ship text under the engineer's name (git commit, gh pr create/edit/comment/review, gh api writes to pulls or comments, stack submits, github mcp pr and comment tools, edits that add code comments) until a writing-judge run in this session covers the text; one judge loop covers one shipped text.",
   "hooks": {
     "PostToolUse": [
       {
-        "matcher": "Skill",
+        "matcher": "Skill|Agent|Task",
         "hooks": [
           { "type": "command", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/log-skill-activation.sh" }
         ]
@@ -13,6 +13,14 @@
       {
         "hooks": [
           { "type": "command", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/log-skill-activation.sh" }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash|Edit|MultiEdit|Write|mcp__github__.*",
+        "hooks": [
+          { "type": "command", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/require-judge.sh" }
         ]
       }
     ]

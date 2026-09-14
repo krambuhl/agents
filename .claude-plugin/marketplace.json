@@ -9,7 +9,7 @@
     {
       "name": "commons",
       "source": "./plugins/commons",
-      "description": "Cross-cutting skills (grill-me, find-skills, review-skill, write-as-me, pr-comments), the writing-judge subagent, and a skill-activation log. Usable on its own; the other plugins in this marketplace also pull it in."
+      "description": "Cross-cutting skills (grill-me, find-skills, review-skill, write-as-me, pr-comments), the writing-judge subagent, and hooks (activation log plus the gate that requires a judge run before text ships; needs jq). Usable on its own; the other plugins in this marketplace also pull it in."
     },
     {
       "name": "guild",

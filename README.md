@@ -14,7 +14,7 @@ The marketplace ships as five self-contained Claude Code plugins:
 
 | Plugin | What it provides | Depends on |
 |---|---|---|
-| `commons@krambuhl` | Foundation substrate: the shared skills (`grill-me`, `find-skills`, `review-skill`, `write-as-me`, `pr-comments`), the `writing-judge` subagent, and the skill-activation log | — |
+| `commons@krambuhl` | Foundation substrate: the shared skills (`grill-me`, `find-skills`, `review-skill`, `write-as-me`, `pr-comments`), the `writing-judge` subagent, and hooks (activation log + the gate that requires a judge run before text ships) | — |
 | `guild@krambuhl` | Antagonist-panel substrate: `guild` CLI + `guild-*` skills + `plan-*` / `research-*` / `evaluator-*` / `implementer-*` / `fixer-*` agents | `commons` |
 | `loom@krambuhl` | Project substrate: `loom` CLI + `loom-*` skills (plans, research, sessions, checkins, retros, archives) | `commons`, `guild` |
 | `ev@krambuhl` | Execution loops: `ev-loop-confidence`, `ev-loop-interactive`, `ev-run` skills | `commons`, `loom`, `guild` |
@@ -126,7 +126,7 @@ two:
 |---|---|---|
 | `.claude-plugin/marketplace.json` | The marketplace catalog. Lists all 5 plugins + dependencies cascade. | 1 |
 | `plugins/<name>/` | Per-plugin source trees. Each is self-contained: `.claude-plugin/plugin.json` (identity), `bin/<cli>` (entry shim w/ Node ≥24 check), `skills/` (slash commands), `agents/` (subagents), and `cli/` (TypeScript implementation). The plugin tree is authoritative for everything it ships. | 5 |
-| `plugins/commons/` | Foundation substrate plugin: the shared skills (`grill-me`, `find-skills`, `review-skill`, `write-as-me`, `pr-comments`), `agents/writing-judge.md` (the judge `write-as-me` loops its drafts through, three rounds max), and `hooks/` (skill-activation log). No CLI, no docs. | 1 (within plugins/) |
+| `plugins/commons/` | Foundation substrate plugin: the shared skills (`grill-me`, `find-skills`, `review-skill`, `write-as-me`, `pr-comments`), `agents/writing-judge.md` (the judge `write-as-me` loops its drafts through, three rounds max), and `hooks/` (activation log, plus `require-judge.sh`: commits, PR creates and edits, PR comments, and edits that add code comments are blocked until a `writing-judge` run covers them; needs `jq`). No CLI, no docs. | 1 (within plugins/) |
 | `scripts/sync-shared.ts` | Build script that propagates `plugins/commons/{cli/lib,docs}/` into consumer plugin trees. Run after editing `plugins/commons/`. CI also drift-checks (`--check`). | — |
 | `plugins/<name>/skills/<skill>/evals/` | Optional promptfoo regression suite for one skill: `promptfooconfig.yaml`, `prompt.txt`, `tests.yaml`, `fixtures/`. Runs on demand against a live model (`npm run eval:<skill>`), never in `npm test`. Today: `write-as-me`, `pr-comments`. | 2 |
 | `scripts/skill-evals.test.ts` | Static tripwire for the eval suites: configs parse, every `file://` fixture resolves, the provider loads the right plugin and skill, `skill-used` is asserted. No model calls. | — |

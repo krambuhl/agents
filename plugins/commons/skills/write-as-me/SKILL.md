@@ -27,12 +27,12 @@ what ships under the engineer's name reads as they wrote it. the reader is anoth
 
 the judge scores every draft on these. write toward them from the first line.
 
-- **durable.** describes the code and the decision as they stand. never the process, the review, the session, or where we are in a plan. no "as discussed", "per review feedback", "first tried x", "migrated from", "todo: remove after phase 3".
+- **durable.** describes the code and the decision as they stand, and still reads true months from now. never the process, the review, the session, or where we are in a plan. no "as discussed", "per review feedback", "first tried x", "migrated from", "todo: remove after phase 3". no "currently", "recently", "for now", "the new x", "soon".
 - **simple.** plain words, short sentences, one idea per sentence. no filler, no throat-clearing, no restating what the diff shows.
 - **direct.** says the thing. a preference comes with its reason. no hedging, no softeners, no enthusiasm.
 - **sharp.** specific over general. one stake, one model, one consequence. names the thing that breaks, the caller that depends on it, the number that changed.
 - **human focused.** written for the reader arriving later who knows the basics. tells them what they need to navigate and judge the change, then stops. nothing about the agent, nothing they already know.
-- **time aware.** holds up when read months from now: no "currently", "recently", "for now", "the new x", "soon", "today". and respects the reader's time: length in proportion to the change, a one-line fix gets a one-line body.
+- **time aware.** the reader has other things to do. respect that: the point in one pass, length in proportion to the change, no walls of text. a one-line fix gets a one-line body, a nit reply is shorter than the nit. if a reviewer has to scroll, the text failed.
 
 ## the loop
 
@@ -43,6 +43,8 @@ the judge scores every draft on these. write toward them from the first line.
 5. **ship** the passing draft. if the third round still fails a goal, ship the latest draft anyway and tell the engineer in one line which goal is still short and why.
 
 when no subagent tool is available (a restricted session, an eval), run the same judgment yourself: score the draft against the six goals in a short scratch pass, apply the edits, and keep the three-round cap. the output is the text only. never ship the scorecard alongside it.
+
+**the gate.** commons ships a hook that enforces the loop. a call that ships text (a commit, a pr create or edit, a pr or issue comment, an edit that adds comment lines to a file) is blocked until a `writing-judge` run in this session covers it, and one judge loop covers one shipped text. so: judge, then ship, one text at a time. a session with no subagent tool sets `WRITE_AS_ME_GATE=off`.
 
 ## commit messages
 
