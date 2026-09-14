@@ -1,5 +1,5 @@
 {
-  "description": "Skill-activation log plus the write-as-me gate. The log records every skill activation and every writing-judge subagent run. The gate blocks calls that ship text under the engineer's name (git commit, gh pr create/edit/comment/review, gh api writes to pulls or comments, stack submits, github mcp pr and comment tools, edits that add code comments) until a writing-judge run in this session covers the text; one judge loop covers one shipped text.",
+  "description": "Skill-activation log plus the write-as-me gate. The log records every skill activation and every writing-judge subagent run. The gate (require-judge.sh, PreToolUse) blocks calls that ship text under the engineer's name until a writing-judge run in this session covers them; one judge loop covers one shipped text. Gated: git commit (not --no-edit), git merge/tag/notes with -m, gh pr create/edit/comment, gh pr review/merge/close with a body or comment, gh issue create/comment/edit, gh release create/edit, gh stack submit/push, gs submit/create/amend, gh api graphql mutations, gh api writes to pulls/issues/comments/reviews/releases, the GitHub MCP tools that create or update a PR, issue, file, or comment, and Edit/Write/MultiEdit calls that add line-leading comment lines to a source file. WRITE_AS_ME_GATE=off disables it. Requires jq.",
   "hooks": {
     "PostToolUse": [
       {

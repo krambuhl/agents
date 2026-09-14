@@ -57,7 +57,7 @@ when a thread could be read two ways and the readings lead to different code, it
 
 ### 3. act
 
-**first, load write-as-me.** every action below produces text that ships from the engineer's account: a reply, a commit message, a draft. before composing the first word of any of it, invoke the `write-as-me` skill with the Skill tool. not from memory of what it says, the skill itself, so its judge loop runs on the text. one load per pass covers every reply in the pass.
+**first, load write-as-me.** every action below produces text that ships from the engineer's account: a reply, a commit message. before composing the first word of any of it, invoke the `write-as-me` skill with the Skill tool. not from memory of what it says, the skill itself. load it once per pass, then for each text: judge it, ship it, move to the next. the gate spends every outstanding judge run on the next shipped text, so judging three replies and then posting three blocks on the second. a **decide** draft never ships, so it is self-judged and does not go to the subagent.
 
 **fix.** make the change. one logical fix per commit, tests included where the reviewer asked or where the fix is load-bearing. run the repo's own fast checks before committing (lint, typecheck, the tests near the change). commit message through write-as-me. never amend, rebase, or force-push a branch someone else created. on your own branch, follow the repo's convention.
 

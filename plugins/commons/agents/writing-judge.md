@@ -1,5 +1,6 @@
 ---
 name: writing-judge
+role: judge
 description: "judge for text that ships under the engineer's name. scores a draft against the six write-as-me goals (durable, simple, direct, sharp, human focused, time aware), checks length, and returns the few edits that matter. called by the write-as-me skill, up to three rounds per draft."
 tools: Read
 model: inherit

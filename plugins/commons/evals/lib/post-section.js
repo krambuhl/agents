@@ -2,12 +2,16 @@
 // `post:` section. the sections before it are the agent reporting to the
 // engineer; only the text under `post:` ships, so only that text has to
 // satisfy the write-as-me register: no em or en dash, lowercase by default.
+// the last `post:` label wins, so a quoted "post:" inside an earlier section
+// does not start the check early.
 
 const lowercase = require('./lowercase.js');
 
 module.exports = (output) => {
   const text = typeof output === 'string' ? output : JSON.stringify(output);
-  const match = /(^|\n)\**post:\**\s*/i.exec(text);
+  const re = /(^|\n)\**post:\**\s*/gi;
+  let match = null;
+  for (let m = re.exec(text); m; m = re.exec(text)) match = m;
   if (!match) {
     return { pass: false, score: 0, reason: 'no post: section found' };
   }

@@ -42,9 +42,9 @@ the judge scores every draft on these. write toward them from the first line.
 4. **repeat** steps 2 and 3 until the judge passes every goal, or three judge rounds have run. three is the cap, not a target. a clean first draft ships after one round.
 5. **ship** the passing draft. if the third round still fails a goal, ship the latest draft anyway and tell the engineer in one line which goal is still short and why.
 
-when no subagent tool is available (a restricted session, an eval), run the same judgment yourself: score the draft against the six goals in a short scratch pass, apply the edits, and keep the three-round cap. the output is the text only. never ship the scorecard alongside it.
+when no subagent tool is available (a restricted session, an eval), run the same judgment yourself: score the draft against the six goals in a short scratch pass, apply the edits, and keep the three-round cap. the output is the text only. never ship the scorecard alongside it. self-judging does not satisfy the gate below; if the gate blocks and the Agent tool is absent, tell the engineer and stop.
 
-**the gate.** commons ships a hook that enforces the loop. a call that ships text (a commit, a pr create or edit, a pr or issue comment, an edit that adds comment lines to a file) is blocked until a `writing-judge` run in this session covers it, and one judge loop covers one shipped text. so: judge, then ship, one text at a time. a session with no subagent tool sets `WRITE_AS_ME_GATE=off`.
+**the gate.** commons ships a hook that enforces the loop. a call that ships text (a commit, a pr or issue create or edit, a pr or issue comment, an edit that adds line-leading comment lines to a source file) is blocked until a `writing-judge` run in this session covers it. every outstanding judge run is spent by the next shipped text, so the order is strict: judge one text, ship it, then judge the next. never judge three replies and then post three. text that never ships (a draft handed to the engineer) is self-judged, not sent to the subagent, so it leaves no token behind.
 
 ## commit messages
 
