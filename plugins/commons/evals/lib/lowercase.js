@@ -10,7 +10,7 @@ const ALLOWED_STARTS = [
   /^Snerf\b/,
   /^Co-Authored-By:/,
   /^Claude-Session:/,
-  /^[A-Z][A-Z0-9]{1,}\b/, // acronym: PR, CI, API, SHA
+  /^[A-Z][A-Z0-9_]{1,}\b/, // acronym or constant: PR, CI, API, MAX_ATTEMPTS
   /^[A-Z][a-z]+[A-Z]/, // PascalCase identifier: DOMException
   /^[A-Z][A-Za-z0-9_]*[.(<]/, // identifier used as code: Math.round, Stack(, Card<
   /^`/, // inline code

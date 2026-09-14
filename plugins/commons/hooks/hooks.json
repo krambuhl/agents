@@ -1,9 +1,9 @@
 {
-  "description": "Skill-activation log and gate for the voice skills. The log records every skill activation; the gate blocks PR-thread posts until pr-comments has loaded in the session, and commits or PR creation until write-as-me has.",
+  "description": "Skill-activation log plus the write-as-me gate. The log records every skill activation and every writing-judge subagent run. The gate (require-judge.sh, PreToolUse) blocks calls that ship text under the engineer's name until a writing-judge run in this session covers them; one judge loop covers one shipped text. Gated: git commit (not --no-edit), git merge/tag/notes with -m, gh pr create/edit/comment, gh pr review/merge/close with a body or comment, gh issue create/comment/edit, gh release create/edit, gh stack submit/push, gs submit/create/amend, gh api graphql mutations, gh api writes to pulls/issues/comments/reviews/releases, the GitHub MCP tools that create or update a PR, issue, file, or comment, and Edit/Write/MultiEdit calls that add line-leading comment lines to a source file. WRITE_AS_ME_GATE=off disables it. Requires jq.",
   "hooks": {
     "PostToolUse": [
       {
-        "matcher": "Skill",
+        "matcher": "Skill|Agent|Task",
         "hooks": [
           { "type": "command", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/log-skill-activation.sh" }
         ]
@@ -18,9 +18,9 @@
     ],
     "PreToolUse": [
       {
-        "matcher": "Bash|mcp__github__.*",
+        "matcher": "Bash|Edit|MultiEdit|Write|mcp__github__.*",
         "hooks": [
-          { "type": "command", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/require-skill.sh" }
+          { "type": "command", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/require-judge.sh" }
         ]
       }
     ]

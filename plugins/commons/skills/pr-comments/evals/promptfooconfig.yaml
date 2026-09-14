@@ -3,8 +3,9 @@
 #   npm run eval:pr-comments
 # the provider loads the commons plugin straight from this tree, so the skill
 # under test is the file next door, not an installed copy. the agent gets no
-# github tools here: every case hands it the thread as a fixture and asks for
-# the text it would post.
+# github tools and cannot edit files: every case hands it one thread plus the
+# code it points at, and asks for the procedure's four sections. write-as-me is
+# enabled too, since the skill sends every posted line through it.
 description: pr-comments regression suite
 sharing: false
 
@@ -21,9 +22,9 @@ providers:
       plugins:
         - type: local
           path: ../../..
-      skills: [commons:pr-comments]
+      skills: [commons:pr-comments, commons:write-as-me]
       model: sonnet
-      max_turns: 6
+      max_turns: 8
       tools: [Read, Skill]
       custom_allowed_tools: [Read]
       disallowed_tools: [Bash, Edit, Write, Grep, Glob, WebFetch, WebSearch, Task]
@@ -38,21 +39,30 @@ defaultTest:
       metric: skill_routing
     - type: not-is-refusal
       metric: useful_response
-    - type: not-regex
-      value: '[—–]'
-      metric: punctuation
+    - type: icontains-all
+      value:
+        - 'verification:'
+        - 'class:'
+        - 'action:'
+        - 'post:'
+      metric: procedure_shape
+    - type: skill-used
+      value:
+        name: commons:write-as-me
+      metric: prose_handoff
     - type: javascript
-      value: file://../../../evals/lib/lowercase.js
-      metric: lowercase
+      value: file://../../../evals/lib/post-section.js
+      metric: posted_text_register
     - type: not-icontains-any
       value:
         - as an ai
         - as a language model
-        - as an llm
-      metric: no_hand_wringing
-    - type: not-regex
-      value: '[Ss]nerf,? on behalf of'
-      metric: no_hand_rolled_signoff
+        - snerf
+      metric: no_agent_voice
+    - type: word-count
+      value:
+        max: 450
+      metric: response_efficiency
     - type: llm-rubric
       value: '{{rubric}}'
       threshold: 0.8
