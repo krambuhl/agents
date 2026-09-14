@@ -1,4 +1,4 @@
 {
   "name": "commons",
-  "description": "Cross-cutting skills (grill-me, find-skills, review-skill, write-as-me, pr-comments) and skill-activation hooks. Usable on its own; the other plugins in this marketplace also pull it in."
+  "description": "Cross-cutting skills (grill-me, find-skills, review-skill, write-as-me, pr-comments), the writing-judge subagent, and a skill-activation log. Usable on its own; the other plugins in this marketplace also pull it in."
 }

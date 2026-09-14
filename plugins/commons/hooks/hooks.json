@@ -1,5 +1,5 @@
 {
-  "description": "Skill-activation log and gate for the voice skills. The log records every skill activation; the gate blocks PR-thread posts until pr-comments has loaded in the session, and commits or PR creation until write-as-me has.",
+  "description": "Skill-activation log. Records every skill activation (model-invoked via the Skill tool, or typed as /name) to ~/.claude/skill-activations.jsonl so skill-report.sh can show which skills fire and how they were reached.",
   "hooks": {
     "PostToolUse": [
       {
@@ -13,14 +13,6 @@
       {
         "hooks": [
           { "type": "command", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/log-skill-activation.sh" }
-        ]
-      }
-    ],
-    "PreToolUse": [
-      {
-        "matcher": "Bash|mcp__github__.*",
-        "hooks": [
-          { "type": "command", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/require-skill.sh" }
         ]
       }
     ]
