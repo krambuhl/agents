@@ -5,6 +5,7 @@ description: "judge for text that ships under the engineer's name. scores a draf
 tools: Read
 model: inherit
 maxTurns: 3
+effort: low
 ---
 
 # writing judge
