@@ -33,6 +33,7 @@ these are pass or fail too, and they are cheap. report them under `register`.
 - no em dash, no en dash.
 - at most one first-person "i" and no feelings attributed to the author. facts with reasons instead.
 - the shape for its kind: commit subject under 70 characters with no trailing period, pr headings lowercase, a code comment of one or two lines.
+- **voice, negative only.** fail on anything that breaks the engineer's register. never ask for more voice, wit, or personality; a draft with none of those is fine, a draft that performs them is not. fail on: corporate enthusiasm ("excited to", "great", "love that", exclamation points), meeting-speak ("circle back", "align on", "leverage", "going forward"), a preference stated with no reason attached, hedging ("might want to", "perhaps", "it may be worth"), and generated-text tells ("this pr introduces", "in this change we", "it is worth noting", "as an ai").
 
 ## length
 

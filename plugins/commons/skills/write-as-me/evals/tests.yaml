@@ -9,6 +9,7 @@
     case_id: commit-bugfix
     kind: commit
   vars:
+    kind: commit
     goal: write the commit message for this diff. subject line, blank line, body.
     artifact: file://fixtures/bugfix.diff
     rubric: >-
@@ -37,6 +38,7 @@
     case_id: pr-architectural
     kind: pr-description
   vars:
+    kind: pr-description
     goal: write the pr description for this change. it adds a new column factory to the shared table package.
     artifact: file://fixtures/new-column.diff
     rubric: >-
@@ -63,6 +65,7 @@
     case_id: pr-title
     kind: pr-title
   vars:
+    kind: pr-title
     goal: write only the pr title for this change, one line.
     artifact: file://fixtures/new-column.diff
     rubric: >-
@@ -86,6 +89,7 @@
     case_id: code-comment-durable
     kind: code-comment
   vars:
+    kind: code-comment
     goal: rewrite the comment block above this function so it describes the code as it stands. return the comment lines and the function, nothing else.
     artifact: file://fixtures/stale-comment.txt
     rubric: >-
@@ -116,6 +120,7 @@
     case_id: commit-durable
     kind: commit
   vars:
+    kind: commit
     goal: write the commit message for the diff at the bottom of the notes. the notes are background only.
     artifact: file://fixtures/session-notes.txt
     rubric: >-
@@ -145,6 +150,7 @@
     case_id: statements-over-i
     kind: commit
   vars:
+    kind: commit
     goal: write the commit message. the engineer removed the wrapper because it hid the one prop people reach for. make the reason land.
     artifact: |
       diff --git a/src/ui/Card.tsx b/src/ui/Card.tsx

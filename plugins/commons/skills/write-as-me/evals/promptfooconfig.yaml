@@ -42,6 +42,9 @@ defaultTest:
     - type: javascript
       value: file://../../../evals/lib/lowercase.js
       metric: lowercase
+    - type: javascript
+      value: file://../../../evals/lib/readability.js
+      metric: readability
     - type: not-icontains
       value: as an ai
       metric: no_agent_voice

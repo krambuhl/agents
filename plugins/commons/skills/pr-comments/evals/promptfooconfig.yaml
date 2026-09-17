@@ -53,6 +53,9 @@ defaultTest:
     - type: javascript
       value: file://../../../evals/lib/post-section.js
       metric: posted_text_register
+    - type: javascript
+      value: file://../../../evals/lib/post-readability.js
+      metric: posted_text_readability
     - type: not-icontains-any
       value:
         - as an ai

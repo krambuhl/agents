@@ -17,6 +17,21 @@ const require = createRequire(import.meta.url);
 type Assertion = (output: string) => { pass: boolean; score: number; reason: string };
 const lowercase = require(join(LIB, 'lowercase.js')) as Assertion;
 const postSection = require(join(LIB, 'post-section.js')) as Assertion;
+type ReadabilityAssertion = ((output: string, context: { vars: Record<string, string> }) => ReturnType<Assertion>) & {
+  analyze: (raw: string, kind: string) => { pass: boolean; fails: string[]; summary: string };
+};
+const readability = require(join(LIB, 'readability.js')) as ReadabilityAssertion;
+const postReadability = require(join(LIB, 'post-readability.js')) as (output: string, context: object) => ReturnType<Assertion>;
+
+const LONG_PR_BODY = [
+  '## motivation',
+  '',
+  'two voice skills meant the model could not reliably pick between them, so the old gate fired on the wrong skill for the wrong text and felt random, and the model runs long by default, so a voice guide alone was not holding the line on verbosity, and one voice with a judge in the loop and a gate that checks the judge actually ran fixes all three of those problems at once.',
+  '',
+  '## solution',
+  '',
+  Array.from({ length: 12 }, (_, i) => `- bullet ${i} explains a consideration about the implementation with contextualization, operationalization, and generalizability concerns for the reviewer to internalize.`).join('\n'),
+].join('\n');
 
 describe('evals/lib/lowercase.js', () => {
   test('passes lowercase prose with allowed capitals', () => {
@@ -48,6 +63,50 @@ describe('evals/lib/lowercase.js', () => {
     expect(lowercase('- Draft for the engineer').pass).toBe(false);
     expect(lowercase('1. First thing').pass).toBe(false);
     expect(lowercase('- [ ] verified locally').pass).toBe(true);
+  });
+});
+
+describe('evals/lib/readability.js', () => {
+  test('passes a short plain commit message', () => {
+    const r = readability('fix the write-as-me descriptions in AGENTS.md\n\npr-comments is a procedure with no voice of its own. two paragraphs said otherwise.', { vars: { kind: 'commit' } });
+    expect(r.pass, r.reason).toBe(true);
+    expect(r.reason).toMatch(/readable/);
+  });
+
+  test('ignores code spans, identifiers, shas, and fenced blocks when measuring words', () => {
+    const r = readability.analyze('the header defaults to undefined, test added. fixed in 9e1f2ab. see `createAvatarColumn` and packages/table/src/index.ts.\n\n```\nsome::extraordinarily_long_identifier_name_here = 1\n```', 'reply');
+    expect(r.pass, r.fails.join('; ')).toBe(true);
+  });
+
+  test('fails a wall of text on sentence length, long words, and paragraph size', () => {
+    const r = readability.analyze(LONG_PR_BODY, 'pr-description');
+    expect(r.pass).toBe(false);
+    expect(r.fails.join(' ')).toMatch(/longest sentence/);
+    expect(r.fails.join(' ')).toMatch(/long words/);
+    expect(r.fails.join(' ')).toMatch(/longest paragraph|words, cap/);
+  });
+
+  test('applies per-kind caps', () => {
+    expect(readability.analyze('a title that is fine', 'pr-title').pass).toBe(true);
+    expect(readability.analyze('a title that runs on and on past the seventy character line that titles get', 'pr-title').pass).toBe(false);
+    expect(readability.analyze('one line\nsecond line', 'pr-title').fails.join(' ')).toMatch(/lines/);
+    expect(readability.analyze('// one\n// two\n// three\nconst x = 1;', 'code-comment').fails.join(' ')).toMatch(/comment lines/);
+    expect(readability.analyze(Array.from({ length: 80 }, () => 'word').join(' ') + '.', 'reply').fails.join(' ')).toMatch(/80 words, cap 70/);
+  });
+
+  test('counts syllables well enough to tell plain from heavy vocabulary', () => {
+    const plain = readability.analyze(Array.from({ length: 6 }, () => 'the cat sat on the mat and slept.').join(' '), 'default');
+    expect(plain.pass).toBe(true);
+    const heavy = readability.analyze(Array.from({ length: 10 }, () => 'operationalization necessitates contextualization of generalizability considerations.').join(' '), 'default');
+    expect(heavy.fails.join(' ')).toMatch(/long words/);
+  });
+});
+
+describe('evals/lib/post-readability.js', () => {
+  test('measures only the posted text as a reply', () => {
+    const out = 'verification: ' + Array.from({ length: 200 }, () => 'context').join(' ') + '\nclass: fix\naction: reply\npost:\nfixed in 9e1f2ab. header defaults to undefined.';
+    expect(postReadability(out, {}).pass).toBe(true);
+    expect(postReadability('class: fix', {}).pass).toBe(false);
   });
 });
 

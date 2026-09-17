@@ -37,7 +37,7 @@ the judge scores every draft on these. write toward them from the first line.
 ## the loop
 
 1. **draft** the text against the shape below for its kind.
-2. **judge.** hand the draft to the `writing-judge` subagent (Agent tool, subagent type `writing-judge`) with: the kind (commit, pr-title, pr-description, code-comment, reply), the draft, the material it describes (diff or thread, summarized if long), and who reads it. the judge returns a verdict per goal, a length check, and the one to three edits that matter most.
+2. **judge.** hand the draft to the `writing-judge` subagent (Agent tool, subagent type `writing-judge`) with: the kind (commit, pr-title, pr-description, code-comment, reply), the draft, the material it describes (diff or thread, summarized if long), the facts the draft rests on (a measurement, a decision, a result the reader cannot see in the diff), and who reads it. the judge treats any claim it cannot see as unsupported, so a fact left out of the material comes back as a revise. the judge returns a verdict per goal, a length check, and the one to three edits that matter most.
 3. **revise** on that feedback. take the edits, do not defend the draft.
 4. **repeat** steps 2 and 3 until the judge passes every goal, or three judge rounds have run. three is the cap, not a target. a clean first draft ships after one round.
 5. **ship** the passing draft. if the third round still fails a goal, ship the latest draft anyway and tell the engineer in one line which goal is still short and why.
