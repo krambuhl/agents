@@ -92,12 +92,26 @@
     rubric: >-
       pass only if the class is answer and the post states the actual
       behavior from backoff.ts (doubling from 200ms, up to 100ms jitter,
-      capped at 2s) and names the file. fail if it guesses, hedges, or
-      proposes a code change nobody asked for.
+      capped at 2s) and names the file, with the answer in the first
+      sentence. fail if it guesses, hedges, restates the question back to
+      the reviewer, or proposes a code change nobody asked for.
   assert:
     - type: regex
       value: 'class:\s*answer'
       metric: classification
+    - type: javascript
+      value: |
+        const re = /(^|\n)\**post:\**\s*/gi;
+        let m = null;
+        for (let x = re.exec(output); x; x = re.exec(output)) m = x;
+        if (!m) return { pass: false, score: 0, reason: 'no post: section' };
+        const post = output.slice(m.index + m[0].length).trim();
+        const first = post.split(/(?<=[.!?])\s+|\n/)[0] || '';
+        const answers = /\b(200|2s|2000|doubl|backs? off)/i.test(first);
+        const echoes = /what'?s the actual wait|hammer/i.test(first);
+        const pass = answers && !echoes;
+        return { pass, score: pass ? 1 : 0, reason: `first sentence: ${JSON.stringify(first)}` };
+      metric: answer_first
     - type: icontains-all
       value:
         - '200'

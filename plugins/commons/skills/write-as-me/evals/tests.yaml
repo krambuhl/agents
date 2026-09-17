@@ -144,6 +144,42 @@
       value: migrated
       metric: durable
 
+- description: a default change with no evidence to claim beyond the diff
+  metadata:
+    suite: write-as-me
+    case_id: commit-supported
+    kind: commit
+  vars:
+    kind: commit
+    goal: write the commit message for this diff. subject line, blank line, body.
+    artifact: file://fixtures/default-change.diff
+    rubric: >-
+      pass only if every claim in the message traces to the diff: the timeout
+      default moved from 5s to 30s and the signal inlined. fail on any claim
+      the diff cannot support: that tests pass or were added, that behavior
+      is unchanged or backwards compatible, that callers were audited, or a
+      reason for 30s that the material does not give. a message that states
+      the change and stops is a pass.
+  assert:
+    - type: not-icontains-any
+      value:
+        - tests pass
+        - all tests
+        - test added
+        - tests added
+        - fully tested
+        - no behavior change
+        - backwards compatible
+        - backward compatible
+        - no functional change
+        - audited
+      metric: supported
+    - type: icontains-any
+      value:
+        - '30'
+        - thirty
+      metric: names_the_change
+
 - description: an opinionated change stays statements, not feelings
   metadata:
     suite: write-as-me
