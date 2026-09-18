@@ -3,7 +3,7 @@ name: research-test-integration
 role: research
 description: "methodical test-integration research — composed from the methodical personality x test-integration domain x research phase via /guild-compile. Inventories the existing integration-test landscape exhaustively before a plan exists, leaving no sibling spec or convention unexamined, and surfaces the terrain without recommending a route. Read-only; see modes/ and docs/AGENT-CODEGEN.md for the substrate."
 tools: Glob, Grep, Read
-model: inherit
+model: sonnet
 maxTurns: 5
 ---
 

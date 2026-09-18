@@ -38,6 +38,12 @@ engineers, panels, or any role semantics. Those are the caller's concern.
   delimited section. Agents not named in the map receive only the
   shared brief. Example:
   `{"evaluator-a11y":"Focus on form labels.","evaluator-tokens":"This artifact only touches CSS modules."}`
+- `model` (optional) — model alias (`sonnet`, `opus`, `haiku`) passed
+  to every Agent call. When absent, each agent runs on the model its
+  own frontmatter declares. Guild agents pin `sonnet`: the
+  orchestrating session keeps its configured model and the fan-out
+  runs one tier below it. Pass `model` only when a caller has a
+  reason to lift a panel back up.
 
 ## Process
 
@@ -61,7 +67,8 @@ engineers, panels, or any role semantics. Those are the caller's concern.
    - Agents not named in `per_agent_context` receive only the brief.
 3. **Spawn in parallel.** Issue a single tool-use message containing
    one `Agent` tool call per entry in `agents`. Each call uses
-   `subagent_type: <agent>` and the composed prompt from step 2.
+   `subagent_type: <agent>` and the composed prompt from step 2, plus
+   `model: <model>` when the `model` input was given.
    The parallel invocation is the whole point of this primitive —
    do not serialize.
 4. **Collect outputs.** Wait for all spawned agents to return. Build

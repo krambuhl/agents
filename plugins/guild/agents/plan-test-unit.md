@@ -3,7 +3,7 @@ name: plan-test-unit
 role: plan
 description: "synthesizer test-unit plan — composed from the synthesizer personality x test-unit domain x plan phase via /guild-compile."
 tools: Glob, Grep, Read
-model: inherit
+model: sonnet
 maxTurns: 5
 ---
 

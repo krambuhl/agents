@@ -126,10 +126,12 @@ Emit a complete Markdown agent body. The structure is:
    description: <one-paragraph description naming personality + domain
      + role and pointing at the substrate>
    tools: <comma-separated tools from the cell metadata's tools list>
-   model: inherit
+   model: sonnet
    maxTurns: 5
    ---
    ```
+   `model` is always `sonnet`: guild agents are fan-out workers and run
+   one tier below the orchestrating session, which keeps its own model.
    Role mapping: reviewer → `evaluator`; plan → `plan`;
    implementer → `implementer`; fixer → `fixer`; research →
    `research`. The cell

@@ -3,7 +3,7 @@ name: evaluator-css-architecture
 role: evaluator
 description: "skeptic css-architecture evaluator — composed from the skeptic personality x css-architecture domain x reviewer phase via /guild-compile."
 tools: Bash(git diff:*), Bash(git status:*), Bash(npm run build:*), Bash(npm run lint:*), Glob, Grep, Read
-model: inherit
+model: sonnet
 maxTurns: 5
 ---
 

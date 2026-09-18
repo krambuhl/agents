@@ -3,7 +3,7 @@ name: evaluator-test-unit
 role: evaluator
 description: "skeptic test-unit evaluator — composed from the skeptic personality x test-unit domain x reviewer phase via /guild-compile."
 tools: Bash(git diff:*), Bash(git status:*), Bash(npm run build:*), Bash(npm run lint:*), Bash(npm test:*), Glob, Grep, Read
-model: inherit
+model: sonnet
 maxTurns: 5
 ---
 

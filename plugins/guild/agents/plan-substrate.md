@@ -3,7 +3,7 @@ name: plan-substrate
 role: plan
 description: "methodical substrate plan — composed from the methodical personality x substrate domain x plan phase via /guild-compile."
 tools: Glob, Grep, Read
-model: inherit
+model: sonnet
 maxTurns: 5
 ---
 

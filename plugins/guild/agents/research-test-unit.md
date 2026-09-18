@@ -3,7 +3,7 @@ name: research-test-unit
 role: research
 description: "methodical test-unit research — composed from the methodical personality x test-unit domain x research phase via /guild-compile. Inventories the existing unit-test terrain exhaustively — coverage shape, assertion habits, mock seams, isolation conventions — citing file/line/command for each, and surfaces unknowns and viable directions without collapsing to a recommendation. Read-only substrate dispatch."
 tools: Glob, Grep, Read
-model: inherit
+model: sonnet
 maxTurns: 5
 ---
 

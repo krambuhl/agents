@@ -3,7 +3,7 @@ name: research-a11y
 role: research
 description: "methodical a11y research — composed from the methodical personality x a11y domain x research phase via /guild-compile. Inventories the accessibility terrain exhaustively before a plan exists, citing file/line/command/source, and leaves no sibling case unexamined for the guild substrate."
 tools: Glob, Grep, Read
-model: inherit
+model: sonnet
 maxTurns: 5
 ---
 

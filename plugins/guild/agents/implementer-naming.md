@@ -3,7 +3,7 @@ name: implementer-naming
 role: implementer
 description: "pragmatist naming implementer — composed from the pragmatist personality x naming domain x implementer phase via /guild-compile; writes semantic renames and vocabulary-cohesion changes a unit contract names, leaving them verifiable."
 tools: Bash(git diff:*), Bash(git status:*), Bash(npm run build:*), Bash(npm run lint:*), Edit, Glob, Grep, Read, Write
-model: inherit
+model: sonnet
 maxTurns: 5
 ---
 

@@ -3,7 +3,7 @@ name: plan-abstraction
 role: plan
 description: "generative abstraction plan — composed from the generative personality x abstraction domain x plan phase via /guild-compile."
 tools: Glob, Grep, Read
-model: inherit
+model: sonnet
 maxTurns: 5
 ---
 

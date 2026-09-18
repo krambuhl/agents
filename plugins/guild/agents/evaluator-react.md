@@ -3,7 +3,7 @@ name: evaluator-react
 role: evaluator
 description: "skeptic react evaluator — composed from the skeptic personality x react domain x reviewer phase via /guild-compile."
 tools: Bash(git diff:*), Bash(git status:*), Bash(npm run build:*), Bash(npm run lint:*), Glob, Grep, Read
-model: inherit
+model: sonnet
 maxTurns: 5
 ---
 

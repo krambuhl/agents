@@ -3,7 +3,7 @@ name: implementer-react
 role: implementer
 description: "pragmatist react implementer — composed from the pragmatist personality x react domain x implementer phase via /guild-compile."
 tools: Bash(git diff:*), Bash(git status:*), Bash(npm run build:*), Bash(npm run lint:*), Edit, Glob, Grep, Read, Write
-model: inherit
+model: sonnet
 maxTurns: 5
 ---
 

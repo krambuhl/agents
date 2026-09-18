@@ -3,7 +3,7 @@ name: fixer-nextjs
 role: fixer
 description: "pragmatist nextjs fixer — composed from the pragmatist personality x nextjs domain x fixer phase via /guild-compile."
 tools: Bash(git diff:*), Bash(git status:*), Bash(npm run build:*), Bash(npm run lint:*), Bash(npm run lint:nextjs:*), Edit, Glob, Grep, Read, Write
-model: inherit
+model: sonnet
 maxTurns: 5
 ---
 

@@ -6,6 +6,13 @@ evaluator agents, parallel plan engineers, and the
 that composes them. Loops use it for review; designers use it for
 multi-perspective planning.
 
+Every agent in `agents/` pins `model: sonnet`. The session that runs a
+guild skill keeps its own model for orchestration; the fan-out runs one
+tier below it to keep panels cheap and fast. The value is set in
+`cli/verbs/guild/compile/compose.ts` and mirrored in the fusion prompt;
+`guild-spawn` takes a `model` input for the rare caller that needs to
+lift a panel back up.
+
 The agents in `agents/` are codegen output assembled from fragments
 under `modes/` per the recipe in `docs/AGENT-CODEGEN.md`. After
 re-installing or running codegen, validate via the **Live-spawn
