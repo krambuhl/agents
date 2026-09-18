@@ -13,7 +13,7 @@ argument-hint: "[PR number or URL]"
 
 # pr comments
 
-this skill is the procedure for closing out a pr's review, nothing else. how the words read is write-as-me's job. load that skill before composing any reply, commit message, or pr edit this procedure produces.
+this skill is the procedure for closing out a pr's review, nothing else. how the words read is write-as-me's job. load that skill before composing any reply, commit message, or pr edit this procedure produces. opening the pr in the first place, and refilling its body, is the pull-request skill's job.
 
 ## invocation
 

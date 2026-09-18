@@ -87,7 +87,7 @@ every shape ends with `## rollout` and `## checklist`:
 - [ ] happo green
 ```
 
-adapt the items to the pr. a backend-only change doesn't need happo. predictable shape, not rote box-checking.
+adapt the items to the pr. a backend-only change doesn't need happo. predictable shape, not rote box-checking. these shapes are the fallback for a repo with no pr template. the pull-request skill decides which template applies, what facts fill it, and how the pr is opened; this skill decides how the result reads.
 
 ## code comments
 
