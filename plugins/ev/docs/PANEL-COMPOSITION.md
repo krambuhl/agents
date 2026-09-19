@@ -8,9 +8,7 @@ domain evaluators (tokens and naming).
 
 It is **not** a callable agent. There is no frontmatter — the agent
 loader skips files without a `name:` field, so spawning
-`subagent_type: PANEL-COMPOSITION` is not a thing. The sibling doc that
-follows the same pattern is `evaluator-base.md`, which DOES have a
-`name:` field but explicitly disclaims being normally callable.
+`subagent_type: PANEL-COMPOSITION` is not a thing.
 
 Three audiences read this file:
 

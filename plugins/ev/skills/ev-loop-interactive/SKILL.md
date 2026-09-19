@@ -496,9 +496,9 @@ For each deliverable (picked per the ordering rule):
 
    The skill returns a structured verdict (`approved` | `flagged` |
    `flagged-conflict`) with `blocking_findings`, `advisory_findings`,
-   `cli_runs`, and `conflicts` lists. See
-   `.claude/agents/evaluator-base.md` for the per-evaluator verdict
-   shape that `/guild-validate` parses and aggregates.
+   `cli_runs`, and `conflicts` lists. Each evaluator documents the
+   per-evaluator verdict shape that `/guild-validate` parses and
+   aggregates in its own `## Output contract`.
 4. **Iterate or commit.**
    - Flagged: address the specific reasons, re-invoke `/guild-validate`.
      Up to 2 retries (3 panel runs total).

@@ -191,8 +191,8 @@ corrections (anything the contract got wrong). It emits **no
 verdict** — the artifact goes to the reviewer.
 
 **Reviewer** (the `reviewer` phase, e.g. `evaluator-css-architecture`)
-returns the evaluator verdict shape (the `evaluator-base` stance,
-parsed by `guild parse-and-aggregate`): a `VERDICT:` line
+returns the evaluator verdict shape (the reviewer phase's `## Output
+contract`, parsed by `guild parse-and-aggregate`): a `VERDICT:` line
 (`approved | flagged | recused`) plus, when flagged, a Reasons
 section whose bullets become findings. Each finding carries
 `{code, evidence, remedy}` and a `blocking | advisory` severity.
@@ -307,7 +307,7 @@ baked names in older code.
 | `whiteboard-design-systems` | `whiteboard-{composition,abstraction,tokens,naming}` | **recipe expansion** (dispatched as the `design-systems` recipe via `guild recipe`) |
 | `whiteboard-sketch-ideation` | (consumer-local) | replaced by a project-local agent generated from `--project-dir`, not a core one |
 | `evaluator-contract-fit` | (retained) | hand-authored; the always-on baseline, never generated |
-| `evaluator-base`, `whiteboard-base` | (retained) | documentation roots; codegen inlines their content into every generated body |
+| `evaluator-base`, `whiteboard-base` | **deleted** (Phase 2.2 U2) | their framing lives in the phase fragments, which codegen inlines into every generated body |
 | `generator-base`, `generator-css-codemod` | **dropped** | see Phase-7 U1 decision below |
 
 The Phase-5-era `generated-equivalence.test.ts` ledger that asserted
@@ -499,7 +499,7 @@ into the rollup.
   dropped them. Re-run codegen and re-spawn the smoke.
 - **Step 1 produces no `VERDICT:` line at all**: the generated
   evaluator's body skipped the verdict-format section. Diff against
-  `evaluator-base.md` § Verdict format.
+  `modes/phases/reviewer.md` § Output contract.
 - **Step 2's plan agent refuses or apologizes**: the personality fragment
   may be mis-bundled. Diff against `personalities/<name>.md`.
 - **Step 3's parse-and-aggregate reports `parse-failure`**: check the
