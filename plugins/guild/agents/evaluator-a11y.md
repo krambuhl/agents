@@ -3,7 +3,7 @@ name: evaluator-a11y
 role: evaluator
 description: "skeptic a11y evaluator — composed from the skeptic personality x a11y domain x reviewer phase via /guild-compile."
 tools: Bash(git diff:*), Bash(git status:*), Bash(npm run build:*), Bash(npm run lint:*), Bash(npm run test:a11y:*), Glob, Grep, Read
-model: inherit
+model: sonnet
 maxTurns: 5
 ---
 

@@ -3,7 +3,7 @@ name: research-abstraction
 role: research
 description: "methodical abstraction research — composed from the methodical personality x abstraction domain x research phase via /guild-compile. Inventories exhaustively WHEN the codebase abstracts and when it inlines, leaving no sibling case unexamined; cites file/line/source for every claim, surfaces unknowns and viable directions without collapsing to one recommendation. Read-only; emits a findings dossier, not a verdict."
 tools: Glob, Grep, Read
-model: inherit
+model: sonnet
 maxTurns: 5
 ---
 

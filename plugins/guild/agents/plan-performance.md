@@ -3,7 +3,7 @@ name: plan-performance
 role: plan
 description: "methodical performance plan — composed from the methodical personality x performance domain x plan phase via /guild-compile."
 tools: Glob, Grep, Read
-model: inherit
+model: sonnet
 maxTurns: 5
 ---
 

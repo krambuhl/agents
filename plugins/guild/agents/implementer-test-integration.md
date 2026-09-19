@@ -3,7 +3,7 @@ name: implementer-test-integration
 role: implementer
 description: "pragmatist test-integration implementer — composed from the pragmatist personality x test-integration domain x implementer phase via /guild-compile."
 tools: Bash(git diff:*), Bash(git status:*), Bash(npm run build:*), Bash(npm run lint:*), Bash(npm run test:e2e:*), Edit, Glob, Grep, Read, Write
-model: inherit
+model: sonnet
 maxTurns: 5
 ---
 

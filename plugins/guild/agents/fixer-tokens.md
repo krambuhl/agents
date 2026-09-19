@@ -3,7 +3,7 @@ name: fixer-tokens
 role: fixer
 description: "pragmatist tokens fixer — composed from the pragmatist personality x tokens domain x fixer phase via /guild-compile."
 tools: Bash(git diff:*), Bash(git status:*), Bash(npm run build:*), Bash(npm run lint:*), Edit, Glob, Grep, Read, Write
-model: inherit
+model: sonnet
 maxTurns: 5
 ---
 

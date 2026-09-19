@@ -47,6 +47,12 @@ const PHASE_ROLE: Record<string, string> = {
   plan: 'plan',
 };
 
+// Guild agents are fan-out workers under an orchestrating session, so
+// they run one tier below it. The session keeps its configured model;
+// every composed agent pins the cheaper alias. Must match the
+// frontmatter shape in skills/guild-compile/fusion-prompt.md.
+const AGENT_MODEL = 'sonnet';
+
 const AXIS_ORDER = ['phase', 'personality', 'domain'] as const;
 type Axis = (typeof AXIS_ORDER)[number];
 
@@ -69,7 +75,7 @@ function frontmatter(cell: ResolvedCell): string {
     `role: ${role}`,
     `description: ${JSON.stringify(description)}`,
     `tools: ${cell.tools.join(', ')}`,
-    'model: inherit',
+    `model: ${AGENT_MODEL}`,
     'maxTurns: 5',
     '---',
   ].join('\n');

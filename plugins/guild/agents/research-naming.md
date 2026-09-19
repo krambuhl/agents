@@ -3,7 +3,7 @@ name: research-naming
 role: research
 description: "methodical naming research — composed from the methodical personality x naming domain x research phase via /guild-compile. Inventories the codebase's existing naming vocabulary exhaustively, walking every sibling case and prior usage, and surfaces the terrain — file/line-cited — without proposing a single name. Substrate output for the guild family."
 tools: Glob, Grep, Read
-model: inherit
+model: sonnet
 maxTurns: 5
 ---
 

@@ -3,7 +3,7 @@ name: fixer-css-architecture
 role: fixer
 description: "pragmatist css-architecture fixer — composed from the pragmatist personality x css-architecture domain x fixer phase via /guild-compile."
 tools: Bash(git diff:*), Bash(git status:*), Bash(npm run build:*), Bash(npm run lint:*), Edit, Glob, Grep, Read, Write
-model: inherit
+model: sonnet
 maxTurns: 5
 ---
 

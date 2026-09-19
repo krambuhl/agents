@@ -9,7 +9,7 @@ description: >-
   after every unit; the contract-fit lens is the always-on baseline of
   the antagonist panel.
 tools: Read, Glob, Grep, Bash(npm run lint:*), Bash(npm run build:*), Bash(npm test:*), Bash(git status:*), Bash(git diff:*)
-model: inherit
+model: sonnet
 maxTurns: 5
 ---
 

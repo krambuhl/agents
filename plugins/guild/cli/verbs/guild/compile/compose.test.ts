@@ -25,7 +25,7 @@ describe('compose: frontmatter', () => {
     expect(result.composed_body).toMatch(/^---\nname: evaluator-foo\n/);
     expect(result.composed_body).toContain('role: evaluator');
     expect(result.composed_body).toContain('tools: Bash(npm run lint:*), Glob, Grep, Read');
-    expect(result.composed_body).toContain('model: inherit');
+    expect(result.composed_body).toContain('model: sonnet');
     expect(result.composed_body).toContain('maxTurns: 5');
   });
 
