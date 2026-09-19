@@ -4,7 +4,7 @@ role: implementer
 description: "pragmatist nextjs implementer — composed from the pragmatist personality x nextjs domain x implementer phase via /guild-compile; write-capable execution of Next.js App-Router artifacts, contract-bounded, no verdict."
 tools: Bash(git diff:*), Bash(git status:*), Bash(npm run build:*), Bash(npm run lint:*), Bash(npm run lint:nextjs:*), Edit, Glob, Grep, Read, Write
 model: sonnet
-maxTurns: 5
+maxTurns: 25
 ---
 
 # Implementer: nextjs

@@ -4,7 +4,7 @@ role: fixer
 description: "pragmatist test-integration fixer — composed from the pragmatist personality x test-integration domain x fixer phase via /guild-compile."
 tools: Bash(git diff:*), Bash(git status:*), Bash(npm run build:*), Bash(npm run lint:*), Bash(npm run test:e2e:*), Edit, Glob, Grep, Read, Write
 model: sonnet
-maxTurns: 5
+maxTurns: 25
 ---
 
 # Fixer: test-integration

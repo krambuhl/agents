@@ -65,6 +65,13 @@ function asBoolean(value: TomlValue | undefined, location: string): boolean {
   return value;
 }
 
+function asPositiveInteger(value: TomlValue | undefined, location: string): number {
+  if (typeof value !== 'number' || !Number.isInteger(value) || value < 1) {
+    throw new AxesParseError(`${location}: expected positive integer`);
+  }
+  return value;
+}
+
 function asArrayOfTables(
   value: TomlValue | undefined,
   location: string,
@@ -100,6 +107,7 @@ function parsePhase(t: TomlTable, name: string): AxisPhase {
     name,
     base_tools: asStringArray(t.base_tools, `axis.phase.${name}.base_tools`),
     writes: asBoolean(t.writes, `axis.phase.${name}.writes`),
+    max_turns: asPositiveInteger(t.max_turns, `axis.phase.${name}.max_turns`),
     default_personality: asString(
       t.default_personality,
       `axis.phase.${name}.default_personality`,

@@ -461,6 +461,7 @@ disposition = "x"
 [axis.phase.reviewer]
 base_tools = ["Read"]
 writes = false
+max_turns = 15
 default_personality = "skeptic"
 
 [[recipes]]

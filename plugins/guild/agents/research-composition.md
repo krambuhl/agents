@@ -4,7 +4,7 @@ role: research
 description: "methodical composition research — composed from the methodical personality x composition domain x research phase via /guild-compile. Inventories how code decomposes into reusable units exhaustively, walking every sibling case and existing convention, citing file/line/source, surfacing viable composition directions and unknowns without a single recommendation."
 tools: Glob, Grep, Read
 model: sonnet
-maxTurns: 5
+maxTurns: 15
 ---
 
 # Research: composition

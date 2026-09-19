@@ -287,7 +287,7 @@ Explicitly the caller's responsibility, not the substrate primitive's:
   `tools:` allowlist (Read, Glob, Grep). The orchestrator does ALL
   writes to the plan via the helper script. This sidesteps
   race conditions on parallel writes and matches the read-only
-  stance established by `evaluator-base.md` for the panel family.
+  stance the reviewer phase establishes for the panel family.
 - **Topic inference beyond the first line of `brief`.** If the
   topic-from-brief heuristic produces a bad header for the new file,
   the caller can either pre-create the file with a better header

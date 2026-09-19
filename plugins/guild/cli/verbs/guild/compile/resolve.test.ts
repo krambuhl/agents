@@ -76,6 +76,7 @@ describe('resolve: tool fold by verification phase', () => {
           name: phase,
           base_tools: ['Read', 'Grep'],
           writes,
+          max_turns: 15,
           default_personality: 'skeptic',
         },
       },
@@ -174,7 +175,7 @@ describe('resolve: error cases', () => {
       domains: {},
       personalities: {},
       phases: {
-        p: { name: 'p', base_tools: [], writes: false, default_personality: 'q' },
+        p: { name: 'p', base_tools: [], writes: false, max_turns: 15, default_personality: 'q' },
       },
       recipes: [],
       singletons: [],

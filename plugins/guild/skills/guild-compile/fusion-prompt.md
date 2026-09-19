@@ -127,7 +127,7 @@ Emit a complete Markdown agent body. The structure is:
      + role and pointing at the substrate>
    tools: <comma-separated tools from the cell metadata's tools list>
    model: sonnet
-   maxTurns: 5
+   maxTurns: <max_turns from the cell metadata>
    ---
    ```
    `model` is always `sonnet`: guild agents are fan-out workers and run
@@ -233,6 +233,7 @@ personality: <personality>
 domain: <domain or "(none)">
 id: <cell-id>
 tools: <comma-separated tool list>
+max_turns: <turn budget, from axis.phase.<phase>.max_turns>
 
 ## Personality base
 <full personality-base.md body>

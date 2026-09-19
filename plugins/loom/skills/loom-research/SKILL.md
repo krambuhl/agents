@@ -177,8 +177,8 @@ For each detected shift:
   `Glob(".claude/agents/research-*.md")`. derive-panel answers who
   *may* participate; engineers self-recuse off-topic at runtime as
   the second gate — there's no domain-shape filtering at this layer
-  (consistent with the evaluator non-applicability pattern in
-  `agents/evaluator-base.md`). Reserve `plan-*` for the plan phase.
+  (consistent with the evaluator recusal pattern in the reviewer
+  phase). Reserve `plan-*` for the plan phase.
 - **Bootstrapping skip:** if no `research-*` agents are registered
   (the `Glob(".claude/agents/research-*.md")` fallback is empty and
   derive-panel's roster cannot be spawned), skip this shift's panel
