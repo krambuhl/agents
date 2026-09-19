@@ -4,7 +4,7 @@ role: fixer
 description: "pragmatist react fixer — composed from the pragmatist personality x react domain x fixer phase via /guild-compile."
 tools: Bash(git diff:*), Bash(git status:*), Bash(npm run build:*), Bash(npm run lint:*), Edit, Glob, Grep, Read, Write
 model: sonnet
-maxTurns: 5
+maxTurns: 25
 ---
 
 # Fixer: react

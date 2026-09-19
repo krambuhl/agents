@@ -76,7 +76,7 @@ function frontmatter(cell: ResolvedCell): string {
     `description: ${JSON.stringify(description)}`,
     `tools: ${cell.tools.join(', ')}`,
     `model: ${AGENT_MODEL}`,
-    'maxTurns: 5',
+    `maxTurns: ${cell.max_turns}`,
     '---',
   ].join('\n');
 }

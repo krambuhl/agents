@@ -4,7 +4,7 @@ role: plan
 description: "generative a11y plan — composed from the generative personality x a11y domain x plan phase via /guild-compile."
 tools: Glob, Grep, Read
 model: sonnet
-maxTurns: 5
+maxTurns: 15
 ---
 
 # Plan: a11y

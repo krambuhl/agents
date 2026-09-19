@@ -4,7 +4,7 @@ role: plan
 description: "skeptic plan — composed from the skeptic personality at the plan phase (no domain) via /guild-compile."
 tools: Glob, Grep, Read
 model: sonnet
-maxTurns: 5
+maxTurns: 15
 ---
 
 # Plan: skeptic

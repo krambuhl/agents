@@ -4,7 +4,7 @@ role: fixer
 description: "pragmatist a11y fixer — composed from the pragmatist personality x a11y domain x fixer phase via /guild-compile. Applies the minimal accessibility correction a reviewer's findings call for, scoped to the flagged violation, re-verifies, and hands back. Emits no verdict."
 tools: Bash(git diff:*), Bash(git status:*), Bash(npm run build:*), Bash(npm run lint:*), Bash(npm run test:a11y:*), Edit, Glob, Grep, Read, Write
 model: sonnet
-maxTurns: 5
+maxTurns: 25
 ---
 
 # Fixer: a11y

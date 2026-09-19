@@ -14,6 +14,7 @@ disposition = "decide"
 [axis.phase.implementer]
 base_tools = ["Read", "Edit", "Write"]
 writes = true
+max_turns = 15
 default_personality = "pragmatist"
 
 [[recipes]]

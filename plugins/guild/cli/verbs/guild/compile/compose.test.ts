@@ -15,6 +15,7 @@ function makeCell(overrides: Partial<ResolvedCell> = {}): ResolvedCell {
     personality_fragment: '# Skeptic\n\n## Disposition\n\nDoubt.\n',
     domain_fragment: '# Domain: foo\n\n## Scope\n\nFoo concerns.\n',
     tools: ['Bash(npm run lint:*)', 'Glob', 'Grep', 'Read'],
+    max_turns: 15,
     ...overrides,
   };
 }
@@ -26,7 +27,7 @@ describe('compose: frontmatter', () => {
     expect(result.composed_body).toContain('role: evaluator');
     expect(result.composed_body).toContain('tools: Bash(npm run lint:*), Glob, Grep, Read');
     expect(result.composed_body).toContain('model: sonnet');
-    expect(result.composed_body).toContain('maxTurns: 5');
+    expect(result.composed_body).toContain('maxTurns: 15');
   });
 
   it('uses "plan" role for plan phase cells', () => {

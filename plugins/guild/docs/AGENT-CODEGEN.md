@@ -37,7 +37,8 @@ compose time by the LLM:
   `phases = [...]` (which phases this voice fits) and `disposition`
   (free-text the fusion sees).
 - `[axis.phase.<name>]` — phase axis-values with `base_tools = [...]`,
-  `writes: bool`, and `default_personality` (for recipe defaults).
+  `writes: bool`, `max_turns` (the frontmatter `maxTurns` budget every cell at
+  that phase gets), and `default_personality` (for recipe defaults).
 - `[[recipes]]` — curated subsets of the cross-product for `guild-spawn`
   dispatch. Each recipe names a `(phase, personality, domains[])`
   triple. Consumed at dispatch time via `guild recipe <name>`; not

@@ -4,7 +4,7 @@ role: research
 description: "methodical tokens research — composed from the methodical personality x tokens domain x research phase via /guild-compile. Inventories the project's design-token usage exhaustively — every literal-vs-token site, every sibling case, every existing convention — citing file/line/source, surfacing unknowns and viable directions without a single recommendation. Read-only inspection posture; substrate for the plan that follows."
 tools: Glob, Grep, Read
 model: sonnet
-maxTurns: 5
+maxTurns: 15
 ---
 
 # Research: tokens

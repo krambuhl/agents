@@ -197,7 +197,7 @@ describe('axes-schema: personality entries declare phases + disposition', () => 
   }
 });
 
-describe('axes-schema: phase entries declare base_tools, writes, default_personality', () => {
+describe('axes-schema: phase entries declare base_tools, writes, max_turns, default_personality', () => {
   for (const phase of CANONICAL_PHASES) {
     it(`axis.phase.${phase}.base_tools is a non-empty string array`, () => {
       const t = getTable(getTable(getTable(AXES, 'axis'), 'phase'), phase);
@@ -213,6 +213,15 @@ describe('axes-schema: phase entries declare base_tools, writes, default_persona
       expect(
         typeof t?.writes === 'boolean',
         `axis.phase.${phase}.writes: must be boolean`,
+      ).toBe(true);
+    });
+
+    it(`axis.phase.${phase}.max_turns is a positive integer`, () => {
+      const t = getTable(getTable(getTable(AXES, 'axis'), 'phase'), phase);
+      const n = t?.max_turns;
+      expect(
+        typeof n === 'number' && Number.isInteger(n) && n >= 1,
+        `axis.phase.${phase}.max_turns: must be a positive integer (got ${String(n)})`,
       ).toBe(true);
     });
 

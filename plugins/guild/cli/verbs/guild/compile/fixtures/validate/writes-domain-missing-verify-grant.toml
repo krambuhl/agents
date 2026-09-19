@@ -14,11 +14,13 @@ disposition = "decide"
 [axis.phase.reviewer]
 base_tools = ["Read", "Glob", "Grep"]
 writes = false
+max_turns = 15
 default_personality = "pragmatist"
 
 [axis.phase.implementer]
 base_tools = ["Read", "Edit", "Write"]
 writes = true
+max_turns = 15
 default_personality = "pragmatist"
 
 [[recipes]]

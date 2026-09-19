@@ -117,6 +117,7 @@ For each cell whose id appears in `cache_misses`:
    domain: <cell.domain or "(none)">
    id: <cell.id>
    tools: <cell.tools joined with ", ">
+   max_turns: <cell.max_turns>
 
    ## Personality base
    <personality-base.md body, frontmatter stripped>

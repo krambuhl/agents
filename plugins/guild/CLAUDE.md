@@ -11,7 +11,10 @@ guild skill keeps its own model for orchestration; the fan-out runs one
 tier below it to keep panels cheap and fast. The value is set in
 `cli/verbs/guild/compile/compose.ts` and mirrored in the fusion prompt;
 `guild-spawn` takes a `model` input for the rare caller that needs to
-lift a panel back up.
+lift a panel back up. Each agent's `maxTurns` comes from its phase's
+`max_turns` in `modes/axes.toml`: write phases get more room than
+read-only ones. Raise a phase's budget there and recompile rather than
+editing an agent file.
 
 The agents in `agents/` are codegen output assembled from fragments
 under `modes/` per the recipe in `docs/AGENT-CODEGEN.md`. After

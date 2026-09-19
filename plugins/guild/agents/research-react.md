@@ -4,7 +4,7 @@ role: research
 description: "methodical react research — composed from the methodical personality x react domain x research phase via /guild-compile. Inventories the React surface exhaustively before a plan exists: every sibling component, every hook usage, every render boundary, each cited by file/line, surfacing viable directions without collapsing to one recommendation."
 tools: Glob, Grep, Read
 model: sonnet
-maxTurns: 5
+maxTurns: 15
 ---
 
 # Research: react

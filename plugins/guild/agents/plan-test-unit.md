@@ -4,7 +4,7 @@ role: plan
 description: "synthesizer test-unit plan — composed from the synthesizer personality x test-unit domain x plan phase via /guild-compile."
 tools: Glob, Grep, Read
 model: sonnet
-maxTurns: 5
+maxTurns: 15
 ---
 
 # Plan: test-unit
