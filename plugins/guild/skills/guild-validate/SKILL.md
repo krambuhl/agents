@@ -29,9 +29,9 @@ gets parallel agent invocation for free, structured aggregation, and
 forward-compatible verdict shape, without re-implementing any of it.
 
 `guild-validate` does not know about specific evaluator rubrics. It
-expects each spawned agent to return a parseable verdict (see the
-contract in `.claude/agents/evaluator-base.md`) and treats every
-agent's output uniformly.
+expects each spawned agent to return a parseable verdict (the
+`## Output contract` every evaluator carries in its own body) and
+treats every agent's output uniformly.
 
 ## Inputs
 
@@ -42,7 +42,8 @@ agent's output uniformly.
   fields.
 - `packet` — the standard three-section evaluation packet (Contract /
   Artifact / Original ask). This is the shared brief handed to every
-  evaluator. The packet shape is documented in `evaluator-base.md`.
+  evaluator. Every evaluator documents the packet shape it expects in
+  its own body.
 - `precedence` (optional) — comma-separated ordered list of evaluator
   names for non-conflicting overlap resolution. When two evaluators
   flag the same issue with non-contradictory remedies, the higher-
