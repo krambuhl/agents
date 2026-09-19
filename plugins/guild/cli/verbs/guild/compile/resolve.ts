@@ -80,5 +80,6 @@ export function resolve(
     personality_fragment,
     domain_fragment,
     tools,
+    max_turns: axisPhase.max_turns,
   };
 }

@@ -4,7 +4,7 @@ role: implementer
 description: "pragmatist css-architecture implementer — composed from the pragmatist personality x css-architecture domain x implementer phase via /guild-compile."
 tools: Bash(git diff:*), Bash(git status:*), Bash(npm run build:*), Bash(npm run lint:*), Edit, Glob, Grep, Read, Write
 model: sonnet
-maxTurns: 5
+maxTurns: 25
 ---
 
 # Implementer: css-architecture

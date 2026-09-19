@@ -71,7 +71,7 @@ describe('parse: error cases', () => {
   it('rejects a domain entry missing phases with AxesParseError', () => {
     expect(() =>
       parse(
-        'schema_version = 1\n[axis.domain.foo]\ntool_grants = []\n[axis.personality.x]\nphases = []\ndisposition = "x"\n[axis.phase.y]\nbase_tools = ["Read"]\nwrites = false\ndefault_personality = "x"\n',
+        'schema_version = 1\n[axis.domain.foo]\ntool_grants = []\n[axis.personality.x]\nphases = []\ndisposition = "x"\n[axis.phase.y]\nbase_tools = ["Read"]\nwrites = false\nmax_turns = 15\ndefault_personality = "x"\n',
       ),
     ).toThrow(AxesParseError);
   });
@@ -79,7 +79,7 @@ describe('parse: error cases', () => {
   it('rejects a non-string in a tool_grants array with AxesParseError', () => {
     expect(() =>
       parse(
-        'schema_version = 1\n[axis.domain.foo]\nphases = []\ntool_grants = ["Bash", 42]\n[axis.personality.x]\nphases = []\ndisposition = "x"\n[axis.phase.y]\nbase_tools = ["Read"]\nwrites = false\ndefault_personality = "x"\n',
+        'schema_version = 1\n[axis.domain.foo]\nphases = []\ntool_grants = ["Bash", 42]\n[axis.personality.x]\nphases = []\ndisposition = "x"\n[axis.phase.y]\nbase_tools = ["Read"]\nwrites = false\nmax_turns = 15\ndefault_personality = "x"\n',
       ),
     ).toThrow(AxesParseError);
   });

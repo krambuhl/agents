@@ -4,7 +4,7 @@ role: research
 description: "methodical substrate research — composed from the methodical personality x substrate domain x research phase via /guild-compile. Inventories the CLI-owned state and coordination layer exhaustively, surfacing the substrate's invariants, conventions, and unknowns as evidence before any plan commits to a shape."
 tools: Glob, Grep, Read
 model: sonnet
-maxTurns: 5
+maxTurns: 15
 ---
 
 # Research: substrate

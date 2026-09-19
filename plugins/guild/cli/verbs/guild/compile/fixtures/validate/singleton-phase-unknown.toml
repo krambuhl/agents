@@ -11,6 +11,7 @@ disposition = "doubt by default"
 [axis.phase.reviewer]
 base_tools = ["Read", "Glob", "Grep"]
 writes = false
+max_turns = 15
 default_personality = "skeptic"
 
 [[singletons]]

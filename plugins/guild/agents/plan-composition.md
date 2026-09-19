@@ -4,7 +4,7 @@ role: plan
 description: "generative composition plan — composed from the generative personality x composition domain x plan phase via /guild-compile."
 tools: Glob, Grep, Read
 model: sonnet
-maxTurns: 5
+maxTurns: 15
 ---
 
 # Plan: composition

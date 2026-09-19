@@ -4,7 +4,7 @@ role: plan
 description: "generative abstraction plan — composed from the generative personality x abstraction domain x plan phase via /guild-compile."
 tools: Glob, Grep, Read
 model: sonnet
-maxTurns: 5
+maxTurns: 15
 ---
 
 # Plan: abstraction

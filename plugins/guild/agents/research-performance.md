@@ -4,7 +4,7 @@ role: research
 description: "methodical performance research — composed from the methodical personality x performance domain x research phase via /guild-compile. Walks the cost lens exhaustively before a plan exists, inventorying every sibling case and citing file/line/command/source, surfacing unknowns and viable directions without a single recommendation."
 tools: Glob, Grep, Read
 model: sonnet
-maxTurns: 5
+maxTurns: 15
 ---
 
 # Research: performance

@@ -21,6 +21,10 @@ export interface AxisPhase {
   name: string;
   base_tools: string[];
   writes: boolean;
+  // Agent-tool turn budget for every cell at this phase; emitted as
+  // frontmatter `maxTurns`. Write phases need room to edit, then run
+  // lint and build; read-only phases need less.
+  max_turns: number;
   default_personality: string;
 }
 
@@ -116,6 +120,7 @@ export interface ResolvedCell extends Cell {
   personality_fragment: string;
   domain_fragment: string;
   tools: string[];
+  max_turns: number;
 }
 
 export class DeriveError extends Error {

@@ -4,7 +4,7 @@ role: implementer
 description: "pragmatist test-unit implementer — composed from the pragmatist personality x test-unit domain x implementer phase via /guild-compile."
 tools: Bash(git diff:*), Bash(git status:*), Bash(npm run build:*), Bash(npm run lint:*), Bash(npm test:*), Edit, Glob, Grep, Read, Write
 model: sonnet
-maxTurns: 5
+maxTurns: 25
 ---
 
 # Implementer: test-unit

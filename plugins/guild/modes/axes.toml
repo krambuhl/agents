@@ -98,26 +98,31 @@ disposition = "You integrate. Your instinct is to take competing constraints, co
 [axis.phase.research]
 base_tools = ["Read", "Glob", "Grep"]
 writes = false
+max_turns = 15
 default_personality = "methodical"  # leave nothing unexamined maps to methodical's exhaustive evidence-gathering disposition
 
 [axis.phase.plan]
 base_tools = ["Read", "Glob", "Grep"]
 writes = false
+max_turns = 15
 default_personality = "synthesizer"  # reconcile competing constraints into one coherent plan maps to synthesizer's disposition
 
 [axis.phase.reviewer]
 base_tools = ["Read", "Glob", "Grep"]
 writes = false
+max_turns = 15
 default_personality = "skeptic"  # matches existing panel.manifest.toml — every reviewer combination is skeptic-led
 
 [axis.phase.implementer]
 base_tools = ["Read", "Glob", "Grep", "Bash(npm run lint:*)", "Bash(npm run build:*)", "Bash(git status:*)", "Bash(git diff:*)", "Edit", "Write"]
 writes = true
+max_turns = 25
 default_personality = "pragmatist"  # simplest thing that works and reads well maps to pragmatist's disposition
 
 [axis.phase.fixer]
 base_tools = ["Read", "Glob", "Grep", "Bash(npm run lint:*)", "Bash(npm run build:*)", "Bash(git status:*)", "Bash(git diff:*)", "Edit", "Write"]
 writes = true
+max_turns = 25
 default_personality = "pragmatist"  # minimal fix to the flagged findings maps to pragmatist's decisive, load-bearing-first disposition
 
 # ---------- recipes (7) ----------

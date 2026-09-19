@@ -4,7 +4,7 @@ role: evaluator
 description: "skeptic test-integration evaluator — composed from the skeptic personality x test-integration domain x reviewer phase via /guild-compile."
 tools: Bash(git diff:*), Bash(git status:*), Bash(npm run build:*), Bash(npm run lint:*), Bash(npm run test:e2e:*), Glob, Grep, Read
 model: sonnet
-maxTurns: 5
+maxTurns: 15
 ---
 
 # Evaluator: test-integration
