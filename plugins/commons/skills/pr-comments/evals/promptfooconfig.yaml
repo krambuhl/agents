@@ -71,9 +71,11 @@ defaultTest:
       threshold: 0.8
       metric: semantic_correctness
       provider:
-        id: anthropic:messages:claude-sonnet-4-6
+        id: anthropic:messages:claude-sonnet-5-5
         config:
           apiKeyRequired: false
+          # thinking is on by default and counts toward max_tokens
+          max_tokens: 16000
 
 tests:
   - file://tests.yaml
