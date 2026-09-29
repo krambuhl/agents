@@ -83,9 +83,8 @@ When you find relevant skills, present them to the user with:
 Example response:
 
 ```
-I found a skill that might help! The "react-best-practices" skill provides
-React and Next.js performance optimization guidelines from Vercel Engineering.
-(185K installs)
+The "react-best-practices" skill from Vercel Engineering covers React and
+Next.js performance optimization. (185K installs)
 
 To install it:
 npx skills add vercel-labs/agent-skills@react-best-practices
@@ -128,15 +127,14 @@ When searching, consider these common categories:
 If no relevant skills exist:
 
 1. Acknowledge that no existing skill was found
-2. Offer to help with the task directly using your general capabilities
+2. Help with the task directly
 3. Suggest the user could create their own skill with `npx skills init`
 
 Example:
 
 ```
-I searched for skills related to "xyz" but didn't find any matches.
-I can still help you with this task directly! Would you like me to proceed?
+No skills matched "xyz", so I'll handle this directly.
 
-If this is something you do often, you could create your own skill:
+If this comes up often, it could become its own skill:
 npx skills init my-xyz-skill
 ```

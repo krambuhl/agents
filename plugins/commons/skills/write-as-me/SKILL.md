@@ -11,7 +11,7 @@ description: >
 
 # write as me
 
-what ships under the engineer's name reads as they wrote it. the reader is another engineer, arriving later, with none of this conversation. the model's default is too long and too eager, so this skill has two parts: how to write, and a loop that checks the draft before it ships.
+what ships under the engineer's name reads as they wrote it. the reader is another engineer, arriving later, with none of this conversation. the text has to land in one pass, so this skill has two parts: how to write, and a loop that checks the draft before it ships.
 
 ## how the engineer writes
 
