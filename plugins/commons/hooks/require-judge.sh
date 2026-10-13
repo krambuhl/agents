@@ -2,13 +2,15 @@
 # PreToolUse gate: text that ships under the engineer's name has been through
 # the writing-judge subagent first.
 #
-# A call "ships text" when it commits, opens or edits a pull request or issue,
-# posts a pull request or issue comment, or adds line-leading comment lines to
-# a source file. For such a call the gate looks in the activation log for a
-# writing-judge run in this session that no earlier shipped text has consumed.
-# If one exists, every outstanding judge run is marked consumed and the call
-# proceeds: one judge loop covers one shipped text. If none exists, the call is
-# blocked (exit 2) and the message tells the model what to do.
+# A call "ships text" when it writes a commit, merge, tag, or notes message,
+# opens or edits a pull request, issue, or release, posts a comment or review
+# body, or adds line-leading comment lines to a source file. Pushing,
+# rebasing, or syncing existing commits ships nothing. For a shipping call the
+# gate looks in the activation log for a writing-judge run in this session
+# that no earlier shipped text has consumed. If one exists, every outstanding
+# judge run is marked consumed and the call proceeds: one judge loop covers
+# one shipped text. If none exists, the call is blocked (exit 2) and the
+# message tells the model what to do.
 #
 # The read and the append happen under a lock when flock is available, since
 # parallel tool calls run this gate concurrently. A log line that is not JSON
@@ -42,7 +44,7 @@ classify_bash() {
   elif has '\bgh\s+pr\s+close\b.*(\s-c(\s|$|=)|--comment)' "$cmd"; then echo "gh pr close"
   elif has '\bgh\s+issue\s+(create|comment|edit)\b' "$cmd"; then echo "gh issue"
   elif has '\bgh\s+release\s+(create|edit)\b' "$cmd"; then echo "gh release"
-  elif has '\bgh\s+stack\s+(submit|push)\b' "$cmd"; then echo "gh stack"
+  elif has '\bgh\s+stack\s+submit\b' "$cmd"; then echo "gh stack"
   elif has '\bgs\s+(stack|branch|commit)\s+(submit|create|amend)\b' "$cmd"; then echo "gs"
   elif has '\bgh\s+api\s+graphql\b' "$cmd"; then
     if has '\bmutation\b' "$cmd"; then echo "gh api graphql mutation"; fi
