@@ -153,8 +153,6 @@ describeIfJq('commons hooks: write-as-me gate, what ships text', () => {
       'gh issue comment 1 --body hi',
       'gh issue create --title t --body b',
       'gh release create v1 --notes x',
-      'gh stack submit',
-      'gs stack submit',
       'gh api -X POST repos/o/r/issues/1/comments -f body=hi',
       'gh api -X PATCH repos/o/r/pulls/comments/5 -f body=hi',
       'gh api repos/o/r/issues/1/comments -f body=hi',
@@ -177,6 +175,38 @@ describeIfJq('commons hooks: write-as-me gate, what ships text', () => {
       expect(gate(mcp(tool)), tool).toBe(2);
     }
     expect(gate(mcp('mcp__github__pull_request_review_write', { method: 'submit_pending', body: 'lgtm' }))).toBe(2);
+  });
+
+  test('stack tools ship text only when they write a message or open a pull request', () => {
+    for (const cmd of [
+      'gh stack push',
+      'gh stack rebase',
+      'gh stack rebase --continue',
+      'GIT_EDITOR=true gh stack rebase --continue',
+      'gh stack sync',
+      'gh stack view --json',
+      'gh stack checkout 3',
+      'gh stack add ev-agent.plan.bulk-1',
+      'gh stack init ev-agent.plan.setup',
+      'gs up',
+      'gs down',
+      'gs stack restack',
+      'gs repo sync',
+      'gs log short',
+    ]) {
+      expect(gate(bash(cmd)), cmd).toBe(0);
+    }
+    for (const cmd of [
+      'gh stack submit',
+      'gh stack submit --auto',
+      'gs stack submit',
+      'gs branch submit',
+      'gs branch create feat -m x',
+      'gs commit create -m x',
+      'gs commit amend -m x',
+    ]) {
+      expect(gate(bash(cmd)), cmd).toBe(2);
+    }
   });
 
   test('an edit that adds a line-leading comment to a source file ships text; other edits do not', () => {
