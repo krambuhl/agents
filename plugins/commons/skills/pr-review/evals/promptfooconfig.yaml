@@ -2,7 +2,10 @@
 # pr-review regression suite. run from the repository root:
 #   npm run eval:pr-review
 # the provider loads the commons plugin straight from this tree, so the skill
-# under test is the file next door, not an installed copy. the agent gets no
+# under test is the file next door, not an installed copy. pr-review sets
+# disable-model-invocation, so the model cannot load it with the Skill tool and
+# skill-used cannot see it: the prompt starts the skill as the engineer would,
+# with /commons:pr-review on its first line. the agent gets no
 # github tools, no subagents, and cannot run code: every case hands it one pr
 # (description, diff, surrounding code) and asks for the findings it weighed,
 # the review event, and the review it would post. with no Agent tool the skill
@@ -37,10 +40,6 @@ defaultTest:
   vars:
     post_kind: review
   assert:
-    - type: skill-used
-      value:
-        name: commons:pr-review
-      metric: skill_routing
     - type: not-is-refusal
       metric: useful_response
     - type: icontains-all

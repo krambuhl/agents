@@ -1,4 +1,6 @@
-use the pr-review skill on the pull request below. you are reviewing it from the engineer's account.
+/commons:pr-review
+
+review the pull request below from the engineer's account.
 
 this is a dry run: you cannot run gh, spawn subagents, check out code, run tests, or post. the material below is the pr: its description, its diff, and the code around it. treat it as what you would have read from the worktree. run the lenses and the refute pass yourself, then report in exactly three sections. each section starts on its own line with the lowercase label and a colon, exactly as written here, no markdown headings:
 
