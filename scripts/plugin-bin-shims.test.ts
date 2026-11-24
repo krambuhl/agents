@@ -6,10 +6,12 @@ import {
   mkdirSync,
   mkdtempSync,
   readdirSync,
+  readFileSync,
   rmSync,
   symlinkSync,
   writeFileSync,
 } from 'node:fs';
+import * as nodeModule from 'node:module';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -241,22 +243,46 @@ function collectRuntimeTsFiles(dir: string): string[] {
   return out;
 }
 
-// `node --check <file.ts>` strips types (Node >= 24 default) and parses the
-// file WITHOUT executing it, resolving imports, or running side effects. A
-// strip-only-unsupported construct (parameter property, certain enum /
-// namespace forms, a JSDoc `*/` that closes a block comment early) fails the
-// parse with a non-zero exit. Async so the inventory can be checked with
-// bounded concurrency instead of N serial spawns.
-function nodeCheck(file: string): Promise<{ status: number | null; stderr: string }> {
+// The strip-only check, in two steps that never execute the file, resolve its
+// imports, or run side effects:
+//   1. `stripTypeScriptTypes` from node:module, the same stripper node runs a
+//      .ts with. it throws ERR_UNSUPPORTED_TYPESCRIPT_SYNTAX on a construct
+//      that needs transformation (parameter property, enum, namespace).
+//   2. `node --check --input-type=module` on the stripped source, over stdin.
+//      catches what stripping leaves broken, like a JSDoc `*/` that closes a
+//      block comment early.
+// `node --check <file.ts>` used to do both, but node 24.x stopped stripping
+// types on the --check path and reports every `import type` as a SyntaxError,
+// which also made the bite test below pass for the wrong reason.
+const { stripTypeScriptTypes } = nodeModule as unknown as {
+  stripTypeScriptTypes?: (source: string) => string;
+};
+
+function stripCheckSource(source: string): Promise<{ status: number | null; stderr: string }> {
+  if (!stripTypeScriptTypes) {
+    return Promise.resolve({ status: 1, stderr: 'node:module has no stripTypeScriptTypes (needs node >= 22.13)' });
+  }
+  let js: string;
+  try {
+    js = stripTypeScriptTypes(source);
+  } catch (err) {
+    const e = err as { code?: string; message?: string };
+    return Promise.resolve({ status: 1, stderr: `${e.code ?? 'Error'}: ${e.message ?? String(err)}` });
+  }
   return new Promise((resolveCheck) => {
-    const child = spawn('node', ['--check', file]);
+    const child = spawn('node', ['--check', '--input-type=module']);
     let stderr = '';
     child.stderr.on('data', (chunk) => {
       stderr += chunk.toString();
     });
     child.on('error', (err) => resolveCheck({ status: 1, stderr: String(err) }));
     child.on('close', (status) => resolveCheck({ status, stderr }));
+    child.stdin.end(js);
   });
+}
+
+function stripCheck(file: string): Promise<{ status: number | null; stderr: string }> {
+  return stripCheckSource(readFileSync(file, 'utf8'));
 }
 
 // The exec smoke above loads each entry's STATIC import graph, so a footgun
@@ -282,14 +308,14 @@ describe('exhaustive strip-only static gate (every runtime .ts)', () => {
     expect(runtimeTsFiles.length).toBeGreaterThan(50);
   });
 
-  test('every runtime .ts survives node --check under the strip-only loader', async () => {
+  test('every runtime .ts survives type stripping and node --check', async () => {
     const CONCURRENCY = 8;
     const failures: string[] = [];
     let cursor = 0;
     const worker = async (): Promise<void> => {
       while (cursor < runtimeTsFiles.length) {
         const file = runtimeTsFiles[cursor++];
-        const { status, stderr } = await nodeCheck(file);
+        const { status, stderr } = await stripCheck(file);
         if (
           status !== 0 ||
           /SyntaxError|ERR_UNSUPPORTED_TYPESCRIPT_SYNTAX/.test(stderr)
@@ -306,18 +332,28 @@ describe('exhaustive strip-only static gate (every runtime .ts)', () => {
     ).toEqual([]);
   }, 30_000);
 
-  test('the gate BITES: a parameter-property footgun fails node --check', () => {
+  test('the gate passes valid strip-only code, type-only syntax included', async () => {
+    // without this, a check that fails everything (as `node --check file.ts`
+    // came to on node 24.x) would make the bite tests below pass vacuously.
+    const ok = await stripCheckSource(
+      "import type { A } from './a.ts';\nexport type B = A | string;\nexport interface C { b: B }\nexport const c = (x: C): B => x.b;\n",
+    );
+    expect(ok.status, ok.stderr).toBe(0);
+  });
+
+  test('the gate BITES: a parameter-property footgun fails the strip', async () => {
     // Independent proof the gate detects the class — mirrors the exec-path
-    // bite test above, at the --check layer.
-    const dir = mkdtempSync(join(tmpdir(), 'strip-only-bite-'));
-    try {
-      const footgun = join(dir, 'footgun.ts');
-      writeFileSync(footgun, 'class P {\n  constructor(public x: number) {}\n}\n');
-      const result = spawnSync('node', ['--check', footgun], { encoding: 'utf8' });
-      expect(result.status).not.toBe(0);
-      expect(result.stderr).toMatch(/SyntaxError|ERR_UNSUPPORTED_TYPESCRIPT_SYNTAX/);
-    } finally {
-      rmSync(dir, { recursive: true, force: true });
-    }
+    // bite test above, at the strip layer.
+    const result = await stripCheckSource('class P {\n  constructor(public x: number) {}\n}\n');
+    expect(result.status).not.toBe(0);
+    expect(result.stderr).toMatch(/ERR_UNSUPPORTED_TYPESCRIPT_SYNTAX/);
+  });
+
+  test('the gate BITES: a jsdoc */ that ends a comment early fails', async () => {
+    // the stripper rejects this one itself; the --check step is the backstop
+    // for anything it lets through.
+    const result = await stripCheckSource('/**\n * matches src/*/index.ts\n */\nexport const x: number = 1;\n');
+    expect(result.status).not.toBe(0);
+    expect(result.stderr).toMatch(/ERR_INVALID_TYPESCRIPT_SYNTAX|SyntaxError/);
   });
 });
