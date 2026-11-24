@@ -1,0 +1,89 @@
+# yaml-language-server: $schema=https://promptfoo.dev/config-schema.json
+# pr-review regression suite. run from the repository root:
+#   npm run eval:pr-review
+# the provider loads the commons plugin straight from this tree, so the skill
+# under test is the file next door, not an installed copy. pr-review sets
+# disable-model-invocation, so the model cannot load it with the Skill tool and
+# skill-used cannot see it: the prompt starts the skill as the engineer would,
+# with /commons:pr-review on its first line. the agent gets no
+# github tools, no subagents, and cannot run code: every case hands it one pr
+# (description, diff, surrounding code) and asks for the findings it weighed,
+# the review event, and the review it would post. with no Agent tool the skill
+# runs its lenses and refute pass inline, which is the path these cases pin.
+# write-as-me is enabled too, since the posted review goes through it.
+description: pr-review regression suite
+sharing: false
+
+prompts:
+  - file://prompt.txt
+
+providers:
+  - id: anthropic:claude-agent-sdk
+    label: claude-pr-review
+    config:
+      apiKeyRequired: false
+      working_dir: .
+      setting_sources: []
+      plugins:
+        - type: local
+          path: ../../..
+      skills: [commons:pr-review, commons:write-as-me]
+      model: sonnet
+      max_turns: 10
+      tools: [Read, Skill]
+      custom_allowed_tools: [Read]
+      disallowed_tools: [Bash, Edit, Write, Grep, Glob, WebFetch, WebSearch, Task]
+      permission_mode: dontAsk
+      persist_session: false
+
+defaultTest:
+  vars:
+    post_kind: review
+  assert:
+    - type: not-is-refusal
+      metric: useful_response
+    - type: icontains-all
+      value:
+        - 'findings:'
+        - 'event:'
+        - 'post:'
+      metric: procedure_shape
+    - type: regex
+      value: 'event:\W*(COMMENT|comment)\b'
+      metric: comment_event_only
+    - type: skill-used
+      value:
+        name: commons:write-as-me
+      metric: prose_handoff
+    - type: javascript
+      value: file://../../../evals/lib/post-section.js
+      metric: posted_text_register
+    - type: javascript
+      value: file://../../../evals/lib/post-readability.js
+      metric: posted_text_readability
+    - type: not-icontains-any
+      value:
+        - as an ai
+        - as a language model
+        - great work
+        - nice work
+      metric: no_agent_voice
+    - type: word-count
+      value:
+        max: 650
+      metric: response_efficiency
+    - type: llm-rubric
+      value: '{{rubric}}'
+      threshold: 0.8
+      metric: semantic_correctness
+      provider:
+        id: anthropic:messages:claude-sonnet-4-6
+        config:
+          apiKeyRequired: false
+
+tests:
+  - file://tests.yaml
+
+commandLineOptions:
+  maxConcurrency: 1
+  cache: false

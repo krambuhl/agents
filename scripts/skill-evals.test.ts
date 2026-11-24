@@ -84,10 +84,11 @@ function fileRefs(value: unknown, acc: string[] = []): string[] {
 const SUITES = listSuites();
 
 describe('skill evals: promptfoo suites under skills/<name>/evals', () => {
-  test('the two voice skills ship suites', () => {
+  test('the skills that post under the engineer\'s name ship suites', () => {
     const names = SUITES.map((s) => `${s.plugin}/${s.skill}`);
     expect(names).toContain('commons/write-as-me');
     expect(names).toContain('commons/pr-comments');
+    expect(names).toContain('commons/pr-review');
   });
 
   for (const suite of SUITES) {
@@ -155,12 +156,32 @@ describe('skill evals: promptfoo suites under skills/<name>/evals', () => {
         }
       });
 
-      test('defaultTest asserts the skill was actually used', () => {
-        const asserts = config.defaultTest?.assert ?? [];
-        const skillUsed = asserts.find((a) => a.type === 'skill-used');
-        expect(skillUsed, 'no skill-used assertion').toBeDefined();
-        expect(JSON.stringify(skillUsed?.value)).toContain(suite.skill);
-      });
+      // skill-used only sees Skill tool calls. a skill with
+      // disable-model-invocation never gets one, so its suite starts the skill
+      // the way the engineer does, as a slash command on the prompt's first
+      // line, and must not assert skill-used on itself (it could never pass).
+      const userOnly = /^disable-model-invocation:\s*true\s*$/m.test(
+        readFileSync(join(PLUGINS_ROOT, suite.plugin, 'skills', suite.skill, 'SKILL.md'), 'utf8'),
+      );
+
+      if (userOnly) {
+        test('a user-only skill is started by slash command, not asserted with skill-used', () => {
+          const firstLine = readFileSync(join(suite.dir, 'prompt.txt'), 'utf8').split('\n')[0].trim();
+          expect(firstLine).toBe(`/${suite.plugin}:${suite.skill}`);
+          const asserts = config.defaultTest?.assert ?? [];
+          const selfUsed = asserts.filter(
+            (a) => a.type === 'skill-used' && JSON.stringify(a.value).includes(`${suite.plugin}:${suite.skill}`),
+          );
+          expect(selfUsed, 'skill-used can never see a user-only skill').toEqual([]);
+        });
+      } else {
+        test('defaultTest asserts the skill was actually used', () => {
+          const asserts = config.defaultTest?.assert ?? [];
+          const skillUsed = asserts.find((a) => a.type === 'skill-used');
+          expect(skillUsed, 'no skill-used assertion').toBeDefined();
+          expect(JSON.stringify(skillUsed?.value)).toContain(suite.skill);
+        });
+      }
     });
   }
 });

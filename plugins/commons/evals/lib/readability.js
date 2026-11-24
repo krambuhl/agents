@@ -13,6 +13,7 @@ const LIMITS = {
   'pr-description': { words: 260, chars: null, lines: null, comment: false },
   'code-comment': { words: 40, chars: null, lines: null, comment: true },
   reply: { words: 70, chars: null, lines: null, comment: false },
+  review: { words: 220, chars: null, lines: null, comment: false },
   default: { words: 260, chars: null, lines: null, comment: false },
 };
 
