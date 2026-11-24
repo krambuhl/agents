@@ -14,7 +14,7 @@ The marketplace ships as five self-contained Claude Code plugins:
 
 | Plugin | What it provides | Depends on |
 |---|---|---|
-| `commons@krambuhl` | Foundation substrate: the shared skills (`grill-me`, `find-skills`, `review-skill`, `write-as-me`, `pr-comments`), the `writing-judge` subagent, and hooks (activation log + the gate that requires a judge run before text ships) | — |
+| `commons@krambuhl` | Foundation substrate: the shared skills (`grill-me`, `find-skills`, `review-skill`, `write-as-me`, `pr-comments`, `pr-review`), the `writing-judge` subagent, the `pr-review-*` lens and verifier subagents, and hooks (activation log + the gate that requires a judge run before text ships) | — |
 | `guild@krambuhl` | Antagonist-panel substrate: `guild` CLI + `guild-*` skills + `plan-*` / `research-*` / `evaluator-*` / `implementer-*` / `fixer-*` agents | `commons` |
 | `loom@krambuhl` | Project substrate: `loom` CLI + `loom-*` skills (plans, research, sessions, checkins, retros, archives) | `commons`, `guild` |
 | `ev@krambuhl` | Execution loops: `ev-loop-confidence`, `ev-loop-interactive`, `ev-run` skills | `commons`, `loom`, `guild` |
@@ -126,9 +126,9 @@ two:
 |---|---|---|
 | `.claude-plugin/marketplace.json` | The marketplace catalog. Lists all 5 plugins + dependencies cascade. | 1 |
 | `plugins/<name>/` | Per-plugin source trees. Each is self-contained: `.claude-plugin/plugin.json` (identity), `bin/<cli>` (entry shim w/ Node ≥24 check), `skills/` (slash commands), `agents/` (subagents), and `cli/` (TypeScript implementation). The plugin tree is authoritative for everything it ships. | 5 |
-| `plugins/commons/` | Foundation substrate plugin: the shared skills (`grill-me`, `find-skills`, `review-skill`, `write-as-me`, `pr-comments`), `agents/writing-judge.md` (the judge `write-as-me` loops its drafts through, three rounds max), and `hooks/` (activation log, plus `require-judge.sh`: commits, PR and issue creates, edits, and comments, and edits that add line-leading code comments are blocked until a `writing-judge` run covers them; the full list is in `hooks.json`; needs `jq`). No CLI, no docs. | 1 (within plugins/) |
+| `plugins/commons/` | Foundation substrate plugin: the shared skills (`grill-me`, `find-skills`, `review-skill`, `write-as-me`, `pr-comments`, `pr-review`), `agents/writing-judge.md` (the judge `write-as-me` loops its drafts through, three rounds max), `agents/pr-review-*.md` (the five reviewer lenses and two verifiers `pr-review` runs), and `hooks/` (activation log, plus `require-judge.sh`: commits, PR and issue creates, edits, and comments, and edits that add line-leading code comments are blocked until a `writing-judge` run covers them; the full list is in `hooks.json`; needs `jq`). No CLI, no docs. | 1 (within plugins/) |
 | `scripts/sync-shared.ts` | Build script that propagates `plugins/commons/{cli/lib,docs}/` into consumer plugin trees. Run after editing `plugins/commons/`. CI also drift-checks (`--check`). | — |
-| `plugins/<name>/skills/<skill>/evals/` | Optional promptfoo regression suite for one skill: `promptfooconfig.yaml`, `prompt.txt`, `tests.yaml`, `fixtures/`. Runs on demand against a live model (`npm run eval:<skill>`), never in `npm test`. Today: `write-as-me`, `pr-comments`. | 2 |
+| `plugins/<name>/skills/<skill>/evals/` | Optional promptfoo regression suite for one skill: `promptfooconfig.yaml`, `prompt.txt`, `tests.yaml`, `fixtures/`. Runs on demand against a live model (`npm run eval:<skill>`), never in `npm test`. Today: `write-as-me`, `pr-comments`, `pr-review`. | 3 |
 | `scripts/skill-evals.test.ts` | Static tripwire for the eval suites: configs parse, every `file://` fixture resolves, the provider loads the right plugin and skill, `skill-used` is asserted. No model calls. | — |
 | `projects/` | Loom-managed project artifacts: PLAN.md / RESEARCH.md / checkins / sessions / retros. Append-only at runtime; archived projects live under `projects/archive/`. | — |
 | `learnings/` | Accumulated craft notes kept as plain markdown, read by hand. Retained from the retired griot plugin; nothing reads them automatically now. | 3 |
@@ -177,7 +177,7 @@ dashes, no model name), a model-graded rubric for the judgment calls.
 npm install                 # promptfoo + @anthropic-ai/claude-agent-sdk are dev deps
 claude auth status          # the target and the judge both use your local Claude login
 npm run eval:validate       # config check, no model calls
-npm run eval:write-as-me    # or eval:pr-comments, or eval:skills for both
+npm run eval:write-as-me    # or eval:pr-comments, eval:pr-review, or eval:skills for all three
 npm run eval:view           # browse results
 ```
 

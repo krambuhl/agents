@@ -1,6 +1,7 @@
 // promptfoo javascript assertion: readability of the `post:` section only, for
 // procedure-shaped outputs. the sections before it are agent chat and are not
-// held to the shipped-text limits. the kind is always a thread reply.
+// held to the shipped-text limits. the kind is a thread reply unless the case
+// sets `post_kind` (pr-review posts a whole review, kind `review`).
 
 const readability = require('./readability.js');
 
@@ -11,5 +12,5 @@ module.exports = (output, context) => {
   for (let m = re.exec(text); m; m = re.exec(text)) match = m;
   if (!match) return { pass: false, score: 0, reason: 'no post: section found' };
   const post = text.slice(match.index + match[0].length);
-  return readability(post, { ...(context || {}), vars: { ...((context && context.vars) || {}), kind: 'reply' } });
+  return readability(post, { ...(context || {}), vars: { ...((context && context.vars) || {}), kind: ((context && context.vars && context.vars.post_kind) || 'reply') } });
 };

@@ -84,10 +84,11 @@ function fileRefs(value: unknown, acc: string[] = []): string[] {
 const SUITES = listSuites();
 
 describe('skill evals: promptfoo suites under skills/<name>/evals', () => {
-  test('the two voice skills ship suites', () => {
+  test('the skills that post under the engineer\'s name ship suites', () => {
     const names = SUITES.map((s) => `${s.plugin}/${s.skill}`);
     expect(names).toContain('commons/write-as-me');
     expect(names).toContain('commons/pr-comments');
+    expect(names).toContain('commons/pr-review');
   });
 
   for (const suite of SUITES) {

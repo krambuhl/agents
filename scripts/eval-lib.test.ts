@@ -108,6 +108,13 @@ describe('evals/lib/post-readability.js', () => {
     expect(postReadability(out, {}).pass).toBe(true);
     expect(postReadability('class: fix', {}).pass).toBe(false);
   });
+
+  test('a post_kind var swaps the reply cap for its own kind', () => {
+    const sentence = 'the slice starts one page late, so the first page never renders. ';
+    const out = 'findings: none\nevent: COMMENT\npost:\n' + Array.from({ length: 10 }, () => sentence).join('\n\n');
+    expect(postReadability(out, {}).reason).toMatch(/cap 70 for reply/);
+    expect(postReadability(out, { vars: { post_kind: 'review' } }).pass).toBe(true);
+  });
 });
 
 describe('evals/lib/post-section.js', () => {

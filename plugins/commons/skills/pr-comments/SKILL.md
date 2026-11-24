@@ -34,6 +34,8 @@ collect the current state before touching anything.
 
 skip threads you already answered where nobody replied since. skip echoes of your own comments.
 
+**level labels.** a thread whose first comment opens with `**blocking** ·`, `**advisory** ·`, or `**info** ·` came from a pr-review. note the level on the thread. it orders the work and sets the exit below. it never replaces verification: a labeled thread is still a claim. the review's summary may list more labeled findings that could not go inline; treat each as an issue comment that asks for something, at its level.
+
 ### 2. verify the point of view
 
 never act on a comment as stated. read the code at the location and check the claim first.
@@ -54,6 +56,8 @@ then classify each thread:
 | **route** | another person's or team's call | say so in the thread and name who |
 
 when a thread could be read two ways and the readings lead to different code, it is **decide**, not **fix**.
+
+with labeled threads, work **blocking** first, then **advisory**, then **info**. a blocking thread is **fix** or **decline**: if it holds, fix it; if it does not, decline with the evidence. it is never left as **decide** unless the fix itself is the engineer's call, and then say so in the handoff. an advisory thread may be **decide**. an info thread may be fixed, answered, or left with no action.
 
 ### 3. act
 
@@ -81,7 +85,7 @@ after the push:
 
 ### exit
 
-stop when all of these hold on the current head: no unresolved threads that are yours to act on, ci green, no merge conflict, and every **decide** thread has been handed to the engineer. or when the engineer says stop. then report a short checklist: threads fixed with commits, threads declined with the evidence, threads answered, threads routed and to whom, threads waiting on the engineer, ci state.
+stop when all of these hold on the current head: no unresolved threads that are yours to act on, ci green, no merge conflict, every **blocking** thread fixed or declined with evidence, and every **decide** thread has been handed to the engineer. **info** threads never hold up the exit. or when the engineer says stop. then report a short checklist, blocking threads first: threads fixed with commits, threads declined with the evidence, threads answered, threads routed and to whom, threads waiting on the engineer, ci state.
 
 if the engineer gave a terminal condition ("get it green", "babysit until mergeable"), that condition is the exit.
 

@@ -23,10 +23,11 @@
     "test:watch": "vitest",
     "check": "node scripts/sync-shared.ts --check",
     "prepare": "git config core.hooksPath .githooks || true",
-    "eval:validate": "promptfoo validate -c plugins/commons/skills/write-as-me/evals/promptfooconfig.yaml && promptfoo validate -c plugins/commons/skills/pr-comments/evals/promptfooconfig.yaml",
+    "eval:validate": "promptfoo validate -c plugins/commons/skills/write-as-me/evals/promptfooconfig.yaml && promptfoo validate -c plugins/commons/skills/pr-comments/evals/promptfooconfig.yaml && promptfoo validate -c plugins/commons/skills/pr-review/evals/promptfooconfig.yaml",
     "eval:write-as-me": "PROMPTFOO_DISABLE_TELEMETRY=true PROMPTFOO_DISABLE_UPDATE=true PROMPTFOO_DISABLE_SHARING=true PROMPTFOO_DISABLE_REMOTE_GENERATION=true promptfoo eval -c plugins/commons/skills/write-as-me/evals/promptfooconfig.yaml --no-cache",
     "eval:pr-comments": "PROMPTFOO_DISABLE_TELEMETRY=true PROMPTFOO_DISABLE_UPDATE=true PROMPTFOO_DISABLE_SHARING=true PROMPTFOO_DISABLE_REMOTE_GENERATION=true promptfoo eval -c plugins/commons/skills/pr-comments/evals/promptfooconfig.yaml --no-cache",
-    "eval:skills": "npm run eval:write-as-me && npm run eval:pr-comments",
+    "eval:pr-review": "PROMPTFOO_DISABLE_TELEMETRY=true PROMPTFOO_DISABLE_UPDATE=true PROMPTFOO_DISABLE_SHARING=true PROMPTFOO_DISABLE_REMOTE_GENERATION=true promptfoo eval -c plugins/commons/skills/pr-review/evals/promptfooconfig.yaml --no-cache",
+    "eval:skills": "npm run eval:write-as-me && npm run eval:pr-comments && npm run eval:pr-review",
     "eval:view": "promptfoo view"
   },
   "devDependencies": {
